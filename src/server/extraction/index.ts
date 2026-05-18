@@ -169,11 +169,7 @@ export async function extractFromFile(
   };
 }
 
-export { extractFromUrl } from "./url";
-export type { UrlExtractionMetadata, UrlExtractionResult } from "./url";
-export { assertSafeHttpUrl } from "./url";
-export { extractFromYouTube, extractYouTubeVideoId, assertValidYouTubeInput } from "./youtube";
-export type { YoutubeExtractionMetadata, YoutubeExtractionResult } from "./youtube";
+/** PPTX helpers — import from `@/server/extraction/pptx` in upload routes only. */
 export { extractFromPptx, isPptxFile } from "./pptx";
 export type {
   PptxExtractionMetadata,

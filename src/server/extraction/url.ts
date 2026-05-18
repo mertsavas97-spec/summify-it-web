@@ -1,10 +1,9 @@
 /**
- * SERVER ONLY — public web article URL extraction.
+ * SERVER ONLY — public web article URL extraction (cheerio-only, no jsdom).
  */
 
 import * as cheerio from "cheerio";
-import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
+import type { AnyNode } from "domhandler";
 import { EXTRACTION_CONFIG } from "./config";
 import { cleanText, truncateText } from "./cleanText";
 import { profileExtractedText } from "./profile";
@@ -47,6 +46,47 @@ const PRIVATE_IPV4_PATTERNS = [
 
 const FETCH_USER_AGENT =
   "Summify.it/1.0 (+https://summify.it; article extraction for user-initiated analysis)";
+
+const STRIP_SELECTORS = [
+  "script",
+  "style",
+  "nav",
+  "footer",
+  "header",
+  "aside",
+  "menu",
+  "noscript",
+  "iframe",
+  "svg",
+  "form",
+  "[role='navigation']",
+  "[role='banner']",
+  "[role='contentinfo']",
+  ".nav",
+  ".navbar",
+  ".menu",
+  ".footer",
+  ".header",
+  ".sidebar",
+  ".ad",
+  ".ads",
+  ".advertisement",
+  ".cookie",
+  ".newsletter",
+].join(", ");
+
+const CONTENT_SELECTORS = [
+  "article",
+  '[role="main"]',
+  "main",
+  ".post-content",
+  ".article-content",
+  ".entry-content",
+  ".story-body",
+  ".article-body",
+  "#article-body",
+  ".content",
+];
 
 function isIpv4(hostname: string): boolean {
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
@@ -204,29 +244,70 @@ async function fetchHtml(url: URL): Promise<{ html: string; finalUrl: string }> 
   throw new ExtractionError("Too many redirects from this URL.", 422);
 }
 
-function extractWithReadability(html: string, pageUrl: string) {
-  const dom = new JSDOM(html, { url: pageUrl });
-  const reader = new Readability(dom.window.document);
-  return reader.parse();
+function normalizeWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
 }
 
-function extractWithCheerio(html: string) {
-  const $ = cheerio.load(html);
-  $("script, style, nav, footer, header, aside, noscript, iframe").remove();
+function textFromBlocks($: cheerio.CheerioAPI, root: cheerio.Cheerio<AnyNode>): string {
+  const blocks: string[] = [];
+  root.find("h1, h2, h3, h4, p, li, blockquote").each((_, el) => {
+    const tag = "tagName" in el && typeof el.tagName === "string" ? el.tagName.toLowerCase() : "";
+    const raw = $(el).text();
+    const text = normalizeWhitespace(raw);
+    if (!text) return;
+    const minLen = tag === "li" ? 12 : 24;
+    if (text.length < minLen) return;
+    if (blocks.at(-1) === text) return;
+    blocks.push(text);
+  });
 
-  const candidates = [
-    $("article").first(),
-    $('[role="main"]').first(),
-    $("main").first(),
-    $(".post-content, .article-content, .entry-content, .content").first(),
-  ];
-
-  for (const el of candidates) {
-    const text = el.text().replace(/\s+/g, " ").trim();
-    if (text.length > 200) return text;
+  if (blocks.length >= 2) {
+    return blocks.join("\n\n");
   }
 
-  return $("body").text().replace(/\s+/g, " ").trim();
+  return normalizeWhitespace(root.text());
+}
+
+function extractWithCheerio(html: string): { text: string; title: string } {
+  const $ = cheerio.load(html);
+  $(STRIP_SELECTORS).remove();
+
+  const ogTitle = $('meta[property="og:title"]').attr("content")?.trim();
+  const docTitle = $("title").first().text().trim();
+  const h1Title = $("h1").first().text().trim();
+  const title = ogTitle || docTitle || h1Title || "Web article";
+
+  const metaDescription =
+    $('meta[name="description"]').attr("content")?.trim() ||
+    $('meta[property="og:description"]').attr("content")?.trim();
+
+  let bodyText = "";
+  for (const selector of CONTENT_SELECTORS) {
+    const el = $(selector).first();
+    if (!el.length) continue;
+    const candidate = textFromBlocks($, el);
+    if (candidate.length > bodyText.length) {
+      bodyText = candidate;
+    }
+    if (bodyText.length >= 400) break;
+  }
+
+  if (bodyText.length < EXTRACTION_CONFIG.minExtractedChars) {
+    bodyText = textFromBlocks($, $("body"));
+  }
+
+  const parts: string[] = [];
+  if (metaDescription && metaDescription.length >= 40) {
+    parts.push(metaDescription);
+  }
+  if (bodyText) {
+    parts.push(bodyText);
+  }
+
+  return {
+    title,
+    text: parts.join("\n\n"),
+  };
 }
 
 function parseSiteMeta(html: string, pageUrl: string) {
@@ -241,9 +322,7 @@ function parseSiteMeta(html: string, pageUrl: string) {
       siteName = undefined;
     }
   }
-  const ogTitle = $('meta[property="og:title"]').attr("content")?.trim();
-  const docTitle = $("title").first().text().trim();
-  return { siteName, fallbackTitle: ogTitle || docTitle || "Web article" };
+  return { siteName };
 }
 
 function estimateReadingMinutes(charCount: number): number {
@@ -257,16 +336,9 @@ function estimateReadingMinutes(charCount: number): number {
 export async function extractFromUrl(urlString: string): Promise<UrlExtractionResult> {
   const safeUrl = assertSafeHttpUrl(urlString);
   const { html, finalUrl } = await fetchHtml(safeUrl);
-  const { siteName, fallbackTitle } = parseSiteMeta(html, finalUrl);
+  const { siteName } = parseSiteMeta(html, finalUrl);
 
-  const article = extractWithReadability(html, finalUrl);
-  let rawText = article?.textContent?.trim() ?? "";
-
-  if (rawText.length < EXTRACTION_CONFIG.minExtractedChars) {
-    rawText = extractWithCheerio(html);
-  }
-
-  const title = article?.title?.trim() || fallbackTitle;
+  const { text: rawText, title } = extractWithCheerio(html);
   const cleaned = cleanText(rawText);
 
   if (cleaned.length < EXTRACTION_CONFIG.minExtractedChars) {

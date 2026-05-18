@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import {
   extractFromFile,
-  extractFromPptx,
   ExtractionError,
   EXTRACTION_CONFIG,
-  isPptxFile,
 } from "@/server/extraction";
+import { extractFromPptx, isPptxFile } from "@/server/extraction/pptx";
 import { synthesizeSlideOutlineLabel } from "@/server/learn/presentationSemanticTitles";
 import type {
   ExtractApiErrorResponse,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { extractFromYouTube, ExtractionError } from "@/server/extraction";
+import { extractFromYouTube } from "@/server/extraction/youtube";
+import { ExtractionError } from "@/server/extraction/errors";
 import type { YoutubeExtractionDebug } from "@/server/extraction/youtube";
 import type {
   ExtractYoutubeApiErrorResponse,

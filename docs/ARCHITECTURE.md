@@ -88,7 +88,7 @@ src/
 1. Client sends `{ url }` (http/https only).
 2. Server validates URL and blocks SSRF targets (localhost, private IPs, `.local`, credentials in URL).
 3. `fetch` with timeout, redirect cap, and max HTML size (2 MB).
-4. **Mozilla Readability** (via `jsdom`) extracts article title and text; **cheerio** fallback if content is too short.
+4. **Cheerio** parses HTML: strips chrome (nav/footer/scripts), targets `article`/`main`/content selectors, collects headings and paragraphs, and uses meta title/description when present.
 5. `cleanText()`, length limits, and profiling — same caps as file extraction.
 6. Extracted text is passed to the existing `POST /api/analyze` pipeline (no separate analyze path).
 

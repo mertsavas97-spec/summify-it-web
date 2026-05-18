@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { extractFromUrl, ExtractionError } from "@/server/extraction";
+import { extractFromUrl } from "@/server/extraction/url";
+import { ExtractionError } from "@/server/extraction/errors";
 import type {
   ExtractUrlApiErrorResponse,
   ExtractUrlApiSuccessResponse,
