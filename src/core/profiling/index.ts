@@ -1,0 +1,1 @@
+export { profileDocumentMock } from "./profileDocumentMock";
