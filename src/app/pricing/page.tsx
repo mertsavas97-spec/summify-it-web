@@ -4,6 +4,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { getBillingStatusCopy } from "@/lib/billing/provider";
 import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
+import { productPricingSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata = pageSeo.pricing;
 
@@ -11,7 +13,9 @@ export default function PricingPage() {
   const billing = getBillingStatusCopy();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+    <>
+      <JsonLd data={productPricingSchema()} />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <SectionHeading
         eyebrow="Pricing"
         title="Plans for every workflow"
@@ -43,6 +47,7 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

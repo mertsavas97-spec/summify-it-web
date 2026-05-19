@@ -1,12 +1,15 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl, MARKETING_PATHS } from "@/lib/seo";
+import { absoluteUrl, getIndexableMarketingPaths } from "@/lib/seo";
 import { BLOG_POSTS } from "@/data/blog-posts";
 
-/** Served at /sitemap.xml — URLs use NEXT_PUBLIC_SITE_URL via absoluteUrl(). */
+/**
+ * Production sitemap — indexable marketing + blog only.
+ * Excludes: /dashboard, /account, /login, /auth, /api, /share (user-generated).
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  const marketing = MARKETING_PATHS.map((path) => ({
+  const marketing = getIndexableMarketingPaths().map((path) => ({
     url: absoluteUrl(path),
     lastModified,
     changeFrequency: (path === "/" ? "weekly" : "monthly") as "weekly" | "monthly",
@@ -19,7 +22,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
             ? 0.7
             : path === "/blog"
               ? 0.75
-              : 0.8,
+              : path.startsWith("/summarize-")
+                ? 0.85
+                : 0.8,
   }));
 
   const blogPosts = BLOG_POSTS.map((post) => ({

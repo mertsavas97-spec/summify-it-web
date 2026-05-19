@@ -8,6 +8,17 @@ export type ModeMarketingPreview = {
 export const MODE_MARKETING_PREVIEWS: Partial<
   Record<IntelligenceModeId, ModeMarketingPreview>
 > = {
+  "general-summary": {
+    sampleBullets: [
+      "Balanced overview of the full source",
+      "Key themes without a heavy specialty lens",
+      "Clear next steps when the source implies action",
+    ],
+    learnPreview: [
+      { type: "Concept", title: "Central idea from the source" },
+      { type: "Why", title: "Why this matters in context" },
+    ],
+  },
   "executive-brief": {
     sampleBullets: [
       "Decision summary with tradeoffs and owners",

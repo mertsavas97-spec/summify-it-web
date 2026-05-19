@@ -5,9 +5,9 @@ import { buildPageMetadata } from "@/lib/seo";
 
 export const pageSeo = {
   home: buildPageMetadata({
-    title: "AI PDF & YouTube Summarizer",
+    title: "AI PDF & Document Summarizer with Study Notes",
     description:
-      "Summarize PDFs, YouTube videos, and PowerPoint decks with AI. Pick an intelligence mode and get structured notes plus Learn cards. Try free during public beta.",
+      "Summify is an AI document intelligence workspace: summarize PDFs, YouTube videos, and PowerPoint decks with 29 intelligence modes, Learn cards, and mind maps. Free during public beta.",
     path: "/",
     keywords: [
       "AI PDF summarizer",
@@ -65,17 +65,17 @@ export const pageSeo = {
   }),
 
   modes: buildPageMetadata({
-    title: "29 AI Intelligence Modes",
+    title: "29 AI Intelligence Modes for Documents & Video",
     description:
-      "Browse executive, study, creator, document, and technical intelligence lenses for PDFs, video, and articles. Four modes active today — try free during public beta.",
+      "Browse executive, study, creator, and document intelligence lenses for PDFs, YouTube, decks, and articles. Five modes active in public beta — more unlocking with Pro.",
     path: "/modes",
     keywords: ["AI analysis modes", "document intelligence modes"],
   }),
 
   pricing: buildPageMetadata({
-    title: "Pricing",
+    title: "Pricing — AI Document Intelligence Plans",
     description:
-      "Compare Summify plans for AI document intelligence, structured notes, memory review, and workspace features.",
+      "Compare Free, Scholar, Pro, and Team plans for AI summarization, Learn cards, mind maps, memory review, and workspace features. Public beta pricing preview.",
     path: "/pricing",
   }),
 
@@ -87,9 +87,9 @@ export const pageSeo = {
   }),
 
   faq: buildPageMetadata({
-    title: "FAQ — Formats, Privacy & Beta",
+    title: "FAQ — Formats, Privacy, Learn Cards & AI Output",
     description:
-      "Answers on supported formats, YouTube transcripts, privacy, Pro modes, and beta limits. Learn how Summify handles uploads and AI analysis.",
+      "Answers on uploads, privacy, intelligence modes, Learn cards, mind maps, memory review, free plans, and how to verify AI summaries during public beta.",
     path: "/faq",
   }),
 

@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title,
     description,
     path: `/share/${shareId}`,
-    noIndex: false,
+    noIndex: true,
   });
 }
 

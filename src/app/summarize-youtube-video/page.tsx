@@ -1,4 +1,6 @@
 import { pageSeo } from "@/lib/page-metadata";
+import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
@@ -16,6 +18,12 @@ export const metadata = pageSeo.summarizeYoutube;
 export default function SummarizeYoutubePage() {
   return (
     <>
+      <JsonLd
+        data={[
+          formatPageBreadcrumbSchema("YouTube Summarizer", "/summarize-youtube-video"),
+          faqPageSchema(YOUTUBE_FAQS),
+        ]}
+      />
       <PublicHero
         badge="YouTube summarizer"
         title="Summarize YouTube videos with AI from transcript to notes"

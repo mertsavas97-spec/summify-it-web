@@ -1,4 +1,6 @@
 import { pageSeo } from "@/lib/page-metadata";
+import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
@@ -16,6 +18,12 @@ export const metadata = pageSeo.summarizePdf;
 export default function SummarizePdfPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          formatPageBreadcrumbSchema("AI PDF Summarizer", "/summarize-pdf"),
+          faqPageSchema(PDF_FAQS),
+        ]}
+      />
       <PublicHero
         badge="AI PDF summarizer"
         title="Summarize PDF online with structured intelligence"

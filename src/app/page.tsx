@@ -1,5 +1,6 @@
 import { pageSeo } from "@/lib/page-metadata";
-import { softwareApplicationSchema, websiteSchema } from "@/lib/schema";
+import { howToSummifySchema, summarifySoftwareApplicationSchema, websiteSchema } from "@/lib/schema";
+import { SUMMIFY_HOW_TO_STEPS } from "@/data/seo-howto";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
@@ -25,14 +26,21 @@ const formats = [
 export default function HomePage() {
   return (
     <>
-      <JsonLd data={[websiteSchema(), softwareApplicationSchema()]} />
+      <JsonLd
+        data={[
+          websiteSchema(),
+          summarifySoftwareApplicationSchema(),
+          howToSummifySchema(SUMMIFY_HOW_TO_STEPS),
+        ]}
+      />
       <PublicHero
         badge="Public beta · AI document intelligence"
-        title="AI document summarizer for PDFs, YouTube videos, and study notes"
+        title="AI document summarizer for PDFs, YouTube, and study workflows"
         description={
           <>
             <span className="block font-medium text-zinc-300">
-              Turn complex sources into structured intelligence.
+              Turn PDFs, videos, and articles into structured intelligence — summaries, Learn
+              cards, and mind maps in one premium workspace.
             </span>
             <span className="mt-3 block">
               Use Summify as your{" "}
@@ -42,8 +50,9 @@ export default function HomePage() {
               <InternalTextLink href="/summarize-powerpoint">
                 PowerPoint summarizer
               </InternalTextLink>{" "}
-              in one workspace — with Learn cards and{" "}
-              <InternalTextLink href="/modes">29 intelligence modes</InternalTextLink>.
+              with{" "}
+              <InternalTextLink href="/modes">29 intelligence modes</InternalTextLink> built for
+              study notes, executive briefs, and creator workflows.
             </span>
           </>
         }

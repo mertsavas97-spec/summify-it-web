@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
 import type { BlogPost } from "@/data/blog-posts";
 import { siteConfig } from "@/lib/site";
 
@@ -155,8 +156,8 @@ export function buildBlogPostMetadata(post: BlogPost): Metadata {
   });
 }
 
-/** All indexable marketing routes for sitemap generation. */
-export const MARKETING_PATHS = [
+/** Static marketing routes (excludes dynamic mode slugs — see `getIndexableMarketingPaths`). */
+const STATIC_MARKETING_PATHS = [
   "/",
   "/upload",
   "/pricing",
@@ -170,9 +171,14 @@ export const MARKETING_PATHS = [
   "/for-students",
   "/for-creators",
   "/modes",
-  "/modes/executive-brief",
-  "/modes/the-student",
-  "/modes/the-creator",
-  "/modes/contract-analyzer",
   "/blog",
 ] as const;
+
+/** All public indexable paths for sitemap.xml (includes active intelligence mode pages). */
+export function getIndexableMarketingPaths(): string[] {
+  const modePaths = ACTIVE_INTELLIGENCE_MODE_IDS.map((id) => `/modes/${id}`);
+  return [...STATIC_MARKETING_PATHS, ...modePaths];
+}
+
+/** @deprecated Use `getIndexableMarketingPaths()` for sitemap; kept for imports. */
+export const MARKETING_PATHS = getIndexableMarketingPaths();

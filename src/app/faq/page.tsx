@@ -14,13 +14,13 @@ export default function FaqPage() {
       <TrustPageLayout
         eyebrow="FAQ"
         title="Common questions"
-        lead="Quick answers about formats, privacy, beta limits, and how the workspace behaves today."
+        lead="Quick answers about formats, privacy, intelligence modes, Learn cards, and how the workspace behaves today."
       >
-        <ul className="space-y-6">
+        <ul className="space-y-6" role="list">
           {FAQ_ITEMS.map((item) => (
             <li key={item.q}>
               <h2 className="text-base font-semibold text-zinc-200">{item.q}</h2>
-              <p className="mt-2">{item.a}</p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{item.a}</p>
             </li>
           ))}
         </ul>

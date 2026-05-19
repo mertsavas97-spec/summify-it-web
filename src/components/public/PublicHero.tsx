@@ -18,8 +18,13 @@ export function PublicHero({
   secondaryCta,
   children,
 }: PublicHeroProps) {
+  const headingId = "public-hero-heading";
+
   return (
-    <section className="relative overflow-hidden border-b border-white/[0.04] px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+    <section
+      className="relative overflow-hidden border-b border-white/[0.04] px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
+      aria-labelledby={headingId}
+    >
       <div
         className="pointer-events-none absolute inset-0 -z-10"
         aria-hidden
@@ -34,7 +39,10 @@ export function PublicHero({
                 {badge}
               </Badge>
             )}
-            <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl sm:leading-[1.12]">
+            <h1
+              id={headingId}
+              className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl sm:leading-[1.12]"
+            >
               {title}
             </h1>
             <div className="mt-4 max-w-xl text-base leading-relaxed text-zinc-400">

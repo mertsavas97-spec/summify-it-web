@@ -1,4 +1,6 @@
 import { pageSeo } from "@/lib/page-metadata";
+import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
@@ -16,6 +18,12 @@ export const metadata = pageSeo.summarizePowerpoint;
 export default function SummarizePowerpointPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          formatPageBreadcrumbSchema("PowerPoint Summarizer", "/summarize-powerpoint"),
+          faqPageSchema(PPTX_FAQS),
+        ]}
+      />
       <PublicHero
         badge="PowerPoint summarizer"
         title="Summarize PowerPoint with AI — PPTX deck intelligence"
