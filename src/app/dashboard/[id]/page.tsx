@@ -23,6 +23,7 @@ import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getAnalysisById } from "@/server/analyses/getAnalysisById";
 import { createPageMetadata } from "@/lib/metadata";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { IntelligenceModeId } from "@/types/modes";
 import type { AnalysisResult } from "@/types/text-analysis";
 
@@ -75,7 +76,7 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
 
   const modeId = (saved.intelligence_mode ?? "executive-brief") as IntelligenceModeId;
   const created = formatStableDateTime(saved.created_at);
-  const planLabel = formatPlanLabel(profile?.plan ?? "beta");
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">

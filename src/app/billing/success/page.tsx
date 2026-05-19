@@ -21,10 +21,10 @@ export default function BillingSuccessPage() {
           Checkout complete
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">
-          Your workspace is upgrading
+          Billing confirmation received
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
-          Stripe confirmed checkout. Summify will unlock your plan as soon as the webhook syncs your subscription.
+          When a billing provider is enabled, this page will confirm checkout and return you to the workspace.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Button href="/dashboard">Open dashboard</Button>

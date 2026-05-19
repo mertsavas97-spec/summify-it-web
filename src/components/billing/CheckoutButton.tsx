@@ -10,6 +10,8 @@ type CheckoutButtonProps = {
   label: string;
   variant?: "primary" | "secondary" | "ghost";
   className?: string;
+  billingEnabled?: boolean;
+  pendingCopy?: string;
 };
 
 export function CheckoutButton({
@@ -18,6 +20,8 @@ export function CheckoutButton({
   label,
   variant = "primary",
   className,
+  billingEnabled = false,
+  pendingCopy = "Billing coming soon",
 }: CheckoutButtonProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +32,19 @@ export function CheckoutButton({
       return;
     }
 
+    if (!billingEnabled) {
+      window.location.href = "/upload";
+      return;
+    }
+
     setPending(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/stripe/checkout", {
+      const response = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, interval }),
+        body: JSON.stringify({ planId: plan, interval }),
       });
       const payload = (await response.json()) as {
         success?: boolean;
@@ -64,7 +73,7 @@ export function CheckoutButton({
         disabled={pending}
         onClick={startCheckout}
       >
-        {pending ? "Opening checkout..." : label}
+        {pending ? "Opening checkout..." : billingEnabled ? label : pendingCopy}
       </Button>
       {error ? <p className="mt-2 text-center text-[11px] text-rose-300">{error}</p> : null}
     </div>

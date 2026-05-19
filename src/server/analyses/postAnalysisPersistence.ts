@@ -4,6 +4,8 @@ import type {
   AnalysisSourceHint,
   AnalyzeSourceContext,
 } from "@/server/intelligence/types";
+import { getMaxSavedAnalysesForPlan } from "@/lib/plan-features";
+import { resolvePlanId } from "@/lib/plan-limits";
 import { devLog } from "@/server/logging";
 import { trackUsageEvent } from "@/server/usage/trackUsageEvent";
 import { buildSavePayload } from "./buildSavePayload";
@@ -18,6 +20,7 @@ export type PostAnalysisPersistenceInput = {
   fallbackUsed: boolean;
   result: AnalysisResult;
   intelligence: AnalysisIntelligenceContext;
+  storedPlan?: string | null;
 };
 
 export type PostAnalysisPersistenceResult = {
@@ -73,7 +76,10 @@ export async function runPostAnalysisPersistence(
     intelligence: input.intelligence,
   });
 
-  const savedAnalysisId = await saveAnalysis(payload);
+  const planId = resolvePlanId(input.storedPlan);
+  const savedAnalysisId = await saveAnalysis(payload, {
+    maxSavedAnalyses: getMaxSavedAnalysesForPlan(planId),
+  });
 
   return {
     savedToWorkspace: Boolean(savedAnalysisId),

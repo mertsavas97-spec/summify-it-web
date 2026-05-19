@@ -12,16 +12,7 @@ export function PortalButton() {
     setError(null);
 
     try {
-      const response = await fetch("/api/stripe/portal", { method: "POST" });
-      const payload = (await response.json()) as {
-        success?: boolean;
-        url?: string | null;
-        error?: string;
-      };
-      if (!response.ok || !payload.success || !payload.url) {
-        throw new Error(payload.error ?? "Billing portal could not be opened.");
-      }
-      window.location.href = payload.url;
+      throw new Error("Subscription management will be enabled after the billing provider is approved.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Billing portal could not be opened.");
       setPending(false);

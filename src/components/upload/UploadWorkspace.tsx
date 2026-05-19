@@ -52,6 +52,7 @@ export type InjectedAnalysisPayload = {
   fallbackUsed: boolean;
   intelligence: AnalysisIntelligenceMetadata;
   savedToWorkspace?: boolean;
+  savedAnalysisId?: string | null;
 };
 
 export function UploadWorkspace() {
@@ -113,6 +114,7 @@ export function UploadWorkspace() {
         fallbackUsed: analysis.fallbackUsed,
         intelligence: analysis.intelligence,
         savedToWorkspace: analysis.savedToWorkspace,
+        savedAnalysisId: analysis.savedAnalysisId,
       });
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
@@ -145,6 +147,7 @@ export function UploadWorkspace() {
         fallbackUsed: analysis.fallbackUsed,
         intelligence: analysis.intelligence,
         savedToWorkspace: analysis.savedToWorkspace,
+        savedAnalysisId: analysis.savedAnalysisId,
       });
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);

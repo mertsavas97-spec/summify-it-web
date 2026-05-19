@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { getPlanDisplayName } from "@/data/pricingPlans";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { Profile, UserLimits } from "@/types/database";
 import { devLog, devWarn } from "@/server/logging";
 import { createClientIfConfigured } from "@/lib/supabase/server";
@@ -125,7 +126,7 @@ export async function ensureProfileForUser(passedUser?: User): Promise<Profile |
       .insert({
         id: user.id,
         email,
-        plan: "beta",
+        plan: DEFAULT_PAID_PREVIEW_PLAN,
         updated_at: now,
       })
       .select()

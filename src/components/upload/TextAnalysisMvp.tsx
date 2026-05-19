@@ -34,6 +34,7 @@ import type { AnalyzeApiDebugMetadata } from "@/types/text-analysis";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
 import { WorkspaceUsageWarning } from "./WorkspaceUsageWarning";
+import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
 import type { InjectedAnalysisPayload } from "./UploadWorkspace";
 
 type TextAnalysisMvpProps = {
@@ -213,9 +214,13 @@ export function TextAnalysisMvp({
   const [savedToWorkspace, setSavedToWorkspace] = useState<boolean | undefined>(
     injectedAnalysis?.savedToWorkspace,
   );
+  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null | undefined>(
+    injectedAnalysis?.savedAnalysisId,
+  );
   const [upgradeMode, setUpgradeMode] = useState<IntelligenceModeDefinition | null>(null);
   const displayResult = injectedAnalysis?.result ?? result;
   const displaySavedToWorkspace = injectedAnalysis?.savedToWorkspace ?? savedToWorkspace;
+  const displaySavedAnalysisId = injectedAnalysis?.savedAnalysisId ?? savedAnalysisId;
   const displayMeta = injectedAnalysis
     ? {
         providerUsed: injectedAnalysis.providerUsed,
@@ -253,6 +258,7 @@ export function TextAnalysisMvp({
     setResult(null);
     setMeta(null);
     setSavedToWorkspace(undefined);
+    setSavedAnalysisId(undefined);
     onIntelligenceReady?.(null);
     setLoading(true);
     onAnalyzingChange?.(true);
@@ -290,6 +296,7 @@ export function TextAnalysisMvp({
         fallbackUsed: analysis.fallbackUsed,
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
+      setSavedAnalysisId(analysis.savedAnalysisId);
       onIntelligenceReady?.(analysis.intelligence);
       onAnalysisComplete?.(true);
     } catch {
@@ -317,6 +324,8 @@ export function TextAnalysisMvp({
   const pipelineAnalysisFailed = youtubeAnalysisFailed || urlAnalysisFailed;
   const showRunButton =
     !hidePrimaryAnalyze || (isYoutubeMode && youtubeAnalysisFailed) || (isUrlMode && urlAnalysisFailed);
+  const showUpgradeCopy =
+    error?.includes("free analyses") || error?.includes("Scholar or Pro");
 
   return (
     <section
@@ -340,6 +349,10 @@ export function TextAnalysisMvp({
             fallbackUsed={displayMeta.fallbackUsed}
           />
           <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
+          <PracticeAnalysisCta
+            savedToWorkspace={displaySavedToWorkspace}
+            savedAnalysisId={displaySavedAnalysisId}
+          />
         </div>
       )}
 
@@ -439,7 +452,12 @@ export function TextAnalysisMvp({
       {error && !pipelineAnalysisFailed && (
         <div className="mt-4 space-y-2">
           <p className="rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-2 text-xs text-red-300">
-            {error}
+            {error}{" "}
+            {showUpgradeCopy && (
+              <a href="/pricing" className="font-medium text-red-100 underline-offset-2 hover:underline">
+                Upgrade options coming soon
+              </a>
+            )}
           </p>
           {process.env.NODE_ENV === "development" && failureDebug && (
             <p

@@ -61,6 +61,7 @@ export type AnalyzeApiSuccessResponse = {
   fallbackUsed: boolean;
   result: AnalysisResult;
   savedToWorkspace?: boolean;
+  savedAnalysisId?: string | null;
   debug?: AnalyzeApiDebugMetadata;
 } & AnalysisIntelligenceMetadata;
 

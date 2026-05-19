@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   runAnalysisOrchestrator,
   AnalysisOrchestratorError,
@@ -16,13 +17,51 @@ import type { AnalysisIntelligenceContext } from "@/server/intelligence";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile, getUserLimits } from "@/lib/supabase/profile";
 import { canRunAnalysis, resolvePlanId } from "@/lib/plan-limits";
-import { getMaxLearnCardsForPlan, isModeIncludedInPlan } from "@/lib/plan-features";
+import {
+  getMaxLearnCardsForPlan,
+  isModeIncludedInPlan,
+} from "@/lib/plan-features";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
 import { devError, devLog, logServerError } from "@/server/logging";
 
+const ANONYMOUS_USAGE_COOKIE = "summify_anon_usage";
+const ANONYMOUS_DAILY_ANALYSIS_LIMIT = 3;
+
 function isDevelopment(): boolean {
   return process.env.NODE_ENV === "development";
+}
+
+function utcToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function parseAnonymousUsage(value?: string): { date: string; count: number } {
+  const today = utcToday();
+  if (!value) return { date: today, count: 0 };
+
+  const [date, rawCount] = value.split(".");
+  if (date !== today) return { date: today, count: 0 };
+
+  const count = Number.parseInt(rawCount ?? "0", 10);
+  return {
+    date: today,
+    count: Number.isFinite(count) && count > 0 ? count : 0,
+  };
+}
+
+function setAnonymousUsageCookie(
+  response: NextResponse,
+  count: number,
+): NextResponse {
+  response.cookies.set(ANONYMOUS_USAGE_COOKIE, `${utcToday()}.${count}`, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 48,
+  });
+  return response;
 }
 
 function buildSuccessDebug(
@@ -91,6 +130,7 @@ export async function POST(request: Request) {
     const [profile, limits] = currentUser
       ? await Promise.all([getProfile(currentUser.id), getUserLimits(currentUser.id)])
       : [null, null] as const;
+
     const planId = currentUser ? resolvePlanId(profile?.plan) : "free";
     const quota = canRunAnalysis({
       storedPlan: profile?.plan,
@@ -98,26 +138,33 @@ export async function POST(request: Request) {
       isAuthenticated: Boolean(currentUser),
     });
 
-    if (!quota.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            quota.warning ??
-            "You have reached your current plan limit. Upgrade to continue analyzing today.",
-        } satisfies AnalyzeApiErrorResponse,
-        { status: 402 },
+    if (!currentUser) {
+      const cookieStore = await cookies();
+      const anonymousUsage = parseAnonymousUsage(
+        cookieStore.get(ANONYMOUS_USAGE_COOKIE)?.value,
       );
+
+      if (anonymousUsage.count >= ANONYMOUS_DAILY_ANALYSIS_LIMIT) {
+        const payload: AnalyzeApiErrorResponse = {
+          success: false,
+          error: "You've used today's 3 free analyses.",
+        };
+        return NextResponse.json(payload, { status: 429 });
+      }
+    } else if (!quota.allowed) {
+      const payload: AnalyzeApiErrorResponse = {
+        success: false,
+        error: quota.warning ?? "You've used today's 3 free analyses.",
+      };
+      return NextResponse.json(payload, { status: 429 });
     }
 
     if (!isModeIncludedInPlan(intelligenceModeId, planId)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "This intelligence mode is not included in your current plan.",
-        } satisfies AnalyzeApiErrorResponse,
-        { status: 403 },
-      );
+      const payload: AnalyzeApiErrorResponse = {
+        success: false,
+        error: "This mode is available on Scholar or Pro.",
+      };
+      return NextResponse.json(payload, { status: 403 });
     }
 
     const orchestratorResult = await runAnalysisOrchestrator(
@@ -130,13 +177,17 @@ export async function POST(request: Request) {
     const { result, providerUsed, fallbackUsed, intelligence: ctx } =
       orchestratorResult;
     intelligence = ctx;
-    result.learnCards = result.learnCards.slice(0, getMaxLearnCardsForPlan(planId));
+    const maxLearnCards = getMaxLearnCardsForPlan(planId);
+    const limitedResult = {
+      ...result,
+      learnCards: result.learnCards.slice(0, maxLearnCards),
+    };
 
     const response: AnalyzeApiSuccessResponse = {
       success: true,
       providerUsed,
       fallbackUsed,
-      result,
+      result: limitedResult,
       profile: intelligence.profile,
       knowledgeLayerSummary: intelligence.knowledgeLayerSummary,
       tokenBudget: intelligence.tokenBudget,
@@ -161,15 +212,27 @@ export async function POST(request: Request) {
         sourceContext,
         providerUsed,
         fallbackUsed,
-        result,
+        result: limitedResult,
         intelligence,
+        storedPlan: profile?.plan,
       });
       response.savedToWorkspace = persistence.savedToWorkspace;
+      response.savedAnalysisId = persistence.savedAnalysisId;
     } catch {
       response.savedToWorkspace = false;
+      response.savedAnalysisId = null;
     }
 
-    return NextResponse.json(response);
+    const jsonResponse = NextResponse.json(response);
+    if (!currentUser) {
+      const cookieStore = await cookies();
+      const anonymousUsage = parseAnonymousUsage(
+        cookieStore.get(ANONYMOUS_USAGE_COOKIE)?.value,
+      );
+      return setAnonymousUsageCookie(jsonResponse, anonymousUsage.count + 1);
+    }
+
+    return jsonResponse;
   } catch (error) {
     if (error instanceof AnalysisInputError) {
       const payload: AnalyzeApiErrorResponse = {

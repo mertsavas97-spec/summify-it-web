@@ -1,6 +1,6 @@
 # Monetization plan — Summify
 
-Architecture for plans, usage limits, and future Stripe billing. **No checkout is live**; beta accounts retain full workspace access.
+Architecture for plans, usage limits, and future provider-neutral billing. **No checkout is live**; beta accounts retain full workspace access.
 
 ## Plan IDs (`profiles.plan`)
 
@@ -55,17 +55,17 @@ Source of truth: `src/data/pricingPlans.ts` → `PLAN_DEFINITIONS`.
 
 Beta users: `enforceLimits: false` — no warnings from plan caps unless we simulate free for testing.
 
-## Stripe flow (future)
+## Billing provider flow (future)
 
-1. **Products / Prices** in Stripe Dashboard — map to `stripePriceId` on each `PlanBillingOption` in `pricingPlans.ts`.
-2. **Checkout** — set `checkoutUrl` or server route `POST /api/billing/checkout` → Stripe Checkout Session; success webhook sets `profiles.plan`.
+1. **Products / Prices** in the approved billing provider dashboard — map to provider checkout URLs or IDs.
+2. **Checkout** — route `POST /api/billing/checkout` through the selected provider; success webhook sets `profiles.plan`.
 3. **Portal** — `billingPortalUrl` for manage/cancel.
 4. **Webhooks** — `customer.subscription.updated` → update `profiles.plan`; never trust client-only plan changes.
 
 Placeholder fields today:
 
 ```ts
-stripePriceId: null  // e.g. price_pro_monthly
+providerPriceId: null  // future provider price/variant id
 checkoutUrl: null
 billingPortalUrl: null
 ```

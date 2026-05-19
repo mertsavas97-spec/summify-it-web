@@ -17,6 +17,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getDueReviewItems } from "@/server/memory/getDueReviewItems";
 import { getMemoryStats } from "@/server/memory/getMemoryStats";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Memory review",
@@ -44,7 +45,7 @@ export default async function MemoryPage() {
     getDueReviewItems(user.id),
   ]);
 
-  const planLabel = formatPlanLabel(profile?.plan ?? "beta");
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
   const planUsage = getUserPlanLimits(profile?.plan, limits);
   const stats = await getMemoryStats(user.id, planUsage.dailyReviewTarget);
 

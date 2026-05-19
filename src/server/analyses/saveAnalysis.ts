@@ -2,9 +2,53 @@ import { createClientIfConfigured } from "@/lib/supabase/server";
 import { devLog, devWarn } from "@/server/logging";
 import type { SaveAnalysisInsertPayload } from "./buildSavePayload";
 
+export type SaveAnalysisOptions = {
+  maxSavedAnalyses?: number | null;
+};
+
+async function trimSavedAnalysesForUser(
+  supabase: NonNullable<Awaited<ReturnType<typeof createClientIfConfigured>>>,
+  userId: string,
+  maxSavedAnalyses: number,
+): Promise<void> {
+  if (maxSavedAnalyses < 1) return;
+
+  const { data, error } = await supabase
+    .from("saved_analyses")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .range(maxSavedAnalyses, 1000);
+
+  if (error || !data?.length) {
+    if (error) {
+      devWarn("[summify.save] saved_analysis_trim_failed", {
+        message: error.message,
+        code: error.code,
+      });
+    }
+    return;
+  }
+
+  const ids = data.map((item) => item.id);
+  const { error: deleteError } = await supabase
+    .from("saved_analyses")
+    .delete()
+    .in("id", ids)
+    .eq("user_id", userId);
+
+  if (deleteError) {
+    devWarn("[summify.save] saved_analysis_trim_failed", {
+      message: deleteError.message,
+      code: deleteError.code,
+    });
+  }
+}
+
 /** Insert a saved analysis for the authenticated user. Never throws. */
 export async function saveAnalysis(
   payload: SaveAnalysisInsertPayload,
+  options: SaveAnalysisOptions = {},
 ): Promise<string | null> {
   try {
     const supabase = await createClientIfConfigured();
@@ -63,6 +107,11 @@ export async function saveAnalysis(
       id: data.id,
       userId: user.id,
     });
+
+    if (options.maxSavedAnalyses != null) {
+      await trimSavedAnalysesForUser(supabase, user.id, options.maxSavedAnalyses);
+    }
+
     return data.id;
   } catch (err) {
     devWarn("[summify.save] saved_analysis_insert_failed", {

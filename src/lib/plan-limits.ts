@@ -53,10 +53,10 @@ function effectiveDailyCount(limits: UserLimitsUsageSnapshot | null): number {
   return limits.daily_analysis_count ?? 0;
 }
 
-/** Resolve stored profile plan — unknown values map to beta for safety. */
+/** Resolve stored profile plan — unknown values map to Free for public safety. */
 export function resolvePlanId(storedPlan: string | null | undefined): PlanId {
   if (storedPlan && isPlanId(storedPlan)) return storedPlan;
-  return "beta";
+  return "free";
 }
 
 /** Limits + usage for dashboard / account (authenticated). */
@@ -130,10 +130,7 @@ export function getRemainingAnalyses(
   return getUserPlanLimits(storedPlan, usage).remainingToday;
 }
 
-/**
- * Quota check for running analysis.
- * Hard blocks are disabled — `allowed` stays true; `wouldBlock` signals future enforcement.
- */
+/** Quota check for running analysis. */
 export function canRunAnalysis(input: {
   storedPlan?: string | null;
   usage?: UserLimits | UserLimitsUsageSnapshot | null;
@@ -161,12 +158,12 @@ export function canRunAnalysis(input: {
   const wouldBlock = usedToday >= limit;
 
   let warning: string | undefined;
-  if (remaining === 0 && !wouldBlock) {
-    warning = `You're at today's ${plan.name} analysis limit.`;
+  if (wouldBlock) {
+    warning = `You've used today's ${limit} free analyses.`;
   } else if (remaining === 1) {
-    warning = `You're approaching today's ${plan.name.toLowerCase()} analysis limit.`;
+    warning = `You have 1 free analysis left today.`;
   } else if (remaining <= 2 && remaining > 1) {
-    warning = `You have ${remaining} analyses left today on ${plan.name}.`;
+    warning = `You have ${remaining} free analyses left today.`;
   }
 
   return {

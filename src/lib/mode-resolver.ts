@@ -8,7 +8,7 @@ import type { IntelligenceModeId } from "@/types/modes";
 import type { TextAnalysisMode } from "@/types/text-analysis";
 
 export function getDefaultIntelligenceModeId(): IntelligenceModeId {
-  return "executive-brief";
+  return "general-summary";
 }
 
 export function legacyFamilyToModeId(family: TextAnalysisMode): IntelligenceModeId {

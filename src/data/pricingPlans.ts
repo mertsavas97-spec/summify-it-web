@@ -22,8 +22,8 @@ export type PlanBillingOption = {
   amountCents: number;
   displayPrice: string;
   displayPeriod: string;
-  /** Future Stripe Price ID — not wired yet. */
-  stripePriceId: string | null;
+  /** Future provider price/variant ID — not wired yet. */
+  providerPriceId: string | null;
   savingsLabel?: string;
 };
 
@@ -43,9 +43,9 @@ export type PlanDefinition = {
   cta: string;
   ctaHref?: string;
   billing: Partial<Record<BillingInterval, PlanBillingOption>> | null;
-  /** Future Stripe Checkout URL — not wired yet. */
+  /** Future provider Checkout URL — not wired yet. */
   checkoutUrl: string | null;
-  /** Future Stripe Customer Portal URL — not wired yet. */
+  /** Future provider customer portal URL — not wired yet. */
   billingPortalUrl: string | null;
 };
 
@@ -58,7 +58,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     name: "Public Beta",
     tagline: "Full workspace access while we ship paid tiers",
     description:
-      "Early access with generous limits. All current accounts stay on beta until billing launches.",
+      "Early access for invited testers with generous limits while paid tiers are prepared.",
     enforceLimits: false,
     limits: {
       analysesPerDay: null,
@@ -78,7 +78,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     },
     featureBullets: [
       "Unlimited analyses during beta",
-      "All intelligence modes in preview",
+      "All active intelligence modes in preview",
       "Saved analyses & dashboard",
       "No credit card required",
     ],
@@ -126,7 +126,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
         amountCents: 0,
         displayPrice: "$0",
         displayPeriod: "/month",
-        stripePriceId: null,
+        providerPriceId: null,
       },
     },
     checkoutUrl: null,
@@ -170,13 +170,13 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
         amountCents: 499,
         displayPrice: "$4.99",
         displayPeriod: "/month",
-        stripePriceId: null, // e.g. price_scholar_monthly
+        providerPriceId: null,
       },
       yearly: {
         amountCents: 3999,
         displayPrice: "$39.99",
         displayPeriod: "/year",
-        stripePriceId: null, // e.g. price_scholar_yearly
+        providerPriceId: null,
         savingsLabel: "Save ~33% vs monthly",
       },
     },
@@ -224,13 +224,13 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
         amountCents: 799,
         displayPrice: "$7.99",
         displayPeriod: "/month",
-        stripePriceId: null, // e.g. price_pro_monthly
+        providerPriceId: null,
       },
       yearly: {
         amountCents: 5999,
         displayPrice: "$59.99",
         displayPeriod: "/year",
-        stripePriceId: null, // e.g. price_pro_yearly
+        providerPriceId: null,
         savingsLabel: "Save ~37% vs monthly",
       },
     },
@@ -276,13 +276,13 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
         amountCents: 2499,
         displayPrice: "$24.99",
         displayPeriod: "/month",
-        stripePriceId: null,
+        providerPriceId: null,
       },
       yearly: {
         amountCents: 19999,
         displayPrice: "$199.99",
         displayPeriod: "/year",
-        stripePriceId: null,
+        providerPriceId: null,
         savingsLabel: "Save ~33% vs monthly",
       },
     },

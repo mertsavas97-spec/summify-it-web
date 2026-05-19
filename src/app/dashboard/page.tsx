@@ -19,6 +19,7 @@ import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
 import { getMemoryStats } from "@/server/memory/getMemoryStats";
 import { createPageMetadata } from "@/lib/metadata";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Dashboard",
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
     getUserAnalyses(user.id, 48),
   ]);
 
-  const planLabel = formatPlanLabel(profile?.plan ?? "beta");
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
   const daily = limits?.daily_analysis_count ?? 0;
   const monthly = limits?.monthly_analysis_count ?? 0;
   const planUsage = getUserPlanLimits(profile?.plan, limits);

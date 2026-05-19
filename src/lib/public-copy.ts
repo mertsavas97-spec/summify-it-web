@@ -7,7 +7,7 @@ export const PUBLIC_BETA_BANNER =
   "Analyze PDFs, decks, videos, and articles for free while Pro Intelligence expands.";
 
 export const PRICING_BETA_NOTE =
-  "Secure Stripe checkout is live. Existing beta override accounts keep full workspace access unless moved to a paid or free plan.";
+  "Billing provider review is pending. Pricing is visible for transparency, and current beta access remains unchanged.";
 
 export const PRO_INTELLIGENCE_LABEL = "Pro Intelligence preview";
 

@@ -75,13 +75,12 @@ export function PlanUpgradeModal({ mode, onClose }: PlanUpgradeModalProps) {
         </div>
 
         <p className="mt-4 text-center text-[11px] leading-relaxed text-zinc-600">
-          Public beta pricing preview — no checkout yet. The workspace remains free while you
-          explore modes.
+          Upgrade options are coming soon. Continue with one of the active free modes today.
         </p>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Button href="/pricing" size="md" className="flex-1">
-            View pricing preview
+            Upgrade options coming soon
           </Button>
           <Button href="/modes" variant="secondary" size="md" className="flex-1">
             Browse modes

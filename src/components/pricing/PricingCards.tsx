@@ -1,4 +1,5 @@
 import { getPricingPlansForInterval } from "@/data/pricingPlans";
+import { getBillingStatusCopy } from "@/lib/billing/provider";
 import type { BillingInterval } from "@/types/plan";
 import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ type PricingCardsProps = {
 
 export function PricingCards({ interval }: PricingCardsProps) {
   const plans = getPricingPlansForInterval(interval);
+  const billing = getBillingStatusCopy();
 
   return (
     <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
@@ -80,9 +82,11 @@ export function PricingCards({ interval }: PricingCardsProps) {
               <CheckoutButton
                 plan={plan.id}
                 interval={interval}
-                label={plan.id === "team" ? "Start team plan" : `Start ${plan.name}`}
+                label={billing.checkoutCta}
                 variant={isPro ? "primary" : "secondary"}
                 className="mt-6"
+                billingEnabled={billing.enabled}
+                pendingCopy={billing.checkoutCta}
               />
             ) : (
               <Button href="/upload" variant="secondary" className="mt-6 w-full" size="md">

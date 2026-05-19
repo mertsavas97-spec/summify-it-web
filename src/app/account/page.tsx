@@ -10,9 +10,10 @@ import {
 } from "@/lib/auth";
 import { pageSeo } from "@/lib/page-metadata";
 import { Button } from "@/components/ui/Button";
-import { PortalButton } from "@/components/billing/PortalButton";
+import { getBillingStatusCopy } from "@/lib/billing/provider";
 import { formatStableDate } from "@/lib/format-date";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
 
@@ -47,14 +48,14 @@ export default async function AccountPage() {
   ]);
 
   const email = profile?.email ?? user.email ?? "—";
-  const planLabel = formatPlanLabel(profile?.plan ?? "beta");
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
   const daily = limits?.daily_analysis_count ?? 0;
   const monthly = limits?.monthly_analysis_count ?? 0;
   const renewalDate = profile?.current_period_end ? formatStableDate(profile.current_period_end) : "—";
   const billingInterval = profile?.billing_interval
     ? profile.billing_interval.charAt(0).toUpperCase() + profile.billing_interval.slice(1)
     : "—";
-  const hasStripeCustomer = Boolean(profile?.stripe_customer_id);
+  const billing = getBillingStatusCopy();
 
   return (
     <article className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -97,12 +98,19 @@ export default async function AccountPage() {
             </p>
             <h2 className="mt-1 text-base font-semibold text-white">{planLabel}</h2>
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              Manage subscription status, renewal, and plan upgrades through Stripe.
+              {billing.accountNote}
             </p>
           </div>
-          {hasStripeCustomer ? <PortalButton /> : <Button href="/pricing" size="sm">Upgrade</Button>}
+          <Button href="/pricing" size="sm" variant="secondary">
+            Upgrade options coming soon
+          </Button>
         </div>
+        <p className="mt-3 rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
+          Free includes 3 analyses per day, max 10MB uploads, PDF/TXT/DOCX/YouTube/Web,
+          5 intelligence modes, 5 Learn cards per run, and your last 3 saved analyses.
+        </p>
         <div className="mt-4 grid gap-2">
+          <StatRow label="Billing provider" value={billing.provider === "none" ? "Pending" : billing.provider} />
           <StatRow label="Subscription status" value={profile?.subscription_status ?? "No paid subscription"} />
           <StatRow label="Billing interval" value={billingInterval} />
           <StatRow label="Renewal date" value={renewalDate} />

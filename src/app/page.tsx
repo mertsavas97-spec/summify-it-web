@@ -96,7 +96,7 @@ export default function HomePage() {
           {
             title: "29 intelligence modes",
             description:
-              "Executive, study, creator, and document lenses — four active now, more unlocking with Pro Intelligence.",
+              "General, executive, study, creator, and document lenses — five active now, more unlocking with Pro Intelligence.",
           },
           {
             title: "Production-ready beta",

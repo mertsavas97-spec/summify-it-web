@@ -8,6 +8,7 @@ import type {
 } from "@/types/modes";
 
 export const ACTIVE_INTELLIGENCE_MODE_IDS = [
+  "general-summary",
   "executive-brief",
   "the-student",
   "the-creator",
@@ -101,7 +102,7 @@ export const INTELLIGENCE_MODES: IntelligenceModeDefinition[] = [
     learnEmphasis: "Balanced concept and insight cards",
     category: "core",
     icon: "layers",
-    availability: "locked",
+    availability: "active",
     intelligenceFamily: "executive",
     learnWeighting: W.balanced,
     outputTone: "analytical",

@@ -1,6 +1,7 @@
 import { createClientIfConfigured } from "@/lib/supabase/server";
 import { generateReviewItemsFromAnalysis } from "@/lib/memory/generateReviewItems";
 import { getMemoryPlanLimits } from "@/lib/plan-limits";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { ReviewItemInsert } from "@/types/memory";
 import type { SavedAnalysisRow } from "@/types/saved-analysis";
 
@@ -34,7 +35,7 @@ export async function generateReviewSetForAnalysis(input: {
     return { success: false, created: 0, skipped: 0, totalActive: 0, limit: null, error: "Saved analysis not found." };
   }
 
-  const planLimits = getMemoryPlanLimits(input.plan ?? "beta");
+  const planLimits = getMemoryPlanLimits(input.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
   const { count } = await supabase
     .from("review_items")
     .select("id", { count: "exact", head: true })

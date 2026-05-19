@@ -107,7 +107,7 @@ export function UploadZone({
           </span>
           <div className="min-w-0 flex-1 text-left">
             <p className="truncate text-sm font-medium text-white">
-              {fileName ?? "Drop PDF, DOCX, TXT, or PPTX — or click to browse"}
+              {fileName ?? "Drop PDF, DOCX, or TXT — or click to browse"}
             </p>
             <p className="mt-0.5 text-xs text-zinc-500">
               Max {maxUploadSizeMb} MB · up to {maxPagesWebPreview} pages after

@@ -115,6 +115,7 @@ export type AnalyzeApiSuccessResponse = {
   adaptivePlan: AnalyzeApiIntelligenceMetadata["adaptivePlan"];
   /** True when the analysis was persisted for the signed-in user. */
   savedToWorkspace?: boolean;
+  savedAnalysisId?: string | null;
   debug?: AnalyzeApiDebugMetadata;
 };
 

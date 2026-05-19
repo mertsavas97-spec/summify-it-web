@@ -49,10 +49,10 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
       {showUpgrade && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-violet-500/15 bg-violet-950/20 px-3 py-2.5">
           <p className="text-xs text-violet-200/90">
-            Need more analyses? Pro offers generous fair-use access and all intelligence modes.
+            Need more analyses? Upgrade options are coming soon with larger limits and more modes.
           </p>
           <Button href="/pricing" size="sm" variant="secondary">
-            View plans
+            Upgrade options coming soon
           </Button>
         </div>
       )}
@@ -72,7 +72,7 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
       )}
 
       <p className="mt-3 text-[10px] text-zinc-600">
-        Limits are not enforced during public beta for existing accounts.{" "}
+        Free includes 3 analyses per day, 10MB uploads, 5 modes, 5 Learn cards, and your last 3 saved analyses.{" "}
         <Link href="/account" className="text-violet-400/70 hover:text-violet-300">
           Account
         </Link>

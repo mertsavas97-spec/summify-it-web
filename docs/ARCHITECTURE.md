@@ -2,7 +2,7 @@
 
 Summify.it is an **adaptive document intelligence workspace**—not a thin wrapper around a single LLM prompt. The system ingests long documents, builds a compressed knowledge layer, routes persona-based analysis across providers, defers Learn asset generation, and tracks usage for monetization.
 
-This document describes the target architecture and what is **implemented today**. Phase 4A–4E plus **5A YouTube** and **5B PPTX** deliver file extraction (PDF/DOCX/TXT/PPTX), web article URL extraction, YouTube transcript extraction, Groq/Gemini analysis, and a server-side **adaptive intelligence layer** before provider calls. Auth, database, Stripe, and full chunking are still not built.
+This document describes the target architecture and what is **implemented today**. Phase 4A–4E plus **5A YouTube** and **5B PPTX** deliver file extraction (PDF/DOCX/TXT/PPTX), web article URL extraction, YouTube transcript extraction, Groq/Gemini analysis, and a server-side **adaptive intelligence layer** before provider calls. Auth, database, provider-neutral billing, and full chunking are evolving in phases.
 
 ---
 
@@ -384,7 +384,7 @@ Creator lens explicitly targets hooks, storytelling angles, emotional tension, r
 - Provider calls with fallback chains
 - Database persistence (documents, jobs, results, learn cards)
 - Cache (Redis/KV)
-- Usage metering and Stripe webhooks
+- Usage metering and billing provider webhooks
 - Background Learn queue
 
 **Rule:** Secrets and provider API keys never ship to the browser. All AI and storage I/O stays on the server.
@@ -488,7 +488,7 @@ Response includes `profile`, `knowledgeLayerSummary`, `tokenBudget`, and `adapti
 
 ## What is intentionally not built yet
 
-- Supabase, Stripe, auth middleware
+- Supabase, billing provider, auth middleware
 - Persistent database, Redis cache, background workers
 - Keynote `.key`, general audio upload ingestion
 - Visual PPTX analysis (charts/images on slides)

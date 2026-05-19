@@ -19,6 +19,7 @@ export type RunTextAnalysisSuccess = {
   fallbackUsed: boolean;
   intelligence: AnalysisIntelligenceMetadata;
   savedToWorkspace?: boolean;
+  savedAnalysisId?: string | null;
 };
 
 export type RunTextAnalysisFailure = {
@@ -61,6 +62,7 @@ export async function runTextAnalysis(
     providerUsed: data.providerUsed,
     fallbackUsed: data.fallbackUsed,
     savedToWorkspace: data.savedToWorkspace,
+    savedAnalysisId: data.savedAnalysisId,
     intelligence: {
       profile: data.profile,
       knowledgeLayerSummary: data.knowledgeLayerSummary,

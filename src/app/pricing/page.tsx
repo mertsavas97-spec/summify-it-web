@@ -1,12 +1,15 @@
 import { PricingSection } from "@/components/pricing/PricingSection";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { getBillingStatusCopy } from "@/lib/billing/provider";
 import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
 
 export const metadata = pageSeo.pricing;
 
 export default function PricingPage() {
+  const billing = getBillingStatusCopy();
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <SectionHeading
@@ -18,15 +21,18 @@ export default function PricingPage() {
       <p className="mx-auto mt-4 max-w-2xl text-center text-xs leading-relaxed text-zinc-500">
         {PRICING_BETA_NOTE}
       </p>
+      <p className="mx-auto mt-3 max-w-xl rounded-lg border border-violet-500/15 bg-violet-950/15 px-3 py-2 text-center text-xs text-violet-200/90">
+        {billing.badge}: <span className="text-violet-100/70">{billing.description}</span>
+      </p>
 
       <PricingSection />
       <ProductDisclaimer className="mx-auto mt-8 max-w-3xl text-center" />
 
       <div className="mt-12 grid gap-3 sm:grid-cols-3">
         {[
-          { label: "Secure checkout", sub: "hosted by Stripe" },
-          { label: "Cancel anytime", sub: "through billing portal" },
-          { label: "Beta override", sub: "existing beta access preserved" },
+          { label: "Provider-neutral", sub: "Paddle or Lemon-ready" },
+          { label: "Checkout paused", sub: "until review approval" },
+          { label: "Beta access", sub: "current access preserved" },
         ].map((item) => (
           <div
             key={item.label}

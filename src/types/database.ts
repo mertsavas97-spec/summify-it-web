@@ -5,8 +5,6 @@ export type Profile = {
   full_name: string | null;
   avatar_url: string | null;
   plan: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
   subscription_status: string | null;
   current_period_end: string | null;
   billing_interval: string | null;

@@ -38,12 +38,20 @@ function HeaderAuthInner() {
 
   if (user) {
     return (
-      <Link
-        href="/account"
-        className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
-      >
-        Account
-      </Link>
+      <div className="flex items-center gap-1.5">
+        <Link
+          href="/dashboard"
+          className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-100 shadow-sm shadow-violet-500/10 transition-colors hover:border-violet-300/35 hover:bg-violet-500/25"
+        >
+          Dashboard
+        </Link>
+        <Link
+          href="/account"
+          className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
+        >
+          Account
+        </Link>
+      </div>
     );
   }
 

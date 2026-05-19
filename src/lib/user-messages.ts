@@ -18,12 +18,14 @@ export const USER_MESSAGES = {
   analyzeModeUnknown:
     "That intelligence mode isn't recognized. Pick an active mode from the lens selector.",
   analyzeModeLocked: (label: string) =>
-    `"${label}" is part of Pro Intelligence and isn't available yet. Choose an active mode to run analysis.`,
+    `"${label}" is available on Scholar or Pro. Choose one of the free active modes today.`,
   analyzeModeComingSoon: (label: string) =>
     `"${label}" is coming soon. Choose an active mode to run analysis.`,
   extractFileMissing: "Please choose a file to upload.",
   extractFileTooLarge: (maxMb: number) =>
-    `This file is too large. Maximum size is ${maxMb} MB.`,
+    maxMb === 10
+      ? "Free uploads support files up to 10MB."
+      : `This file is too large. Maximum size is ${maxMb} MB.`,
   extractUnsupported:
     "This file type isn't supported. Upload PDF, DOCX, TXT, or PPTX.",
   extractFailed:

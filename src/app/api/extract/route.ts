@@ -12,11 +12,10 @@ import type {
   PresentationExtractionMetadata,
   PresentationSlideOutlineItem,
 } from "@/types/extraction";
-import { USER_MESSAGES } from "@/lib/user-messages";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile } from "@/lib/supabase/profile";
 import { resolvePlanId } from "@/lib/plan-limits";
-import { getMaxFileSizeBytes } from "@/lib/plan-features";
+import { USER_MESSAGES } from "@/lib/user-messages";
 import { devError, logServerError } from "@/server/logging";
 
 export const runtime = "nodejs";
@@ -61,21 +60,26 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 400 });
     }
 
-    const user = await getOptionalUser();
-    const profile = user ? await getProfile(user.id) : null;
-    const planId = user ? resolvePlanId(profile?.plan) : "free";
-    const maxFileSizeBytes = Math.min(
-      EXTRACTION_CONFIG.maxFileSizeBytes,
-      getMaxFileSizeBytes(planId),
-    );
-
-    if (file.size > maxFileSizeBytes) {
-      const maxMb = maxFileSizeBytes / (1024 * 1024);
+    if (file.size > EXTRACTION_CONFIG.maxFileSizeBytes) {
+      const maxMb = EXTRACTION_CONFIG.maxFileSizeBytes / (1024 * 1024);
       const payload: ExtractApiErrorResponse = {
         success: false,
         error: USER_MESSAGES.extractFileTooLarge(maxMb),
       };
       return NextResponse.json(payload, { status: 413 });
+    }
+
+    const currentUser = await getOptionalUser();
+    const profile = currentUser ? await getProfile(currentUser.id) : null;
+    const planId = currentUser ? resolvePlanId(profile?.plan) : "free";
+
+    if (isPptxFile(file.name, file.type) && !["beta", "pro", "team"].includes(planId)) {
+      const payload: ExtractApiErrorResponse = {
+        success: false,
+        error:
+          "Free uploads support PDF, TXT, and DOCX. Use the YouTube or Web tabs for links.",
+      };
+      return NextResponse.json(payload, { status: 403 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

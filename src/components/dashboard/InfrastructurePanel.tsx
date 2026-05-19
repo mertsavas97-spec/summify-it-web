@@ -34,7 +34,7 @@ export function UsageTrackingPlaceholder() {
         </div>
       </dl>
       <p className="mt-3 text-[10px] text-zinc-600">
-        TODO: Stripe metered billing + UsageEvent persistence
+        TODO: Provider-neutral billing + UsageEvent persistence
       </p>
     </Card>
   );

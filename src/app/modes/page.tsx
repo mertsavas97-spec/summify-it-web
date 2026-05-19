@@ -26,7 +26,7 @@ export default function ModesHubPage() {
       />
       <PublicHero
         badge="Intelligence modes"
-        title="29 specialized lenses. Four active today."
+        title="29 specialized lenses. Five active today."
         description={`Choose how Summify organizes your source — executive, academic, creator, document, technical, and more. ${counts.active} modes run in the workspace now; ${counts.locked} Pro modes and ${counts.comingSoon} coming soon are visible for early access.`}
         primaryCta={{ href: "/upload", label: "Try active modes" }}
         secondaryCta={{ href: "/pricing", label: "Planned pricing" }}

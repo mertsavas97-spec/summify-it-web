@@ -44,10 +44,10 @@ export const supportedFileTypes: SupportedFileType[] = [
 ];
 
 export const supportedFormatLabels = supportedFileTypes
-  .filter((f) => f.extractable)
+  .filter((f) => f.extractable && f.extension !== "pptx")
   .map((f) => f.label);
 
-export const acceptFileExtensions = ".pdf,.docx,.txt,.pptx";
+export const acceptFileExtensions = ".pdf,.docx,.txt";
 
 export function inferDocumentType(
   fileName: string,

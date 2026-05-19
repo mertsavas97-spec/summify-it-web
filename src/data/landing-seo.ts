@@ -129,7 +129,7 @@ export const RELATED_LINKS = {
     {
       href: "/modes",
       label: "Intelligence modes",
-      description: "29 lenses — four active in public beta.",
+      description: "29 lenses — five active in public beta.",
     },
     {
       href: "/faq",

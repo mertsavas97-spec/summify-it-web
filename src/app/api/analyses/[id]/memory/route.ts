@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ensureProfileForUser, getOptionalUser, getProfile } from "@/lib/auth";
+import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import { generateReviewSetForAnalysis } from "@/server/memory/generateReviewSet";
 
 type RouteContext = {
@@ -19,7 +20,7 @@ export async function POST(_request: Request, context: RouteContext) {
   const result = await generateReviewSetForAnalysis({
     analysisId: id,
     userId: user.id,
-    plan: profile?.plan ?? "beta",
+    plan: profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN,
   });
 
   return NextResponse.json(result, { status: result.success ? 200 : 400 });
