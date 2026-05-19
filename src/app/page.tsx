@@ -1,51 +1,53 @@
-import { buildPageMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/page-metadata";
+import { softwareApplicationSchema, websiteSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
 import { FormatWorkflow } from "@/components/public/FormatWorkflow";
 import { CTASection } from "@/components/public/CTASection";
+import { FAQSection } from "@/components/public/FAQSection";
+import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
+import { InternalTextLink } from "@/components/public/InternalTextLink";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
+import { HOME_FAQS, RELATED_LINKS } from "@/data/landing-seo";
 import Link from "next/link";
 
-export const metadata = buildPageMetadata({
-  title: "AI document intelligence for PDFs, videos, and decks",
-  description:
-    "Turn complex sources into structured intelligence. Summify.it analyzes PDFs, PowerPoint, YouTube, web articles, and text with 29 intelligence modes and built-in Learn cards.",
-  path: "/",
-  keywords: [
-    "AI document intelligence",
-    "PDF summarizer",
-    "YouTube transcript summary",
-    "PowerPoint summarizer",
-    "study notes AI",
-  ],
-});
+export const metadata = pageSeo.home;
 
 const formats = [
-  { href: "/summarize-pdf", label: "PDF", desc: "Reports, papers, ebooks" },
-  { href: "/summarize-youtube-video", label: "YouTube", desc: "Transcript intelligence" },
-  { href: "/summarize-powerpoint", label: "PowerPoint", desc: "Slide deck analysis" },
-  { href: "/upload", label: "Web & text", desc: "Articles, DOCX, TXT" },
+  { href: "/summarize-pdf", label: "PDF", desc: "AI PDF summarizer" },
+  { href: "/summarize-youtube-video", label: "YouTube", desc: "Transcript summarizer" },
+  { href: "/summarize-powerpoint", label: "PowerPoint", desc: "PPTX deck analysis" },
+  { href: "/upload", label: "Web & text", desc: "Document workspace" },
 ];
 
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={[websiteSchema(), softwareApplicationSchema()]} />
       <PublicHero
         badge="Public beta · AI document intelligence"
-        title="Turn complex sources into structured intelligence."
+        title="AI document summarizer for PDFs, YouTube videos, and study notes"
         description={
           <>
-            Upload PDFs, PowerPoint decks, YouTube videos, web articles, or text. Pick an
-            intelligence lens and get{" "}
-            <span className="font-medium text-zinc-200">structured intelligence</span>,{" "}
-            <span className="font-medium text-violet-200/90">Learn cards</span>, and study-ready
-            outputs across{" "}
-            <span className="font-medium text-zinc-200">29 modes</span> — four active today, Pro
-            Intelligence expanding.
+            <span className="block font-medium text-zinc-300">
+              Turn complex sources into structured intelligence.
+            </span>
+            <span className="mt-3 block">
+              Use Summify as your{" "}
+              <InternalTextLink href="/summarize-pdf">AI PDF summarizer</InternalTextLink>,{" "}
+              <InternalTextLink href="/summarize-youtube-video">YouTube summarizer</InternalTextLink>
+              , and{" "}
+              <InternalTextLink href="/summarize-powerpoint">
+                PowerPoint summarizer
+              </InternalTextLink>{" "}
+              in one workspace — with Learn cards and{" "}
+              <InternalTextLink href="/modes">29 intelligence modes</InternalTextLink>.
+            </span>
           </>
         }
-        primaryCta={{ href: "/upload", label: "Start summarizing" }}
+        primaryCta={{ href: "/upload", label: "Try Summify free" }}
         secondaryCta={{ href: "/modes", label: "Explore modes" }}
       >
         <ProductMockCard />
@@ -60,85 +62,108 @@ export default function HomePage() {
               className="rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-left transition-colors hover:border-violet-500/30"
             >
               <span className="text-xs font-medium text-zinc-200">{f.label}</span>
-              <span className="mt-0.5 block text-[10px] text-zinc-600">{f.desc}</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-500">{f.desc}</span>
             </Link>
           ))}
         </div>
       </section>
 
       <FeatureGrid
-        eyebrow="Why Summify.it"
-        title="More than a summary box"
-        subtitle="A multi-source intelligence workspace with adaptive analysis and a deterministic Learn layer."
+        eyebrow="Why Summify"
+        title="AI document analysis beyond a summary box"
+        subtitle="A document summary tool with adaptive analysis, study-ready Learn cards, and source-aware intelligence modes."
         features={[
           {
-            title: "29 intelligence modes",
+            title: "AI study notes & Learn cards",
             description:
-              "Executive, study, creator, legal, and specialized lenses — four active now, more unlocking with Pro Intelligence.",
+              "Generate concept, quiz, hook, and connection cards — ideal for exam prep and content repurposing without a second tool.",
           },
           {
-            title: "Learn cards",
+            title: "YouTube transcript summarizer",
             description:
-              "Concept, quiz, hook, and connection cards ranked for your mode — study and repurposing without a second tool.",
+              "Paste a video link for one-step transcript extraction and analysis — lectures, podcasts, and explainers.",
           },
           {
-            title: "Multi-source workspace",
+            title: "PowerPoint & PDF in one workspace",
             description:
-              "PDF, PPTX, YouTube, web articles, DOCX, and pasted text in one flow with source-aware intelligence.",
+              "Summarize PDF online or upload PPTX decks with the same intelligence engine and mode library.",
           },
           {
-            title: "Structured outputs",
+            title: "Structured intelligence outputs",
             description:
               "Insights, risks, actions, and mode-specific lenses — not generic filler paragraphs.",
           },
           {
-            title: "One-click web & video",
+            title: "29 intelligence modes",
             description:
-              "Analyze articles and YouTube transcripts in a single step after extraction.",
+              "Executive, study, creator, and legal lenses — four active now, more unlocking with Pro Intelligence.",
           },
           {
             title: "Production-ready beta",
             description:
-              "Groq and Gemini with fallback, knowledge-layer compaction, and token-aware pipelines.",
+              "Try free during public beta. Dual-provider analysis with token-aware compaction for long sources.",
           },
         ]}
       />
 
       <UseCaseSection
-        title="Built for how you actually work"
-        subtitle="Students, creators, and professionals use different lenses on the same source."
+        title="Built for real document workflows"
+        subtitle="Students, creators, and operators use the same workspace with different intelligence lenses."
         cases={[
           {
-            title: "Students & researchers",
+            title: "AI study notes for school",
             description:
               "Turn lectures, papers, and videos into concepts, quizzes, and exam-ready notes.",
           },
           {
-            title: "Creators & media",
-            description: "Mine hooks, angles, and repurposable moments from long-form content.",
+            title: "YouTube & long-form video",
+            description:
+              "Digest transcripts for hooks, themes, and study notes without rewatching hours of video.",
           },
           {
-            title: "Leaders & operators",
-            description: "Executive briefs with decisions, risks, and implications — fast.",
+            title: "Decks, reports & articles",
+            description:
+              "Executive briefs and presentation analysis from PDFs, PPTX, and web sources.",
           },
         ]}
       />
 
       <FormatWorkflow
-        title="From source to intelligence in minutes"
+        title="How this document summary tool works"
         steps={[
-          { title: "Add a source", description: "Upload or paste a link — PDF, deck, video, or article." },
-          { title: "Choose a lens", description: "Pick an active intelligence mode from 29 options." },
-          { title: "Analyze", description: "Adaptive compaction and dual-provider analysis." },
-          { title: "Learn & act", description: "Review structured output and Learn cards in one workspace." },
+          {
+            title: "Add a source",
+            description: "Upload or paste — PDF, deck, YouTube URL, web article, or text.",
+          },
+          {
+            title: "Choose a lens",
+            description: "Pick an active intelligence mode from 29 options.",
+          },
+          {
+            title: "Run AI document analysis",
+            description: "Adaptive compaction and structured outputs from your source.",
+          },
+          {
+            title: "Learn & act",
+            description: "Review analysis and Learn cards in the workspace.",
+          },
         ]}
       />
 
+      <FAQSection
+        title="Common questions about Summify"
+        subtitle="Quick answers before you open the workspace."
+        items={HOME_FAQS}
+      />
+
+      <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
+
       <CTASection
-        title="Start with four active intelligence modes"
-        description="Executive Brief, The Student, The Creator, and Contract Analyzer are live today. More Pro modes coming soon."
-        secondaryHref="/modes"
-        secondaryLabel="Browse all 29 modes"
+        title="Start summarizing in the workspace"
+        description="Executive Brief, The Student, The Creator, and Contract Analyzer are live today. Try free during public beta."
+        primaryLabel="Try Summify free"
+        secondaryHref="/faq"
+        secondaryLabel="Read the FAQ"
       />
     </>
   );

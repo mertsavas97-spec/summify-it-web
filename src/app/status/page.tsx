@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Status",
-  description: "Summify.it public beta service status.",
+  description: "Summify public beta service status.",
   path: "/status",
   noIndex: true,
 });
@@ -50,7 +50,7 @@ export default function StatusPage() {
           {data.status}
         </p>
         <p className="mt-2 text-[11px] text-zinc-600">
-          Summify.it is in public beta — accounts and billing are not live.
+          Summify is in public beta — accounts and billing are not live.
         </p>
       </div>
 

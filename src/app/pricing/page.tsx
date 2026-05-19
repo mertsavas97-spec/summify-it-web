@@ -1,15 +1,9 @@
-import type { Metadata } from "next";
 import { PricingCards } from "@/components/pricing/PricingCards";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { PRICING_BETA_NOTE } from "@/lib/public-copy";
-import { createPageMetadata } from "@/lib/metadata";
+import { pageSeo } from "@/lib/page-metadata";
 
-export const metadata: Metadata = createPageMetadata({
-  title: "Pricing",
-  description:
-    "Planned Summify.it pricing for public beta. The workspace is free today — Pro Intelligence and checkout are not live yet.",
-  path: "/pricing",
-});
+export const metadata = pageSeo.pricing;
 
 export default function PricingPage() {
   return (

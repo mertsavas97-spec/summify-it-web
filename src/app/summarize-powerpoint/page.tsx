@@ -1,40 +1,69 @@
-import { buildPageMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/page-metadata";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
 import { FormatWorkflow } from "@/components/public/FormatWorkflow";
 import { CTASection } from "@/components/public/CTASection";
+import { FAQSection } from "@/components/public/FAQSection";
+import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
+import { SeoContentSection } from "@/components/public/SeoContentSection";
+import { InternalTextLink } from "@/components/public/InternalTextLink";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
+import { PPTX_FAQS, RELATED_LINKS } from "@/data/landing-seo";
 
-export const metadata = buildPageMetadata({
-  title: "Summarize PowerPoint with AI — PPTX deck intelligence",
-  description:
-    "AI PowerPoint summarizer for PPTX decks: slide narrative, themes, logic gaps, and Learn cards. Presentation intelligence beyond bullet extraction.",
-  path: "/summarize-powerpoint",
-  keywords: [
-    "summarize PowerPoint AI",
-    "PPTX summarizer",
-    "AI summarize presentation",
-  ],
-});
+export const metadata = pageSeo.summarizePowerpoint;
 
 export default function SummarizePowerpointPage() {
   return (
     <>
       <PublicHero
-        badge="Presentation intelligence"
-        title="PowerPoint intelligence — narrative, themes, and gaps."
-        description="Upload a .pptx deck. Summify reads slide text with presentation-aware intelligence: outline, repeated themes, and structured analysis plus Learn cards."
-        primaryCta={{ href: "/upload", label: "Analyze a presentation" }}
-        secondaryCta={{ href: "/modes/executive-brief", label: "Executive Brief mode" }}
+        badge="PowerPoint summarizer"
+        title="Summarize PowerPoint with AI — PPTX deck intelligence"
+        description="Upload a .pptx deck for presentation analysis: slide narrative, themes, logic gaps, and Learn cards. A PowerPoint summarizer built for pitch decks, training, and client reviews."
+        primaryCta={{ href: "/upload", label: "Try Summify free" }}
+        secondaryCta={{ href: "/modes/executive-brief", label: "Executive Brief" }}
       >
         <ProductMockCard />
       </PublicHero>
 
+      <SeoContentSection
+        eyebrow="Presentation intelligence"
+        title="PPTX summarizer for real slide decks"
+        blocks={[
+          {
+            body: (
+              <>
+                Most tools flatten slides into noisy text. Summify reads slide titles, themes, and
+                body copy for presentation analysis — so your PowerPoint summarizer output reflects
+                how the deck was meant to flow.
+              </>
+            ),
+          },
+          {
+            heading: "Why teams use it",
+            body: (
+              <>
+                Strategy teams digest vendor decks. Educators turn training slides into study
+                material alongside our{" "}
+                <InternalTextLink href="/summarize-pdf">AI PDF summarizer</InternalTextLink>.
+                Use{" "}
+                <InternalTextLink href="/modes/executive-brief">
+                  Executive Brief mode
+                </InternalTextLink>{" "}
+                in the{" "}
+                <InternalTextLink href="/upload">document analysis workspace</InternalTextLink>{" "}
+                for decision-ready outputs.
+              </>
+            ),
+          },
+        ]}
+      />
+
       <FormatWorkflow
+        title="How presentation analysis works"
         steps={[
           { title: "Upload PPTX", description: "Drop your deck in the file workspace tab." },
-          { title: "Extract slides", description: "Titles, themes, and slide outline preserved." },
+          { title: "Extract slides", description: "Titles, themes, and outline preserved." },
           { title: "Analyze", description: "Deck-aware compaction and intelligence modes." },
           { title: "Review & Learn", description: "Summary plus cards for recall and decisions." },
         ]}
@@ -45,11 +74,11 @@ export default function SummarizePowerpointPage() {
         features={[
           {
             title: "Slide-aware analysis",
-            description: "Less fragment noise — editorial structure from real slide content.",
+            description: "Editorial structure from real slide content, not fragment noise.",
           },
           {
             title: "Narrative & themes",
-            description: "See the story arc and repeated motifs across slides.",
+            description: "Story arc and repeated motifs across the presentation.",
           },
           {
             title: "Learn cards",
@@ -63,7 +92,7 @@ export default function SummarizePowerpointPage() {
         cases={[
           {
             title: "Pitch & strategy decks",
-            description: "Executive Brief mode for decisions and implications.",
+            description: "Executive Brief for decisions and implications.",
           },
           {
             title: "Training & courses",
@@ -71,14 +100,19 @@ export default function SummarizePowerpointPage() {
           },
           {
             title: "Client deliverables",
-            description: "Quickly digest vendor or partner presentations.",
+            description: "Digest partner presentations quickly.",
           },
         ]}
       />
 
+      <FAQSection items={PPTX_FAQS} />
+
+      <RelatedLinksSection links={RELATED_LINKS.pptx} />
+
       <CTASection
         title="Summarize your next presentation"
-        description="PPTX upload in the workspace — same analysis engine as PDFs and articles."
+        description="PPTX upload in the workspace — same engine as PDFs and articles."
+        primaryLabel="Start summarizing"
       />
     </>
   );

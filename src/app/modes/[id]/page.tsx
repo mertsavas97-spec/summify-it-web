@@ -4,6 +4,8 @@ import {
   getIntelligenceModeById,
 } from "@/config/modes";
 import { buildPageMetadata } from "@/lib/seo";
+import { modeDetailBreadcrumbSchema } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { ModeDetailSections } from "@/components/public/ModeDetailSections";
 import type { IntelligenceModeId } from "@/types/modes";
 
@@ -21,14 +23,14 @@ export async function generateMetadata({ params }: PageProps) {
   if (!mode || mode.availability !== "active") {
     return buildPageMetadata({
       title: "Intelligence mode",
-      description: "Summify.it intelligence mode.",
+      description: "Summify intelligence mode.",
       path: `/modes/${id}`,
       noindex: true,
     });
   }
 
   return buildPageMetadata({
-    title: `${mode.label} — AI intelligence mode`,
+    title: `${mode.label} AI Mode`,
     description: `${mode.shortDescription} ${mode.intelligenceLens}`,
     path: `/modes/${mode.id}`,
     keywords: [mode.label, "Summify intelligence mode", mode.category],
@@ -42,5 +44,10 @@ export default async function ModeDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  return <ModeDetailSections modeId={mode.id} />;
+  return (
+    <>
+      <JsonLd data={modeDetailBreadcrumbSchema(mode.label, mode.id)} />
+      <ModeDetailSections modeId={mode.id} />
+    </>
+  );
 }

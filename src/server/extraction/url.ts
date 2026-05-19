@@ -45,7 +45,7 @@ const PRIVATE_IPV4_PATTERNS = [
 ];
 
 const FETCH_USER_AGENT =
-  "Summify.it/1.0 (+https://summify.it; article extraction for user-initiated analysis)";
+  "Summify/1.0 (+https://summify.app; article extraction for user-initiated analysis)";
 
 const STRIP_SELECTORS = [
   "script",

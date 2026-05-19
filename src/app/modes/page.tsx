@@ -1,17 +1,13 @@
-import { buildPageMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/page-metadata";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { webPageSchema } from "@/lib/schema";
 import { INTELLIGENCE_MODES } from "@/config/modes";
 import { MODE_CATEGORY_META, getModesByCategory, countModesByAvailability } from "@/lib/mode-groups";
 import { ModePreviewCard } from "@/components/public/ModePreviewCard";
 import { CTASection } from "@/components/public/CTASection";
 import { PublicHero } from "@/components/public/PublicHero";
 
-export const metadata = buildPageMetadata({
-  title: "29 intelligence modes for documents, video, and study",
-  description:
-    "Browse Summify.it intelligence modes by category — four active today, Pro Intelligence modes and coming-soon lenses on the roadmap.",
-  path: "/modes",
-  keywords: ["AI analysis modes", "document intelligence modes", "Summify modes"],
-});
+export const metadata = pageSeo.modes;
 
 export default function ModesHubPage() {
   const counts = countModesByAvailability();
@@ -19,6 +15,14 @@ export default function ModesHubPage() {
 
   return (
     <>
+      <JsonLd
+        data={webPageSchema({
+          name: "Intelligence modes",
+          description:
+            "Browse executive, study, creator, and legal intelligence lenses for documents, video, and articles.",
+          path: "/modes",
+        })}
+      />
       <PublicHero
         badge="Intelligence modes"
         title="29 specialized lenses. Four active today."

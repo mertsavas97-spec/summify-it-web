@@ -16,7 +16,7 @@ import { createPageMetadata } from "@/lib/metadata";
 export const metadata: Metadata = createPageMetadata({
   title: "Dashboard",
   description:
-    "Sample Summify.it dashboard UI — not indexed. Use the upload workspace for live analysis.",
+    "Sample Summify dashboard UI — not indexed. Use the upload workspace for live analysis.",
   path: "/dashboard",
   noIndex: true,
 });

@@ -46,7 +46,7 @@ export function Hero() {
                 <span className="h-2 w-2 rounded-full bg-zinc-600" />
                 <span className="h-2 w-2 rounded-full bg-zinc-600" />
                 <span className="ml-2 text-[10px] text-zinc-500">
-                  Summify.it — Workspace
+                  Summify — Workspace
                 </span>
               </div>
               <div className="grid grid-cols-2 divide-x divide-white/[0.06]">

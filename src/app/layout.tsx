@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteShell } from "@/components/layout/SiteShell";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { siteConfig } from "@/lib/site";
+import { organizationSchema } from "@/lib/schema";
 import {
   buildOpenGraph,
   buildPageTitle,
@@ -20,7 +22,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const defaultTitle = "AI document intelligence for PDFs, videos, and decks";
+const defaultTitle = "AI PDF & YouTube Summarizer";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -70,6 +72,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#0e1016] text-zinc-100">
+        <JsonLd data={organizationSchema()} />
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

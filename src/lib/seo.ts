@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
+import type { BlogPost } from "@/data/blog-posts";
 import { siteConfig } from "@/lib/site";
 
-export const SEO_BRAND = "Summify.it";
+export const SEO_BRAND = "Summify";
+
+/** Update when a public Twitter/X handle is confirmed. */
+export const TWITTER_SITE = "@summifyapp";
+export const TWITTER_CREATOR = "@summifyapp";
 
 export const SEO_DEFAULT_POSITIONING =
-  "AI document intelligence workspace for PDFs, YouTube videos, PowerPoint decks, web articles, and study materials.";
+  "AI document intelligence for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT.";
+
+/** Open Graph / Twitter card image dimensions (public/og-default.png). */
+export const OG_IMAGE_WIDTH = 1200;
+export const OG_IMAGE_HEIGHT = 630;
 
 export type SeoPageInput = {
-  /** Page title without brand suffix (brand appended automatically). */
+  /** Page title without brand suffix (brand appended as `| Summify`). */
   title: string;
   description: string;
   /** Path starting with `/`, e.g. `/summarize-pdf`. */
@@ -16,6 +25,8 @@ export type SeoPageInput = {
   /** When true, page is excluded from indexing. */
   noindex?: boolean;
   ogType?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
 };
 
 export function absoluteUrl(path: string): string {
@@ -39,24 +50,41 @@ export type OpenGraphInput = {
   description: string;
   path: string;
   type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
 };
 
 export function buildOpenGraph(input: OpenGraphInput): Metadata["openGraph"] {
+  const ogTitle = input.title.includes(SEO_BRAND)
+    ? input.title
+    : `${input.title} | ${SEO_BRAND}`;
+
+  const ogType = input.type ?? "website";
+  const articleTimes =
+    ogType === "article" && input.publishedTime
+      ? {
+          publishedTime: input.publishedTime,
+          ...(input.modifiedTime ? { modifiedTime: input.modifiedTime } : {}),
+          authors: [SEO_BRAND],
+        }
+      : {};
+
   return {
-    type: input.type ?? "website",
+    type: ogType,
     locale: "en_US",
     url: absoluteUrl(input.path),
     siteName: SEO_BRAND,
-    title: input.title,
+    title: ogTitle,
     description: input.description,
     images: [
       {
-        url: siteConfig.ogImage,
-        width: 512,
-        height: 512,
-        alt: `${SEO_BRAND} — ${SEO_DEFAULT_POSITIONING}`,
+        url: absoluteUrl(siteConfig.ogImage),
+        width: OG_IMAGE_WIDTH,
+        height: OG_IMAGE_HEIGHT,
+        alt: `${SEO_BRAND} — AI Document Intelligence Workspace`,
       },
     ],
+    ...articleTimes,
   };
 }
 
@@ -64,18 +92,23 @@ export function buildTwitterCard(input: {
   title: string;
   description: string;
 }): Metadata["twitter"] {
+  const twitterTitle = input.title.includes(SEO_BRAND)
+    ? input.title
+    : `${input.title} | ${SEO_BRAND}`;
+
   return {
     card: "summary_large_image",
-    title: input.title,
+    site: TWITTER_SITE,
+    creator: TWITTER_CREATOR,
+    title: twitterTitle,
     description: input.description,
-    images: [siteConfig.ogImage],
+    images: [absoluteUrl(siteConfig.ogImage)],
   };
 }
 
 export function buildPageMetadata(input: SeoPageInput): Metadata {
   const fullTitle = buildPageTitle(input.title);
   const canonical = buildCanonicalUrl(input.path);
-  const ogTitle = input.title.includes(SEO_BRAND) ? input.title : `${input.title} — ${SEO_BRAND}`;
 
   return {
     title: fullTitle,
@@ -95,16 +128,31 @@ export function buildPageMetadata(input: SeoPageInput): Metadata {
           },
         },
     openGraph: buildOpenGraph({
-      title: ogTitle,
+      title: input.title,
       description: input.description,
       path: input.path,
       type: input.ogType,
+      publishedTime: input.publishedTime,
+      modifiedTime: input.modifiedTime,
     }),
     twitter: buildTwitterCard({
-      title: ogTitle,
+      title: input.title,
       description: input.description,
     }),
   };
+}
+
+export function buildBlogPostMetadata(post: BlogPost): Metadata {
+  const path = `/blog/${post.slug}`;
+  return buildPageMetadata({
+    title: post.title,
+    description: post.description,
+    path,
+    ogType: "article",
+    publishedTime: post.date,
+    modifiedTime: post.updatedAt ?? post.date,
+    keywords: post.tags,
+  });
 }
 
 /** All indexable marketing routes for sitemap generation. */
@@ -126,4 +174,5 @@ export const MARKETING_PATHS = [
   "/modes/the-student",
   "/modes/the-creator",
   "/modes/contract-analyzer",
+  "/blog",
 ] as const;

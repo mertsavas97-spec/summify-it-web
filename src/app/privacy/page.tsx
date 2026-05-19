@@ -1,19 +1,14 @@
-import { buildPageMetadata } from "@/lib/seo";
+import { pageSeo } from "@/lib/page-metadata";
 import { TrustPageLayout } from "@/components/public/TrustPageLayout";
 
-export const metadata = buildPageMetadata({
-  title: "Privacy",
-  description:
-    "How Summify.it handles your data during public beta — uploads, AI processing, and what we do not store yet.",
-  path: "/privacy",
-});
+export const metadata = pageSeo.privacy;
 
 export default function PrivacyPage() {
   return (
     <TrustPageLayout
       eyebrow="Privacy"
       title="Privacy during public beta"
-      lead="Plain-language summary of how data flows through Summify.it today. This is not a full legal policy — we will publish an updated policy before paid accounts launch."
+      lead="Plain-language summary of how data flows through Summify today. This is not a full legal policy — we will publish an updated policy before paid accounts launch."
     >
       <section>
         <h2 className="text-base font-semibold text-zinc-200">What you provide</h2>
@@ -44,7 +39,7 @@ export default function PrivacyPage() {
         <h2 className="text-base font-semibold text-zinc-200">Your choices</h2>
         <p className="mt-2">
           Avoid uploading sensitive personal, health, or legally privileged material during beta.
-          If you have a privacy question, contact us through the channels listed on summify.it when
+          If you have a privacy question, contact us through the channels listed on summify.app when
           available.
         </p>
       </section>

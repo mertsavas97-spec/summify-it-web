@@ -9,7 +9,7 @@ export function ProductMockCard({ variant = "default" }: { variant?: "default" |
         <span className="h-2 w-2 rounded-full bg-zinc-600" />
         <span className="h-2 w-2 rounded-full bg-zinc-600" />
         <span className="h-2 w-2 rounded-full bg-zinc-600" />
-        <span className="ml-2 text-[11px] text-zinc-400">Summify.it workspace</span>
+        <span className="ml-2 text-[11px] text-zinc-400">Summify workspace</span>
       </div>
       {variant === "learn" ? (
         <div className="space-y-2.5 p-4">

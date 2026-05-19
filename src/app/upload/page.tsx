@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
 import { UploadWorkspace } from "@/components/upload/UploadWorkspace";
-import { createPageMetadata } from "@/lib/metadata";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { pageSeo } from "@/lib/page-metadata";
+import { webApplicationSchema } from "@/lib/schema";
 
-export const metadata: Metadata = createPageMetadata({
-  title: "Upload",
-  description:
-    "Upload PDFs, PowerPoint, YouTube links, web articles, or text. Choose an intelligence mode and run structured analysis in the Summify.it public beta workspace.",
-  path: "/upload",
-});
+export const metadata = pageSeo.upload;
 
 export default function UploadPage() {
-  return <UploadWorkspace />;
+  return (
+    <>
+      <JsonLd data={webApplicationSchema()} />
+      <UploadWorkspace />
+    </>
+  );
 }

@@ -25,13 +25,13 @@ export function BrandMark({
   priority = false,
 }: BrandMarkProps) {
   const { px, wordmark } = sizeMap[size];
-  const label = showWordmark ? "Summify.it" : "Summify.it home";
+  const label = showWordmark ? "Summify" : "Summify home";
 
   const content = (
     <>
       <Image
         src={ICON_SRC}
-        alt=""
+        alt={showWordmark ? "" : "Summify"}
         width={px}
         height={px}
         sizes={`${px}px`}
@@ -41,7 +41,7 @@ export function BrandMark({
       />
       {showWordmark && (
         <span className={`truncate font-semibold tracking-tight text-white ${wordmark}`}>
-          Summify.it
+          Summify
         </span>
       )}
     </>
