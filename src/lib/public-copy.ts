@@ -7,7 +7,7 @@ export const PUBLIC_BETA_BANNER =
   "Analyze PDFs, decks, videos, and articles for free while Pro Intelligence expands.";
 
 export const PRICING_BETA_NOTE =
-  "Plans shown for transparency. Checkout and paid tiers are not live yet — the workspace is free during beta.";
+  "Public beta pricing preview. Checkout is not live — current accounts keep full workspace access on the beta plan.";
 
 export const PRO_INTELLIGENCE_LABEL = "Pro Intelligence preview";
 

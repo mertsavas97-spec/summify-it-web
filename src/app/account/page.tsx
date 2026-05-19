@@ -1,22 +1,26 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { SignOutButton } from "@/components/auth/SignOutButton";
-import { getOptionalUser } from "@/lib/auth";
+import {
+  ensureProfileForUser,
+  formatPlanLabel,
+  getOptionalUser,
+  getProfile,
+  getUserLimits,
+} from "@/lib/auth";
 import { pageSeo } from "@/lib/page-metadata";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
+import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
 
 export const metadata = pageSeo.account;
 
-function PlaceholderRow({ label, hint }: { label: string; hint: string }) {
+function StatRow({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-lg border border-white/[0.06] bg-zinc-950/40 px-4 py-3">
-      <div>
-        <p className="text-sm font-medium text-zinc-300">{label}</p>
-        <p className="mt-0.5 text-[11px] text-zinc-600">{hint}</p>
-      </div>
-      <Badge variant="muted">Coming soon</Badge>
+    <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-zinc-950/40 px-4 py-3">
+      <p className="text-sm text-zinc-400">{label}</p>
+      <p className="text-sm font-medium tabular-nums text-zinc-100">{value}</p>
     </div>
   );
 }
@@ -31,7 +35,19 @@ export default async function AccountPage() {
     redirect("/login?next=/account");
   }
 
-  const email = user.email ?? "—";
+  await ensureProfileForUser();
+
+  const [profile, limits, savedCount, recentAnalyses] = await Promise.all([
+    getProfile(user.id),
+    getUserLimits(user.id),
+    countUserAnalyses(user.id),
+    getUserAnalyses(user.id, 3),
+  ]);
+
+  const email = profile?.email ?? user.email ?? "—";
+  const planLabel = formatPlanLabel(profile?.plan ?? "beta");
+  const daily = limits?.daily_analysis_count ?? 0;
+  const monthly = limits?.monthly_analysis_count ?? 0;
 
   return (
     <article className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -42,37 +58,52 @@ export default async function AccountPage() {
         Your account
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-        Public beta — full workspace access with no usage caps yet.
+        Public beta workspace — usage is tracked for transparency. No hard limits enforced yet.
       </p>
 
-      <section className="mt-8 space-y-4 rounded-xl border border-white/[0.08] bg-zinc-900/40 p-5">
-        <div>
-          <p className="text-xs font-medium text-zinc-500">Signed in as</p>
-          <p className="mt-1 text-sm font-medium text-zinc-100">{email}</p>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-zinc-500">Status</p>
-          <p className="mt-1 flex items-center gap-2 text-sm text-zinc-200">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
-            Beta account — active
-          </p>
-        </div>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Button href="/dashboard" size="sm">
+          Open dashboard
+        </Button>
+        <Button href="/upload" size="sm" variant="secondary">
+          New summary
+        </Button>
+      </div>
+
+      <section className="mt-8 space-y-3 rounded-xl border border-white/[0.08] bg-zinc-900/40 p-5">
+        <StatRow label="Email" value={email} />
+        <StatRow label="Plan" value={planLabel} />
+        <StatRow label="Daily analyses" value={daily} />
+        <StatRow label="Monthly analyses" value={monthly} />
+        <StatRow label="Saved analyses" value={savedCount} />
+
         <div className="pt-2">
           <SignOutButton />
         </div>
       </section>
 
-      <section className="mt-8 space-y-3">
-        <h2 className="text-sm font-semibold text-zinc-200">Coming later</h2>
-        <PlaceholderRow label="Usage" hint="Monthly summaries and fair-use limits." />
-        <PlaceholderRow
-          label="Saved analyses"
-          hint="Reopen past summaries from your library."
-        />
-        <PlaceholderRow label="Pro plan" hint="Paid tiers when checkout launches." />
-      </section>
+      {recentAnalyses.length > 0 && (
+        <section className="mt-8 space-y-3">
+          <h2 className="text-sm font-semibold text-zinc-200">Recent saved</h2>
+          <ul className="space-y-2">
+            {recentAnalyses.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={`/dashboard/${item.id}`}
+                  className="block rounded-lg border border-white/[0.06] bg-zinc-950/40 px-4 py-3 text-sm text-zinc-300 transition-colors hover:border-violet-500/20 hover:text-violet-200"
+                >
+                  {item.title ?? item.summary?.title ?? "Untitled analysis"}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mt-10 flex flex-wrap gap-3 border-t border-white/[0.06] pt-8">
+        <Button href="/dashboard" size="sm" variant="secondary">
+          Dashboard
+        </Button>
         <Button href="/upload" size="sm">
           Open workspace
         </Button>

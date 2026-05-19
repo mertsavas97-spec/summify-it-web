@@ -60,6 +60,7 @@ export type AnalyzeApiSuccessResponse = {
   providerUsed: "groq" | "gemini";
   fallbackUsed: boolean;
   result: AnalysisResult;
+  savedToWorkspace?: boolean;
   debug?: AnalyzeApiDebugMetadata;
 } & AnalysisIntelligenceMetadata;
 

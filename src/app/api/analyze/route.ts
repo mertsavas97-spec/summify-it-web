@@ -13,8 +13,10 @@ import type {
   AnalyzeApiSuccessResponse,
 } from "@/server/ai/schemas";
 import type { AnalysisIntelligenceContext } from "@/server/intelligence";
+import { getOptionalUser } from "@/lib/auth";
 import { USER_MESSAGES } from "@/lib/user-messages";
-import { devError, logServerError } from "@/server/logging";
+import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
+import { devError, devLog, logServerError } from "@/server/logging";
 
 function isDevelopment(): boolean {
   return process.env.NODE_ENV === "development";
@@ -106,6 +108,29 @@ export async function POST(request: Request) {
 
     if (isDevelopment()) {
       response.debug = buildSuccessDebug(mode, intelligence, providerUsed, fallbackUsed);
+    }
+
+    const currentUser = await getOptionalUser();
+    if (isDevelopment()) {
+      devLog("[summify.analyze] analyze_auth_user", {
+        userId: currentUser?.id ?? null,
+        email: currentUser?.email ?? null,
+      });
+    }
+    try {
+      const persistence = await runPostAnalysisPersistence({
+        userId: currentUser?.id ?? null,
+        intelligenceModeId,
+        sourceHint,
+        sourceContext,
+        providerUsed,
+        fallbackUsed,
+        result,
+        intelligence,
+      });
+      response.savedToWorkspace = persistence.savedToWorkspace;
+    } catch {
+      response.savedToWorkspace = false;
     }
 
     return NextResponse.json(response);

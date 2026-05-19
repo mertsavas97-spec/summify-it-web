@@ -118,7 +118,7 @@ export const pageSeo = {
   login: buildPageMetadata({
     title: "Sign In",
     description:
-      "Sign in to Summify with a magic link. Analysis stays free without an account — sign in prepares your profile for saved analyses later.",
+      "Sign in to Summify with email and password or a magic link. Analysis stays free without an account — sign in saves analyses to your dashboard.",
     path: "/login",
     noindex: true,
   }),

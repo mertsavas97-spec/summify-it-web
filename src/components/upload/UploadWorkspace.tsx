@@ -51,6 +51,7 @@ export type InjectedAnalysisPayload = {
   providerUsed: string;
   fallbackUsed: boolean;
   intelligence: AnalysisIntelligenceMetadata;
+  savedToWorkspace?: boolean;
 };
 
 export function UploadWorkspace() {
@@ -111,6 +112,7 @@ export function UploadWorkspace() {
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
         intelligence: analysis.intelligence,
+        savedToWorkspace: analysis.savedToWorkspace,
       });
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
@@ -142,6 +144,7 @@ export function UploadWorkspace() {
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
         intelligence: analysis.intelligence,
+        savedToWorkspace: analysis.savedToWorkspace,
       });
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
@@ -356,10 +359,12 @@ export function UploadWorkspace() {
           stays pinned on desktop.
         </p>
         <p className="mt-2 text-xs text-zinc-600">
-          <Link href="/login" className="text-violet-400/80 hover:text-violet-300">
-            Sign in
-          </Link>{" "}
-          to save analyses later.
+          <Link
+            href="/login?next=/upload"
+            className="text-violet-400/80 hover:text-violet-300"
+          >
+            Sign in to save analyses.
+          </Link>
         </p>
       </header>
 

@@ -1,21 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
+import { mapAuthError } from "@/lib/auth-errors";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { Button } from "@/components/ui/Button";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 type LoginFormProps = {
   nextPath?: string;
   errorMessage?: string | null;
 };
 
+type FormStatus = "idle" | "loading" | "sent" | "error";
+
+const inputClassName =
+  "mt-1.5 w-full rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50";
+
 export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProps) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<FormStatus>("idle");
   const [message, setMessage] = useState<string | null>(errorMessage ?? null);
+  const [loadingAction, setLoadingAction] = useState<
+    "signIn" | "signUp" | "magic" | null
+  >(null);
 
   if (!isSupabaseConfigured()) {
     return (
@@ -28,24 +39,134 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
     );
   }
 
+  const isBusy = loadingAction !== null;
+  const magicSent = status === "sent";
+
+  function clearFeedback() {
+    if (status !== "sent") setMessage(null);
+  }
+
+  async function completeSessionRedirect() {
+    router.refresh();
+    router.push(nextPath);
+  }
+
+  async function handleSignInWithPassword(event: React.FormEvent) {
+    event.preventDefault();
+    clearFeedback();
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setStatus("error");
+      setMessage("Enter your email and password.");
+      return;
+    }
+
+    setLoadingAction("signIn");
+    setStatus("loading");
+
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: trimmedEmail,
+      password,
+    });
+
+    setLoadingAction(null);
+
+    if (error) {
+      setStatus("error");
+      setMessage(mapAuthError(error));
+      return;
+    }
+
+    if (!data.session) {
+      setStatus("error");
+      setMessage("Sign-in did not complete. Try again or use a magic link.");
+      return;
+    }
+
+    setStatus("idle");
+    await completeSessionRedirect();
+  }
+
+  async function handleCreateAccount(event: React.FormEvent) {
+    event.preventDefault();
+    clearFeedback();
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setStatus("error");
+      setMessage("Enter your email and a password to create an account.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setStatus("error");
+      setMessage("Password is too weak. Use at least 6 characters.");
+      return;
+    }
+
+    setLoadingAction("signUp");
+    setStatus("loading");
+
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        emailRedirectTo: getAuthCallbackUrl(nextPath),
+      },
+    });
+
+    setLoadingAction(null);
+
+    if (error) {
+      setStatus("error");
+      setMessage(mapAuthError(error));
+      return;
+    }
+
+    if (data.session) {
+      setStatus("idle");
+      await completeSessionRedirect();
+      return;
+    }
+
+    setStatus("sent");
+    setMessage(
+      "Account created. Check your email to confirm your address, then sign in with your password.",
+    );
+  }
+
   async function handleMagicLink(event: React.FormEvent) {
     event.preventDefault();
+    clearFeedback();
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setStatus("error");
+      setMessage("Enter your email to receive a magic link.");
+      return;
+    }
+
+    setLoadingAction("magic");
     setStatus("loading");
-    setMessage(null);
 
     const supabase = createClient();
     const redirectTo = getAuthCallbackUrl(nextPath);
 
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: trimmedEmail,
       options: {
         emailRedirectTo: redirectTo,
       },
     });
 
+    setLoadingAction(null);
+
     if (error) {
       setStatus("error");
-      setMessage(error.message);
+      setMessage(mapAuthError(error));
       return;
     }
 
@@ -53,11 +174,9 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
     setMessage("Check your email for a sign-in link. You can close this tab.");
   }
 
-  const googleEnabled = process.env.NEXT_PUBLIC_AUTH_GOOGLE_ENABLED === "true";
-
   return (
     <div className="space-y-6">
-      <form onSubmit={handleMagicLink} className="space-y-4">
+      <form onSubmit={handleSignInWithPassword} className="space-y-4">
         <label className="block">
           <span className="text-xs font-medium text-zinc-400">Email</span>
           <input
@@ -66,36 +185,79 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearFeedback();
+            }}
             placeholder="you@university.edu"
-            disabled={status === "loading" || status === "sent"}
-            className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50"
+            disabled={isBusy || magicSent}
+            className={inputClassName}
           />
         </label>
-        <Button
-          type="submit"
-          size="md"
-          className="w-full"
-          disabled={status === "loading" || status === "sent" || !email.trim()}
-        >
-          {status === "loading" ? "Sending link…" : "Email me a sign-in link"}
-        </Button>
+
+        <label className="block">
+          <span className="text-xs font-medium text-zinc-400">Password</span>
+          <input
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              clearFeedback();
+            }}
+            placeholder="At least 6 characters"
+            disabled={isBusy || magicSent}
+            className={inputClassName}
+          />
+        </label>
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="submit"
+            size="md"
+            className="w-full sm:flex-1"
+            disabled={isBusy || magicSent || !email.trim() || !password}
+          >
+            {loadingAction === "signIn" ? "Signing in…" : "Sign in with password"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            className="w-full sm:flex-1"
+            disabled={isBusy || magicSent || !email.trim() || !password}
+            onClick={handleCreateAccount}
+          >
+            {loadingAction === "signUp" ? "Creating account…" : "Create account"}
+          </Button>
+        </div>
       </form>
 
-      {googleEnabled ? (
-        <>
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-white/[0.06]" />
-            <span className="text-[11px] text-zinc-600">or</span>
-            <span className="h-px flex-1 bg-white/[0.06]" />
-          </div>
-          <GoogleSignInButton nextPath={nextPath} />
-        </>
-      ) : (
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-white/[0.06]" />
+          <span className="text-[11px] text-zinc-600">or</span>
+          <span className="h-px flex-1 bg-white/[0.06]" />
+        </div>
+
+        <form onSubmit={handleMagicLink}>
+          <Button
+            type="submit"
+            variant="secondary"
+            size="md"
+            className="w-full"
+            disabled={isBusy || magicSent || !email.trim()}
+          >
+            {loadingAction === "magic" ? "Sending link…" : "Email me a sign-in link"}
+          </Button>
+        </form>
+
         <p className="text-center text-[11px] text-zinc-600">
-          Google sign-in will appear here once the provider is enabled in Supabase.
+          Magic links can be rate-limited during testing — password sign-in is more
+          reliable for local dev.
         </p>
-      )}
+      </div>
 
       {message && (
         <p
@@ -109,11 +271,11 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
       )}
 
       <p className="text-[11px] leading-relaxed text-zinc-600">
-        No password required. Summarize without an account anytime from the{" "}
+        Analysis stays free without an account. Open the{" "}
         <a href="/upload" className="text-violet-400/80 hover:text-violet-300">
           workspace
-        </a>
-        .
+        </a>{" "}
+        anytime — sign in to save analyses to your dashboard.
       </p>
     </div>
   );

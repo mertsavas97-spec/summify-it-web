@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { IntelligenceModeDefinition } from "@/types/modes";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import type { AnalysisResult } from "@/types/text-analysis";
@@ -30,6 +31,9 @@ import {
   formatFailureReasonLabel,
 } from "@/lib/analysis-debug-labels";
 import type { AnalyzeApiDebugMetadata } from "@/types/text-analysis";
+import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
+import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
+import { WorkspaceUsageWarning } from "./WorkspaceUsageWarning";
 import type { InjectedAnalysisPayload } from "./UploadWorkspace";
 
 type TextAnalysisMvpProps = {
@@ -206,7 +210,12 @@ export function TextAnalysisMvp({
     fallbackUsed: boolean;
   } | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [savedToWorkspace, setSavedToWorkspace] = useState<boolean | undefined>(
+    injectedAnalysis?.savedToWorkspace,
+  );
+  const [upgradeMode, setUpgradeMode] = useState<IntelligenceModeDefinition | null>(null);
   const displayResult = injectedAnalysis?.result ?? result;
+  const displaySavedToWorkspace = injectedAnalysis?.savedToWorkspace ?? savedToWorkspace;
   const displayMeta = injectedAnalysis
     ? {
         providerUsed: injectedAnalysis.providerUsed,
@@ -243,6 +252,7 @@ export function TextAnalysisMvp({
     setFailureDebug(null);
     setResult(null);
     setMeta(null);
+    setSavedToWorkspace(undefined);
     onIntelligenceReady?.(null);
     setLoading(true);
     onAnalyzingChange?.(true);
@@ -279,6 +289,7 @@ export function TextAnalysisMvp({
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
       });
+      setSavedToWorkspace(analysis.savedToWorkspace);
       onIntelligenceReady?.(analysis.intelligence);
       onAnalysisComplete?.(true);
     } catch {
@@ -328,6 +339,7 @@ export function TextAnalysisMvp({
             providerUsed={displayMeta.providerUsed}
             fallbackUsed={displayMeta.fallbackUsed}
           />
+          <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
         </div>
       )}
 
@@ -363,13 +375,19 @@ export function TextAnalysisMvp({
           <p className="text-xs font-medium text-zinc-300">Intelligence lens</p>
           <p className="text-[11px] text-zinc-500">29 modes · click card to change</p>
         </div>
-        <IntelligenceModeSelector value={mode} onChange={onModeChange} />
+        <IntelligenceModeSelector
+          value={mode}
+          onChange={onModeChange}
+          onLockedSelect={(m) => setUpgradeMode(m)}
+        />
         {modeUnavailableMessage && (
           <p className="mt-2 rounded-lg border border-violet-500/20 bg-violet-950/20 px-3 py-2 text-xs text-violet-200/90">
             {modeUnavailableMessage}
           </p>
         )}
       </div>
+
+      <WorkspaceUsageWarning />
 
       {showRunButton && (
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -441,6 +459,8 @@ export function TextAnalysisMvp({
           )}
         </div>
       )}
+
+      <PlanUpgradeModal mode={upgradeMode} onClose={() => setUpgradeMode(null)} />
     </section>
   );
 }

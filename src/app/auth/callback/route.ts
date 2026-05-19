@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureProfileForUser } from "@/lib/auth";
 import { createClientIfConfigured } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -23,6 +24,8 @@ export async function GET(request: Request) {
       `${origin}/login?error=auth&next=${encodeURIComponent(safeNext)}`,
     );
   }
+
+  await ensureProfileForUser();
 
   return NextResponse.redirect(`${origin}${safeNext}`);
 }

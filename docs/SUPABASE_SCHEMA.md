@@ -25,6 +25,13 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- Required: without these GRANTs, authenticated clients get "permission denied for table profiles"
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.profiles to authenticated;
+grant select, insert, update, delete on public.usage_events to authenticated;
+grant select, insert, update, delete on public.user_limits to authenticated;
+grant select, insert, update, delete on public.saved_analyses to authenticated;
+
 create policy "profiles_select_own"
   on public.profiles for select
   using (auth.uid() = id);
@@ -172,8 +179,10 @@ create trigger on_auth_user_created
 | Feature | Location |
 |---------|----------|
 | Ensure profile on login | `ensureProfileForUser()` — `/auth/callback`, `/account` |
-| Track analysis | `trackUsageEvent()` — `/api/analyze` (non-blocking) |
-| Account counts | Read `user_limits` on `/account` |
+| Track analysis | `runPostAnalysisPersistence()` — `/api/analyze` |
+| Save analysis | `saveAnalysis()` — authenticated `/api/analyze` success |
+| Dashboard | `getUserAnalyses()` — `/dashboard` |
+| Account counts | `user_limits` + `countUserAnalyses()` on `/account` |
 
 ---
 
@@ -185,3 +194,63 @@ create trigger on_auth_user_created
 4. **Authentication → Policies** — RLS enabled on all three tables.
 
 See also: `docs/AUTH_SETUP.md`.
+
+---
+
+## Phase 7C — `saved_analyses` (paste separately if 7B already applied)
+
+```sql
+-- ---------------------------------------------------------------------------
+-- saved_analyses
+-- ---------------------------------------------------------------------------
+create table if not exists public.saved_analyses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  title text,
+  source_kind text,
+  intelligence_mode text,
+  provider_used text,
+  document_type text,
+  source_label text,
+  summary jsonb not null,
+  learn_cards jsonb not null default '[]'::jsonb,
+  metadata jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists saved_analyses_user_id_created_at_idx
+  on public.saved_analyses (user_id, created_at desc);
+
+alter table public.saved_analyses enable row level security;
+
+grant select, insert, update, delete on public.saved_analyses to authenticated;
+
+create policy "saved_analyses_select_own"
+  on public.saved_analyses for select
+  using (auth.uid() = user_id);
+
+create policy "saved_analyses_insert_own"
+  on public.saved_analyses for insert
+  with check (auth.uid() = user_id);
+
+create policy "saved_analyses_delete_own"
+  on public.saved_analyses for delete
+  using (auth.uid() = user_id);
+
+drop trigger if exists saved_analyses_set_updated_at on public.saved_analyses;
+create trigger saved_analyses_set_updated_at
+  before update on public.saved_analyses
+  for each row execute function public.set_updated_at();
+```
+
+| Table | Purpose |
+|-------|---------|
+| `saved_analyses` | Structured intelligence output per completed analysis (no raw transcripts) |
+
+| Action | saved_analyses |
+|--------|----------------|
+| Read own | yes |
+| Insert own | yes |
+| Delete own | yes |
+| Update | no (append-only via new rows) |

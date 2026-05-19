@@ -113,6 +113,8 @@ export type AnalyzeApiSuccessResponse = {
   knowledgeLayerSummary: AnalyzeApiIntelligenceMetadata["knowledgeLayerSummary"];
   tokenBudget: AnalyzeApiIntelligenceMetadata["tokenBudget"];
   adaptivePlan: AnalyzeApiIntelligenceMetadata["adaptivePlan"];
+  /** True when the analysis was persisted for the signed-in user. */
+  savedToWorkspace?: boolean;
   debug?: AnalyzeApiDebugMetadata;
 };
 

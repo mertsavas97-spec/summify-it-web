@@ -41,8 +41,8 @@ export default async function LoginPage({ searchParams }: PageProps) {
         Sign in to Summify
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-        Use a magic link — no password. Analysis stays free without an account; sign in prepares
-        your account for saved analyses later.
+        Sign in with email and password, or use a magic link. Analysis stays free without an
+        account — sign in saves completed analyses to your dashboard.
       </p>
       <div className="mt-8">
         <LoginForm nextPath={nextPath} errorMessage={errorCopy(params.error)} />

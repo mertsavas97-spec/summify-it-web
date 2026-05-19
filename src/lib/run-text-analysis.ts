@@ -18,6 +18,7 @@ export type RunTextAnalysisSuccess = {
   providerUsed: string;
   fallbackUsed: boolean;
   intelligence: AnalysisIntelligenceMetadata;
+  savedToWorkspace?: boolean;
 };
 
 export type RunTextAnalysisFailure = {
@@ -35,6 +36,7 @@ export async function runTextAnalysis(
 ): Promise<RunTextAnalysisResult> {
   const res = await fetch("/api/analyze", {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       rawText: params.rawText,
@@ -58,6 +60,7 @@ export async function runTextAnalysis(
     result: data.result,
     providerUsed: data.providerUsed,
     fallbackUsed: data.fallbackUsed,
+    savedToWorkspace: data.savedToWorkspace,
     intelligence: {
       profile: data.profile,
       knowledgeLayerSummary: data.knowledgeLayerSummary,

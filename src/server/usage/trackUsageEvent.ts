@@ -1,4 +1,5 @@
 import { createClientIfConfigured } from "@/lib/supabase/server";
+import { devLog, devWarn } from "@/server/logging";
 import type { UsageEventInsert } from "@/types/database";
 
 export type TrackUsageEventInput = {
@@ -70,16 +71,40 @@ async function incrementUserLimits(
  */
 export async function trackUsageEvent(input: TrackUsageEventInput): Promise<void> {
   try {
-    if (!input.userId) return;
+    if (!input.userId) {
+      devLog("[summify.usage] usage_tracking_skipped_no_user", {
+        reason: "missing_user_id",
+      });
+      return;
+    }
 
     const supabase = await createClientIfConfigured();
-    if (!supabase) return;
+    if (!supabase) {
+      devWarn("[summify.usage] usage_tracking_insert_failed", {
+        reason: "supabase_not_configured",
+      });
+      return;
+    }
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user || user.id !== input.userId) return;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!user || user.id !== input.userId || !session?.access_token) {
+      devLog("[summify.usage] usage_tracking_skipped_no_user", {
+        reason: !session?.access_token
+          ? "no_session_access_token"
+          : user
+            ? "session_user_mismatch"
+            : "no_session_user",
+        inputUserId: input.userId,
+      });
+      return;
+    }
 
     const payload: UsageEventInsert = {
       user_id: user.id,
@@ -91,13 +116,26 @@ export async function trackUsageEvent(input: TrackUsageEventInput): Promise<void
 
     const { error: insertError } = await supabase.from("usage_events").insert(payload);
 
-    if (insertError) return;
+    if (insertError) {
+      devWarn("[summify.usage] usage_tracking_insert_failed", {
+        message: insertError.message,
+        code: insertError.code,
+      });
+      return;
+    }
+
+    devLog("[summify.usage] usage_tracking_insert_success", {
+      userId: user.id,
+      eventType: input.eventType,
+    });
 
     if (input.eventType === "analysis_completed") {
       await incrementUserLimits(supabase, user.id);
     }
-  } catch {
-    // Non-blocking — analysis must never fail because of tracking
+  } catch (err) {
+    devWarn("[summify.usage] usage_tracking_insert_failed", {
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
