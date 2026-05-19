@@ -1,17 +1,18 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl, getIndexableMarketingPaths } from "@/lib/seo";
-import { BLOG_POSTS } from "@/data/blog-posts";
+import { absoluteUrl } from "@/lib/seo";
+import { getAllIndexablePaths } from "@/lib/seo-paths";
 
 /**
- * Production sitemap — indexable marketing + blog only.
+ * Production sitemap — all indexable marketing, guides, comparisons, use cases, modes, and blog.
  * Excludes: /dashboard, /account, /login, /auth, /api, /share (user-generated).
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  const marketing = getIndexableMarketingPaths().map((path) => ({
+  return getAllIndexablePaths().map((path) => ({
     url: absoluteUrl(path),
-    lastModified,
+    lastModified:
+      path.startsWith("/blog/") ? lastModified : lastModified,
     changeFrequency: (path === "/" ? "weekly" : "monthly") as "weekly" | "monthly",
     priority:
       path === "/"
@@ -20,19 +21,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
           ? 0.9
           : path.startsWith("/modes/")
             ? 0.7
-            : path === "/blog"
-              ? 0.75
-              : path.startsWith("/summarize-")
-                ? 0.85
-                : 0.8,
+            : path.startsWith("/guides/")
+              ? 0.72
+              : path.startsWith("/compare/")
+                ? 0.68
+              : path.startsWith("/use-cases/")
+                ? 0.7
+              : path === "/blog"
+                ? 0.75
+                : path.startsWith("/summarize-") || path.startsWith("/for-")
+                  ? 0.85
+                  : path.startsWith("/blog/")
+                    ? 0.65
+                    : 0.8,
   }));
-
-  const blogPosts = BLOG_POSTS.map((post) => ({
-    url: absoluteUrl(`/blog/${post.slug}`),
-    lastModified: new Date(post.updatedAt ?? post.date),
-    changeFrequency: "monthly" as const,
-    priority: 0.65,
-  }));
-
-  return [...marketing, ...blogPosts];
 }

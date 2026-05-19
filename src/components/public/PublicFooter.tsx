@@ -10,6 +10,9 @@ const footerSections = [
       { href: "/summarize-pdf", label: "PDF Summarizer" },
       { href: "/summarize-youtube-video", label: "YouTube Summarizer" },
       { href: "/summarize-powerpoint", label: "PowerPoint Summarizer" },
+      { href: "/summarize-web-articles", label: "Web Articles" },
+      { href: "/summarize-docx", label: "DOCX Summarizer" },
+      { href: "/summarize-mp3", label: "MP3 / Audio" },
     ],
   },
   {
@@ -17,6 +20,18 @@ const footerSections = [
     links: [
       { href: "/for-students", label: "For Students" },
       { href: "/for-creators", label: "For Creators" },
+      { href: "/for-teams", label: "For Teams" },
+      { href: "/for-freelancers", label: "For Freelancers" },
+      { href: "/for-researchers", label: "For Researchers" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { href: "/guides/best-ai-pdf-summarizers-2026", label: "Guides" },
+      { href: "/compare/chatpdf", label: "Compare" },
+      { href: "/use-cases/research-papers-students", label: "Use cases" },
+      { href: "/blog", label: "Blog" },
     ],
   },
   {
@@ -40,7 +55,6 @@ const footerSections = [
   {
     title: "Company",
     links: [
-      { href: "/blog", label: "Blog" },
       { href: "/about", label: "About" },
       { href: "/faq", label: "FAQ" },
       { href: "/privacy", label: "Privacy" },
@@ -53,7 +67,7 @@ export function PublicFooter() {
   return (
     <footer className="border-t border-white/[0.06] bg-[#0a0b0f]">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-7">
           <div className="sm:col-span-2 lg:col-span-1">
             <BrandMark href="/" size="footer" className="opacity-95" />
             <p className="mt-3 max-w-xs text-xs leading-relaxed text-zinc-400">

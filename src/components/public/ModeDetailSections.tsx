@@ -8,6 +8,7 @@ import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { ProductMockCard } from "./ProductMockCard";
 import { CTASection } from "./CTASection";
 import { InternalTextLink } from "./InternalTextLink";
+import { ModeSeoExpansion } from "./ModeSeoExpansion";
 
 type ModeDetailSectionsProps = {
   modeId: IntelligenceModeId;
@@ -204,6 +205,8 @@ export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
           </p>
         </div>
       </section>
+
+      <ModeSeoExpansion modeId={modeId} />
 
       {preview && (
         <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">

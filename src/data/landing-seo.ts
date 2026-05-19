@@ -100,6 +100,120 @@ export const STUDENTS_FAQS: FaqItem[] = [
   },
 ];
 
+export const WEB_FAQS: FaqItem[] = [
+  {
+    q: "How does the web article summarizer work?",
+    a: "Paste a public URL in the workspace. Summify extracts readable article text, you pick an intelligence mode, and receive structured summaries, insights, and Learn cards.",
+  },
+  {
+    q: "Can Summify summarize paywalled articles?",
+    a: "Summify needs publicly reachable content for URL extraction. Save articles as PDF or DOCX when paywalls block automated fetch.",
+  },
+  {
+    q: "Which modes work best for articles?",
+    a: "General Summary for neutral reads, Executive Brief for leadership content, The Student for study notes, and The Creator for repurposing long posts.",
+  },
+  {
+    q: "Does Summify store article URLs?",
+    a: "URLs are processed for extraction during analysis. No permanent article library is offered during public beta.",
+  },
+];
+
+export const DOCX_FAQS: FaqItem[] = [
+  {
+    q: "Can I upload Word .docx files?",
+    a: "Yes. Upload DOCX in the workspace alongside PDF and TXT. Summify extracts headings and body text for mode-specific analysis.",
+  },
+  {
+    q: "Does Summify work with Google Docs?",
+    a: "Export your document as .docx and upload it. Native Google Docs integration is not available in beta.",
+  },
+  {
+    q: "Is Contract Summary available for DOCX agreements?",
+    a: "Yes. Contract Summary mode highlights obligations and ambiguous clauses for human review — not legal advice.",
+  },
+  {
+    q: "What is the maximum DOCX size?",
+    a: "Standard upload limits apply during beta. Very long documents may be compacted while preserving structure.",
+  },
+];
+
+export const MP3_FAQS: FaqItem[] = [
+  {
+    q: "Can Summify summarize MP3 audio files directly?",
+    a: "Summify analyzes transcript text. Upload TXT transcripts, paste captions, or use YouTube URLs when captions exist.",
+  },
+  {
+    q: "Does Summify work as a podcast summarizer?",
+    a: "Yes, when you have episode transcripts. The Creator mode emphasizes hooks and repurposing from spoken content.",
+  },
+  {
+    q: "Can I summarize meeting recordings?",
+    a: "Provide a transcript export. Captioned webinar uploads on YouTube also work when transcripts are available.",
+  },
+  {
+    q: "Does Summify generate timestamps?",
+    a: "Analysis focuses on transcript themes. Timestamp navigation is on the roadmap; verify quotes in the source recording.",
+  },
+];
+
+export const TEAMS_FAQS: FaqItem[] = [
+  {
+    q: "How do teams use Summify?",
+    a: "Upload reports, decks, and meeting transcripts. Executive Brief mode produces decision-ready summaries with risks and next actions.",
+  },
+  {
+    q: "Is there a Team plan?",
+    a: "Team pricing is previewed on the pricing page. Public beta workspace access is free today.",
+  },
+  {
+    q: "Can teammates share analyses?",
+    a: "Saved analyses support optional public share links. Team workspaces with roles are on the roadmap.",
+  },
+  {
+    q: "What formats do teams use most?",
+    a: "PDF reports, PowerPoint decks, web articles, and YouTube recordings with captions for async review.",
+  },
+];
+
+export const FREELANCERS_FAQS: FaqItem[] = [
+  {
+    q: "Can freelancers summarize client contracts?",
+    a: "Yes. Upload DOCX or PDF and use Contract Summary for a first-pass read. Always verify clauses with counsel.",
+  },
+  {
+    q: "Does Summify replace legal review?",
+    a: "No. Contract Summary is informational only — not legal advice. Use outputs as a starting point.",
+  },
+  {
+    q: "What about client confidentiality?",
+    a: "Do not upload material you cannot process on third-party AI providers. See our Privacy page for data flow.",
+  },
+  {
+    q: "Which modes help with client briefs?",
+    a: "Executive Brief for strategy docs, General Summary for neutral reads, and The Creator for content deliverables.",
+  },
+];
+
+export const RESEARCHERS_FAQS: FaqItem[] = [
+  {
+    q: "Can researchers summarize academic PDFs?",
+    a: "Yes. Upload papers in the workspace. The Student mode emphasizes concepts; General Summary offers neutral synthesis.",
+  },
+  {
+    q: "Does Summify cite sources?",
+    a: "Outputs reference themes from your upload. Always verify claims and citations against the original paper.",
+  },
+  {
+    q: "Can I analyze literature from web articles?",
+    a: "Yes. Paste public article URLs or upload PDFs when paywalls block fetch.",
+  },
+  {
+    q: "How does Summify handle long papers?",
+    a: "Long PDFs may be compacted for analysis while preserving narrative structure during beta.",
+  },
+];
+
 export const CREATORS_FAQS: FaqItem[] = [
   {
     q: "Can Summify act as a podcast summarizer?",
@@ -220,6 +334,108 @@ export const RELATED_LINKS = {
       href: "/upload",
       label: "Open the workspace",
       description: "Analyze your next piece of content.",
+    },
+  ] satisfies RelatedLinkItem[],
+  webArticles: [
+    {
+      href: "/upload",
+      label: "Analyze a web article",
+      description: "Paste a URL in the workspace.",
+    },
+    {
+      href: "/summarize-pdf",
+      label: "AI PDF summarizer",
+      description: "Papers and reports alongside articles.",
+    },
+    {
+      href: "/for-researchers",
+      label: "For researchers",
+      description: "Evidence synthesis workflows.",
+    },
+  ] satisfies RelatedLinkItem[],
+  docx: [
+    {
+      href: "/upload",
+      label: "Upload DOCX",
+      description: "Word documents in the workspace.",
+    },
+    {
+      href: "/modes/contract-analyzer",
+      label: "Contract Summary mode",
+      description: "First-pass agreement review.",
+    },
+    {
+      href: "/for-freelancers",
+      label: "For freelancers",
+      description: "Client docs and contracts.",
+    },
+  ] satisfies RelatedLinkItem[],
+  mp3: [
+    {
+      href: "/summarize-youtube-video",
+      label: "YouTube summarizer",
+      description: "Captioned video and podcast uploads.",
+    },
+    {
+      href: "/for-creators",
+      label: "For creators",
+      description: "Repurpose transcripts into content.",
+    },
+    {
+      href: "/upload",
+      label: "Open workspace",
+      description: "Paste transcripts or URLs.",
+    },
+  ] satisfies RelatedLinkItem[],
+  teams: [
+    {
+      href: "/modes/executive-brief",
+      label: "Executive Brief mode",
+      description: "Decision-ready team briefs.",
+    },
+    {
+      href: "/summarize-powerpoint",
+      label: "PowerPoint summarizer",
+      description: "Deck review for stakeholders.",
+    },
+    {
+      href: "/upload",
+      label: "Team workspace",
+      description: "Analyze reports and recordings.",
+    },
+  ] satisfies RelatedLinkItem[],
+  freelancers: [
+    {
+      href: "/modes/contract-analyzer",
+      label: "Contract Summary",
+      description: "Client agreement first reads.",
+    },
+    {
+      href: "/summarize-docx",
+      label: "DOCX summarizer",
+      description: "Word briefs and SOWs.",
+    },
+    {
+      href: "/upload",
+      label: "Open workspace",
+      description: "Analyze client documents.",
+    },
+  ] satisfies RelatedLinkItem[],
+  researchers: [
+    {
+      href: "/summarize-pdf",
+      label: "PDF summarizer",
+      description: "Papers and preprints.",
+    },
+    {
+      href: "/summarize-web-articles",
+      label: "Web article summarizer",
+      description: "Online reporting and blogs.",
+    },
+    {
+      href: "/modes/the-student",
+      label: "The Student mode",
+      description: "Concept-heavy synthesis.",
     },
   ] satisfies RelatedLinkItem[],
   home: [
