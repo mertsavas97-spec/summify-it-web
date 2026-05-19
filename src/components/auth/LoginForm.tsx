@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
 import { mapAuthError } from "@/lib/auth-errors";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { Button } from "@/components/ui/Button";
 
 type LoginFormProps = {
@@ -174,8 +175,36 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
     setMessage("Check your email for a sign-in link. You can close this tab.");
   }
 
+  function handleGoogleError(googleMessage: string) {
+    if (!googleMessage) return;
+    setStatus("error");
+    setMessage(googleMessage);
+  }
+
+  const googleEnabled = isGoogleAuthEnabled();
+
   return (
     <div className="space-y-6">
+      <GoogleSignInButton
+        nextPath={nextPath}
+        onError={handleGoogleError}
+        disabled={isBusy || magicSent}
+      />
+
+      {!googleEnabled && isSupabaseConfigured() && (
+        <p className="text-[11px] text-zinc-600">
+          Google sign-in requires{" "}
+          <code className="text-zinc-500">NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true</code> in
+          your environment after the Supabase Google provider is configured.
+        </p>
+      )}
+
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-white/[0.06]" />
+        <span className="text-[11px] text-zinc-600">or sign in with email</span>
+        <span className="h-px flex-1 bg-white/[0.06]" />
+      </div>
+
       <form onSubmit={handleSignInWithPassword} className="space-y-4">
         <label className="block">
           <span className="text-xs font-medium text-zinc-400">Email</span>

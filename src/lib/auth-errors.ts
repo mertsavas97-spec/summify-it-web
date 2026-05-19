@@ -51,5 +51,72 @@ export function mapAuthError(error: { message?: string; code?: string }): string
     return "Enter a valid email address.";
   }
 
+  if (
+    (message.includes("oauth") && message.includes("not enabled")) ||
+    message.includes("provider is not enabled") ||
+    message.includes("unsupported provider")
+  ) {
+    return "Google sign-in is not enabled. Ask the admin to enable the Google provider in Supabase.";
+  }
+
+  if (
+    message.includes("redirect") ||
+    message.includes("redirect_uri") ||
+    code === "redirect_uri_mismatch"
+  ) {
+    return "Redirect URL mismatch. Check Supabase redirect URLs and Google OAuth settings (see docs/AUTH_SETUP.md).";
+  }
+
   return error.message?.trim() || "Something went wrong. Please try again.";
+}
+
+/** Map OAuth provider errors from `signInWithOAuth` before redirect. */
+export function mapOAuthSignInError(error: { message?: string; code?: string }): string {
+  const mapped = mapAuthError(error);
+  if (mapped !== (error.message?.trim() || "Something went wrong. Please try again.")) {
+    return mapped;
+  }
+
+  const message = (error.message ?? "").toLowerCase();
+  if (message.includes("popup") || message.includes("closed")) {
+    return "Sign-in was cancelled. Try again when you're ready.";
+  }
+
+  return mapped;
+}
+
+/** Map `error` / `error_description` query params on `/auth/callback`. */
+export function oauthCallbackErrorCode(
+  error: string,
+  description?: string | null,
+): string {
+  const normalized = error.toLowerCase();
+  const desc = (description ?? "").toLowerCase();
+
+  if (normalized === "access_denied" || desc.includes("access_denied")) {
+    return "oauth_cancelled";
+  }
+
+  if (
+    normalized.includes("redirect") ||
+    desc.includes("redirect_uri") ||
+    desc.includes("redirect")
+  ) {
+    return "redirect_mismatch";
+  }
+
+  return "auth";
+}
+
+export function oauthCallbackErrorMessage(code: string): string {
+  switch (code) {
+    case "oauth_cancelled":
+      return "Google sign-in was cancelled. Try again when you're ready.";
+    case "redirect_mismatch":
+      return "Redirect URL mismatch. Add this site’s callback URL in Supabase and Google Cloud (see docs/AUTH_SETUP.md).";
+    case "google_disabled":
+      return "Google sign-in is not enabled on this deployment.";
+    default:
+      return "Sign-in failed. Try again or use email and password.";
+  }
 }
