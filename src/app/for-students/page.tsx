@@ -91,7 +91,7 @@ export default function ForStudentsPage() {
 
       <CTASection
         title="Try The Student mode free"
-        description="Active in the workspace today alongside Executive Brief, The Creator, and Contract Analyzer."
+        description="Active in the workspace today alongside Executive Brief, The Creator, and Contract Summary."
         primaryLabel="Open the workspace"
         secondaryHref="/modes"
         secondaryLabel="Intelligence modes"

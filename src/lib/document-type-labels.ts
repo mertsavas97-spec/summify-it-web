@@ -33,7 +33,7 @@ const LABELS: Record<DocumentTypeGuess, string> = {
   strategy_deck: "Strategy Deck",
   business_report: "Business Report",
   research_paper: "Research Paper",
-  legal_contract: "Legal Contract",
+  legal_contract: "Contract Document",
   policy_document: "Policy Document",
   meeting_notes: "Meeting Notes",
   educational_material: "Educational Material",

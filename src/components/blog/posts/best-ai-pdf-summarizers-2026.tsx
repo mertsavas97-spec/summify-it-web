@@ -22,7 +22,7 @@ export function BestAiPdfSummarizersBody() {
       <p>
         When you <strong>summarize PDF online</strong>, check whether the tool reads the
         full text you upload (not just the first pages), handles scanned PDFs reasonably,
-        and lets you pick an analysis lens — executive brief vs. study notes vs. legal
+        and lets you pick an analysis lens — executive brief vs. study notes vs. contract
         skim, for example.
       </p>
 
@@ -62,7 +62,7 @@ export function BestAiPdfSummarizersBody() {
         AI summarization pays off when you have volume and a clear question: What are the
         main arguments? What changed between versions? What should I review before a
         meeting? It is weaker when you need line-by-line precision — contracts, citations,
-        or compliance — unless you treat the summary as a first pass and verify in the
+        or policy requirements — unless you treat the summary as a first pass and verify in the
         source.
       </p>
 

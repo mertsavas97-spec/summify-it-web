@@ -6,6 +6,7 @@ import { MODE_CATEGORY_META, getModesByCategory, countModesByAvailability } from
 import { ModePreviewCard } from "@/components/public/ModePreviewCard";
 import { CTASection } from "@/components/public/CTASection";
 import { PublicHero } from "@/components/public/PublicHero";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 
 export const metadata = pageSeo.modes;
 
@@ -19,14 +20,14 @@ export default function ModesHubPage() {
         data={webPageSchema({
           name: "Intelligence modes",
           description:
-            "Browse executive, study, creator, and legal intelligence lenses for documents, video, and articles.",
+            "Browse executive, study, creator, document, and technical intelligence lenses for documents, video, and articles.",
           path: "/modes",
         })}
       />
       <PublicHero
         badge="Intelligence modes"
         title="29 specialized lenses. Four active today."
-        description={`Choose how Summify analyzes your source — executive, academic, creator, legal, and more. ${counts.active} modes run in the workspace now; ${counts.locked} Pro modes and ${counts.comingSoon} coming soon are visible for early access.`}
+        description={`Choose how Summify organizes your source — executive, academic, creator, document, technical, and more. ${counts.active} modes run in the workspace now; ${counts.locked} Pro modes and ${counts.comingSoon} coming soon are visible for early access.`}
         primaryCta={{ href: "/upload", label: "Try active modes" }}
         secondaryCta={{ href: "/pricing", label: "Planned pricing" }}
       />
@@ -64,9 +65,14 @@ export default function ModesHubPage() {
 
       <CTASection
         title="Run active modes in the workspace"
-        description="Executive Brief, The Student, The Creator, and Contract Analyzer are available now. Locked modes are preview-only until Pro Intelligence launches."
+        description="Executive Brief, The Student, The Creator, and Contract Summary are available now. Locked modes are preview-only until Pro Intelligence launches."
         primaryLabel="Open workspace"
       />
+      <section className="px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <ProductDisclaimer />
+        </div>
+      </section>
     </>
   );
 }

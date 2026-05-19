@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { SEO_BRAND } from "@/lib/seo";
 
 const footerSections = [
@@ -25,7 +26,7 @@ const footerSections = [
       { href: "/modes/executive-brief", label: "Executive Brief" },
       { href: "/modes/the-student", label: "The Student" },
       { href: "/modes/the-creator", label: "The Creator" },
-      { href: "/modes/contract-analyzer", label: "Contract Analyzer" },
+      { href: "/modes/contract-analyzer", label: "Contract Summary" },
     ],
   },
   {
@@ -57,7 +58,7 @@ export function PublicFooter() {
             <BrandMark href="/" size="footer" className="opacity-95" />
             <p className="mt-3 max-w-xs text-xs leading-relaxed text-zinc-400">
               Structured intelligence from PDFs, decks, videos, and articles — with Learn cards
-              built in. Public beta: analysis is live; billing is not.
+              built in.
             </p>
           </div>
           {footerSections.map((section) => (
@@ -81,9 +82,9 @@ export function PublicFooter() {
           ))}
         </div>
         <p className="mt-10 border-t border-white/[0.06] pt-6 text-[11px] text-zinc-500">
-          © {new Date().getFullYear()} {SEO_BRAND}. AI outputs are for information only —
-          not legal, medical, or financial advice.
+          © {new Date().getFullYear()} {SEO_BRAND}.
         </p>
+        <ProductDisclaimer className="mt-2 max-w-3xl" />
       </div>
     </footer>
   );

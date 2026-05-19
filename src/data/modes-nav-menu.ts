@@ -44,7 +44,7 @@ export const MODES_NAV_MENU_SECTIONS: ModesNavMenuSection[] = [
     ],
   },
   {
-    title: "Legal & Technical",
+    title: "Documents & Technical",
     items: [
       { modeId: "contract-analyzer" },
       { modeId: "technical-decoder" },

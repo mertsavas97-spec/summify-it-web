@@ -30,8 +30,23 @@ export type SavedAnalysisRow = {
   summary: SavedAnalysisSummaryPayload;
   learn_cards: LearnCardOutput[];
   metadata: SavedAnalysisMetadata | null;
+  is_public: boolean;
+  share_id: string | null;
+  shared_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/** Read-only payload for `/share/[shareId]` — no owner or raw source content. */
+export type PublicSharedAnalysis = {
+  share_id: string;
+  title: string;
+  source_kind: string | null;
+  intelligence_mode: string | null;
+  summary: SavedAnalysisSummaryPayload;
+  learn_cards: LearnCardOutput[];
+  shared_at: string | null;
+  created_at: string;
 };
 
 /** List/card shape — same columns, used on dashboard. */

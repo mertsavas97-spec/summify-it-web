@@ -1,5 +1,6 @@
 import { getPlanDefinition } from "@/data/pricingPlans";
 import type { UserLimits } from "@/types/database";
+import type { MemoryPlanLimits } from "@/types/memory";
 import { isPlanId, type PlanId } from "@/types/plan";
 
 /** Subset of `user_limits` rows used for daily quota math. */
@@ -18,13 +19,16 @@ export type UserPlanLimits = {
   maxFileSizeMb: number;
   maxLearnCards: number;
   maxSavedAnalyses: number | null;
+  maxReviewItems: number | null;
+  dailyReviewTarget: number;
+  memoryEnabled: boolean;
+  remindersEnabled: boolean;
   isBeta: boolean;
 };
 
 export type AnalysisQuotaResult = {
-  /** Always true until hard enforcement is enabled in a future phase. */
   allowed: boolean;
-  /** True when usage would block once enforcement is turned on. */
+  /** True when usage blocks or would block for informational beta views. */
   wouldBlock: boolean;
   planId: PlanId;
   remaining: number | null;
@@ -80,7 +84,41 @@ export function getUserPlanLimits(
     maxFileSizeMb: plan.limits.maxFileSizeMb,
     maxLearnCards: plan.limits.maxLearnCards,
     maxSavedAnalyses: plan.limits.maxSavedAnalyses,
+    maxReviewItems: getMemoryPlanLimits(planId).maxReviewItems,
+    dailyReviewTarget: getMemoryPlanLimits(planId).dailyReviewTarget,
+    memoryEnabled: getMemoryPlanLimits(planId).spacedRepetitionEnabled,
+    remindersEnabled: getMemoryPlanLimits(planId).remindersEnabled,
     isBeta: planId === "beta",
+  };
+}
+
+export function getMemoryPlanLimits(storedPlan: string | null | undefined): MemoryPlanLimits {
+  const planId = resolvePlanId(storedPlan);
+  const plan = getPlanDefinition(planId);
+
+  if (planId === "free") {
+    return {
+      maxReviewItems: 25,
+      dailyReviewTarget: 8,
+      remindersEnabled: false,
+      spacedRepetitionEnabled: plan.limits.spacedRepetitionEnabled,
+    };
+  }
+
+  if (planId === "scholar") {
+    return {
+      maxReviewItems: 500,
+      dailyReviewTarget: 20,
+      remindersEnabled: false,
+      spacedRepetitionEnabled: true,
+    };
+  }
+
+  return {
+    maxReviewItems: null,
+    dailyReviewTarget: planId === "pro" ? 30 : 16,
+    remindersEnabled: plan.limits.emailRemindersEnabled,
+    spacedRepetitionEnabled: plan.limits.spacedRepetitionEnabled,
   };
 }
 
@@ -132,7 +170,7 @@ export function canRunAnalysis(input: {
   }
 
   return {
-    allowed: true,
+    allowed: !wouldBlock,
     wouldBlock,
     planId,
     remaining,

@@ -15,13 +15,13 @@ export const howItWorksSteps: HowItWorksStep[] = [
     step: 2,
     title: "Choose a Smart Template",
     description:
-      "Pick Executive, Academic, Legal, or Creator mode to shape how your summary is structured.",
+      "Pick Executive, Academic, Document, or Creator mode to shape how your summary is structured.",
   },
   {
     step: 3,
     title: "Get a structured summary",
     description:
-      "Review sections, highlights, and action items in a layout tuned for professional reading.",
+      "Review sections, highlights, and action items in a layout tuned for focused reading.",
   },
   {
     step: 4,

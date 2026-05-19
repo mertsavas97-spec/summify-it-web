@@ -37,7 +37,7 @@ export const personas: PersonaDefinition[] = [
     code: "LEGL",
     tagline: "Clauses, obligations, and timelines",
     description:
-      "Break down contracts and policy documents without losing critical legal nuance.",
+      "Summarize contracts and policy documents into structured notes and points to review.",
     highlights: ["Party obligations", "Key dates", "Defined terms"],
     outputSections: ["Parties", "Obligations", "Key dates", "Defined terms"],
   },

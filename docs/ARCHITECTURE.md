@@ -246,7 +246,7 @@ Do not expose internal chunk text in API responses until citation UX exists.
 
 ### Architecture
 
-29 specialized modes are declared in a single registry. Each mode has metadata (category, icon, availability, lens copy, learn weighting, recommended sources). **Four backend families** reuse existing prompts — `executive`, `academic`, `creator`, `legal` — so there are not 29 separate prompt stacks.
+29 specialized modes are declared in a single registry. Each mode has metadata (category, icon, availability, lens copy, learn weighting, recommended sources). **Four backend families** reuse existing prompts — `executive`, `academic`, `creator`, `legal` (contract/policy summary lens) — so there are not 29 separate prompt stacks.
 
 ```
 Client IntelligenceModeId (e.g. the-creator)
@@ -285,9 +285,9 @@ After compaction (4C), the **system prompt** applies a mode-specific analysis le
 | **executive** | Decisions, risks, opportunities, next actions, business implications |
 | **academic** | Thesis, arguments, concepts, evidence, study value |
 | **creator** | Hooks, story angles, audience relevance, repurposing, emotional/viral potential (when supported) |
-| **legal** | Obligations, risks, clauses, compliance, unclear terms (summarize only — no legal advice) |
+| **legal** | Contract and policy summaries, clauses, obligations, risk signals, points to review |
 
-Each mode includes tailored **learn card** guidance (e.g. executive → business concepts / why decisions matter; legal → obligations / definitions / risk traps).
+Each mode includes tailored **learn card** guidance (e.g. executive → business concepts / why decisions matter; legal-family → obligations / definitions / points to review).
 
 ### Anti-generic guardrails
 

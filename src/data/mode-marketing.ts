@@ -44,8 +44,8 @@ export const MODE_MARKETING_PREVIEWS: Partial<
   "contract-analyzer": {
     sampleBullets: [
       "Party obligations and key dates",
-      "Risk clauses and ambiguous terms",
-      "Informational summary — not legal advice",
+      "Clause summary and ambiguous terms",
+      "Informational overview with points to review",
     ],
     learnPreview: [
       { type: "Concept", title: "Termination trigger" },

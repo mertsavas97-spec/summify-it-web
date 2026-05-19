@@ -1,4 +1,5 @@
 import { pageSeo } from "@/lib/page-metadata";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { TrustPageLayout } from "@/components/public/TrustPageLayout";
 
 export const metadata = pageSeo.terms;
@@ -10,6 +11,7 @@ export default function TermsPage() {
       title="Terms of use (public beta)"
       lead="By using Summify during public beta, you agree to the following sensible limits. We will update these terms before general availability and paid plans."
     >
+      <ProductDisclaimer />
       <section>
         <h2 className="text-base font-semibold text-zinc-200">The service</h2>
         <p className="mt-2">
@@ -29,9 +31,10 @@ export default function TermsPage() {
       <section>
         <h2 className="text-base font-semibold text-zinc-200">AI outputs</h2>
         <p className="mt-2">
-          Generated content may be incomplete or incorrect. You are responsible for verifying
-          results before relying on them. Outputs are not legal, medical, tax, or investment
-          advice.
+          Outputs are AI-generated and may be incomplete or incorrect. They are provided for
+          informational purposes only, and are not legal, financial, medical, tax, investment, or
+          other regulated professional advice. You are responsible for verifying outputs before
+          relying on them and should consult qualified professionals when needed.
         </p>
       </section>
       <section>

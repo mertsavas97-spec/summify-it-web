@@ -6,6 +6,12 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: "◫", match: (p: string) => p === "/dashboard" },
   {
+    href: "/dashboard/memory",
+    label: "Memory",
+    icon: "◇",
+    match: (p: string) => p.startsWith("/dashboard/memory"),
+  },
+  {
     href: "/upload",
     label: "New summary",
     icon: "↑",

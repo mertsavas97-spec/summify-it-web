@@ -3,6 +3,7 @@ import { formatRecommendedSources, getCategoryLabelForMode } from "@/lib/mode-gr
 import { getModeMarketingPreview } from "@/data/mode-marketing";
 import type { IntelligenceModeId } from "@/types/modes";
 import { Button } from "@/components/ui/Button";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { ProductMockCard } from "./ProductMockCard";
 import { CTASection } from "./CTASection";
 
@@ -34,6 +35,9 @@ export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
             <p className="mt-4 text-xs text-zinc-600">
               Best for: {formatRecommendedSources(mode.recommendedSources)}
             </p>
+            {mode.id === "contract-analyzer" ? (
+              <ProductDisclaimer className="mt-4 max-w-prose" />
+            ) : null}
             <div className="mt-6">
               <Button href="/upload" size="md">
                 Try {mode.label} in workspace

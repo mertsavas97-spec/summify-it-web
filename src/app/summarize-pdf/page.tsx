@@ -36,7 +36,7 @@ export default function SummarizePdfPage() {
                 Summify is a document summary tool that goes beyond extracting bullets. When you
                 summarize PDF online in the{" "}
                 <InternalTextLink href="/upload">document analysis workspace</InternalTextLink>,
-                you choose an intelligence mode — study, executive, creator, or legal — and receive
+                you choose an intelligence mode — study, executive, creator, or document — and receive
                 structured outputs grounded in the source.
               </>
             ),
@@ -63,7 +63,7 @@ export default function SummarizePdfPage() {
         title="How the PDF summarizer works"
         steps={[
           { title: "Upload PDF", description: "Drop your file in the workspace (PDF, DOCX, or TXT)." },
-          { title: "Pick a lens", description: "Student, Executive, Creator, or Contract Analyzer." },
+          { title: "Pick a lens", description: "Student, Executive, Creator, or Contract Summary." },
           { title: "Get structure", description: "AI document analysis with mode-tuned outputs." },
           { title: "Study with Learn", description: "Concept, quiz, and why-it-matters cards." },
         ]}

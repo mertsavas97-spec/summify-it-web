@@ -1,4 +1,5 @@
 import { PricingSection } from "@/components/pricing/PricingSection";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
@@ -11,7 +12,7 @@ export default function PricingPage() {
       <SectionHeading
         eyebrow="Pricing"
         title="Plans for every workflow"
-        description="Public beta pricing preview — the workspace stays free for current users. Paid tiers and checkout are coming soon."
+        description="Choose the Summify workspace tier that matches your learning and document intelligence workflow."
       />
 
       <p className="mx-auto mt-4 max-w-2xl text-center text-xs leading-relaxed text-zinc-500">
@@ -19,12 +20,13 @@ export default function PricingPage() {
       </p>
 
       <PricingSection />
+      <ProductDisclaimer className="mx-auto mt-8 max-w-3xl text-center" />
 
       <div className="mt-12 grid gap-3 sm:grid-cols-3">
         {[
-          { label: "No credit card", sub: "required in beta" },
-          { label: "No checkout", sub: "Stripe not connected" },
-          { label: "Beta accounts", sub: "keep full access" },
+          { label: "Secure checkout", sub: "hosted by Stripe" },
+          { label: "Cancel anytime", sub: "through billing portal" },
+          { label: "Beta override", sub: "existing beta access preserved" },
         ].map((item) => (
           <div
             key={item.label}

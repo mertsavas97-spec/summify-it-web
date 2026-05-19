@@ -45,8 +45,8 @@ export const MODE_CATEGORY_META: ModeCategoryMeta[] = [
   },
   {
     id: "legal_technical",
-    label: "Legal & Technical",
-    description: "Contracts, policies, and technical decoding.",
+    label: "Documents & Technical",
+    description: "Contract summaries, policy summaries, and technical decoding.",
     order: 6,
   },
   {

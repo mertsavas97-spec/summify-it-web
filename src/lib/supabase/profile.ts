@@ -112,7 +112,7 @@ export async function ensureProfileForUser(passedUser?: User): Promise<Profile |
   if (existingProfile) {
     const { data, error } = await supabase
       .from("profiles")
-      .update({ email, plan: "beta", updated_at: now })
+      .update({ email, updated_at: now })
       .eq("id", user.id)
       .select()
       .single();
@@ -137,7 +137,7 @@ export async function ensureProfileForUser(passedUser?: User): Promise<Profile |
     if (error?.code === "23505") {
       const { data: retry, error: retryError } = await supabase
         .from("profiles")
-        .update({ email, plan: "beta", updated_at: now })
+        .update({ email, updated_at: now })
         .eq("id", user.id)
         .select()
         .single();

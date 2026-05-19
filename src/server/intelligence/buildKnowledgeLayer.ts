@@ -155,7 +155,7 @@ function buildQuestions(
 
   const byType: Partial<Record<DocumentTypeGuess, string[]>> = {
     legal_contract: ["What are the key obligations and dates?"],
-    policy_document: ["What rules or compliance requirements are stated?"],
+    policy_document: ["What rules or policy requirements are stated?"],
     research_paper: ["What methodology and limitations are stated?"],
     business_report: ["What metrics or outcomes are reported?"],
     meeting_notes: ["What decisions and action items were captured?"],

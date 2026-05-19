@@ -13,6 +13,10 @@ import type {
   PresentationSlideOutlineItem,
 } from "@/types/extraction";
 import { USER_MESSAGES } from "@/lib/user-messages";
+import { getOptionalUser } from "@/lib/auth";
+import { getProfile } from "@/lib/supabase/profile";
+import { resolvePlanId } from "@/lib/plan-limits";
+import { getMaxFileSizeBytes } from "@/lib/plan-features";
 import { devError, logServerError } from "@/server/logging";
 
 export const runtime = "nodejs";
@@ -57,8 +61,16 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 400 });
     }
 
-    if (file.size > EXTRACTION_CONFIG.maxFileSizeBytes) {
-      const maxMb = EXTRACTION_CONFIG.maxFileSizeBytes / (1024 * 1024);
+    const user = await getOptionalUser();
+    const profile = user ? await getProfile(user.id) : null;
+    const planId = user ? resolvePlanId(profile?.plan) : "free";
+    const maxFileSizeBytes = Math.min(
+      EXTRACTION_CONFIG.maxFileSizeBytes,
+      getMaxFileSizeBytes(planId),
+    );
+
+    if (file.size > maxFileSizeBytes) {
+      const maxMb = maxFileSizeBytes / (1024 * 1024);
       const payload: ExtractApiErrorResponse = {
         success: false,
         error: USER_MESSAGES.extractFileTooLarge(maxMb),

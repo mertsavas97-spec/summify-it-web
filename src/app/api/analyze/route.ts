@@ -14,6 +14,9 @@ import type {
 } from "@/server/ai/schemas";
 import type { AnalysisIntelligenceContext } from "@/server/intelligence";
 import { getOptionalUser } from "@/lib/auth";
+import { getProfile, getUserLimits } from "@/lib/supabase/profile";
+import { canRunAnalysis, resolvePlanId } from "@/lib/plan-limits";
+import { getMaxLearnCardsForPlan, isModeIncludedInPlan } from "@/lib/plan-features";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
 import { devError, devLog, logServerError } from "@/server/logging";
@@ -84,6 +87,39 @@ export async function POST(request: Request) {
       );
     modeForLog = intelligenceModeId;
 
+    const currentUser = await getOptionalUser();
+    const [profile, limits] = currentUser
+      ? await Promise.all([getProfile(currentUser.id), getUserLimits(currentUser.id)])
+      : [null, null] as const;
+    const planId = currentUser ? resolvePlanId(profile?.plan) : "free";
+    const quota = canRunAnalysis({
+      storedPlan: profile?.plan,
+      usage: limits,
+      isAuthenticated: Boolean(currentUser),
+    });
+
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            quota.warning ??
+            "You have reached your current plan limit. Upgrade to continue analyzing today.",
+        } satisfies AnalyzeApiErrorResponse,
+        { status: 402 },
+      );
+    }
+
+    if (!isModeIncludedInPlan(intelligenceModeId, planId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "This intelligence mode is not included in your current plan.",
+        } satisfies AnalyzeApiErrorResponse,
+        { status: 403 },
+      );
+    }
+
     const orchestratorResult = await runAnalysisOrchestrator(
       rawText,
       mode,
@@ -94,6 +130,7 @@ export async function POST(request: Request) {
     const { result, providerUsed, fallbackUsed, intelligence: ctx } =
       orchestratorResult;
     intelligence = ctx;
+    result.learnCards = result.learnCards.slice(0, getMaxLearnCardsForPlan(planId));
 
     const response: AnalyzeApiSuccessResponse = {
       success: true,
@@ -110,7 +147,6 @@ export async function POST(request: Request) {
       response.debug = buildSuccessDebug(mode, intelligence, providerUsed, fallbackUsed);
     }
 
-    const currentUser = await getOptionalUser();
     if (isDevelopment()) {
       devLog("[summify.analyze] analyze_auth_user", {
         userId: currentUser?.id ?? null,

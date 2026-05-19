@@ -27,10 +27,10 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Is Summify free?",
-    a: "Yes during public beta. Pricing pages show planned tiers for transparency — checkout and billing are not enabled yet.",
+    a: "You can start free, and paid plans are available for larger workflows. Existing beta override accounts may retain preview access.",
   },
   {
-    q: "Can I use outputs for legal or medical decisions?",
-    a: "No. AI outputs are for information and drafting support only. They are not legal, medical, or financial advice. Review important documents with qualified professionals.",
+    q: "Does Summify provide legal, financial, or professional advice?",
+    a: "No. Summify provides AI-generated summaries, study aids, and document organization tools for informational purposes only. It does not replace advice from qualified professionals.",
   },
 ];

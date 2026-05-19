@@ -2,6 +2,7 @@ import { pageSeo } from "@/lib/page-metadata";
 import { faqPageSchema } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { TrustPageLayout } from "@/components/public/TrustPageLayout";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { FAQ_ITEMS } from "@/data/faqs";
 
 export const metadata = pageSeo.faq;
@@ -23,6 +24,7 @@ export default function FaqPage() {
             </li>
           ))}
         </ul>
+        <ProductDisclaimer className="mt-8 border-t border-white/[0.06] pt-5" />
       </TrustPageLayout>
     </>
   );

@@ -8,7 +8,7 @@ export function HowItWorks() {
       <SectionHeading
         eyebrow="How it works"
         title="From upload to export in four steps"
-        description="A clear workflow for professionals who need structured clarity."
+        description="A clear workflow for readers who need structured clarity."
       />
 
       <ol className="relative mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">

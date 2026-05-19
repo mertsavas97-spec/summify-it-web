@@ -164,8 +164,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       "Full analysis history",
       "Student verification (coming soon)",
     ],
-    cta: "Coming soon",
-    comingSoon: true,
+    cta: "Start Scholar",
     billing: {
       monthly: {
         amountCents: 499,
@@ -219,8 +218,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       "Email reminders (roadmap)",
     ],
     badge: "Recommended",
-    cta: "Coming soon",
-    comingSoon: true,
+    cta: "Start Pro",
     billing: {
       monthly: {
         amountCents: 799,
@@ -246,7 +244,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     description:
       "Seats, shared library, API access, and custom modes for teams and agencies.",
     enforceLimits: true,
-    comingSoon: true,
+    comingSoon: false,
     limits: {
       analysesPerDay: null,
       maxFileSizeMb: 50,
@@ -271,8 +269,8 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       "Invoices & team workspace",
       "Everything in Pro",
     ],
-    badge: "Coming soon",
-    cta: "Team — coming soon",
+    badge: "Team",
+    cta: "Start Team",
     billing: {
       monthly: {
         amountCents: 2499,

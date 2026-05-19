@@ -1,9 +1,11 @@
-/** Short relative time for dashboard cards (en-US). */
-export function formatRelativeTime(isoDate: string): string {
-  const then = new Date(isoDate).getTime();
-  if (Number.isNaN(then)) return "—";
+import { formatStableDate } from "@/lib/format-date";
 
-  const diffMs = Date.now() - then;
+/** Short relative time for dashboard cards (en-US). */
+export function formatRelativeTime(isoDate: string, now = Date.now()): string {
+  const then = new Date(isoDate).getTime();
+  if (Number.isNaN(then)) return "-";
+
+  const diffMs = now - then;
   const diffSec = Math.floor(diffMs / 1000);
 
   if (diffSec < 60) return "just now";
@@ -16,9 +18,5 @@ export function formatRelativeTime(isoDate: string): string {
   const diffWeek = Math.floor(diffDay / 7);
   if (diffWeek < 5) return `${diffWeek}w ago`;
 
-  return new Date(isoDate).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: then < Date.now() - 365 * 24 * 60 * 60 * 1000 ? "numeric" : undefined,
-  });
+  return formatStableDate(isoDate);
 }

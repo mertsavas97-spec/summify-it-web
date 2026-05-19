@@ -1,5 +1,6 @@
 import { getPricingPlansForInterval } from "@/data/pricingPlans";
 import type { BillingInterval } from "@/types/plan";
+import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
@@ -66,16 +67,7 @@ export function PricingCards({ interval }: PricingCardsProps) {
               ))}
             </ul>
 
-            {plan.comingSoon ? (
-              <div className="mt-6 space-y-2">
-                <p className="rounded-lg border border-violet-500/20 bg-violet-950/20 px-3 py-2.5 text-center text-[11px] leading-relaxed text-violet-200/90">
-                  Public beta pricing preview — checkout coming soon
-                </p>
-                <Button href="/modes" variant="secondary" className="w-full" size="md">
-                  Browse intelligence modes
-                </Button>
-              </div>
-            ) : (
+            {plan.id === "free" ? (
               <Button
                 href={plan.ctaHref ?? "/upload"}
                 variant={isPro ? "primary" : "secondary"}
@@ -83,6 +75,18 @@ export function PricingCards({ interval }: PricingCardsProps) {
                 size="md"
               >
                 {plan.cta}
+              </Button>
+            ) : plan.id === "scholar" || plan.id === "pro" || plan.id === "team" ? (
+              <CheckoutButton
+                plan={plan.id}
+                interval={interval}
+                label={plan.id === "team" ? "Start team plan" : `Start ${plan.name}`}
+                variant={isPro ? "primary" : "secondary"}
+                className="mt-6"
+              />
+            ) : (
+              <Button href="/upload" variant="secondary" className="mt-6 w-full" size="md">
+                Open workspace
               </Button>
             )}
           </article>

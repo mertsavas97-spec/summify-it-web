@@ -13,9 +13,11 @@ import {
   getUserLimits,
 } from "@/lib/auth";
 import { DashboardUsagePanel } from "@/components/dashboard/DashboardUsagePanel";
+import { MemoryDashboardPanel } from "@/components/memory/MemoryDashboardPanel";
 import { getUserPlanLimits } from "@/lib/plan-limits";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
+import { getMemoryStats } from "@/server/memory/getMemoryStats";
 import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = createPageMetadata({
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
   const daily = limits?.daily_analysis_count ?? 0;
   const monthly = limits?.monthly_analysis_count ?? 0;
   const planUsage = getUserPlanLimits(profile?.plan, limits);
+  const memoryStats = await getMemoryStats(user.id, planUsage.dailyReviewTarget);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
@@ -95,6 +98,7 @@ export default async function DashboardPage() {
           </header>
 
           <DashboardUsagePanel usage={planUsage} />
+          <MemoryDashboardPanel stats={memoryStats} dailyTarget={planUsage.dailyReviewTarget} />
 
           <div className="mt-10">
             <h2 className="text-sm font-semibold text-zinc-200">Recent analyses</h2>

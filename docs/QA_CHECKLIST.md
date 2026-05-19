@@ -64,7 +64,7 @@ For each active mode, run analysis on a short document:
 - [ ] Executive Brief
 - [ ] The Student
 - [ ] The Creator
-- [ ] Contract Analyzer
+- [ ] Contract Summary
 
 - [ ] Preview panel **Intelligence lens** matches workspace selection
 

@@ -192,7 +192,7 @@ function deriveActionItems(
     return ["Re-read the summary and note claims that need citation checks."];
   }
   if (mode === "legal") {
-    return ["Flag any obligations in the summary that need legal review."];
+    return ["Flag any obligations in the summary that may need qualified review."];
   }
 
   return ["Review the summary and note follow-ups mentioned in the source."];

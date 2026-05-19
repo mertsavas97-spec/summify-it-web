@@ -111,7 +111,7 @@ function formatYoutubeSourceBlock(
     creator:
       "Mode emphasis: hooks, clip-worthy beats, narrative tension, repurposable angles — no generic social-media marketing advice.",
     legal:
-      "Mode emphasis: only analyze legal/compliance if the transcript actually contains legal material; otherwise note in risksOrWarnings that legal mode may not fit this transcript.",
+      "Mode emphasis: only summarize contract, policy, or regulatory material if the transcript actually contains it; otherwise note in risksOrWarnings that this mode may not fit this transcript.",
   };
 
   lines.push(modeNotes[mode]);
@@ -155,7 +155,7 @@ function formatPresentationSourceBlock(
     creator:
       "Mode emphasis: storytelling arc, hooks, visual/narrative potential, campaign angles, content moments.",
     legal:
-      "Mode emphasis: only if deck contains contractual/policy/compliance terms; otherwise note legal mode may not fit.",
+      "Mode emphasis: only if deck contains contractual, policy, or regulatory terms; otherwise note this mode may not fit.",
   };
 
   lines.push(modeNotes[mode]);

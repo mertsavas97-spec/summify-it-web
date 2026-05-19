@@ -15,7 +15,7 @@ export default function AboutPage() {
         <p className="mt-2">
           Most summarizers flatten everything into generic bullets. Summify is a workspace:
           upload a PDF, deck, YouTube link, or article, choose an intelligence lens, and get
-          outputs shaped for executives, students, creators, or legal review — plus a Learn layer
+          outputs shaped for executives, students, creators, or document review workflows — plus a Learn layer
           for concepts, quizzes, and hooks.
         </p>
       </section>

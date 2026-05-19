@@ -55,12 +55,13 @@ keyInsights is REQUIRED (minimum 3 bullets). Each bullet must be a concrete crea
 - clip-worthy or repurposable moment
 - tension or contrarian angle`,
 
-  legal: `Legal reader lens — summarize, do not give legal advice:
+  legal: `Contract and policy summary lens — informational overview only:
 - Obligations and duties of each party
-- Risks, liabilities, and penalties described in the text
+- Risk signals, liabilities, and penalties described in the text
 - Important clauses (termination, IP, confidentiality, payment, etc.)
-- Compliance or regulatory concerns mentioned
-- Unclear, ambiguous, or missing terms the reader should flag`,
+- Policy or regulatory points stated in the source
+- Unclear, ambiguous, or missing terms the reader may want to review
+- Do not provide legal, financial, medical, or other regulated professional advice`,
 };
 
 const MODE_LEARN_CARD_GUIDANCE: Record<TextAnalysisMode, string> = {
@@ -84,9 +85,9 @@ const MODE_LEARN_CARD_GUIDANCE: Record<TextAnalysisMode, string> = {
 
   legal: `Learn cards (3–5):
 - concept: what a defined term or obligation type means here
-- why: why a clause or risk matters to a party
-- memory_hook: checklist phrase or red-flag language from the text
-- quiz: spot the obligation or gap`,
+- why: why a clause or risk signal matters in the document
+- memory_hook: checklist phrase or review cue from the text
+- quiz: spot the obligation or point to review`,
 };
 
 const YOUTUBE_TRANSCRIPT_RULES = `YouTube transcript rules (when source is spoken video):
@@ -105,7 +106,7 @@ const YOUTUBE_MODE_LENSES: Record<TextAnalysisMode, string> = {
   executive: `YouTube + Executive: strategic takeaways, decisions/implications, stakes — not play-by-play recap. No narrator voice.`,
   academic: `YouTube + Academic: thesis, argument structure, core concepts/definitions, evidence vs claims, tensions or contradictions in the talk, common misconceptions to flag. Study-friendly; avoid vague moral advice or generic "consider multiple sources" filler unless the transcript argues it.`,
   creator: `YouTube + Creator: scroll-stopping hooks, narrative beats, clip-worthy moments with timestamps when available, audience tension, repurposable angles (thread, carousel, short) tied to specific beats. BANNED: "share on social media", "engage your audience", generic marketing platitudes.`,
-  legal: `YouTube + Legal: only apply legal/compliance analysis if the transcript actually contains legal material; otherwise say in risksOrWarnings that legal mode may not fit.`,
+  legal: `YouTube + Contract/Policy Summary: only summarize contract, policy, or regulatory material if the transcript actually contains it; otherwise say in risksOrWarnings that this mode may not fit.`,
 };
 
 const PRESENTATION_RULES = `Presentation deck rules (when source is a slide deck):
@@ -120,7 +121,7 @@ const PRESENTATION_MODE_LENSES: Record<TextAnalysisMode, string> = {
   executive: `Presentation + Executive: decision usefulness, strategic clarity, business implications, missing KPIs or proof points.`,
   academic: `Presentation + Academic: lecture structure, concepts, learning flow, weak explanations, study-worthy tensions.`,
   creator: `Presentation + Creator: storytelling arc, hooks, visual/narrative potential, campaign angles, repurposable slide moments.`,
-  legal: `Presentation + Legal: only if slides contain contractual/policy/compliance material; otherwise note in risksOrWarnings that legal mode may not fit.`,
+  legal: `Presentation + Contract/Policy Summary: only if slides contain contractual, policy, or regulatory material; otherwise note in risksOrWarnings that this mode may not fit.`,
 };
 
 const PRESENTATION_LEARN_CARD_GUIDANCE = `Presentation learn cards:

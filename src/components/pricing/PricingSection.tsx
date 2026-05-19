@@ -10,7 +10,7 @@ export function PricingSection() {
   return (
     <div>
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <p className="text-xs text-zinc-500">Billing preview</p>
+        <p className="text-xs text-zinc-500">Billing</p>
         <div
           className="inline-flex rounded-lg border border-white/[0.08] bg-zinc-950/80 p-0.5"
           role="group"

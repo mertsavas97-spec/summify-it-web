@@ -20,7 +20,7 @@ const SRC = {
   any: ["any"] as RecommendedSourceKind[],
   doc: ["pdf", "docx", "txt", "web"] as RecommendedSourceKind[],
   media: ["youtube", "pptx", "web", "pdf"] as RecommendedSourceKind[],
-  legal: ["pdf", "docx", "web"] as RecommendedSourceKind[],
+  document: ["pdf", "docx", "web"] as RecommendedSourceKind[],
 };
 
 function m(
@@ -471,10 +471,10 @@ export const INTELLIGENCE_MODES: IntelligenceModeDefinition[] = [
 
   m({
     id: "contract-analyzer",
-    label: "Contract Analyzer",
-    shortDescription: "Obligations, risks, and clause clarity.",
-    intelligenceLens: "Highlights obligations, risks, and ambiguous clauses — not legal advice.",
-    outputStylePreview: "Obligations · risks · defined terms",
+    label: "Contract Summary",
+    shortDescription: "Clauses, obligations, and points to review.",
+    intelligenceLens: "Creates an informational overview of clauses, obligations, and points to review.",
+    outputStylePreview: "Clauses · obligations · points to review",
     learnEmphasis: "Concept and misconception-oriented cards",
     category: "legal_technical",
     icon: "scale",
@@ -483,9 +483,9 @@ export const INTELLIGENCE_MODES: IntelligenceModeDefinition[] = [
     learnWeighting: { concept: 1.3, misconception: 1.2, why_it_matters: 1.1 },
     outputTone: "precise",
     outputDepth: "detailed",
-    recommendedSources: SRC.legal,
+    recommendedSources: SRC.document,
     promptAdjunct:
-      "Summarize obligations and risks only from the text; do not provide legal advice.",
+      "Summarize clauses, obligations, dates, and points to review only from the text. Do not provide recommendations or regulated professional advice.",
   }),
   locked({
     id: "technical-decoder",
@@ -504,18 +504,18 @@ export const INTELLIGENCE_MODES: IntelligenceModeDefinition[] = [
   }),
   locked({
     id: "policy-interpreter",
-    label: "Policy Interpreter",
-    shortDescription: "Rules, scope, and compliance implications.",
-    intelligenceLens: "Clarifies policy rules, scope, and compliance implications stated in text.",
-    outputStylePreview: "Rules · scope · compliance notes",
-    learnEmphasis: "Concept and risk-oriented cards",
+    label: "Policy Summary",
+    shortDescription: "Rules, scope, and policy notes.",
+    intelligenceLens: "Summarizes policy rules, scope, and stated points to review.",
+    outputStylePreview: "Rules · scope · policy notes",
+    learnEmphasis: "Concept and review-oriented cards",
     category: "legal_technical",
     icon: "shield",
     intelligenceFamily: "legal",
     learnWeighting: { concept: 1.3, misconception: 1.2 },
     outputTone: "precise",
     outputDepth: "standard",
-    recommendedSources: SRC.legal,
+    recommendedSources: SRC.document,
   }),
 
   locked({

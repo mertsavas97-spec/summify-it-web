@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DeleteAnalysisButton } from "@/components/dashboard/DeleteAnalysisButton";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
-import { AnalysisResultView } from "@/components/upload/AnalysisResultView";
+import { AnalysisExportSharePanel } from "@/components/analysis/AnalysisExportSharePanel";
+import { SavedAnalysisWorkspace } from "@/components/dashboard/SavedAnalysisWorkspace";
+import { AnalysisMemoryActions } from "@/components/memory/AnalysisMemoryActions";
 import { Badge } from "@/components/ui/Badge";
 import {
   ensureProfileForUser,
@@ -16,6 +18,7 @@ import {
   getIntelligenceModeLabel,
   getSourceKindLabel,
 } from "@/lib/saved-analysis-labels";
+import { formatStableDateTime } from "@/lib/format-date";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getAnalysisById } from "@/server/analyses/getAnalysisById";
 import { createPageMetadata } from "@/lib/metadata";
@@ -71,24 +74,23 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
   };
 
   const modeId = (saved.intelligence_mode ?? "executive-brief") as IntelligenceModeId;
-  const created = new Date(saved.created_at).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const created = formatStableDateTime(saved.created_at);
   const planLabel = formatPlanLabel(profile?.plan ?? "beta");
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
-      <DashboardSidebar
-        savedCount={savedCount}
-        dailyCount={limits?.daily_analysis_count ?? 0}
-        planLabel={planLabel}
-      />
+      <div className="print-hide">
+        <DashboardSidebar
+          savedCount={savedCount}
+          dailyCount={limits?.daily_analysis_count ?? 0}
+          planLabel={planLabel}
+        />
+      </div>
       <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <article className="mx-auto max-w-3xl">
+        <article className="mx-auto max-w-5xl">
           <Link
             href="/dashboard"
-            className="inline-flex text-xs text-zinc-500 transition-colors hover:text-violet-300"
+            className="print-hide inline-flex text-xs text-zinc-500 transition-colors hover:text-violet-300"
           >
             ← Back to dashboard
           </Link>
@@ -106,7 +108,9 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
                   <p className="mt-1 truncate text-sm text-zinc-500">{saved.source_label}</p>
                 ) : null}
               </div>
-              <DeleteAnalysisButton analysisId={saved.id} redirectTo="/dashboard" size="md" />
+              <div className="print-hide">
+                <DeleteAnalysisButton analysisId={saved.id} redirectTo="/dashboard" size="md" />
+              </div>
             </div>
 
             <dl className="mt-5 flex flex-wrap gap-2">
@@ -124,12 +128,27 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
             </dl>
           </header>
 
-          <div className="mt-8" data-saved-analysis-detail>
-            <AnalysisResultView
+          <AnalysisExportSharePanel
+            result={result}
+            exportContext={{
+              sourceKind: saved.source_kind,
+              intelligenceMode: getIntelligenceModeLabel(saved.intelligence_mode),
+            }}
+            analysisId={saved.id}
+            isPublic={saved.is_public ?? false}
+            shareId={saved.share_id ?? null}
+          />
+
+          <AnalysisMemoryActions analysisId={saved.id} />
+
+          <div className="mt-8 print-analysis-content" data-saved-analysis-detail>
+            <SavedAnalysisWorkspace
               result={result}
               modeId={modeId}
               providerUsed={saved.provider_used ?? "unknown"}
               fallbackUsed={saved.metadata?.fallbackUsed ?? false}
+              documentTypeGuess={saved.document_type ?? saved.metadata?.documentTypeGuess}
+              sourceKind={saved.source_kind}
             />
           </div>
         </article>

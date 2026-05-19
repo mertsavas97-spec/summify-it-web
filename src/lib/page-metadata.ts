@@ -67,15 +67,15 @@ export const pageSeo = {
   modes: buildPageMetadata({
     title: "29 AI Intelligence Modes",
     description:
-      "Browse executive, study, creator, and legal intelligence lenses for PDFs, video, and articles. Four modes active today — try free during public beta.",
+      "Browse executive, study, creator, document, and technical intelligence lenses for PDFs, video, and articles. Four modes active today — try free during public beta.",
     path: "/modes",
     keywords: ["AI analysis modes", "document intelligence modes"],
   }),
 
   pricing: buildPageMetadata({
-    title: "Pricing — Free Public Beta",
+    title: "Pricing",
     description:
-      "Planned Pro tiers for transparency. The full workspace is free during public beta — no checkout required. Start summarizing PDFs and videos today.",
+      "Compare Summify plans for AI document intelligence, structured notes, memory review, and workspace features.",
     path: "/pricing",
   }),
 
@@ -103,14 +103,14 @@ export const pageSeo = {
   terms: buildPageMetadata({
     title: "Terms of Use",
     description:
-      "Terms for using the Summify public beta workspace — acceptable use, AI limitations, and service expectations before paid plans launch.",
+      "Terms for using the Summify workspace — acceptable use, AI output limitations, and service expectations.",
     path: "/terms",
   }),
 
   blog: buildPageMetadata({
     title: "Blog — AI Summarization Guides",
     description:
-      "Editorial guides on AI PDF summarizers, YouTube study notes, and exam prep workflows. Practical advice for students and knowledge workers using Summify.",
+      "Editorial guides on AI PDF summarizers, YouTube study notes, and exam prep workflows. Practical workflows for students and knowledge workers using Summify.",
     path: "/blog",
     keywords: ["AI summarizer guides", "PDF summarizer blog", "study notes AI"],
   }),

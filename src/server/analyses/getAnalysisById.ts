@@ -16,5 +16,12 @@ export async function getAnalysisById(
     .maybeSingle();
 
   if (error || !data) return null;
-  return data as SavedAnalysisRow;
+
+  const row = data as SavedAnalysisRow;
+  return {
+    ...row,
+    is_public: row.is_public ?? false,
+    share_id: row.share_id ?? null,
+    shared_at: row.shared_at ?? null,
+  };
 }

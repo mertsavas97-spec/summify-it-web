@@ -96,7 +96,7 @@ export default function HomePage() {
           {
             title: "29 intelligence modes",
             description:
-              "Executive, study, creator, and legal lenses — four active now, more unlocking with Pro Intelligence.",
+              "Executive, study, creator, and document lenses — four active now, more unlocking with Pro Intelligence.",
           },
           {
             title: "Production-ready beta",
@@ -160,7 +160,7 @@ export default function HomePage() {
 
       <CTASection
         title="Start summarizing in the workspace"
-        description="Executive Brief, The Student, The Creator, and Contract Analyzer are live today. Try free during public beta."
+        description="Executive Brief, The Student, The Creator, and Contract Summary are live today. Try free during public beta."
         primaryLabel="Try Summify free"
         secondaryHref="/faq"
         secondaryLabel="Read the FAQ"

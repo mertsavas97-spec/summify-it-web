@@ -10,6 +10,8 @@ import {
 } from "@/lib/auth";
 import { pageSeo } from "@/lib/page-metadata";
 import { Button } from "@/components/ui/Button";
+import { PortalButton } from "@/components/billing/PortalButton";
+import { formatStableDate } from "@/lib/format-date";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
@@ -48,6 +50,11 @@ export default async function AccountPage() {
   const planLabel = formatPlanLabel(profile?.plan ?? "beta");
   const daily = limits?.daily_analysis_count ?? 0;
   const monthly = limits?.monthly_analysis_count ?? 0;
+  const renewalDate = profile?.current_period_end ? formatStableDate(profile.current_period_end) : "—";
+  const billingInterval = profile?.billing_interval
+    ? profile.billing_interval.charAt(0).toUpperCase() + profile.billing_interval.slice(1)
+    : "—";
+  const hasStripeCustomer = Boolean(profile?.stripe_customer_id);
 
   return (
     <article className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -58,7 +65,7 @@ export default async function AccountPage() {
         Your account
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-        Public beta workspace — usage is tracked for transparency. No hard limits enforced yet.
+        Usage, plan access, and billing status for your Summify workspace.
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -79,6 +86,26 @@ export default async function AccountPage() {
 
         <div className="pt-2">
           <SignOutButton />
+        </div>
+      </section>
+
+      <section className="mt-8 rounded-xl border border-white/[0.08] bg-zinc-900/40 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-400/80">
+              Billing
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-white">{planLabel}</h2>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+              Manage subscription status, renewal, and plan upgrades through Stripe.
+            </p>
+          </div>
+          {hasStripeCustomer ? <PortalButton /> : <Button href="/pricing" size="sm">Upgrade</Button>}
+        </div>
+        <div className="mt-4 grid gap-2">
+          <StatRow label="Subscription status" value={profile?.subscription_status ?? "No paid subscription"} />
+          <StatRow label="Billing interval" value={billingInterval} />
+          <StatRow label="Renewal date" value={renewalDate} />
         </div>
       </section>
 

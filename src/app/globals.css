@@ -68,3 +68,44 @@ body {
   opacity: 1;
   animation: mode-card-shimmer 1.2s ease-in-out;
 }
+
+/* Phase 9A — print / Save as PDF */
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .print-analysis-content,
+  .print-share-article {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .print-analysis-content *,
+  .print-share-article * {
+    color: #222 !important;
+    border-color: #ddd !important;
+  }
+}
+
+/* Mind map — React Flow dark theme */
+.mindmap-flow .react-flow__pane {
+  cursor: grab;
+}
+
+.mindmap-flow .react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.mindmap-flow .react-flow__edge-path {
+  transition: stroke 0.25s ease;
+}
+
+.mindmap-node-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}

@@ -4,8 +4,8 @@
  */
 
 export const EXTRACTION_CONFIG = {
-  /** Max upload size (bytes) — 10 MB */
-  maxFileSizeBytes: 10 * 1024 * 1024,
+  /** Absolute upload ceiling; plan-specific caps are enforced before extraction. */
+  maxFileSizeBytes: 50 * 1024 * 1024,
   /** Max characters passed to analysis after cleaning */
   maxExtractedChars: 24_000,
   /** Minimum useful text for analysis pipeline */

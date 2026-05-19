@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DeleteAnalysisButton } from "@/components/dashboard/DeleteAnalysisButton";
-import { formatRelativeTime } from "@/lib/format-relative-time";
+import { formatStableDate, formatStableDateTime } from "@/lib/format-date";
 import {
   getIntelligenceModeLabel,
   getSavedAnalysisPreview,
@@ -40,11 +40,8 @@ export function SavedAnalysisCard({ analysis, showDelete = true }: SavedAnalysis
   const preview = getSavedAnalysisPreview(analysis.summary);
   const modeLabel = getIntelligenceModeLabel(analysis.intelligence_mode);
   const sourceLabel = analysis.source_label ?? getSourceKindLabel(analysis.source_kind);
-  const createdLabel = formatRelativeTime(analysis.created_at);
-  const createdExact = new Date(analysis.created_at).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const createdLabel = formatStableDate(analysis.created_at);
+  const createdExact = formatStableDateTime(analysis.created_at);
 
   return (
     <article className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900/40 transition-all duration-200 hover:border-violet-500/30 hover:bg-zinc-900/70 hover:shadow-lg hover:shadow-violet-500/5">

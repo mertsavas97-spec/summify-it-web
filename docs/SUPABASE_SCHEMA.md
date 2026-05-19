@@ -253,4 +253,7 @@ create trigger saved_analyses_set_updated_at
 | Read own | yes |
 | Insert own | yes |
 | Delete own | yes |
-| Update | no (append-only via new rows) |
+| Update own | yes (share toggle — Phase 9A) |
+| Public read | anon when `is_public` and `share_id` set |
+
+Phase 9A columns: `is_public`, `share_id`, `shared_at` — see `docs/SUPABASE_MIGRATION_9A_SHARE.sql` and `docs/SHARING_AND_EXPORTS.md`.

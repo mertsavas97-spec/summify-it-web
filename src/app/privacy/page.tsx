@@ -1,4 +1,5 @@
 import { pageSeo } from "@/lib/page-metadata";
+import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { TrustPageLayout } from "@/components/public/TrustPageLayout";
 
 export const metadata = pageSeo.privacy;
@@ -8,8 +9,9 @@ export default function PrivacyPage() {
     <TrustPageLayout
       eyebrow="Privacy"
       title="Privacy during public beta"
-      lead="Plain-language summary of how data flows through Summify today. This is not a full legal policy — we will publish an updated policy before paid accounts launch."
+      lead="Plain-language summary of how data flows through Summify today. We will continue refining this policy as the product evolves."
     >
+      <ProductDisclaimer />
       <section>
         <h2 className="text-base font-semibold text-zinc-200">What you provide</h2>
         <p className="mt-2">
@@ -38,9 +40,9 @@ export default function PrivacyPage() {
       <section>
         <h2 className="text-base font-semibold text-zinc-200">Your choices</h2>
         <p className="mt-2">
-          Avoid uploading sensitive personal, health, or legally privileged material during beta.
-          If you have a privacy question, contact us through the channels listed on summify.app when
-          available.
+          Avoid uploading sensitive personal, health, or privileged material unless you are
+          comfortable processing it through the configured AI stack. If you have a privacy question,
+          contact us through the channels listed on summify.app when available.
         </p>
       </section>
     </TrustPageLayout>
