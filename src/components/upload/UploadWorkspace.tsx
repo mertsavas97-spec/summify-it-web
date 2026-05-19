@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { UploadZone } from "./UploadZone";
 import { UploadPreviewPanel } from "./UploadPreviewPanel";
@@ -353,6 +354,12 @@ export function UploadWorkspace() {
           Upload a file, paste text, or analyze a web article or YouTube video in
           one step. Files up to {maxPagesWebPreview} pages · source panel
           stays pinned on desktop.
+        </p>
+        <p className="mt-2 text-xs text-zinc-600">
+          <Link href="/login" className="text-violet-400/80 hover:text-violet-300">
+            Sign in
+          </Link>{" "}
+          to save analyses later.
         </p>
       </header>
 

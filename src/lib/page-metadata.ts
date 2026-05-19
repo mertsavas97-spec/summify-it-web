@@ -114,4 +114,19 @@ export const pageSeo = {
     path: "/blog",
     keywords: ["AI summarizer guides", "PDF summarizer blog", "study notes AI"],
   }),
+
+  login: buildPageMetadata({
+    title: "Sign In",
+    description:
+      "Sign in to Summify with a magic link. Analysis stays free without an account — sign in prepares your profile for saved analyses later.",
+    path: "/login",
+    noindex: true,
+  }),
+
+  account: buildPageMetadata({
+    title: "Your Account",
+    description: "Manage your Summify beta account, email, and sign-out.",
+    path: "/account",
+    noindex: true,
+  }),
 } as const;

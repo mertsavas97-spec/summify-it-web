@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/Button";
 import { ModesMegaMenu } from "@/components/public/ModesMegaMenu";
+import { HeaderAuth } from "@/components/auth/HeaderAuth";
 
 const navLinks = [
   { href: "/upload", label: "Workspace" },
@@ -42,6 +43,7 @@ export function PublicHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
+          <HeaderAuth />
           <Button href="/modes" variant="ghost" size="sm" className="hidden sm:inline-flex md:hidden">
             Explore modes
           </Button>
