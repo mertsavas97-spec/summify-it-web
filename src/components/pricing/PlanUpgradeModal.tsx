@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics/events";
 import { getPlanDefinition } from "@/data/pricingPlans";
 import { getUpgradePlanForMode } from "@/lib/plan-features";
 import type { IntelligenceModeDefinition } from "@/types/modes";
@@ -16,6 +17,10 @@ type PlanUpgradeModalProps = {
 export function PlanUpgradeModal({ mode, onClose }: PlanUpgradeModalProps) {
   useEffect(() => {
     if (!mode) return;
+    trackEvent("upgrade_modal_opened", {
+      mode_id: mode.id,
+      mode_label: mode.label,
+    });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

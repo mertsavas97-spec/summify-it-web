@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Eye, Keyboard, Sparkles } from "lucide-react";
+import { trackEvent } from "@/lib/analytics/events";
 import { Button } from "@/components/ui/Button";
 import type { ReviewItem, ReviewRating } from "@/types/memory";
 import type { DifficultConcept, ReviewStats } from "@/types/memory";
@@ -38,6 +39,23 @@ export function MemoryReviewClient({ initialItems, stats, dailyTarget }: MemoryR
 
   const active = items[index] ?? null;
   const complete = !active;
+
+  const reviewStartedRef = useRef(false);
+  const reviewCompletedRef = useRef(false);
+
+  useEffect(() => {
+    if (items.length > 0 && !reviewStartedRef.current) {
+      reviewStartedRef.current = true;
+      trackEvent("review_started", { item_count: items.length });
+    }
+  }, [items.length]);
+
+  useEffect(() => {
+    if (complete && reviewed > 0 && !reviewCompletedRef.current) {
+      reviewCompletedRef.current = true;
+      trackEvent("review_completed", { reviewed_count: reviewed });
+    }
+  }, [complete, reviewed]);
   const progress = useMemo(() => {
     if (items.length === 0) return 100;
     return Math.round((reviewed / Math.max(items.length, 1)) * 100);

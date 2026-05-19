@@ -90,6 +90,7 @@ export function GuideArticleLayout({ guide, children }: GuideArticleLayoutProps)
             title="Try Summify on your own documents"
             description="Upload PDFs, videos, decks, and articles — pick an intelligence mode and get structured analysis plus Learn cards. Free during public beta."
             primaryLabel="Open workspace"
+            analyticsSurface={`guide:${guide.slug}`}
           />
 
           <FAQSection items={guide.faqs} title="Guide FAQ" />

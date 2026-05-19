@@ -28,7 +28,10 @@ import type { IntelligenceModeId } from "@/types/modes";
 import { getDefaultIntelligenceModeId } from "@/lib/mode-resolver";
 import type { AnalysisIntelligenceMetadata } from "@/types/intelligence";
 import { buildYoutubeSourceContext } from "@/types/analyze-source";
+import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
+import { TrustSignals } from "@/components/growth/TrustSignals";
+import { DemoWorkflowBlock } from "@/components/growth/DemoWorkflowBlock";
 import { USER_MESSAGES } from "@/lib/user-messages";
 
 function resolvePipelineStage(
@@ -164,6 +167,7 @@ export function UploadWorkspace() {
     setExtractionMeta(null);
     resetAnalysisState();
     setExtractStatus("uploading");
+    trackEvent("upload_started", { trigger: "file", source_type: file.type || "file" });
 
     const formData = new FormData();
     formData.append("file", file);
@@ -369,6 +373,7 @@ export function UploadWorkspace() {
             Sign in to save analyses.
           </Link>
         </p>
+        <TrustSignals variant="compact" className="mt-3" />
       </header>
 
       <div className="mt-4">
@@ -467,7 +472,8 @@ export function UploadWorkspace() {
           <AdvancedAnalysisLock />
         </div>
 
-        <div className="min-w-0 lg:sticky lg:top-[4.5rem] lg:z-10 lg:max-h-[calc(100vh-5.5rem)] lg:self-start">
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-[4.5rem] lg:z-10 lg:max-h-[calc(100vh-5.5rem)] lg:self-start">
+          <DemoWorkflowBlock className="hidden lg:block" limit={2} />
           <UploadPreviewPanel
             sourceLabel={sourceLabel}
             intelligenceModeId={analysisMode}

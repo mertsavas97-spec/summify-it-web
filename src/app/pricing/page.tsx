@@ -1,3 +1,4 @@
+import { PricingPageTracker } from "@/components/analytics/PricingPageTracker";
 import { PricingSection } from "@/components/pricing/PricingSection";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { SectionHeading } from "@/components/ui/SectionHeading";
@@ -14,6 +15,7 @@ export default function PricingPage() {
 
   return (
     <>
+      <PricingPageTracker />
       <JsonLd data={productPricingSchema()} />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <SectionHeading

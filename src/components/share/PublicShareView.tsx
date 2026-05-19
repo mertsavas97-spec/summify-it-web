@@ -3,6 +3,10 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PublicAnalysisWorkspace } from "@/components/share/PublicAnalysisWorkspace";
+import { ShareConversionSection } from "@/components/share/ShareConversionSection";
+import { SharePageTracker } from "@/components/share/SharePageTracker";
+import { ShareSocialActions } from "@/components/share/ShareSocialActions";
+import { ShareStickyCta } from "@/components/share/ShareStickyCta";
 import {
   getIntelligenceModeLabel,
   getSourceKindLabel,
@@ -13,9 +17,10 @@ import type { AnalysisResult } from "@/types/text-analysis";
 
 type PublicShareViewProps = {
   shared: PublicSharedAnalysis;
+  shareId: string;
 };
 
-export function PublicShareView({ shared }: PublicShareViewProps) {
+export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
   const result: AnalysisResult = {
     title: shared.summary.title ?? shared.title,
     summary: shared.summary.summary,
@@ -28,12 +33,17 @@ export function PublicShareView({ shared }: PublicShareViewProps) {
   const sharedDate = shared.shared_at ? formatStableDate(shared.shared_at) : null;
 
   return (
-    <article className="print-share-article">
+    <article className="print-share-article pb-24">
+      <SharePageTracker
+        shareId={shareId}
+        sourceKind={shared.source_kind ?? undefined}
+      />
+
       <header className="print-hide border-b border-white/[0.06] bg-[#0e1016]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
           <BrandMark href="/" size="nav" />
           <Button href="/upload" size="sm">
-            Create your own analysis
+            Upload your own source
           </Button>
         </div>
       </header>
@@ -42,7 +52,10 @@ export function PublicShareView({ shared }: PublicShareViewProps) {
         <Badge variant="accent" className="mb-3">
           Shared intelligence
         </Badge>
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-violet-400/70">
+          Generated with Summify
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           {result.title}
         </h1>
         <dl className="mt-4 flex flex-wrap gap-2 text-xs text-zinc-500">
@@ -55,6 +68,30 @@ export function PublicShareView({ shared }: PublicShareViewProps) {
           Structured summary and Learn cards — no raw uploads or private files are included on
           this page.
         </p>
+
+        {shareId ? (
+          <div className="print-hide mt-5">
+            <ShareSocialActions shareId={shareId} title={result.title} />
+          </div>
+        ) : null}
+
+        <aside className="print-hide mt-8 rounded-xl border border-white/[0.06] bg-zinc-950/40 p-4 text-sm text-zinc-500">
+          <p className="font-medium text-zinc-300">
+            Turn your own PDF into summaries, mind maps, and review cards.
+          </p>
+          <p className="mt-1 text-xs leading-relaxed">
+            <Link href="/upload" className="text-violet-400/90 hover:text-violet-300">
+              Upload your own source
+            </Link>
+            {" · "}
+            <Link
+              href="/guides/pdf-to-flashcards-workflow"
+              className="text-violet-400/90 hover:text-violet-300"
+            >
+              Practice what you learn
+            </Link>
+          </p>
+        </aside>
 
         <div className="mt-10">
           <PublicAnalysisWorkspace
@@ -71,30 +108,12 @@ export function PublicShareView({ shared }: PublicShareViewProps) {
           />
         </div>
 
-        <footer className="print-hide mt-12 rounded-2xl border border-violet-500/15 bg-gradient-to-br from-violet-950/30 to-zinc-950/80 p-6 text-center">
-          <p className="text-sm font-medium text-white">Turn your sources into intelligence</p>
-          <p className="mt-2 text-xs text-zinc-500">
-            Summify structures PDFs, decks, videos, and articles into summaries and Learn cards.
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button href="/upload" size="sm">
-              Create your own analysis
-            </Button>
-            <Button href="/pricing" size="sm" variant="secondary">
-              View plans
-            </Button>
-          </div>
-          <p className="mt-6 text-[10px] text-zinc-600">
-            <Link href="/" className="hover:text-violet-400/80">
-              Summify
-            </Link>
-            {" · "}
-            <Link href="/privacy" className="hover:text-violet-400/80">
-              Privacy
-            </Link>
-          </p>
-        </footer>
+        {shareId ? (
+          <ShareConversionSection shareId={shareId} title={result.title} />
+        ) : null}
       </div>
+
+      <ShareStickyCta />
     </article>
   );
 }

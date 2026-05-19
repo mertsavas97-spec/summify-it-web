@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics/events";
 import { buildPublicShareUrl } from "@/lib/share-url";
 import { Button } from "@/components/ui/Button";
 
@@ -60,6 +61,10 @@ export function ShareControls({
       isPublic: data.isPublic ?? false,
       shareId: data.shareId ?? null,
     });
+
+    if (enabled) {
+      trackEvent("share_enabled", { analysis_id: analysisId });
+    }
 
     setMessage(
       enabled

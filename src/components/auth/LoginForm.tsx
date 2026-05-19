@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
+import { trackEvent } from "@/lib/analytics/events";
 import { mapAuthError } from "@/lib/auth-errors";
 import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -65,6 +66,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     setLoadingAction("signIn");
     setStatus("loading");
+    trackEvent("signup_started", { method: "password", intent: "sign_in" });
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,6 +89,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
     }
 
     setStatus("idle");
+    trackEvent("signup_completed", { method: "password" });
     await completeSessionRedirect();
   }
 
@@ -109,6 +112,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     setLoadingAction("signUp");
     setStatus("loading");
+    trackEvent("signup_started", { method: "password", intent: "sign_up" });
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -129,6 +133,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     if (data.session) {
       setStatus("idle");
+      trackEvent("signup_completed", { method: "password" });
       await completeSessionRedirect();
       return;
     }
@@ -152,6 +157,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     setLoadingAction("magic");
     setStatus("loading");
+    trackEvent("signup_started", { method: "magic_link", intent: "sign_in" });
 
     const supabase = createClient();
     const redirectTo = getAuthCallbackUrl(nextPath);

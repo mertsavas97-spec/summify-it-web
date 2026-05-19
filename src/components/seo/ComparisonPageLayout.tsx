@@ -103,6 +103,7 @@ export function ComparisonPageLayout({ config, children }: ComparisonPageLayoutP
         <CtaStrip
           title="Compare on your own documents"
           description="Upload the same PDF or paste the same transcript in Summify — free during public beta."
+          analyticsSurface={`compare:${config.slug}`}
         />
 
         <FAQSection items={config.faqs} title="Comparison FAQ" />

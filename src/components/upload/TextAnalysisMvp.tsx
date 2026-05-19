@@ -20,6 +20,7 @@ import {
   buildPresentationSourceContext,
   buildYoutubeSourceContext,
 } from "@/types/analyze-source";
+import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { canRunAnalysis } from "@/lib/mode-resolver";
 import { USER_MESSAGES } from "@/lib/user-messages";
@@ -262,6 +263,10 @@ export function TextAnalysisMvp({
     onIntelligenceReady?.(null);
     setLoading(true);
     onAnalyzingChange?.(true);
+    trackEvent("upload_started", {
+      trigger: "analyze",
+      source_type: extractionMeta?.sourceKind ?? "text",
+    });
 
     const sourceContext =
       extractionMeta?.sourceKind === "youtube"
@@ -289,6 +294,12 @@ export function TextAnalysisMvp({
         setError(analysis.error);
         return;
       }
+
+      trackEvent("analysis_completed", {
+        mode,
+        source_kind: extractionMeta?.sourceKind,
+        saved_to_workspace: analysis.savedToWorkspace,
+      });
 
       setResult(analysis.result);
       setMeta({

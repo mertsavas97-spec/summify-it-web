@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { FeedbackTrigger } from "@/components/growth/FeedbackTrigger";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { SEO_BRAND } from "@/lib/seo";
 
@@ -95,8 +96,9 @@ export function PublicFooter() {
             </div>
           ))}
         </div>
-        <p className="mt-10 border-t border-white/[0.06] pt-6 text-[11px] text-zinc-500">
-          © {new Date().getFullYear()} {SEO_BRAND}.
+        <p className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/[0.06] pt-6 text-[11px] text-zinc-500">
+          <span>© {new Date().getFullYear()} {SEO_BRAND}.</span>
+          <FeedbackTrigger />
         </p>
         <ProductDisclaimer className="mt-2 max-w-3xl" />
       </div>

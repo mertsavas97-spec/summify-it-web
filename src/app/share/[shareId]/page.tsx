@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicShareView } from "@/components/share/PublicShareView";
 import { createPageMetadata } from "@/lib/metadata";
+import { buildSharePageMetadata } from "@/lib/og/share-metadata";
 import { getSavedAnalysisPreview } from "@/lib/saved-analysis-labels";
 import { getPublicSharedAnalysis } from "@/server/analyses/getPublicSharedAnalysis";
 
@@ -35,13 +36,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const title = shared.summary.title ?? shared.title;
-  const description = getSavedAnalysisPreview(shared.summary, 160);
+  const preview = getSavedAnalysisPreview(shared.summary, 160);
 
-  return createPageMetadata({
+  return buildSharePageMetadata({
     title,
-    description,
-    path: `/share/${shareId}`,
-    noIndex: true,
+    preview,
+    shareId,
   });
 }
 
@@ -59,7 +59,7 @@ export default async function PublicSharePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#0a0b0f] text-zinc-100">
-      <PublicShareView shared={shared} />
+      <PublicShareView shared={shared} shareId={shareId} />
     </div>
   );
 }
