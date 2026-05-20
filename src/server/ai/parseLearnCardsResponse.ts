@@ -94,6 +94,20 @@ function mapToProviderType(raw: string): LearnCardProviderType | null {
   return EXTRACTION_TYPE_TO_PROVIDER[key] ?? null;
 }
 
+/** Count `cards` array entries in Phase 2 JSON before quality filtering. */
+export function countRawCardsInGenerationResponse(raw: string): number {
+  const trimmed = raw.trim();
+  if (!trimmed) return 0;
+
+  try {
+    const parsed = JSON.parse(extractJsonFromText(raw)) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object") return 0;
+    return Array.isArray(parsed.cards) ? parsed.cards.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function parseLearnCardsGenerationResponse(
   raw: string,
   options?: { documentTitle?: string; maxCards?: number },

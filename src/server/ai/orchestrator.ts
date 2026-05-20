@@ -17,7 +17,7 @@ import type { ModeRoutingResult } from "@/server/intelligence/mode-routing";
 import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import type { PlanId } from "@/types/plan";
-import { devWarn } from "@/server/logging";
+import { devLog, devWarn } from "@/server/logging";
 import { buildLearnIntelligence } from "@/server/learn";
 import { resolveLearnCardTargets } from "@/server/learn/learnCardTargets";
 import { generateLearnCardsForAnalysis } from "./generateLearnCards";
@@ -79,6 +79,11 @@ function applyLearnIntelligence(
   if (aiLearnCards.length >= MIN_AI_LEARN_CARDS) {
     return { ...result, learnCards: aiLearnCards };
   }
+
+  devLog("[summify.learnCards] buildLearnIntelligence fallback triggered", {
+    aiCardCount: aiLearnCards.length,
+    minAiLearnCards: MIN_AI_LEARN_CARDS,
+  });
 
   const resultForBuild: AnalysisResult =
     aiLearnCards.length > 0 ? { ...result, learnCards: aiLearnCards } : result;
@@ -253,6 +258,14 @@ async function attemptProvider(
     });
 
     const cardCount = Math.min(range.target * 1.5, maxLearnCards);
+
+    devLog("[summify.learnCards] orchestrator learn generation", {
+      provider,
+      rangeTarget: range.target,
+      maxLearnCards,
+      cardCount,
+      clampedCardCount: Math.max(4, Math.min(20, Math.round(cardCount))),
+    });
 
     const aiLearnCards = await generateLearnCardsForAnalysis({
       provider,

@@ -7,6 +7,7 @@ import { GoogleGenAI } from "@google/genai";
 import { AI_CONFIG } from "./config";
 import {
   PHASE1_FACT_INVENTORY_SYSTEM,
+  factInventoryItemCount,
   isFactInventoryUsable,
   parseFactInventoryResponse,
   type FactInventory,
@@ -16,10 +17,13 @@ import {
   buildPhase2FlashcardUserPrompt,
   resolveLearnContentType,
 } from "./learnCardGenerationPrompt";
-import { parseLearnCardsGenerationResponse } from "./parseLearnCardsResponse";
+import {
+  countRawCardsInGenerationResponse,
+  parseLearnCardsGenerationResponse,
+} from "./parseLearnCardsResponse";
 import type { LearnCardOutput } from "./schemas";
 import type { AnalysisProviderName } from "./analysis-failure";
-import { devWarn } from "@/server/logging";
+import { devLog, devWarn } from "@/server/logging";
 
 const PHASE1_MAX_TOKENS = 2000;
 const PHASE2_MAX_TOKENS = 1000;
@@ -127,9 +131,49 @@ async function generateFlashcardsFromInventory(
     PHASE2_MAX_TOKENS,
   );
 
-  return parseLearnCardsGenerationResponse(raw, {
+  const rawCardCount = countRawCardsInGenerationResponse(raw);
+  const cards = parseLearnCardsGenerationResponse(raw, {
     documentTitle,
     maxCards: maxCards ?? cardCount,
+  });
+
+  devLog("[summify.learnCards] phase2 complete", {
+    provider,
+    requestedCardCount: cardCount,
+    rawCardCount,
+    passedParserCount: cards.length,
+  });
+
+  return cards;
+}
+
+function logPhase1Inventory(
+  provider: AnalysisProviderName,
+  inventory: FactInventory | null,
+): void {
+  if (!inventory) {
+    devLog("[summify.learnCards] phase1 complete", {
+      provider,
+      usable: false,
+      reason: "no_inventory",
+    });
+    return;
+  }
+
+  const counts = {
+    people: inventory.people.length,
+    dates: inventory.dates.length,
+    numbers: inventory.numbers.length,
+    events: inventory.events.length,
+    causes: inventory.causes.length,
+    contrasts: inventory.contrasts.length,
+    total: factInventoryItemCount(inventory),
+  };
+
+  devLog("[summify.learnCards] phase1 complete", {
+    provider,
+    usable: isFactInventoryUsable(inventory),
+    counts,
   });
 }
 
@@ -154,10 +198,8 @@ export async function generateLearnCardsFromContent(
   const content = input.content.slice(0, AI_CONFIG.input.maxChars);
   const language = input.language ?? "English";
 
-  // TEMP: verify Phase 1 input is cleaned source text (remove after QA)
-  console.log("[summify.learnCards] phase1 content preview (first 500 chars):", content.slice(0, 500));
-
   const inventory = await extractFactInventory(input.provider, content);
+  logPhase1Inventory(input.provider, inventory);
   if (!inventory || !isFactInventoryUsable(inventory)) {
     return [];
   }
