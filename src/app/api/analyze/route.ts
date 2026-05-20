@@ -18,10 +18,9 @@ import { getOptionalUser } from "@/lib/auth";
 import { getProfile, getUserLimits } from "@/lib/supabase/profile";
 import { canRunAnalysis } from "@/lib/plan-limits";
 import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
-import {
-  getMaxLearnCardsForPlan,
-  isModeIncludedInPlan,
-} from "@/lib/plan-features";
+import { canAccessMode } from "@/lib/mode-access";
+import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
+import { getIntelligenceModeById } from "@/config/modes";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
 import { devError, devLog, logServerError } from "@/server/logging";
@@ -179,10 +178,14 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 429 });
     }
 
-    if (!isModeIncludedInPlan(intelligenceModeId, planId)) {
+    const modeDef = getIntelligenceModeById(intelligenceModeId);
+    if (!canAccessMode(intelligenceModeId, planId)) {
       const payload: AnalyzeApiErrorResponse = {
         success: false,
-        error: "This mode is available on Scholar or Pro.",
+        error:
+          modeDef?.availability === "coming_soon"
+            ? USER_MESSAGES.analyzeModeComingSoon(modeDef.label)
+            : "This mode is available on Scholar or Pro.",
       };
       return NextResponse.json(payload, { status: 403 });
     }

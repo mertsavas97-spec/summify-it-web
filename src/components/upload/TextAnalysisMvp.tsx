@@ -22,7 +22,9 @@ import {
 } from "@/types/analyze-source";
 import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
+import { getModeAccessState } from "@/lib/mode-access";
 import { canRunAnalysis } from "@/lib/mode-resolver";
+import type { PlanId } from "@/types/plan";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { IntelligenceLoadingStages } from "./IntelligenceLoadingStages";
 import { AnalysisResultView } from "./AnalysisResultView";
@@ -57,6 +59,7 @@ type TextAnalysisMvpProps = {
   onAnalyzingChange?: (analyzing: boolean) => void;
   onAnalysisComplete?: (completed: boolean) => void;
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
+  entitlementPlanId: PlanId;
 };
 
 function ExtractedTextEditor({
@@ -202,6 +205,7 @@ export function TextAnalysisMvp({
   onAnalyzingChange,
   onAnalysisComplete,
   onIntelligenceReady,
+  entitlementPlanId,
 }: TextAnalysisMvpProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -238,12 +242,15 @@ export function TextAnalysisMvp({
   const isYoutubeMode = inputMode === "youtube";
   const isUrlMode = inputMode === "url";
   const modeDef = getIntelligenceModeById(mode);
+  const modeAccess = modeDef
+    ? getModeAccessState(modeDef, entitlementPlanId)
+    : null;
   const modeUnavailableMessage =
-    modeDef?.availability === "coming_soon"
-      ? USER_MESSAGES.analyzeModeComingSoon(modeDef.label)
-      : modeDef?.availability === "locked"
-        ? USER_MESSAGES.analyzeModeLocked(modeDef.label)
-        : null;
+    modeAccess && !modeAccess.canRun
+      ? modeAccess.lockReason === "coming_soon"
+        ? USER_MESSAGES.analyzeModeComingSoon(modeDef!.label)
+        : USER_MESSAGES.analyzeModeLocked(modeDef!.label)
+      : null;
   const hasExtractedContent =
     extractionMeta != null && extractStatus === "ready" && rawText.trim().length > 0;
   const useCompactExtractUI = hasExtractedContent && !isManualTextMode;
@@ -251,14 +258,14 @@ export function TextAnalysisMvp({
   const charCount = rawText.trim().length;
   const canAnalyze =
     charCount >= AI_INPUT_LIMITS.minChars &&
-    canRunAnalysis(mode) &&
+    canRunAnalysis(mode, entitlementPlanId) &&
     !loading &&
     !analyzeDisabled &&
     extractStatus !== "uploading" &&
     extractStatus !== "extracting";
 
   async function handleAnalyze() {
-    if (!canRunAnalysis(mode)) return;
+    if (!canRunAnalysis(mode, entitlementPlanId)) return;
     setError(null);
     setFailureDebug(null);
     setResult(null);
@@ -408,6 +415,7 @@ export function TextAnalysisMvp({
         </div>
         <IntelligenceModeSelector
           value={mode}
+          entitlementPlanId={entitlementPlanId}
           onChange={onModeChange}
           onLockedSelect={(m) => setUpgradeMode(m)}
         />

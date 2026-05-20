@@ -2,7 +2,9 @@
 
 import { getIntelligenceModeById } from "@/config/modes";
 import { getCategoryLabelForMode } from "@/lib/mode-groups";
+import { getModeAccessState } from "@/lib/mode-access";
 import { canRunAnalysis } from "@/lib/mode-resolver";
+import type { PlanId } from "@/types/plan";
 import type { ExtractionMetadata, UploadExtractStatus } from "@/types/extraction";
 import type { IntelligenceModeId } from "@/types/modes";
 import type { AnalysisIntelligenceMetadata, PipelineType } from "@/types/intelligence";
@@ -22,6 +24,7 @@ type UploadPreviewPanelProps = {
   youtubePipelineActive?: boolean;
   urlPipelineActive?: boolean;
   intelligence?: AnalysisIntelligenceMetadata | null;
+  entitlementPlanId: PlanId;
 };
 
 const PIPELINE_LABELS: Record<PipelineType, string> = {
@@ -52,9 +55,13 @@ export function UploadPreviewPanel({
   youtubePipelineActive = false,
   urlPipelineActive = false,
   intelligence = null,
+  entitlementPlanId,
 }: UploadPreviewPanelProps) {
   const intelligenceMode = getIntelligenceModeById(intelligenceModeId);
-  const modeIsRunnable = canRunAnalysis(intelligenceModeId);
+  const modeAccess = intelligenceMode
+    ? getModeAccessState(intelligenceMode, entitlementPlanId)
+    : null;
+  const modeIsRunnable = canRunAnalysis(intelligenceModeId, entitlementPlanId);
 
   const singleActionPipelineActive = youtubePipelineActive || urlPipelineActive;
 
@@ -419,12 +426,12 @@ export function UploadPreviewPanel({
               <p className="text-xs font-medium text-violet-200">
                 {intelligenceMode?.label ?? intelligenceModeId}
               </p>
-              {intelligenceMode?.availability === "locked" && (
+              {modeAccess?.effectiveAvailability === "locked" && (
                 <span className="rounded border border-violet-500/25 bg-violet-950/30 px-1 py-px text-[8px] font-medium uppercase text-violet-300/90">
-                  Pro
+                  {modeAccess.upgradePlanId === "scholar" ? "Scholar" : "Pro"}
                 </span>
               )}
-              {intelligenceMode?.availability === "coming_soon" && (
+              {modeAccess?.effectiveAvailability === "coming_soon" && (
                 <span className="rounded border border-zinc-600/40 bg-zinc-800/40 px-1 py-px text-[8px] font-medium uppercase text-zinc-500">
                   Soon
                 </span>

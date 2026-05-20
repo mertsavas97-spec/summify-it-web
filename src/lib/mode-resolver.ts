@@ -4,7 +4,9 @@ import {
   isActiveIntelligenceModeId,
   LEGACY_MODE_TO_INTELLIGENCE_ID,
 } from "@/config/modes";
+import { canRunMode } from "@/lib/mode-access";
 import type { IntelligenceModeId } from "@/types/modes";
+import type { PlanId } from "@/types/plan";
 import type { TextAnalysisMode } from "@/types/text-analysis";
 
 export function getDefaultIntelligenceModeId(): IntelligenceModeId {
@@ -19,7 +21,14 @@ export function getModeLabel(id: IntelligenceModeId): string {
   return getIntelligenceModeById(id)?.label ?? id;
 }
 
-export function canRunAnalysis(id: IntelligenceModeId): boolean {
+/** Whether analysis can run for this mode under the user's entitlement plan. */
+export function canRunAnalysis(
+  id: IntelligenceModeId,
+  entitlementPlanId?: PlanId,
+): boolean {
+  if (entitlementPlanId) {
+    return canRunMode(id, entitlementPlanId);
+  }
   return isActiveIntelligenceModeId(id);
 }
 

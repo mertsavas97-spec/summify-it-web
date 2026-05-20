@@ -3,11 +3,7 @@ import { USER_MESSAGES } from "@/lib/user-messages";
 import { AI_CONFIG } from "./config";
 import type { TextAnalysisMode } from "./schemas";
 import type { AnalysisSourceHint } from "@/server/intelligence";
-import {
-  assertModeIsRunnable,
-  resolveModeRouting,
-  type ModeRoutingResult,
-} from "@/server/intelligence/mode-routing";
+import { resolveModeRouting, type ModeRoutingResult } from "@/server/intelligence/mode-routing";
 import { parseAnalyzeSourceContext } from "@/server/intelligence/source-context";
 import type { AnalyzeSourceContext } from "@/server/intelligence/types";
 import type { IntelligenceModeId } from "@/types/modes";
@@ -78,14 +74,6 @@ export function validateAnalysisInput(
     modeRouting = resolveModeRouting(mode.trim());
   } catch {
     throw new AnalysisInputError(USER_MESSAGES.analyzeModeUnknown);
-  }
-
-  try {
-    assertModeIsRunnable(modeRouting);
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : USER_MESSAGES.analyzeModeUnknown;
-    throw new AnalysisInputError(message);
   }
 
   const sourceHint = parseSourceHint(sourceHintInput);

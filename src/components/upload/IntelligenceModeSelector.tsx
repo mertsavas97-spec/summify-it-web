@@ -4,15 +4,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { getIntelligenceModeById, INTELLIGENCE_MODES } from "@/config/modes";
 import {
-  countModesByAvailability,
   formatRecommendedSources,
   getCategoryLabelForMode,
   getModesByCategory,
   MODE_CATEGORY_META,
   searchModes,
 } from "@/lib/mode-groups";
+import {
+  countModesForEntitlement,
+  formatEntitlementModeCountLabel,
+  getModeAccessState,
+} from "@/lib/mode-access";
 import { getCategoryColors } from "@/lib/mode-category-colors";
 import { canRunAnalysis, getModeLabel } from "@/lib/mode-resolver";
+import type { PlanId } from "@/types/plan";
 import type { IntelligenceModeDefinition, IntelligenceModeId } from "@/types/modes";
 
 const MODE_ICONS: Record<string, React.ReactNode> = {
@@ -53,12 +58,14 @@ function ModeIcon({ name }: { name: string }) {
 
 type IntelligenceModeSelectorProps = {
   value: IntelligenceModeId;
+  entitlementPlanId: PlanId;
   onChange: (id: IntelligenceModeId) => void;
   onLockedSelect?: (mode: IntelligenceModeDefinition) => void;
 };
 
 export function IntelligenceModeSelector({
   value,
+  entitlementPlanId,
   onChange,
   onLockedSelect,
 }: IntelligenceModeSelectorProps) {
@@ -66,7 +73,14 @@ export function IntelligenceModeSelector({
   const [query, setQuery] = useState("");
   const [hoverId, setHoverId] = useState<IntelligenceModeId | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const counts = useMemo(() => countModesByAvailability(), []);
+  const counts = useMemo(
+    () => countModesForEntitlement(entitlementPlanId),
+    [entitlementPlanId],
+  );
+  const countLabel = useMemo(
+    () => formatEntitlementModeCountLabel(counts, entitlementPlanId),
+    [counts, entitlementPlanId],
+  );
 
   const filtered = useMemo(() => searchModes(query), [query]);
   const byCategory = useMemo(() => getModesByCategory(filtered), [filtered]);
@@ -76,12 +90,26 @@ export function IntelligenceModeSelector({
     [value],
   );
 
+  const selectedAccess = useMemo(
+    () =>
+      selectedMode
+        ? getModeAccessState(selectedMode, entitlementPlanId)
+        : null,
+    [selectedMode, entitlementPlanId],
+  );
+
   const previewMode = useMemo(() => {
     const id = hoverId ?? value;
     return INTELLIGENCE_MODES.find((m) => m.id === id);
   }, [hoverId, value]);
 
-  const lockedTotal = counts.locked + counts.comingSoon;
+  const previewAccess = useMemo(
+    () =>
+      previewMode
+        ? getModeAccessState(previewMode, entitlementPlanId)
+        : null,
+    [previewMode, entitlementPlanId],
+  );
 
   const close = useCallback(() => {
     setOpen(false);
@@ -103,21 +131,26 @@ export function IntelligenceModeSelector({
   }, [open, close]);
 
   function handlePick(mode: IntelligenceModeDefinition) {
-    if (mode.availability === "coming_soon") {
+    const access = getModeAccessState(mode, entitlementPlanId);
+
+    if (!access.canAccess) {
       onLockedSelect?.(mode);
-      return;
-    }
-    onChange(mode.id);
-    if (mode.availability === "active" && canRunAnalysis(mode.id)) {
+      if (access.lockReason === "coming_soon") return;
       close();
       return;
     }
+
+    onChange(mode.id);
+    if (canRunAnalysis(mode.id, entitlementPlanId)) {
+      close();
+      return;
+    }
+
     onLockedSelect?.(mode);
     close();
   }
 
-  const isSelectedLocked =
-    selectedMode?.availability === "locked" || selectedMode?.availability === "coming_soon";
+  const isSelectedLocked = selectedAccess != null && !selectedAccess.canAccess;
 
   const selectedCategoryColors = selectedMode
     ? getCategoryColors(selectedMode.category)
@@ -148,12 +181,12 @@ export function IntelligenceModeSelector({
             <span className="text-[11px] text-zinc-600 group-hover:text-violet-300/70">
               · Click to change
             </span>
-            {selectedMode?.availability === "locked" && (
+            {selectedAccess?.effectiveAvailability === "locked" && (
               <span className="rounded border border-violet-500/25 bg-violet-950/30 px-1 py-px text-[9px] font-medium uppercase text-violet-300/90">
                 Pro
               </span>
             )}
-            {selectedMode?.availability === "coming_soon" && (
+            {selectedAccess?.effectiveAvailability === "coming_soon" && (
               <span className="rounded border border-zinc-600/40 bg-zinc-800/40 px-1 py-px text-[9px] font-medium uppercase text-zinc-500">
                 Soon
               </span>
@@ -177,8 +210,8 @@ export function IntelligenceModeSelector({
         </span>
         <span className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
           <ChevronRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-300/80" />
-          <span className="text-[11px] leading-snug text-zinc-500 group-hover:text-zinc-400">
-            {counts.active} active · {lockedTotal} locked
+          <span className="text-right text-[11px] leading-snug text-zinc-500 group-hover:text-zinc-400">
+            {countLabel}
           </span>
         </span>
       </button>
@@ -205,9 +238,7 @@ export function IntelligenceModeSelector({
                   >
                     Intelligence modes
                   </p>
-                  <p className="text-[11px] text-zinc-500">
-                    {counts.active} active · {counts.locked} Pro · {counts.comingSoon} coming soon
-                  </p>
+                  <p className="text-[11px] text-zinc-500">{countLabel}</p>
                 </div>
                 <button
                   type="button"
@@ -245,10 +276,10 @@ export function IntelligenceModeSelector({
                       </p>
                       <ul className="space-y-1">
                         {modes.map((mode) => {
-                          const isActive = mode.availability === "active";
+                          const access = getModeAccessState(mode, entitlementPlanId);
                           const isSelected = value === mode.id;
-                          const isLocked = mode.availability === "locked";
-                          const isSoon = mode.availability === "coming_soon";
+                          const isSoon = access.effectiveAvailability === "coming_soon";
+                          const isLocked = access.effectiveAvailability === "locked";
                           const modeColors = getCategoryColors(mode.category);
 
                           return (
@@ -271,7 +302,7 @@ export function IntelligenceModeSelector({
                                     <span className="text-xs font-medium text-zinc-100">
                                       {mode.label}
                                     </span>
-                                    {isActive && (
+                                    {access.canAccess && (
                                       <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[9px] font-medium uppercase text-emerald-400/90">
                                         Active
                                       </span>
@@ -280,7 +311,9 @@ export function IntelligenceModeSelector({
                                       <span
                                         className={`rounded border px-1 py-px text-[9px] font-medium uppercase ${modeColors.badge}`}
                                       >
-                                        Pro preview
+                                        {access.upgradePlanId === "scholar"
+                                          ? "Scholar"
+                                          : "Pro"}
                                       </span>
                                     )}
                                     {isSoon && (
@@ -318,7 +351,7 @@ export function IntelligenceModeSelector({
                 })}
               </div>
 
-              {previewMode && (
+              {previewMode && previewAccess && (
                 <aside className="hidden shrink-0 border-l border-white/[0.06] bg-zinc-900/30 p-4 md:block">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-400/80">
                     Preview
@@ -343,13 +376,13 @@ export function IntelligenceModeSelector({
                       </span>
                     </p>
                   </div>
-                  {previewMode.availability === "locked" && (
+                  {previewAccess.effectiveAvailability === "locked" && (
                     <p className="mt-4 rounded-lg border border-violet-500/20 bg-violet-950/20 px-2.5 py-2 text-[10px] leading-relaxed text-violet-200/80">
-                      Pro Intelligence preview — you can explore this lens, but analysis is not
-                      available until the mode launches.
+                      Upgrade to {previewAccess.upgradePlanId === "scholar" ? "Scholar" : "Pro"} to
+                      run this intelligence mode on your documents.
                     </p>
                   )}
-                  {previewMode.availability === "coming_soon" && (
+                  {previewAccess.effectiveAvailability === "coming_soon" && (
                     <p className="mt-4 rounded-lg border border-zinc-600/30 bg-zinc-900/50 px-2.5 py-2 text-[10px] leading-relaxed text-zinc-400">
                       Coming soon — this mode is not selectable for analysis yet.
                     </p>

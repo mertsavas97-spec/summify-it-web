@@ -43,6 +43,7 @@ export function resolveEntitlementPlanId(
   polarSubscriptionId?: string | null,
 ): PlanId {
   const planId = resolvePlanId(storedPlan);
+
   if (
     isPaidPlanId(planId) &&
     (isActiveSubscriptionStatus(subscriptionStatus) ||
@@ -50,16 +51,23 @@ export function resolveEntitlementPlanId(
   ) {
     return planId;
   }
-  return planId;
+
+  if (planId === "beta") return "beta";
+  return "free";
 }
 
 export function resolveEntitlementPlanIdFromProfile(profile: Profile | null | undefined): PlanId {
   if (!profile) return "free";
-  return resolveEntitlementPlanId(
-    profile.plan,
-    profile.subscription_status,
-    profile.polar_subscription_id,
-  );
+
+  if (hasActivePaidEntitlement(profile)) {
+    return resolveEntitlementPlanId(
+      profile.plan,
+      profile.subscription_status,
+      profile.polar_subscription_id,
+    );
+  }
+
+  return resolveEntitlementPlanId(profile.plan, null, null);
 }
 
 /** Account/dashboard label — Public Beta only when actually on beta without paid access. */

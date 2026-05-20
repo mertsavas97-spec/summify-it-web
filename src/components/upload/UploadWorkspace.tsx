@@ -25,6 +25,7 @@ import {
 } from "@/types/extraction";
 import type { AnalysisResult } from "@/types/text-analysis";
 import type { IntelligenceModeId } from "@/types/modes";
+import { useWorkspaceEntitlementPlan } from "@/hooks/useWorkspaceEntitlementPlan";
 import { getDefaultIntelligenceModeId } from "@/lib/mode-resolver";
 import type { AnalysisIntelligenceMetadata } from "@/types/intelligence";
 import { buildYoutubeSourceContext } from "@/types/analyze-source";
@@ -59,6 +60,7 @@ export type InjectedAnalysisPayload = {
 };
 
 export function UploadWorkspace() {
+  const entitlementPlanId = useWorkspaceEntitlementPlan();
   const [inputMode, setInputMode] = useState<WorkspaceInputMode>("file");
   const [fileName, setFileName] = useState<string | null>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
@@ -442,6 +444,7 @@ export function UploadWorkspace() {
           </section>
 
           <TextAnalysisMvp
+            entitlementPlanId={entitlementPlanId}
             inputMode={inputMode}
             rawText={rawText}
             onRawTextChange={(text) => {
@@ -475,6 +478,7 @@ export function UploadWorkspace() {
         <div className="min-w-0 space-y-4 lg:sticky lg:top-[4.5rem] lg:z-10 lg:max-h-[calc(100vh-5.5rem)] lg:self-start">
           <DemoWorkflowBlock className="hidden lg:block" limit={2} />
           <UploadPreviewPanel
+            entitlementPlanId={entitlementPlanId}
             sourceLabel={sourceLabel}
             intelligenceModeId={analysisMode}
             status={extractStatus}
