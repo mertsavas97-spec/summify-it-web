@@ -50,13 +50,21 @@ function sharedWordCount(a: string, b: string): number {
   return shared;
 }
 
+function normalizeCardText(text: string): string {
+  return text.trim().replace(/\s+/g, " ").toLowerCase().replace(/\?+$/, "");
+}
+
+function isAnswerIdenticalToQuestion(question: string, answer: string): boolean {
+  return normalizeCardText(question) === normalizeCardText(answer);
+}
+
 function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: string): boolean {
   const question = card.question.trim();
   const answer = card.answer.trim();
   if (!question || !answer) return false;
+  if (isAnswerIdenticalToQuestion(question, answer)) return false;
   if (sharedWordCount(question, answer) > 3) return false;
   if (/^significant changes occurred|changes occurred significantly/i.test(answer)) return false;
-  if (question.toLowerCase() === answer.toLowerCase()) return false;
   if (
     documentTitle &&
     documentTitle.length >= 8 &&

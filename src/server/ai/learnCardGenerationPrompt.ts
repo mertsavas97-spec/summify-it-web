@@ -21,6 +21,7 @@ Answer format:
 - Must contain at least one anchor from the inventory
   (a name, number, year, place, or direct cause)
 - Must not restate the question
+- Answer must not be identical to the question
 - Must not repeat the document title
 - Max 160 characters
 
