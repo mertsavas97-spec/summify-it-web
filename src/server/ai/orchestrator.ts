@@ -232,7 +232,7 @@ async function attemptProvider(
 
     const generatedLearnCards = await generateLearnCardsForAnalysis({
       provider,
-      compactedContent: intelligence.compactedUserPrompt,
+      compactedContent: intelligence.cleanedText,
       cardCount: range.target,
       documentTitle: postProcessed.title,
       isYoutube: isYoutubeTranscript,

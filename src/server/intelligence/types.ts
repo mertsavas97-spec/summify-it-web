@@ -154,6 +154,8 @@ export type AnalysisIntelligenceContext = {
   knowledgeLayerSummary: KnowledgeLayerSummary;
   tokenBudget: TokenBudget;
   adaptivePlan: AdaptiveAnalysisPlan;
+  /** Full document text after cleanText(rawText) — used for learn-card Phase 1. */
+  cleanedText: string;
   compactedUserPrompt: string;
   /** Server-only — used for prompt/learn tuning; not returned in API metadata. */
   analyzeSource?: AnalyzeSourceContext;

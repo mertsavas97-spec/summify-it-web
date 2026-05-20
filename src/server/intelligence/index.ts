@@ -125,6 +125,7 @@ export function prepareAnalysisIntelligence(
     knowledgeLayerSummary: summarizeKnowledgeLayer(knowledgeLayer),
     tokenBudget,
     adaptivePlan,
+    cleanedText: cleaned,
     compactedUserPrompt: userPrompt,
     analyzeSource: options?.sourceContext,
     cognitionPromptBlock: cognition.promptBlock,
