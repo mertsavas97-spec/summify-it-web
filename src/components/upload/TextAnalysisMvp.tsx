@@ -60,6 +60,7 @@ type TextAnalysisMvpProps = {
   onAnalysisComplete?: (completed: boolean) => void;
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
   entitlementPlanId: PlanId;
+  isAuthenticated: boolean;
 };
 
 function ExtractedTextEditor({
@@ -206,6 +207,7 @@ export function TextAnalysisMvp({
   onAnalysisComplete,
   onIntelligenceReady,
   entitlementPlanId,
+  isAuthenticated,
 }: TextAnalysisMvpProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -480,8 +482,8 @@ export function TextAnalysisMvp({
           <p className="rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-2 text-xs text-red-300">
             {error}{" "}
             {showUpgradeCopy && (
-              <a href="/pricing" className="font-medium text-red-100 underline-offset-2 hover:underline">
-                Upgrade options coming soon
+              <a href="/pricing?plan=pro" className="font-medium text-red-100 underline-offset-2 hover:underline">
+                View plans to upgrade
               </a>
             )}
           </p>
@@ -504,7 +506,12 @@ export function TextAnalysisMvp({
         </div>
       )}
 
-      <PlanUpgradeModal mode={upgradeMode} onClose={() => setUpgradeMode(null)} />
+      <PlanUpgradeModal
+        mode={upgradeMode}
+        entitlementPlanId={entitlementPlanId}
+        isAuthenticated={isAuthenticated}
+        onClose={() => setUpgradeMode(null)}
+      />
     </section>
   );
 }

@@ -49,10 +49,10 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
       {showUpgrade && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-violet-500/15 bg-violet-950/20 px-3 py-2.5">
           <p className="text-xs text-violet-200/90">
-            Need more analyses? Upgrade options are coming soon with larger limits and more modes.
+            Need more analyses? Upgrade for larger limits and more intelligence modes.
           </p>
-          <Button href="/pricing" size="sm" variant="secondary">
-            Upgrade options coming soon
+          <Button href="/pricing?plan=pro" size="sm" variant="secondary">
+            View plans
           </Button>
         </div>
       )}

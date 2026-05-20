@@ -34,15 +34,30 @@ export function isModeIncludedInPlan(
   return getAllowedModeIdsForPlan(planId).includes(modeId);
 }
 
+/** Minimum paid tier required to run a mode (for badges and upgrade CTAs). */
+export function getMinimumUpgradePlanForMode(modeId: IntelligenceModeId): PlanId {
+  if (isModeIncludedInPlan(modeId, "free")) return "free";
+  if (
+    isModeIncludedInPlan(modeId, "scholar") &&
+    !isModeIncludedInPlan(modeId, "free")
+  ) {
+    return "scholar";
+  }
+  if (
+    isModeIncludedInPlan(modeId, "team") &&
+    !isModeIncludedInPlan(modeId, "pro")
+  ) {
+    return "team";
+  }
+  return "pro";
+}
+
 /** Which paid tier unlocks a locked mode in upgrade messaging. */
 export function getUpgradePlanForMode(
   mode: IntelligenceModeDefinition,
 ): PlanId {
   if (mode.availability === "active") return "free";
-  if (isModeIncludedInPlan(mode.id, "scholar") && !isModeIncludedInPlan(mode.id, "free")) {
-    return "scholar";
-  }
-  return "pro";
+  return getMinimumUpgradePlanForMode(mode.id);
 }
 
 export function getMaxFileSizeBytes(planId: PlanId): number {

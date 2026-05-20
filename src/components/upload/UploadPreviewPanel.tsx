@@ -2,7 +2,7 @@
 
 import { getIntelligenceModeById } from "@/config/modes";
 import { getCategoryLabelForMode } from "@/lib/mode-groups";
-import { getModeAccessState } from "@/lib/mode-access";
+import { formatPlanBadgeLabel, getModeAccessState } from "@/lib/mode-access";
 import { canRunAnalysis } from "@/lib/mode-resolver";
 import type { PlanId } from "@/types/plan";
 import type { ExtractionMetadata, UploadExtractStatus } from "@/types/extraction";
@@ -426,9 +426,10 @@ export function UploadPreviewPanel({
               <p className="text-xs font-medium text-violet-200">
                 {intelligenceMode?.label ?? intelligenceModeId}
               </p>
-              {modeAccess?.effectiveAvailability === "locked" && (
+              {modeAccess?.effectiveAvailability === "locked" &&
+                modeAccess.upgradePlanId && (
                 <span className="rounded border border-violet-500/25 bg-violet-950/30 px-1 py-px text-[8px] font-medium uppercase text-violet-300/90">
-                  {modeAccess.upgradePlanId === "scholar" ? "Scholar" : "Pro"}
+                  {formatPlanBadgeLabel(modeAccess.upgradePlanId)}
                 </span>
               )}
               {modeAccess?.effectiveAvailability === "coming_soon" && (
@@ -438,7 +439,7 @@ export function UploadPreviewPanel({
               )}
               {modeIsRunnable && (
                 <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[8px] font-medium uppercase text-emerald-400/90">
-                  Active
+                  Available
                 </span>
               )}
             </div>

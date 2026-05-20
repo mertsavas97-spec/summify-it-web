@@ -114,7 +114,7 @@ export default async function AccountPage() {
             <PortalButton />
           ) : (
             <Button href="/pricing" size="sm" variant="secondary">
-              {billing.enabled ? "View plans" : "Upgrade options coming soon"}
+              View plans
             </Button>
           )}
         </div>

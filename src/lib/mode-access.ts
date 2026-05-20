@@ -5,10 +5,8 @@ import {
   resolveEntitlementPlanIdFromProfile,
 } from "@/lib/billing/entitlements";
 import { getPlanDefinition } from "@/data/pricingPlans";
-import {
-  getUpgradePlanForMode,
-  isModeIncludedInPlan,
-} from "@/lib/plan-features";
+import { getUpgradePlanForMode, isModeIncludedInPlan } from "@/lib/plan-features";
+import { formatPlanBadgeLabel } from "@/lib/plan-upgrade-ui";
 import { resolvePlanId } from "@/lib/plan-limits";
 import type { Profile } from "@/types/database";
 import type { PlanId } from "@/types/plan";
@@ -129,3 +127,5 @@ export function formatEntitlementModeCountLabel(
 
   return `${counts.available} active · ${counts.locked} locked${counts.comingSoon > 0 ? ` · ${counts.comingSoon} coming soon` : ""}`;
 }
+
+export { formatPlanBadgeLabel };

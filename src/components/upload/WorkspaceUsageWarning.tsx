@@ -67,7 +67,7 @@ export function WorkspaceUsageWarning({ initialWarning }: WorkspaceUsageWarningP
     <p className="mt-3 rounded-lg border border-amber-500/15 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
       {message}{" "}
       <Link href="/pricing" className="font-medium text-amber-100/90 hover:underline">
-        Upgrade options coming soon
+        View plans to upgrade
       </Link>
     </p>
   );

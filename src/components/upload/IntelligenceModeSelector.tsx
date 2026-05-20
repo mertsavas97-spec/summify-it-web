@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { getIntelligenceModeById, INTELLIGENCE_MODES } from "@/config/modes";
+import { getPlanDefinition } from "@/data/pricingPlans";
 import {
   formatRecommendedSources,
   getCategoryLabelForMode,
@@ -13,6 +14,7 @@ import {
 import {
   countModesForEntitlement,
   formatEntitlementModeCountLabel,
+  formatPlanBadgeLabel,
   getModeAccessState,
 } from "@/lib/mode-access";
 import { getCategoryColors } from "@/lib/mode-category-colors";
@@ -181,9 +183,10 @@ export function IntelligenceModeSelector({
             <span className="text-[11px] text-zinc-600 group-hover:text-violet-300/70">
               · Click to change
             </span>
-            {selectedAccess?.effectiveAvailability === "locked" && (
+            {selectedAccess?.effectiveAvailability === "locked" &&
+              selectedAccess.upgradePlanId && (
               <span className="rounded border border-violet-500/25 bg-violet-950/30 px-1 py-px text-[9px] font-medium uppercase text-violet-300/90">
-                Pro
+                {formatPlanBadgeLabel(selectedAccess.upgradePlanId)}
               </span>
             )}
             {selectedAccess?.effectiveAvailability === "coming_soon" && (
@@ -304,16 +307,14 @@ export function IntelligenceModeSelector({
                                     </span>
                                     {access.canAccess && (
                                       <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[9px] font-medium uppercase text-emerald-400/90">
-                                        Active
+                                        Available
                                       </span>
                                     )}
-                                    {isLocked && (
+                                    {isLocked && access.upgradePlanId && (
                                       <span
                                         className={`rounded border px-1 py-px text-[9px] font-medium uppercase ${modeColors.badge}`}
                                       >
-                                        {access.upgradePlanId === "scholar"
-                                          ? "Scholar"
-                                          : "Pro"}
+                                        {formatPlanBadgeLabel(access.upgradePlanId)}
                                       </span>
                                     )}
                                     {isSoon && (
@@ -376,10 +377,11 @@ export function IntelligenceModeSelector({
                       </span>
                     </p>
                   </div>
-                  {previewAccess.effectiveAvailability === "locked" && (
+                  {previewAccess.effectiveAvailability === "locked" &&
+                    previewAccess.upgradePlanId && (
                     <p className="mt-4 rounded-lg border border-violet-500/20 bg-violet-950/20 px-2.5 py-2 text-[10px] leading-relaxed text-violet-200/80">
-                      Upgrade to {previewAccess.upgradePlanId === "scholar" ? "Scholar" : "Pro"} to
-                      run this intelligence mode on your documents.
+                      Upgrade to {getPlanDefinition(previewAccess.upgradePlanId).name} to run this
+                      intelligence mode on your documents.
                     </p>
                   )}
                   {previewAccess.effectiveAvailability === "coming_soon" && (
