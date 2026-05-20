@@ -6,7 +6,7 @@
 import { callGroqAnalysis } from "./providers/groq";
 import { callGeminiAnalysis } from "./providers/gemini";
 import { parseAndValidateAnalysisResult } from "./validate-response";
-import type { AnalysisResult, TextAnalysisMode } from "./schemas";
+import type { AnalysisResult, LearnCardOutput, TextAnalysisMode } from "./schemas";
 import {
   prepareAnalysisIntelligence,
   type AnalysisIntelligenceContext,
@@ -33,6 +33,9 @@ import {
   type AnalyzeRunContext,
   type ProviderAttemptRecord,
 } from "./analysis-failure";
+
+/** When AI two-phase learn returns at least this many cards, skip deterministic buildLearnIntelligence. */
+const MIN_AI_LEARN_CARDS = 4;
 
 export type OrchestratorSuccess = {
   result: AnalysisResult;
@@ -66,9 +69,19 @@ function applyLearnIntelligence(
   mode: TextAnalysisMode,
   sourceContext?: AnalyzeSourceContext,
   modeRouting?: ModeRoutingResult,
+  options?: { aiLearnCards?: LearnCardOutput[] },
 ): AnalysisResult {
   const plan = intelligence.personaAdaptivePlan;
-  let learnCards = result.learnCards ?? [];
+  const aiLearnCards = options?.aiLearnCards ?? [];
+
+  if (aiLearnCards.length >= MIN_AI_LEARN_CARDS) {
+    return { ...result, learnCards: aiLearnCards };
+  }
+
+  const resultForBuild: AnalysisResult =
+    aiLearnCards.length > 0 ? { ...result, learnCards: aiLearnCards } : result;
+
+  let learnCards = resultForBuild.learnCards ?? [];
   let learnMeta: import("@/server/learn/types").LearnIntelligenceMeta = {
     candidateCount: learnCards.length,
     selectedCount: learnCards.length,
@@ -77,7 +90,7 @@ function applyLearnIntelligence(
   };
 
   try {
-    const built = buildLearnIntelligence(result, {
+    const built = buildLearnIntelligence(resultForBuild, {
       mode,
       complexity: intelligence.profile.complexity,
       isYoutubeTranscript: sourceContext?.sourceKind === "youtube",
@@ -91,7 +104,7 @@ function applyLearnIntelligence(
       allowedLearnSourceSections: plan?.allowedLearnSourceSections,
       blockedLearnSourceSections: plan?.blockedLearnSourceSections,
       personaAdaptivePlan: plan,
-      extractedText: intelligence.compactedUserPrompt?.slice(0, 24000),
+      extractedText: intelligence.cleanedText?.slice(0, 24000),
     });
     learnCards = built.learnCards;
     learnMeta = built.meta;
@@ -105,7 +118,7 @@ function applyLearnIntelligence(
         learnFailureMessage: message,
       };
     }
-    learnCards = result.learnCards?.length ? result.learnCards : learnCards;
+    learnCards = resultForBuild.learnCards?.length ? resultForBuild.learnCards : learnCards;
   }
   if (intelligence.cognition) {
     if (learnMeta.adaptiveLearn) {
@@ -230,7 +243,7 @@ async function attemptProvider(
       isYoutube: isYoutubeTranscript,
     });
 
-    const generatedLearnCards = await generateLearnCardsForAnalysis({
+    const aiLearnCards = await generateLearnCardsForAnalysis({
       provider,
       compactedContent: intelligence.cleanedText,
       cardCount: range.target,
@@ -241,17 +254,13 @@ async function attemptProvider(
       documentTypeGuess: intelligence.profile.documentTypeGuess,
     });
 
-    const withLearnCards =
-      generatedLearnCards.length > 0
-        ? { ...postProcessed, learnCards: generatedLearnCards }
-        : postProcessed;
-
     return applyLearnIntelligence(
-      withLearnCards,
+      postProcessed,
       intelligence,
       mode,
       intelligence.analyzeSource,
       modeRouting,
+      { aiLearnCards },
     );
   } catch (error) {
     const record = classifyValidationFailure(provider, error, raw);

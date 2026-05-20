@@ -154,6 +154,9 @@ export async function generateLearnCardsFromContent(
   const content = input.content.slice(0, AI_CONFIG.input.maxChars);
   const language = input.language ?? "English";
 
+  // TEMP: verify Phase 1 input is cleaned source text (remove after QA)
+  console.log("[summify.learnCards] phase1 content preview (first 500 chars):", content.slice(0, 500));
+
   const inventory = await extractFactInventory(input.provider, content);
   if (!inventory || !isFactInventoryUsable(inventory)) {
     return [];
