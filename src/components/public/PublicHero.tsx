@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { ProductHuntBadge } from "@/components/public/ProductHuntBadge";
 
 type PublicHeroProps = {
   badge?: string;
@@ -7,6 +8,8 @@ type PublicHeroProps = {
   description: React.ReactNode;
   primaryCta?: { href: string; label: string };
   secondaryCta?: { href: string; label: string };
+  /** Homepage only — official Product Hunt featured badge under CTAs. */
+  showProductHuntBadge?: boolean;
   children?: React.ReactNode;
 };
 
@@ -16,6 +19,7 @@ export function PublicHero({
   description,
   primaryCta = { href: "/upload", label: "Start summarizing" },
   secondaryCta,
+  showProductHuntBadge = false,
   children,
 }: PublicHeroProps) {
   const headingId = "public-hero-heading";
@@ -48,7 +52,7 @@ export function PublicHero({
             <div className="mt-4 max-w-xl text-base leading-relaxed text-zinc-400">
               {description}
             </div>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
               <Button href={primaryCta.href} size="md">
                 {primaryCta.label}
               </Button>
@@ -58,6 +62,7 @@ export function PublicHero({
                 </Button>
               )}
             </div>
+            {showProductHuntBadge && <ProductHuntBadge />}
           </div>
           {children && (
             <div className="min-w-0 lg:scale-[1.03] lg:origin-center">{children}</div>

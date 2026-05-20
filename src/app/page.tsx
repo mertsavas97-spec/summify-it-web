@@ -58,6 +58,7 @@ export default function HomePage() {
         }
         primaryCta={{ href: "/upload", label: "Try Summify free" }}
         secondaryCta={{ href: "/modes", label: "Explore modes" }}
+        showProductHuntBadge
       >
         <ProductMockCard />
       </PublicHero>
