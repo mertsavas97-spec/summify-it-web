@@ -3,8 +3,11 @@
  * No video/audio download; transcript API only.
  */
 
+import { getPlanLimits, type PlanLimits } from "@/lib/plans/planLimits";
+import type { PlanId } from "@/types/plan";
 import { EXTRACTION_CONFIG } from "./config";
-import { cleanText, truncateText } from "./cleanText";
+import { applyPlanDocumentLimits } from "./applyPlanDocumentLimits";
+import { cleanText } from "./cleanText";
 import { profileExtractedText } from "./profile";
 import { ExtractionError } from "./errors";
 
@@ -66,6 +69,9 @@ export type YoutubeExtractionResult = {
     estimatedReadingTimeMinutes: number;
     complexity: "low" | "medium" | "high";
     truncated: boolean;
+    wasChunked?: boolean;
+    truncationStrategy?: string | null;
+    limitNotice?: string | null;
   };
 };
 
@@ -751,7 +757,10 @@ function estimateReadingMinutes(charCount: number): number {
 /**
  * Fetch and normalize a YouTube transcript for analysis.
  */
-export async function extractFromYouTube(urlInput: string): Promise<YoutubeExtractionResult> {
+export async function extractFromYouTube(
+  urlInput: string,
+  options?: { planId?: PlanId; planLimits?: PlanLimits },
+): Promise<YoutubeExtractionResult> {
   const { videoId, canonicalUrl } = assertValidYouTubeInput(urlInput);
   const rapidConfig = getRapidApiConfig();
 
@@ -795,12 +804,8 @@ export async function extractFromYouTube(urlInput: string): Promise<YoutubeExtra
     );
   }
 
-  const maxChars = Math.min(
-    EXTRACTION_CONFIG.maxExtractedChars,
-    EXTRACTION_CONFIG.youtubeMaxTranscriptChars,
-  );
-  const truncated = cleaned.length > maxChars;
-  const extractedText = truncated ? truncateText(cleaned, maxChars) : cleaned;
+  const limits = options?.planLimits ?? getPlanLimits(options?.planId ?? "free");
+  const applied = applyPlanDocumentLimits(cleaned, limits);
 
   const profile = profileExtractedText(cleaned);
   const title = parseTitle(payload);
@@ -809,20 +814,23 @@ export async function extractFromYouTube(urlInput: string): Promise<YoutubeExtra
   const importantMoments = hasTimestamps ? buildImportantMoments(segments) : undefined;
 
   return {
-    extractedText,
+    extractedText: applied.text,
     metadata: {
       title,
       videoId,
       sourceUrl: canonicalUrl,
-      extractedCharacters: extractedText.length,
+      extractedCharacters: applied.fullExtractedCharacters,
       estimatedDurationMinutes,
-      estimatedReadingTimeMinutes: estimateReadingMinutes(extractedText.length),
+      estimatedReadingTimeMinutes: estimateReadingMinutes(applied.analyzedCharacters),
       transcriptSegmentCount: segments.length,
       importantMoments,
       hasTimestamps,
       sourceType: "youtube",
       complexity: profile.complexity,
-      truncated,
+      truncated: applied.wasTruncated,
+      wasChunked: applied.wasChunked,
+      truncationStrategy: applied.truncationStrategy,
+      limitNotice: applied.limitNotice,
     },
   };
 }

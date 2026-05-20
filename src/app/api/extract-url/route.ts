@@ -5,6 +5,9 @@ import type {
   ExtractUrlApiErrorResponse,
   ExtractUrlApiSuccessResponse,
 } from "@/types/extraction";
+import { getOptionalUser } from "@/lib/auth";
+import { getProfile } from "@/lib/supabase/profile";
+import { resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devError, logServerError } from "@/server/logging";
 
@@ -29,7 +32,11 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 400 });
     }
 
-    const result = await extractFromUrl(body.url);
+    const currentUser = await getOptionalUser();
+    const profile = currentUser ? await getProfile(currentUser.id) : null;
+    const planId = resolveModeEntitlementPlanId(profile, Boolean(currentUser));
+
+    const result = await extractFromUrl(body.url, { planId });
 
     const response: ExtractUrlApiSuccessResponse = {
       success: true,
@@ -38,6 +45,7 @@ export async function POST(request: Request) {
         sourceKind: "url",
         ...result.metadata,
       },
+      limitNotice: result.metadata.limitNotice ?? undefined,
     };
 
     return NextResponse.json(response);

@@ -3,8 +3,10 @@
  * Never import in client components.
  */
 
-import { cleanText } from "@/server/extraction/cleanText";
+import { getPlanLimits } from "@/lib/plans/planLimits";
+import type { PlanId } from "@/types/plan";
 import type { TextAnalysisMode } from "@/server/ai/schemas";
+import { prepareDocumentForAnalysis } from "./prepareDocumentForAnalysis";
 import { profileDocument } from "./profileDocument";
 import { buildKnowledgeLayer, summarizeKnowledgeLayer } from "./buildKnowledgeLayer";
 import { estimateTokenBudget } from "./estimateTokenBudget";
@@ -36,6 +38,8 @@ export type PrepareAnalysisIntelligenceOptions = {
   sourceHint?: AnalysisSourceHint;
   sourceContext?: import("./types").AnalyzeSourceContext;
   modeRouting?: import("./mode-routing").ModeRoutingResult;
+  planId?: PlanId;
+  estimatedPages?: number;
 };
 
 export function prepareAnalysisIntelligence(
@@ -43,7 +47,12 @@ export function prepareAnalysisIntelligence(
   selectedMode: TextAnalysisMode,
   options?: PrepareAnalysisIntelligenceOptions,
 ): AnalysisIntelligenceContext {
-  const cleaned = cleanText(rawText);
+  const planId = options?.planId ?? "free";
+  const planLimits = getPlanLimits(planId);
+  const prepared = prepareDocumentForAnalysis(rawText, planId, {
+    estimatedPages: options?.estimatedPages,
+  });
+  const cleaned = prepared.text;
   const isYoutubeTranscript =
     options?.sourceHint === "youtube" ||
     options?.sourceContext?.sourceKind === "youtube";
@@ -71,6 +80,7 @@ export function prepareAnalysisIntelligence(
     selectedMode,
     preliminaryBudget,
     options?.modeRouting?.outputDepthHint,
+    planLimits,
   );
 
   const modeId =
@@ -127,6 +137,8 @@ export function prepareAnalysisIntelligence(
     adaptivePlan,
     cleanedText: cleaned,
     compactedUserPrompt: userPrompt,
+    analysisLimits: prepared.analysisLimits,
+    limitNotice: prepared.limitNotice,
     analyzeSource: options?.sourceContext,
     cognitionPromptBlock: cognition.promptBlock,
     personaAdaptivePlan: cognition.personaAdaptivePlan,

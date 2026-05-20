@@ -4,8 +4,11 @@
 
 import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
+import { getPlanLimits, type PlanLimits } from "@/lib/plans/planLimits";
+import type { PlanId } from "@/types/plan";
 import { EXTRACTION_CONFIG } from "./config";
-import { cleanText, truncateText } from "./cleanText";
+import { applyPlanDocumentLimits } from "./applyPlanDocumentLimits";
+import { cleanText } from "./cleanText";
 import { profileExtractedText } from "./profile";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { ExtractionError } from "./errors";
@@ -18,6 +21,9 @@ export type UrlExtractionMetadata = {
   estimatedReadingTimeMinutes: number;
   complexity: "low" | "medium" | "high";
   truncated: boolean;
+  wasChunked?: boolean;
+  truncationStrategy?: string | null;
+  limitNotice?: string | null;
 };
 
 export type UrlExtractionResult = {
@@ -333,7 +339,10 @@ function estimateReadingMinutes(charCount: number): number {
 /**
  * Fetch and extract readable article text from a public http(s) URL.
  */
-export async function extractFromUrl(urlString: string): Promise<UrlExtractionResult> {
+export async function extractFromUrl(
+  urlString: string,
+  options?: { planId?: PlanId; planLimits?: PlanLimits },
+): Promise<UrlExtractionResult> {
   const safeUrl = assertSafeHttpUrl(urlString);
   const { html, finalUrl } = await fetchHtml(safeUrl);
   const { siteName } = parseSiteMeta(html, finalUrl);
@@ -348,23 +357,23 @@ export async function extractFromUrl(urlString: string): Promise<UrlExtractionRe
     );
   }
 
-  const truncated = cleaned.length > EXTRACTION_CONFIG.maxExtractedChars;
-  const extractedText = truncated
-    ? truncateText(cleaned, EXTRACTION_CONFIG.maxExtractedChars)
-    : cleaned;
-
+  const limits = options?.planLimits ?? getPlanLimits(options?.planId ?? "free");
+  const applied = applyPlanDocumentLimits(cleaned, limits);
   const profile = profileExtractedText(cleaned);
 
   return {
-    extractedText,
+    extractedText: applied.text,
     metadata: {
       title,
       sourceUrl: finalUrl,
       siteName,
-      extractedCharacters: extractedText.length,
-      estimatedReadingTimeMinutes: estimateReadingMinutes(extractedText.length),
+      extractedCharacters: applied.fullExtractedCharacters,
+      estimatedReadingTimeMinutes: estimateReadingMinutes(applied.analyzedCharacters),
       complexity: profile.complexity,
-      truncated,
+      truncated: applied.wasTruncated,
+      wasChunked: applied.wasChunked,
+      truncationStrategy: applied.truncationStrategy,
+      limitNotice: applied.limitNotice,
     },
   };
 }

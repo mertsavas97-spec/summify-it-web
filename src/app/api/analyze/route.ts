@@ -77,6 +77,9 @@ function buildSuccessDebug(
     estimatedPromptChars: intelligence.compactedUserPrompt.length,
     providerUsed,
     fallbackUsed,
+    ...(intelligence.analysisLimits
+      ? { analysisLimits: intelligence.analysisLimits }
+      : {}),
     ...(intelligence.cognition
       ? {
           cognition: {
@@ -136,6 +139,13 @@ export async function POST(request: Request) {
       sourceContext?: unknown;
     };
 
+    const currentUser = await getOptionalUser();
+    const [profile, limits] = currentUser
+      ? await Promise.all([getProfile(currentUser.id), getUserLimits(currentUser.id)])
+      : [null, null] as const;
+
+    const planId = currentUser ? resolveEntitlementPlanIdFromProfile(profile) : "free";
+
     const { rawText, mode, intelligenceModeId, modeRouting, sourceHint, sourceContext } =
       validateAnalysisInput(
         body.rawText,
@@ -145,12 +155,6 @@ export async function POST(request: Request) {
       );
     modeForLog = intelligenceModeId;
 
-    const currentUser = await getOptionalUser();
-    const [profile, limits] = currentUser
-      ? await Promise.all([getProfile(currentUser.id), getUserLimits(currentUser.id)])
-      : [null, null] as const;
-
-    const planId = currentUser ? resolveEntitlementPlanIdFromProfile(profile) : "free";
     const quota = canRunAnalysis({
       storedPlan: profile?.plan,
       usage: limits,
@@ -222,6 +226,7 @@ export async function POST(request: Request) {
       tokenBudget: intelligence.tokenBudget,
       adaptivePlan: intelligence.adaptivePlan,
       personaUiSectionLabels: intelligence.personaAdaptivePlan?.uiSectionLabels,
+      ...(intelligence.limitNotice ? { limitNotice: intelligence.limitNotice } : {}),
     };
 
     if (isDevelopment()) {

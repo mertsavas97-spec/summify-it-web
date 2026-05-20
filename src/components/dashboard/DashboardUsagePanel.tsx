@@ -72,7 +72,7 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
       )}
 
       <p className="mt-3 text-[10px] text-zinc-600">
-        Free includes 3 analyses per day, 10MB uploads, 5 modes, 5 Learn cards, and your last 3 saved analyses.{" "}
+        Free includes 3 analyses per day, 20MB uploads, 5 modes, 5 Learn cards, and your last 3 saved analyses.{" "}
         <Link href="/account" className="text-violet-400/70 hover:text-violet-300">
           Account
         </Link>

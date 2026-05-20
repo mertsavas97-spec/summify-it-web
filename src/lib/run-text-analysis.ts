@@ -18,6 +18,7 @@ export type RunTextAnalysisSuccess = {
   providerUsed: string;
   fallbackUsed: boolean;
   intelligence: AnalysisIntelligenceMetadata;
+  limitNotice?: string;
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;
 };
@@ -73,5 +74,6 @@ export async function runTextAnalysis(
         ? { personaUiSectionLabels: data.personaUiSectionLabels }
         : {}),
     },
+    ...(data.limitNotice ? { limitNotice: data.limitNotice } : {}),
   };
 }

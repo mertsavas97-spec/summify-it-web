@@ -12,8 +12,10 @@ export const USER_MESSAGES = {
   analyzeInputEmpty: "Please enter some text to analyze.",
   analyzeInputTooShort: (min: number) =>
     `Please add at least ${min} characters before running analysis.`,
-  analyzeInputTooLong: (max: string) =>
-    `This text is too long. Shorten it to under ${max} characters.`,
+  analyzeInputTooLong: () =>
+    "This document exceeds your current analysis limit.",
+  analyzePlanLimitUpgrade:
+    "Upgrade to Pro for long-form chunked analysis on larger documents.",
   analyzeModeRequired: "Choose an intelligence mode before analyzing.",
   analyzeModeUnknown:
     "That intelligence mode isn't recognized. Pick an active mode from the lens selector.",
@@ -23,9 +25,7 @@ export const USER_MESSAGES = {
     `"${label}" is coming soon. Choose an active mode to run analysis.`,
   extractFileMissing: "Please choose a file to upload.",
   extractFileTooLarge: (maxMb: number) =>
-    maxMb === 10
-      ? "Free uploads support files up to 10MB."
-      : `This file is too large. Maximum size is ${maxMb} MB.`,
+    `This file is too large. Maximum size is ${maxMb} MB for your plan.`,
   extractUnsupported:
     "This file type isn't supported. Upload PDF, DOCX, TXT, or PPTX.",
   extractFailed:

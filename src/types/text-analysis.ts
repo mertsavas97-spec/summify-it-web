@@ -77,6 +77,7 @@ export type AnalyzeApiSuccessResponse = {
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;
   adaptationLabel?: string;
+  limitNotice?: string;
   debug?: AnalyzeApiDebugMetadata;
 } & AnalysisIntelligenceMetadata;
 

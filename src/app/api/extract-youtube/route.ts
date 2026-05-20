@@ -7,6 +7,9 @@ import type {
   ExtractYoutubeApiSuccessResponse,
   ExtractYoutubeDebugMetadata,
 } from "@/types/extraction";
+import { getOptionalUser } from "@/lib/auth";
+import { getProfile } from "@/lib/supabase/profile";
+import { resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devError, logServerError } from "@/server/logging";
 
@@ -49,7 +52,11 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 400 });
     }
 
-    const result = await extractFromYouTube(body.url);
+    const currentUser = await getOptionalUser();
+    const profile = currentUser ? await getProfile(currentUser.id) : null;
+    const planId = resolveModeEntitlementPlanId(profile, Boolean(currentUser));
+
+    const result = await extractFromYouTube(body.url, { planId });
 
     const response: ExtractYoutubeApiSuccessResponse = {
       success: true,
@@ -68,6 +75,7 @@ export async function POST(request: Request) {
         complexity: result.metadata.complexity,
         truncated: result.metadata.truncated,
       },
+      limitNotice: result.metadata.limitNotice ?? undefined,
     };
 
     return NextResponse.json(response);

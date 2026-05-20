@@ -1,4 +1,8 @@
 import type { DocumentType } from "@/core/types";
+import {
+  ACCEPT_UPLOAD_EXTENSIONS,
+  SUPPORTED_UPLOAD_FORMAT_LABELS,
+} from "@/lib/plans/uploadCopy";
 
 export type SupportedFileType = {
   extension: string;
@@ -43,11 +47,9 @@ export const supportedFileTypes: SupportedFileType[] = [
   },
 ];
 
-export const supportedFormatLabels = supportedFileTypes
-  .filter((f) => f.extractable && f.extension !== "pptx")
-  .map((f) => f.label);
+export const supportedFormatLabels = [...SUPPORTED_UPLOAD_FORMAT_LABELS];
 
-export const acceptFileExtensions = ".pdf,.docx,.txt";
+export const acceptFileExtensions = ACCEPT_UPLOAD_EXTENSIONS;
 
 export function inferDocumentType(
   fileName: string,
@@ -61,6 +63,8 @@ export function inferDocumentType(
   return match?.documentType ?? "unknown";
 }
 
+/** @deprecated Use getUploadZoneCopy(planId) for plan-aware page limits. */
 export const maxPagesWebPreview = 200;
 
-export const maxUploadSizeMb = 10;
+/** @deprecated Use getPlanLimits(planId).maxUploadMb */
+export const maxUploadSizeMb = 20;

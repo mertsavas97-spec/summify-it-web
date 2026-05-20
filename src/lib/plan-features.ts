@@ -1,5 +1,6 @@
 import { ACTIVE_INTELLIGENCE_MODE_IDS, INTELLIGENCE_MODES } from "@/config/modes";
 import { getPlanDefinition } from "@/data/pricingPlans";
+import { getMaxUploadBytes, getPlanLimits } from "@/lib/plans/planLimits";
 import type { PlanId } from "@/types/plan";
 import type { IntelligenceModeDefinition, IntelligenceModeId } from "@/types/modes";
 
@@ -61,8 +62,15 @@ export function getUpgradePlanForMode(
 }
 
 export function getMaxFileSizeBytes(planId: PlanId): number {
-  const mb = getPlanDefinition(planId).limits.maxFileSizeMb;
-  return mb * 1024 * 1024;
+  return getMaxUploadBytes(planId);
+}
+
+export function getAnalysisCharacterLimit(planId: PlanId): number {
+  return getPlanLimits(planId).maxCharacters;
+}
+
+export function getAnalysisPageLimit(planId: PlanId): number {
+  return getPlanLimits(planId).maxPages;
 }
 
 export function getMaxLearnCardsForPlan(planId: PlanId): number {

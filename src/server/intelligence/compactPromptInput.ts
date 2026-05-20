@@ -23,7 +23,9 @@ function formatProfileBlock(profile: DocumentProfile): string {
     `- Signals: ${profile.detectedSignals.join("; ") || "none"}`,
     `- Suggested mode alignment: ${profile.suggestedMode}`,
     profile.sourceQualityNote ? `- Note: ${profile.sourceQualityNote}` : "",
-    profile.needsChunking ? "- Note: full-document chunking not yet enabled." : "",
+    profile.needsChunking
+      ? "- Note: long-form content is analyzed in prioritized sections within your plan."
+      : "",
   ]
     .filter(Boolean)
     .join("\n");

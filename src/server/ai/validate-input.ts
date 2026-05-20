@@ -1,6 +1,8 @@
-import { formatNumber } from "@/lib/format-number";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { AI_CONFIG } from "./config";
+
+/** DoS guard — plan soft limits apply later via `prepareDocumentForAnalysis`. */
+const ABSOLUTE_MAX_PASTE_CHARS = 500_000;
 import type { TextAnalysisMode } from "./schemas";
 import type { AnalysisSourceHint } from "@/server/intelligence";
 import { resolveModeRouting, type ModeRoutingResult } from "@/server/intelligence/mode-routing";
@@ -59,10 +61,8 @@ export function validateAnalysisInput(
     );
   }
 
-  if (trimmed.length > AI_CONFIG.input.maxChars) {
-    throw new AnalysisInputError(
-      USER_MESSAGES.analyzeInputTooLong(formatNumber(AI_CONFIG.input.maxChars)),
-    );
+  if (trimmed.length > ABSOLUTE_MAX_PASTE_CHARS) {
+    throw new AnalysisInputError(USER_MESSAGES.analyzeInputTooLong());
   }
 
   if (typeof mode !== "string" || !mode.trim()) {

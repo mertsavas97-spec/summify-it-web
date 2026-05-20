@@ -50,7 +50,7 @@ export type PlanDefinition = {
 };
 
 const FORMATS_ALL = "PDF, TXT, DOCX, YouTube, Web, PowerPoint";
-const FORMATS_STANDARD = "PDF, TXT, DOCX, YouTube, Web";
+const FORMATS_STANDARD = "PDF, DOCX, PPTX, TXT, YouTube, Web";
 
 export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
   beta: {
@@ -97,7 +97,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     enforceLimits: true,
     limits: {
       analysesPerDay: 3,
-      maxFileSizeMb: 10,
+      maxFileSizeMb: 20,
       intelligenceModesIncluded: 5,
       maxLearnCards: 5,
       maxSavedAnalyses: 3,
@@ -113,7 +113,10 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     },
     featureBullets: [
       "3 analyses per day",
-      "Max 10MB uploads",
+      "Max 20MB uploads",
+      "Up to 50 pages",
+      "Up to 80k extracted characters",
+      "Standard analysis",
       FORMATS_STANDARD,
       "5 intelligence modes",
       "5 Learn cards per run",
@@ -143,7 +146,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     badge: "Coming soon",
     limits: {
       analysesPerDay: 10,
-      maxFileSizeMb: 25,
+      maxFileSizeMb: 20,
       intelligenceModesIncluded: 15,
       maxLearnCards: 12,
       maxSavedAnalyses: null,
@@ -159,8 +162,11 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     },
     featureBullets: [
       "10 analyses per day",
-      "Max 25MB uploads",
-      "All standard formats",
+      "Max 20MB uploads",
+      "Up to 150 pages",
+      "Same limits as Pro",
+      "Research-focused workflows",
+      FORMATS_STANDARD,
       "15 intelligence modes",
       "12 Learn cards per run",
       "Full analysis history",
@@ -196,7 +202,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     highlighted: true,
     limits: {
       analysesPerDay: null,
-      maxFileSizeMb: 50,
+      maxFileSizeMb: 20,
       intelligenceModesIncluded: "all",
       maxLearnCards: 15,
       maxSavedAnalyses: null,
@@ -212,7 +218,10 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     },
     featureBullets: [
       "Generous fair-use daily analyses",
-      "Max 50MB uploads",
+      "Max 20MB uploads",
+      "Up to 150 pages",
+      "Long-form chunked analysis",
+      "Advanced learning workflows",
       FORMATS_ALL,
       "All 29 intelligence modes",
       "15 Learn cards per run",
@@ -249,7 +258,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     comingSoon: false,
     limits: {
       analysesPerDay: null,
-      maxFileSizeMb: 50,
+      maxFileSizeMb: 20,
       intelligenceModesIncluded: "all",
       maxLearnCards: 15,
       maxSavedAnalyses: null,
@@ -265,6 +274,9 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     },
     featureBullets: [
       "Up to 5 seats included",
+      "Up to 200 pages",
+      "Advanced long-form intelligence",
+      "Team workflows",
       "Everything in Pro",
       "Shared team library (rolling out)",
       "API access (rolling out)",

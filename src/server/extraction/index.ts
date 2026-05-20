@@ -5,8 +5,11 @@
  * Do not import in client components.
  */
 
+import { getPlanLimits, type PlanLimits } from "@/lib/plans/planLimits";
+import type { PlanId } from "@/types/plan";
 import { EXTRACTION_CONFIG, type SupportedExtractExtension } from "./config";
-import { cleanText, truncateText } from "./cleanText";
+import { applyPlanDocumentLimits } from "./applyPlanDocumentLimits";
+import { cleanText } from "./cleanText";
 import { profileExtractedText } from "./profile";
 import { extractPdfText } from "./pdf";
 import { extractDocxText } from "./docx";
@@ -22,6 +25,9 @@ export type ExtractionMetadata = {
   complexity: "low" | "medium" | "high";
   structureQuality: "sparse" | "moderate" | "structured";
   truncated: boolean;
+  wasChunked?: boolean;
+  truncationStrategy?: string | null;
+  limitNotice?: string | null;
 };
 
 export type ExtractionResult = {
@@ -87,6 +93,8 @@ export type ExtractFileParams = {
   fileName: string;
   buffer: Buffer;
   mimeType?: string;
+  planId?: PlanId;
+  planLimits?: PlanLimits;
 };
 
 /**
@@ -108,9 +116,11 @@ export async function extractFromFile(
     );
   }
 
-  if (buffer.length > EXTRACTION_CONFIG.maxFileSizeBytes) {
-    const maxMb = EXTRACTION_CONFIG.maxFileSizeBytes / (1024 * 1024);
-    throw new ExtractionError(USER_MESSAGES.extractFileTooLarge(maxMb), 413);
+  const limits = params.planLimits ?? getPlanLimits(params.planId ?? "free");
+  const maxBytes = limits.maxUploadMb * 1024 * 1024;
+
+  if (buffer.length > maxBytes) {
+    throw new ExtractionError(USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb), 413);
   }
 
   const fileType = resolveExtractExtension(fileName);
@@ -143,11 +153,6 @@ export async function extractFromFile(
     );
   }
 
-  const truncated = cleaned.length > EXTRACTION_CONFIG.maxExtractedChars;
-  const extractedText = truncated
-    ? truncateText(cleaned, EXTRACTION_CONFIG.maxExtractedChars)
-    : cleaned;
-
   const profile = profileExtractedText(cleaned);
 
   const estimatedPages =
@@ -155,16 +160,21 @@ export async function extractFromFile(
       ? pdfPages
       : profile.estimatedPages;
 
+  const applied = applyPlanDocumentLimits(cleaned, limits, { estimatedPages });
+
   return {
-    extractedText,
+    extractedText: applied.text,
     metadata: {
       fileName,
       fileType,
-      estimatedPages,
-      extractedCharacters: extractedText.length,
+      estimatedPages: applied.extractedPages,
+      extractedCharacters: applied.fullExtractedCharacters,
       complexity: profile.complexity,
       structureQuality: profile.structureQuality,
-      truncated,
+      truncated: applied.wasTruncated,
+      wasChunked: applied.wasChunked,
+      truncationStrategy: applied.truncationStrategy,
+      limitNotice: applied.limitNotice,
     },
   };
 }

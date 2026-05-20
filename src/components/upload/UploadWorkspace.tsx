@@ -11,7 +11,9 @@ import { InputSourceTabs } from "./InputSourceTabs";
 import { UrlExtractPanel } from "./UrlExtractPanel";
 import { YoutubeExtractPanel } from "./YoutubeExtractPanel";
 import { Badge } from "@/components/ui/Badge";
-import { maxPagesWebPreview } from "@/data/fileTypes";
+import { getPlanLimits } from "@/lib/plans/planLimits";
+import { getUploadZoneCopy } from "@/lib/plans/uploadCopy";
+import { USER_MESSAGES } from "@/lib/user-messages";
 import type { PipelineStage } from "@/core/types";
 import {
   getExtractionSourceLabel,
@@ -33,7 +35,6 @@ import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { TrustSignals } from "@/components/growth/TrustSignals";
 import { DemoWorkflowBlock } from "@/components/growth/DemoWorkflowBlock";
-import { USER_MESSAGES } from "@/lib/user-messages";
 
 function resolvePipelineStage(
   extractStatus: UploadExtractStatus,
@@ -78,6 +79,7 @@ export function UploadWorkspace() {
   const [analysisIntelligence, setAnalysisIntelligence] =
     useState<AnalysisIntelligenceMetadata | null>(null);
   const [youtubePipelineActive, setYoutubePipelineActive] = useState(false);
+  const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const [youtubeAnalysisError, setYoutubeAnalysisError] = useState<string | null>(
     null,
   );
@@ -161,13 +163,31 @@ export function UploadWorkspace() {
     [analysisMode],
   );
 
+  const uploadCopy = useMemo(
+    () => getUploadZoneCopy(workspaceEntitlement.entitlementPlanId),
+    [workspaceEntitlement.entitlementPlanId],
+  );
+  const planLimits = useMemo(
+    () => getPlanLimits(workspaceEntitlement.entitlementPlanId),
+    [workspaceEntitlement.entitlementPlanId],
+  );
+
   const handleFileSelected = useCallback(async (file: File) => {
     setInputMode("file");
     setFileName(file.name);
     setSourceUrl(null);
     setExtractError(null);
     setExtractionMeta(null);
+    setLimitNotice(null);
     resetAnalysisState();
+
+    const maxBytes = planLimits.maxUploadMb * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setExtractError(USER_MESSAGES.extractFileTooLarge(planLimits.maxUploadMb));
+      setExtractStatus("failed");
+      return;
+    }
+
     setExtractStatus("uploading");
     trackEvent("upload_started", { trigger: "file", source_type: file.type || "file" });
 
@@ -192,12 +212,13 @@ export function UploadWorkspace() {
 
       setRawText(data.extractedText);
       setExtractionMeta(data.metadata);
+      setLimitNotice(data.limitNotice ?? null);
       setExtractStatus("ready");
     } catch {
       setExtractError(USER_MESSAGES.network);
       setExtractStatus("failed");
     }
-  }, [resetAnalysisState]);
+  }, [planLimits.maxUploadMb, resetAnalysisState]);
 
   const handleUrlAnalyzeArticle = useCallback(
     async (url: string, options?: { analyzeOnly?: boolean }) => {
@@ -233,6 +254,7 @@ export function UploadWorkspace() {
           text = data.extractedText;
           setRawText(text);
           setExtractionMeta(data.metadata);
+          setLimitNotice(data.limitNotice ?? null);
           setExtractStatus("ready");
         } catch {
           setExtractError(USER_MESSAGES.network);
@@ -295,6 +317,7 @@ export function UploadWorkspace() {
           meta = data.metadata;
           setRawText(text);
           setExtractionMeta(meta);
+          setLimitNotice(data.limitNotice ?? null);
           setExtractStatus("ready");
         } catch {
           setExtractError(USER_MESSAGES.network);
@@ -364,8 +387,7 @@ export function UploadWorkspace() {
         </h1>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-zinc-500">
           Upload a file, paste text, or analyze a web article or YouTube video in
-          one step. Files up to {maxPagesWebPreview} pages · source panel
-          stays pinned on desktop.
+          one step. {uploadCopy.limitLine} · source panel stays pinned on desktop.
         </p>
         <p className="mt-2 text-xs text-zinc-600">
           <Link
@@ -402,6 +424,8 @@ export function UploadWorkspace() {
                 fileName={fileName}
                 status={extractStatus}
                 error={extractError}
+                planId={workspaceEntitlement.entitlementPlanId}
+                limitNotice={limitNotice}
                 onFileSelected={handleFileSelected}
                 disabled={isExtracting || isAnalyzing || singleActionPipelineBusy}
               />
@@ -471,6 +495,7 @@ export function UploadWorkspace() {
             onAnalyzingChange={handleAnalyzingChange}
             onAnalysisComplete={setHasAnalysisResult}
             onIntelligenceReady={setAnalysisIntelligence}
+            limitNotice={limitNotice}
           />
 
           <WorkspaceEntitlementBanner entitlement={workspaceEntitlement} />

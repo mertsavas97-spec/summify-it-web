@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import type { AnalysisResult } from "@/types/text-analysis";
 import { getIntelligenceModeById } from "@/config/modes";
 import type { IntelligenceModeId } from "@/types/modes";
-import { AI_INPUT_LIMITS } from "@/lib/analysis-limits";
+import { getClientAnalysisInputLimits } from "@/lib/analysis-limits";
 import { formatNumber } from "@/lib/format-number";
 import {
   getExtractionSourceLabel,
@@ -62,6 +62,7 @@ type TextAnalysisMvpProps = {
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
   entitlementPlanId: PlanId;
   isAuthenticated: boolean;
+  limitNotice?: string | null;
 };
 
 function ExtractedTextEditor({
@@ -70,12 +71,14 @@ function ExtractedTextEditor({
   rows,
   truncated,
   label = "Document text",
+  inputLimits,
 }: {
   rawText: string;
   onRawTextChange: (text: string) => void;
   rows: number;
   truncated?: boolean;
   label?: string;
+  inputLimits: ReturnType<typeof getClientAnalysisInputLimits>;
 }) {
   const charCount = rawText.trim().length;
 
@@ -90,10 +93,10 @@ function ExtractedTextEditor({
         className="mt-1.5 w-full resize-y rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2.5 text-sm leading-relaxed text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
       />
       <p className="mt-1 text-[10px] text-zinc-600">
-        {formatNumber(charCount)} / {formatNumber(AI_INPUT_LIMITS.maxChars)}{" "}
-        characters · min {formatNumber(AI_INPUT_LIMITS.minChars)}
+        {formatNumber(charCount)} / {formatNumber(inputLimits.maxChars)} plan
+        limit · min {formatNumber(inputLimits.minChars)}
         {truncated && (
-          <span className="text-amber-400/80"> · truncated from source</span>
+          <span className="text-amber-400/80"> · prioritized for your plan</span>
         )}
       </p>
     </label>
@@ -110,11 +113,13 @@ function CompactExtractReady({
   rawText,
   onRawTextChange,
   extractionMeta,
+  inputLimits,
   variant = "file",
 }: {
   rawText: string;
   onRawTextChange: (text: string) => void;
   extractionMeta: ExtractionMetadata;
+  inputLimits: ReturnType<typeof getClientAnalysisInputLimits>;
   variant?: "file" | "youtube" | "article";
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -182,6 +187,7 @@ function CompactExtractReady({
           onRawTextChange={onRawTextChange}
           rows={5}
           truncated={extractionMeta.truncated}
+          inputLimits={inputLimits}
           label={isYoutube ? "Transcript" : isArticle ? "Article text" : "Document text"}
         />
       )}
@@ -209,8 +215,11 @@ export function TextAnalysisMvp({
   onIntelligenceReady,
   entitlementPlanId,
   isAuthenticated,
+  limitNotice,
 }: TextAnalysisMvpProps) {
+  const inputLimits = getClientAnalysisInputLimits(entitlementPlanId);
   const [loading, setLoading] = useState(false);
+  const [analysisLimitNotice, setAnalysisLimitNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failureDebug, setFailureDebug] = useState<AnalyzeApiDebugMetadata | null>(
     null,
@@ -260,7 +269,7 @@ export function TextAnalysisMvp({
 
   const charCount = rawText.trim().length;
   const canAnalyze =
-    charCount >= AI_INPUT_LIMITS.minChars &&
+    charCount >= inputLimits.minChars &&
     canRunAnalysis(mode, entitlementPlanId) &&
     !loading &&
     !analyzeDisabled &&
@@ -324,6 +333,7 @@ export function TextAnalysisMvp({
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
       setSavedAnalysisId(analysis.savedAnalysisId);
+      setAnalysisLimitNotice(analysis.limitNotice ?? null);
       onIntelligenceReady?.(analysis.intelligence);
       onAnalysisComplete?.(true);
     } catch {
@@ -421,12 +431,19 @@ export function TextAnalysisMvp({
         </div>
       )}
 
+      {(limitNotice || analysisLimitNotice) && (
+        <p className="mt-4 rounded-lg border border-amber-500/20 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
+          {analysisLimitNotice ?? limitNotice}
+        </p>
+      )}
+
       {useCompactExtractUI && extractionMeta && (
         <CompactExtractReady
           key={getExtractionKey(extractionMeta)}
           rawText={rawText}
           onRawTextChange={onRawTextChange}
           extractionMeta={extractionMeta}
+          inputLimits={inputLimits}
           variant={
             extractionMeta.sourceKind === "youtube"
               ? "youtube"
@@ -444,6 +461,7 @@ export function TextAnalysisMvp({
             onRawTextChange={onRawTextChange}
             rows={7}
             truncated={extractionMeta?.truncated}
+            inputLimits={inputLimits}
           />
         </div>
       )}
@@ -496,7 +514,7 @@ export function TextAnalysisMvp({
             <span className="text-xs text-zinc-400">
               {extractStatus === "uploading" || extractStatus === "extracting"
                 ? "Wait for extraction to finish…"
-                : charCount < AI_INPUT_LIMITS.minChars
+                : charCount < inputLimits.minChars
                   ? "Add a source to start analysis."
                   : analyzeDisabled
                     ? "Complete the step above to enable analysis."

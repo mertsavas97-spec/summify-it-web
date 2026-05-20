@@ -14,6 +14,7 @@ import {
   type AnalyzeSourceContext,
 } from "@/server/intelligence";
 import type { ModeRoutingResult } from "@/server/intelligence/mode-routing";
+import { CHUNKED_ANALYSIS_SEGMENT_CHARS } from "@/lib/plans/planLimits";
 import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import type { PlanId } from "@/types/plan";
@@ -111,7 +112,7 @@ function applyLearnIntelligence(
       allowedLearnSourceSections: plan?.allowedLearnSourceSections,
       blockedLearnSourceSections: plan?.blockedLearnSourceSections,
       personaAdaptivePlan: plan,
-      extractedText: intelligence.cleanedText?.slice(0, 24000),
+      extractedText: intelligence.cleanedText?.slice(0, CHUNKED_ANALYSIS_SEGMENT_CHARS),
     });
     learnCards = built.learnCards;
     learnMeta = built.meta;
@@ -323,6 +324,7 @@ export async function runAnalysisOrchestrator(
     sourceHint,
     sourceContext,
     modeRouting,
+    planId: options?.planId ?? "free",
   });
   const attempts: ProviderAttemptRecord[] = [];
 

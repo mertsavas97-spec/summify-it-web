@@ -95,6 +95,16 @@ export type AnalyzeApiDebugAttempt = {
   message: string;
 };
 
+export type AnalyzeApiAnalysisLimitsDebug = {
+  plan: string;
+  uploadMb: number;
+  extractedPages: number;
+  extractedCharacters: number;
+  wasChunked: boolean;
+  wasTruncated: boolean;
+  truncationStrategy: string | null;
+};
+
 /** Dev-only diagnostics — omitted in production responses. */
 export type AnalyzeApiDebugMetadata = {
   selectedMode: TextAnalysisMode;
@@ -105,6 +115,7 @@ export type AnalyzeApiDebugMetadata = {
   fallbackUsed?: boolean;
   failureReason?: string;
   attempts?: AnalyzeApiDebugAttempt[];
+  analysisLimits?: AnalyzeApiAnalysisLimitsDebug;
   cognition?: {
     debugSummary: string;
     adaptationLabel: string;
@@ -136,6 +147,8 @@ export type AnalyzeApiSuccessResponse = {
   savedAnalysisId?: string | null;
   /** Dev: persona × domain adaptation chip label */
   adaptationLabel?: string;
+  /** When plan limits prioritized sections only */
+  limitNotice?: string;
   debug?: AnalyzeApiDebugMetadata;
 };
 

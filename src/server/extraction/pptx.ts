@@ -5,7 +5,11 @@
 
 import JSZip from "jszip";
 import { filterDeckTopics, isLowQualityPresentationFragment } from "@/server/presentation/presentationFragments";
-import { cleanText, truncateText } from "./cleanText";
+import { getPlanLimits, type PlanLimits } from "@/lib/plans/planLimits";
+import { USER_MESSAGES } from "@/lib/user-messages";
+import type { PlanId } from "@/types/plan";
+import { applyPlanDocumentLimits } from "./applyPlanDocumentLimits";
+import { cleanText } from "./cleanText";
 import { EXTRACTION_CONFIG } from "./config";
 import { ExtractionError } from "./errors";
 
@@ -27,6 +31,9 @@ export type PptxExtractionMetadata = {
   complexity: "low" | "medium" | "high";
   sourceType: "presentation";
   truncated: boolean;
+  wasChunked?: boolean;
+  truncationStrategy?: string | null;
+  limitNotice?: string | null;
 };
 
 export type PptxExtractionResult = {
@@ -193,6 +200,8 @@ export function isPptxFile(fileName: string, mimeType?: string): boolean {
 export async function extractFromPptx(params: {
   fileName: string;
   buffer: Buffer;
+  planId?: PlanId;
+  planLimits?: PlanLimits;
 }): Promise<PptxExtractionResult> {
   const { fileName, buffer } = params;
 
@@ -208,9 +217,14 @@ export async function extractFromPptx(params: {
     throw new ExtractionError("The uploaded file is empty.", 400);
   }
 
-  if (buffer.length > EXTRACTION_CONFIG.maxFileSizeBytes) {
-    const maxMb = EXTRACTION_CONFIG.maxFileSizeBytes / (1024 * 1024);
-    throw new ExtractionError(`File exceeds the ${maxMb} MB upload limit.`, 413);
+  const limits = params.planLimits ?? getPlanLimits(params.planId ?? "free");
+  const maxBytes = limits.maxUploadMb * 1024 * 1024;
+
+  if (buffer.length > maxBytes) {
+    throw new ExtractionError(
+      USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb),
+      413,
+    );
   }
 
   let zip: JSZip;
@@ -295,10 +309,10 @@ export async function extractFromPptx(params: {
     );
   }
 
-  const truncated = cleaned.length > EXTRACTION_CONFIG.maxExtractedChars;
-  const extractedText = truncated
-    ? truncateText(cleaned, EXTRACTION_CONFIG.maxExtractedChars)
-    : cleaned;
+  const applied = applyPlanDocumentLimits(cleaned, limits, {
+    estimatedPages: slides.length,
+  });
+  const extractedText = applied.text;
 
   const detectedSlideTitles = slides
     .map((s) => s.title)
@@ -306,7 +320,7 @@ export async function extractFromPptx(params: {
     .filter((t) => !isLowQualityPresentationFragment(t));
 
   const repeatedThemes = filterDeckTopics(detectRepeatedThemes(slides));
-  const charCount = extractedText.length;
+  const charCount = applied.fullExtractedCharacters;
 
   return {
     extractedText,
@@ -321,7 +335,10 @@ export async function extractFromPptx(params: {
       estimatedReadingTimeMinutes: Math.max(1, Math.ceil(charCount / 900)),
       complexity: inferPptxComplexity(slides.length, charCount),
       sourceType: "presentation",
-      truncated,
+      truncated: applied.wasTruncated,
+      wasChunked: applied.wasChunked,
+      truncationStrategy: applied.truncationStrategy,
+      limitNotice: applied.limitNotice,
     },
   };
 }

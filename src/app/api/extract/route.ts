@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import {
   extractFromFile,
   ExtractionError,
-  EXTRACTION_CONFIG,
 } from "@/server/extraction";
 import { extractFromPptx, isPptxFile } from "@/server/extraction/pptx";
 import { synthesizeSlideOutlineLabel } from "@/server/learn/presentationSemanticTitles";
+import { getPlanLimits } from "@/lib/plans/planLimits";
 import type {
   ExtractApiErrorResponse,
   ExtractApiSuccessResponse,
@@ -14,7 +14,7 @@ import type {
 } from "@/types/extraction";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile } from "@/lib/supabase/profile";
-import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
+import { resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devError, logServerError } from "@/server/logging";
 
@@ -60,26 +60,17 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 400 });
     }
 
-    if (file.size > EXTRACTION_CONFIG.maxFileSizeBytes) {
-      const maxMb = EXTRACTION_CONFIG.maxFileSizeBytes / (1024 * 1024);
-      const payload: ExtractApiErrorResponse = {
-        success: false,
-        error: USER_MESSAGES.extractFileTooLarge(maxMb),
-      };
-      return NextResponse.json(payload, { status: 413 });
-    }
-
     const currentUser = await getOptionalUser();
     const profile = currentUser ? await getProfile(currentUser.id) : null;
-    const planId = currentUser ? resolveEntitlementPlanIdFromProfile(profile) : "free";
+    const planId = resolveModeEntitlementPlanId(profile, Boolean(currentUser));
+    const limits = getPlanLimits(planId);
 
-    if (isPptxFile(file.name, file.type) && !["beta", "pro", "team"].includes(planId)) {
+    if (file.size > limits.maxUploadMb * 1024 * 1024) {
       const payload: ExtractApiErrorResponse = {
         success: false,
-        error:
-          "Free uploads support PDF, TXT, and DOCX. Use the YouTube or Web tabs for links.",
+        error: USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb),
       };
-      return NextResponse.json(payload, { status: 403 });
+      return NextResponse.json(payload, { status: 413 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -88,6 +79,8 @@ export async function POST(request: Request) {
       const pptx = await extractFromPptx({
         fileName: file.name,
         buffer,
+        planId,
+        planLimits: limits,
       });
 
       const metadata: PresentationExtractionMetadata = {
@@ -109,6 +102,7 @@ export async function POST(request: Request) {
         success: true,
         extractedText: pptx.extractedText,
         metadata,
+        limitNotice: pptx.metadata.limitNotice ?? undefined,
       };
 
       return NextResponse.json(response);
@@ -118,6 +112,8 @@ export async function POST(request: Request) {
       fileName: file.name,
       buffer,
       mimeType: file.type,
+      planId,
+      planLimits: limits,
     });
 
     const response: ExtractApiSuccessResponse = {
@@ -127,6 +123,7 @@ export async function POST(request: Request) {
         sourceKind: "file",
         ...result.metadata,
       },
+      limitNotice: result.metadata.limitNotice ?? undefined,
     };
 
     return NextResponse.json(response);

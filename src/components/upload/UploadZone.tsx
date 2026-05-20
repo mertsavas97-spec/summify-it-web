@@ -2,11 +2,9 @@
 
 import { UploadCloudIcon } from "@/components/icons";
 import { FormatBadges } from "./FormatBadges";
-import {
-  acceptFileExtensions,
-  maxPagesWebPreview,
-  maxUploadSizeMb,
-} from "@/data/fileTypes";
+import { acceptFileExtensions } from "@/data/fileTypes";
+import { getUploadZoneCopy } from "@/lib/plans/uploadCopy";
+import type { PlanId } from "@/types/plan";
 import type { UploadExtractStatus } from "@/types/extraction";
 
 type UploadZoneProps = {
@@ -14,6 +12,8 @@ type UploadZoneProps = {
   status: UploadExtractStatus;
   error: string | null;
   disabled?: boolean;
+  planId: PlanId;
+  limitNotice?: string | null;
   onFileSelected: (file: File) => void;
 };
 
@@ -38,8 +38,11 @@ export function UploadZone({
   status,
   error,
   disabled = false,
+  planId,
+  limitNotice,
   onFileSelected,
 }: UploadZoneProps) {
+  const copy = getUploadZoneCopy(planId);
   const isDraggingAllowed = status === "idle" || status === "ready" || status === "failed";
   const isBusy = status === "uploading" || status === "extracting";
 
@@ -107,17 +110,19 @@ export function UploadZone({
           </span>
           <div className="min-w-0 flex-1 text-left">
             <p className="truncate text-sm font-medium text-white">
-              {fileName ?? "Drop PDF, DOCX, or TXT — or click to browse"}
+              {fileName ?? copy.dropLabel}
             </p>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              Max {maxUploadSizeMb} MB · up to {maxPagesWebPreview} pages after
-              extraction
-            </p>
+            <p className="mt-0.5 text-xs text-zinc-500">{copy.limitLine}</p>
           </div>
         </div>
       </div>
 
-      <FormatBadges />
+      <FormatBadges formats={copy.formats} />
+      {limitNotice && (
+        <p className="rounded-lg border border-amber-500/20 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
+          {limitNotice}
+        </p>
+      )}
       {error && (
         <p className="rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-2 text-xs text-red-300">
           {error}

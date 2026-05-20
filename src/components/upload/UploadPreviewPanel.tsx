@@ -316,7 +316,7 @@ export function UploadPreviewPanel({
               </div>
               {metadata.truncated && (
                 <p className="mt-2 text-[10px] leading-relaxed text-amber-400/90">
-                  Truncated to analysis character limit.
+                  Only the most important sections were kept for your plan.
                 </p>
               )}
             </div>

@@ -1,4 +1,5 @@
 import { getPlanDefinition } from "@/data/pricingPlans";
+import { getPlanLimits } from "@/lib/plans/planLimits";
 import type { UserLimits } from "@/types/database";
 import type { MemoryPlanLimits } from "@/types/memory";
 import { isPlanId, type PlanId } from "@/types/plan";
@@ -81,7 +82,7 @@ export function getUserPlanLimits(
     analysesPerDay: cap,
     dailyAnalysisCount: usedToday,
     remainingToday,
-    maxFileSizeMb: plan.limits.maxFileSizeMb,
+    maxFileSizeMb: getPlanLimits(planId).maxUploadMb,
     maxLearnCards: plan.limits.maxLearnCards,
     maxSavedAnalyses: plan.limits.maxSavedAnalyses,
     maxReviewItems: getMemoryPlanLimits(planId).maxReviewItems,

@@ -5,12 +5,15 @@ export type ExtractionComplexity = "low" | "medium" | "high";
 export type FileExtractionMetadata = {
   sourceKind: "file";
   fileName: string;
-  fileType: "pdf" | "docx" | "txt";
+  fileType: "pdf" | "docx" | "txt" | "pptx";
   estimatedPages: number;
   extractedCharacters: number;
   complexity: ExtractionComplexity;
   structureQuality?: "sparse" | "moderate" | "structured";
   truncated?: boolean;
+  wasChunked?: boolean;
+  truncationStrategy?: string | null;
+  limitNotice?: string | null;
 };
 
 export type PresentationSlideOutlineItem = {
@@ -32,6 +35,9 @@ export type PresentationExtractionMetadata = {
   estimatedReadingTimeMinutes: number;
   complexity: ExtractionComplexity;
   truncated?: boolean;
+  wasChunked?: boolean;
+  truncationStrategy?: string | null;
+  limitNotice?: string | null;
   slideOutline: PresentationSlideOutlineItem[];
 };
 
@@ -44,6 +50,9 @@ export type UrlExtractionMetadata = {
   estimatedReadingTimeMinutes: number;
   complexity: ExtractionComplexity;
   truncated?: boolean;
+  wasChunked?: boolean;
+  truncationStrategy?: string | null;
+  limitNotice?: string | null;
 };
 
 export type TranscriptMomentHint = {
@@ -87,18 +96,22 @@ export type ExtractApiSuccessResponse = {
   success: true;
   extractedText: string;
   metadata: FileExtractionMetadata | PresentationExtractionMetadata;
+  /** Shown when plan limits prioritized sections only */
+  limitNotice?: string;
 };
 
 export type ExtractUrlApiSuccessResponse = {
   success: true;
   extractedText: string;
   metadata: UrlExtractionMetadata;
+  limitNotice?: string;
 };
 
 export type ExtractYoutubeApiSuccessResponse = {
   success: true;
   extractedText: string;
   metadata: YoutubeExtractionMetadata;
+  limitNotice?: string;
 };
 
 export type ExtractApiErrorResponse = {

@@ -148,6 +148,16 @@ export type CognitionDebugMetadata = {
   adaptiveLearn?: import("@/types/adaptive-learn").AdaptiveLearnDebugMeta;
 };
 
+export type AnalysisLimitsMeta = {
+  plan: import("@/types/plan").PlanId;
+  uploadMb: number;
+  extractedPages: number;
+  extractedCharacters: number;
+  wasChunked: boolean;
+  wasTruncated: boolean;
+  truncationStrategy: string | null;
+};
+
 export type AnalysisIntelligenceContext = {
   profile: DocumentProfile;
   knowledgeLayer: KnowledgeLayer;
@@ -157,6 +167,8 @@ export type AnalysisIntelligenceContext = {
   /** Full document text after cleanText(rawText) — used for learn-card Phase 1. */
   cleanedText: string;
   compactedUserPrompt: string;
+  analysisLimits?: AnalysisLimitsMeta;
+  limitNotice?: string | null;
   /** Server-only — used for prompt/learn tuning; not returned in API metadata. */
   analyzeSource?: AnalyzeSourceContext;
   /** Server-only — adaptive persona/document cognition (Phase 11A). */

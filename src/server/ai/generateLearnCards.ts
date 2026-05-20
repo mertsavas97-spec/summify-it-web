@@ -4,6 +4,7 @@
 
 import Groq from "groq-sdk";
 import { GoogleGenAI } from "@google/genai";
+import { CHUNKED_ANALYSIS_SEGMENT_CHARS } from "@/lib/plans/planLimits";
 import { AI_CONFIG } from "./config";
 import {
   PHASE1_FACT_INVENTORY_SYSTEM,
@@ -92,7 +93,7 @@ async function extractFactInventory(
   provider: AnalysisProviderName,
   content: string,
 ): Promise<FactInventory | null> {
-  const userContent = content.slice(0, AI_CONFIG.input.maxChars);
+  const userContent = content.slice(0, CHUNKED_ANALYSIS_SEGMENT_CHARS);
   try {
     const raw = await callProviderJson(
       provider,
@@ -195,7 +196,7 @@ export async function generateLearnCardsFromContent(
   input: GenerateLearnCardsInput,
 ): Promise<LearnCardOutput[]> {
   const cardCount = Math.max(4, Math.min(20, Math.round(input.cardCount)));
-  const content = input.content.slice(0, AI_CONFIG.input.maxChars);
+  const content = input.content.slice(0, CHUNKED_ANALYSIS_SEGMENT_CHARS);
   const language = input.language ?? "English";
 
   const inventory = await extractFactInventory(input.provider, content);

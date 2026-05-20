@@ -120,7 +120,7 @@ export default async function AccountPage() {
         </div>
         {!paidActive ? (
           <p className="mt-3 rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
-            Free includes 3 analyses per day, max 10MB uploads, PDF/TXT/DOCX/YouTube/Web,
+            Free includes 3 analyses per day, max 20MB uploads, PDF/DOCX/PPTX/TXT/YouTube/Web,
             5 intelligence modes, 5 Learn cards per run, and your last 3 saved analyses.
           </p>
         ) : null}
