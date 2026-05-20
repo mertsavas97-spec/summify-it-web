@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { isAdminDebugAuthorized } from "@/server/admin/requireDebugToken";
 import { getLatestPolarWebhookDebugEvent } from "@/server/billing/polarWebhookDebugStore";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  getSupabaseAdmin,
+  isServiceRoleConfigured,
+} from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type DebugRequestBody = {
   email?: string;
@@ -28,9 +32,9 @@ export async function POST(request: Request) {
 
   let liveProfile: Record<string, unknown> | null = null;
   const userId = latestEvent?.resolved_user_id;
-  if (userId) {
-    const admin = createSupabaseAdminClient();
-    if (admin) {
+  if (isServiceRoleConfigured()) {
+    const admin = getSupabaseAdmin();
+    if (userId) {
       const { data } = await admin
         .from("profiles")
         .select(
@@ -39,10 +43,7 @@ export async function POST(request: Request) {
         .eq("id", userId)
         .maybeSingle();
       liveProfile = data ?? null;
-    }
-  } else if (emailFilter) {
-    const admin = createSupabaseAdminClient();
-    if (admin) {
+    } else if (emailFilter) {
       const normalized = emailFilter.trim().toLowerCase();
       const { data } = await admin
         .from("profiles")
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     configured: Boolean(process.env.ADMIN_DEBUG_TOKEN?.trim()),
-    hasServiceRole: Boolean(createSupabaseAdminClient()),
+    hasServiceRole: isServiceRoleConfigured(),
     emailFilter: emailFilter ?? null,
     latestDebugEvent: latestEvent,
     liveProfileRow: liveProfile,

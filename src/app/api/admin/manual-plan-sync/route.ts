@@ -8,9 +8,10 @@ import {
 } from "@/server/billing/syncProfileFromPolar";
 import { isPlanId, type PlanId } from "@/types/plan";
 import type { BillingInterval } from "@/types/plan";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseAdmin, isServiceRoleConfigured } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type ManualPlanSyncBody = {
   email?: string;
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!createSupabaseAdminClient()) {
+  if (!isServiceRoleConfigured()) {
     return NextResponse.json(
       { error: "SUPABASE_SERVICE_ROLE_KEY is not configured." },
       { status: 503 },
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
 
   try {
     const userId = await resolveUserIdByEmailForAdmin(email);
-    const admin = createSupabaseAdminClient()!;
+    const admin = getSupabaseAdmin();
 
     await ensureProfileRow(admin, userId, email);
 
