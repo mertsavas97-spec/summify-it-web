@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const isSync = error instanceof PolarProfileSyncError;
-    devWarn("[summify.billing] webhook_handler_failed", {
+    devWarn("[summify.billing] polar_sync_failed", {
       type: payload.type,
       code: isSync ? error.code : "handler_error",
       message: error instanceof Error ? error.message : "unknown",

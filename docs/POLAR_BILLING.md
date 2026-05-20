@@ -111,6 +111,16 @@ Webhook fields read: `price_id`, `product_price_id`, `product_id`, `products[]`,
 
 Failed resolution or missing user returns **HTTP 500** (logged, not silent success).
 
+User resolution order (`resolvePolarUserId`):
+
+1. `metadata.summify_user_id`
+2. `customer_metadata.summify_user_id`
+3. `external_customer_id` (must be auth UUID)
+4. `customer.email` → `auth.users` (admin API)
+5. `customer_email` / checkout email → `profiles.email`
+
+Debug (development): set `ADMIN_DEBUG_TOKEN`, then `POST /api/admin/debug-polar-last-event` with header `Authorization: Bearer <token>` or `x-admin-debug-token`.
+
 ## Fallback when billing is off
 
 `BILLING_PROVIDER=none` (or unset): pricing CTAs show beta / coming soon copy; checkout API returns 503; anonymous upload unchanged.
