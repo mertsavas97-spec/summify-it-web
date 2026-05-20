@@ -17,6 +17,8 @@ import type { ModeRoutingResult } from "@/server/intelligence/mode-routing";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devWarn } from "@/server/logging";
 import { buildLearnIntelligence } from "@/server/learn";
+import { resolveLearnCardTargets } from "@/server/learn/learnCardTargets";
+import { generateLearnCardsForAnalysis } from "./generateLearnCards";
 import { applyAdaptivePlanPostProcess } from "@/lib/cognition/postProcessAnalysis";
 import {
   classifyProviderFailure,
@@ -219,8 +221,33 @@ async function attemptProvider(
   try {
     const parsed = parseAndValidateAnalysisResult(raw, { mode });
     const postProcessed = applyAdaptivePlanPostProcess(parsed, intelligence.personaAdaptivePlan);
+
+    const range = resolveLearnCardTargets({
+      complexity: intelligence.profile.complexity,
+      summary: postProcessed.summary,
+      keyInsightCount: postProcessed.keyInsights.length,
+      isPresentation,
+      isYoutube: isYoutubeTranscript,
+    });
+
+    const generatedLearnCards = await generateLearnCardsForAnalysis({
+      provider,
+      compactedContent: intelligence.compactedUserPrompt,
+      cardCount: range.target,
+      documentTitle: postProcessed.title,
+      isYoutube: isYoutubeTranscript,
+      isPresentation,
+      isWebArticle: /web|article|url/i.test(intelligence.profile.documentTypeGuess ?? ""),
+      documentTypeGuess: intelligence.profile.documentTypeGuess,
+    });
+
+    const withLearnCards =
+      generatedLearnCards.length > 0
+        ? { ...postProcessed, learnCards: generatedLearnCards }
+        : postProcessed;
+
     return applyLearnIntelligence(
-      postProcessed,
+      withLearnCards,
       intelligence,
       mode,
       intelligence.analyzeSource,

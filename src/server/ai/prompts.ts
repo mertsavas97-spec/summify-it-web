@@ -65,31 +65,9 @@ keyInsights is REQUIRED (minimum 3 bullets). Each bullet must be a concrete crea
 - Do not provide legal, financial, medical, or other regulated professional advice`,
 };
 
-const MODE_LEARN_CARD_GUIDANCE: Record<TextAnalysisMode, string> = {
-  executive: `Learn cards (3–5) — distinct roles, no summary repetition:
-- concept: what a business idea, model, or metric IS in this document
-- why: why a decision, risk, or tradeoff matters here
-- memory_hook: a short strategy phrase or prioritization rule from the source
-- quiz: optional scenario question using facts from the doc`,
-
-  academic: `Learn cards (3–5) — distinct roles:
-- concept: what a term or idea means in this paper
-- why: why an argument or method choice matters
-- quiz: active-recall question on a claim or evidence
-- memory_hook: optional link between two concepts from the text`,
-
-  creator: `Learn cards (3–5) — creator-focused, not recap:
-- concept: audience insight or content pillar from the doc
-- why: why a hook or angle would land for that audience
-- memory_hook: reusable phrase, hook, or framing from the source
-- quiz: "which opening fits this audience?" using doc specifics`,
-
-  legal: `Learn cards (3–5):
-- concept: what a defined term or obligation type means here
-- why: why a clause or risk signal matters in the document
-- memory_hook: checklist phrase or review cue from the text
-- quiz: spot the obligation or point to review`,
-};
+const LEARN_CARDS_DEFERRED = `Learn cards / flashcards:
+- Return "learnCards": [] always.
+- Flashcards are generated in a separate precision-extraction pass; do not create learnCards here.`;
 
 const YOUTUBE_TRANSCRIPT_RULES = `YouTube transcript rules (when source is spoken video):
 - Transcript may be any language; write all analysis fields in fluent English (not a line-by-line translation).
@@ -99,9 +77,7 @@ const YOUTUBE_TRANSCRIPT_RULES = `YouTube transcript rules (when source is spoke
 - GOOD summary style: state arguments and flow directly (e.g. "Maps shape how empires are remembered." not "The speaker discusses how maps…").
 - Prefer: thesis, argument chain, tensions/contradictions, evidence cited, misconceptions, clip-worthy moments.
 - keyInsights may include timestamp references like [2:15] when the transcript provides them and they anchor a claim.
-- Do not repeat the same phrasing in summary, keyInsights, and learnCards.
-- learnCards[].title: short editorial titles (3–8 words) using nouns/entities from the talk — e.g. "Maps Are Not Neutral", "Ottoman Borders vs Memory".
-- BANNED learn titles: "Insight:", "Action implication", "Clarify the risk", "Importance of…", "Overview of…", "Understanding…".`;
+- Do not repeat the same phrasing in summary and keyInsights.`;
 
 const YOUTUBE_MODE_LENSES: Record<TextAnalysisMode, string> = {
   executive: `YouTube + Executive: strategic takeaways, decisions/implications, stakes — not play-by-play recap. No narrator voice.`,
@@ -116,7 +92,7 @@ const PRESENTATION_RULES = `Presentation deck rules (when source is a slide deck
 - Infer narrative, argument, and structure from slide sequence; do not merge unrelated bullets into faux paragraphs.
 - Identify: core narrative, weak logic gaps, repeated themes, missing proof/KPIs (if relevant), audience fit, slide flow, strategic clarity.
 - Avoid treating slide fragments as complete sentences unless they read as such in the deck.
-- learnCards[].title: short editorial titles from deck concepts (e.g. "Market Gap vs Positioning") — no "Insight:" or "Overview of" prefixes.`;
+`;
 
 const PRESENTATION_MODE_LENSES: Record<TextAnalysisMode, string> = {
   executive: `Presentation + Executive: decision usefulness, strategic clarity, business implications, missing KPIs or proof points.`,
@@ -125,19 +101,6 @@ const PRESENTATION_MODE_LENSES: Record<TextAnalysisMode, string> = {
   legal: `Presentation + Contract/Policy Summary: only if slides contain contractual, policy, or regulatory material; otherwise note in risksOrWarnings that this mode may not fit.`,
 };
 
-const PRESENTATION_LEARN_CARD_GUIDANCE = `Presentation learn cards:
-- concept: the deck's main logic or strategic frame (not a slide recap)
-- connection: link slide themes or narrative beats (comparison, tension, cause)
-- misconception: editorial gap names (e.g. "Limited Strategic Context", "Incomplete Narrative Flow") — never "source text is short" or "slide deck format"
-- quiz: test narrative/strategic understanding — not trivia about slide numbers
-- Titles: title case editorial themes in English — never ALL CAPS slide fragments; abstract slide labels into clear English themes`;
-
-const YOUTUBE_LEARN_CARD_GUIDANCE = `YouTube learn card titles:
-- Editorial, source-grounded (entities, concepts, tensions, comparisons) — e.g. "Cartography as Narrative", "Why Borders Distort Power".
-- quiz content: question then "---" then answer on the next line (answer hidden in UI).
-- misconception cards: name the myth or false assumption, not "Clarify the risk signal".
-- connection cards: name the relationship between two ideas (comparison, cause, tension), not "Linked ideas".`;
-
 const OUTPUT_FIELD_RULES = `Output field rules (same JSON shape for every mode):
 - All string fields must be English (see output language rules).
 - title: specific to this document (names, parties, or topics); English prose with preserved proper nouns
@@ -145,12 +108,12 @@ const OUTPUT_FIELD_RULES = `Output field rules (same JSON shape for every mode):
 - keyInsights: 3–6 non-empty bullets with concrete details (numbers, names, dates, section references); never omit or leave empty
 - risksOrWarnings: follow risk grounding rules and adaptive plan (0–5 items; [] allowed)
 - actionItems: only when useful per adaptive plan (may be [] — no generic filler)
-- learnCards: 3–5 cards; each card must fulfill its type role and not paraphrase the summary`;
+- learnCards: always [] (empty array)`;
 
 const ANTI_GENERIC_GUARDRAILS = `Anti-generic guardrails:
 - No generic productivity or self-help filler unless explicitly in the source.
 - Do not invent external facts, statistics, or parties.
-- Do not repeat the same point across summary, keyInsights, actionItems, and learnCards.
+- Do not repeat the same point across summary, keyInsights, and actionItems.
 - Prefer concrete nouns, brands, and phrases from the document over abstract business language.
 - If evidence is weak, say so in risksOrWarnings instead of padding with boilerplate.`;
 
@@ -161,15 +124,8 @@ const JSON_SCHEMA_HINT = `JSON shape (strict):
   "keyInsights": ["string"],
   "risksOrWarnings": ["string"],
   "actionItems": ["string"],
-  "learnCards": [
-    {
-      "type": "concept" | "why" | "memory_hook" | "quiz",
-      "title": "string",
-      "content": "string"
-    }
-  ]
-}
-learnCards[].type must be one of: concept, why, memory_hook, quiz.`;
+  "learnCards": []
+}`;
 
 export type SystemPromptOptions = {
   outputDepth?: OutputDepth;
@@ -191,11 +147,11 @@ export function buildSystemPrompt(
       : "";
 
   const youtubeBlock = options?.isYoutubeTranscript
-    ? `\n${YOUTUBE_TRANSCRIPT_RULES}\n${YOUTUBE_MODE_LENSES[mode]}\n${YOUTUBE_LEARN_CARD_GUIDANCE}\n`
+    ? `\n${YOUTUBE_TRANSCRIPT_RULES}\n${YOUTUBE_MODE_LENSES[mode]}\n`
     : "";
 
   const presentationBlock = options?.isPresentation
-    ? `\n${PRESENTATION_RULES}\n${PRESENTATION_MODE_LENSES[mode]}\n${PRESENTATION_LEARN_CARD_GUIDANCE}\n`
+    ? `\n${PRESENTATION_RULES}\n${PRESENTATION_MODE_LENSES[mode]}\n`
     : "";
 
   const modeLabel = options?.intelligenceModeLabel;
@@ -219,7 +175,7 @@ ${ANALYSIS_OUTPUT_LANGUAGE_RULES}
 Selected backend family: ${mode}
 ${intelligenceModeBlock ? `${intelligenceModeBlock}\n` : ""}${cognitionBlock}${MODE_ANALYSIS_LENSES[mode]}${youtubeBlock}${presentationBlock}
 
-${MODE_LEARN_CARD_GUIDANCE[mode]}
+${LEARN_CARDS_DEFERRED}
 
 ${SOURCE_GROUNDING_RULES}
 
