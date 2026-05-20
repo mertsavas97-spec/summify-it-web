@@ -2,7 +2,7 @@
  * Supabase-backed Polar webhook debug log (serverless-safe).
  */
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseAdmin, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import {
   extractPolarCustomerEmails,
   summarizePolarPayload,
@@ -86,11 +86,12 @@ function extractIdsFromData(data: Record<string, unknown>): {
 export async function beginPolarWebhookDebug(
   input: BeginPolarWebhookDebugInput,
 ): Promise<string | null> {
-  const admin = createSupabaseAdminClient();
-  if (!admin) {
+  if (!isServiceRoleConfigured()) {
     devWarn("[summify.billing] polar_webhook_debug_skipped", { reason: "no_service_role" });
     return null;
   }
+
+  const admin = getSupabaseAdmin();
 
   const payloadSummary = summarizePolarPayload(input.data, input.eventType);
   const fromSummary = idsFromSummary(payloadSummary);
@@ -129,10 +130,9 @@ export async function finishPolarWebhookDebug(
   eventId: string | null,
   input: FinishPolarWebhookDebugInput,
 ): Promise<void> {
-  if (!eventId) return;
+  if (!eventId || !isServiceRoleConfigured()) return;
 
-  const admin = createSupabaseAdminClient();
-  if (!admin) return;
+  const admin = getSupabaseAdmin();
 
   const patch: Record<string, unknown> = {
     sync_status: input.syncStatus,
@@ -171,8 +171,9 @@ export type LatestPolarWebhookDebugQuery = {
 export async function getLatestPolarWebhookDebugEvent(
   query?: LatestPolarWebhookDebugQuery,
 ): Promise<PolarWebhookDebugRow | null> {
-  const admin = createSupabaseAdminClient();
-  if (!admin) return null;
+  if (!isServiceRoleConfigured()) return null;
+
+  const admin = getSupabaseAdmin();
 
   let builder = admin
     .from("polar_webhook_debug_events")

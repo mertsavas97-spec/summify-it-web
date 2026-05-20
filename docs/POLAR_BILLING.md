@@ -10,7 +10,8 @@ Summify uses [Polar](https://polar.sh) for subscriptions when `BILLING_PROVIDER=
 | `POLAR_ACCESS_TOKEN` | Yes | Organization access token (server only) |
 | `POLAR_WEBHOOK_SECRET` | Yes | Webhook signing secret (`polar_whs_…`) |
 | `POLAR_MODE` | No | `sandbox` or `production` (default: `production`) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes (webhooks) | Updates `profiles` from webhook handler |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes (webhooks) | Service role secret (not anon). Used by `getSupabaseAdmin()` in `src/lib/supabase/admin.ts` |
+| `ADMIN_DEBUG_TOKEN` | Optional | Protects `POST /api/admin/manual-plan-sync`, debug routes, and `GET /api/admin/test-service-role` |
 | `POLAR_SCHOLAR_MONTHLY_PRODUCT_ID` | Per plan (checkout) | Polar **product** UUID (preferred for checkout API) |
 | `POLAR_*_PRODUCT_ID` | Per plan (checkout) | Same pattern for each plan × interval |
 | `POLAR_SCHOLAR_MONTHLY_PRICE_ID` | Per plan | Polar price ID (webhooks + catalog lookup fallback) |
@@ -152,7 +153,16 @@ See also [`docs/AUTH_SETUP.md`](./AUTH_SETUP.md) for Supabase auth providers.
 2. Set `POLAR_MODE=production` (or omit).
 3. Register webhook URL on production domain.
 4. Set all six `POLAR_*_PRICE_ID` values for live products.
-5. Deploy with `SUPABASE_SERVICE_ROLE_KEY` for webhook profile updates.
+5. Deploy with `SUPABASE_SERVICE_ROLE_KEY` for webhook profile updates (must be the **service_role** JWT from Supabase → Settings → API, not the anon key).
+
+### Verify service role on production
+
+```bash
+curl -sS -H "Authorization: Bearer $ADMIN_DEBUG_TOKEN" \
+  "https://summify.app/api/admin/test-service-role"
+```
+
+Expect `serviceRoleConfigured: true`, `jwtRole: "service_role"`, and `writeAccessWorking: true`. If `jwtRole` is `anon`, Netlify has the wrong key in `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Code map
 
@@ -161,7 +171,9 @@ See also [`docs/AUTH_SETUP.md`](./AUTH_SETUP.md) for Supabase auth providers.
 | `src/lib/billing/provider.ts` | Provider switch + UI copy |
 | `src/lib/billing/polar/*` | Polar API client, checkout, portal, webhook verify |
 | `src/lib/billing/polar/prices.ts` | Env price ID resolution |
+| `src/lib/supabase/admin.ts` | `getSupabaseAdmin()` — service role only |
 | `src/server/billing/syncProfileFromPolar.ts` | Webhook → Supabase profile |
+| `src/app/api/admin/test-service-role/route.ts` | Service role read/write probe |
 | `src/app/api/billing/checkout/route.ts` | Checkout API |
 | `src/app/api/billing/portal/route.ts` | Customer portal API |
 | `src/app/api/polar/webhook/route.ts` | Webhook receiver |

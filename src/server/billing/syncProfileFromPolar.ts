@@ -1,4 +1,4 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import {
   extractPolarPriceIds,
   extractPolarProductIds,
@@ -43,14 +43,16 @@ export class PolarProfileSyncError extends Error {
 }
 
 function getAdminOrThrow(): SupabaseClient {
-  const admin = createSupabaseAdminClient();
-  if (!admin) {
+  try {
+    return getSupabaseAdmin();
+  } catch (error) {
     throw new PolarProfileSyncError(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured — cannot update profiles from webhooks.",
+      error instanceof Error
+        ? error.message
+        : "SUPABASE_SERVICE_ROLE_KEY is not configured — cannot update profiles from webhooks.",
       "no_service_role",
     );
   }
-  return admin;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -181,7 +183,7 @@ export async function resolvePolarUserId(
   data: Record<string, unknown>,
   admin?: SupabaseClient,
 ): Promise<PolarUserResolution | null> {
-  const client = admin ?? createSupabaseAdminClient();
+  const client = admin ?? getSupabaseAdmin();
   const attempted: string[] = [];
 
   const metadata = asRecord(data.metadata);

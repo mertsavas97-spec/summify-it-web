@@ -28,7 +28,7 @@ export async function GET(request: Request) {
       serviceRoleConfigured: false,
       writeAccessWorking: false,
       supabaseUrlHost,
-      jwtRole: null,
+      jwtRole: "unknown",
       readError: "SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL missing",
       writeError: null,
     });
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
     readError,
     writeError,
     hint:
-      jwtRole && jwtRole !== "service_role"
+      jwtRole !== "service_role" && jwtRole !== "unknown"
         ? "SUPABASE_SERVICE_ROLE_KEY appears to be an anon or user JWT — use the service_role secret from Supabase Dashboard → Settings → API."
         : writeError?.includes("permission denied")
           ? "Check that SUPABASE_SERVICE_ROLE_KEY is the service_role secret (not anon) and matches NEXT_PUBLIC_SUPABASE_URL project."
