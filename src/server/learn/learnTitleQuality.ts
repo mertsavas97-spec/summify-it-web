@@ -117,6 +117,41 @@ export type FinalLearnCardValidationOptions = {
   intelligenceModeId?: string | null;
 };
 
+/** Source-first path — reject only; no aggressive title regeneration. */
+export function lightValidateSourceFirstCards(
+  cards: LearnCardOutput[],
+  options: FinalLearnCardValidationOptions = {},
+): { cards: LearnCardOutput[]; titleStats: LearnTitleValidationStats } {
+  const creatorMode = isCreatorIntelligenceMode(
+    options.intelligenceModeId,
+    options.strategy,
+  );
+  const stats: LearnTitleValidationStats = {
+    invalidRejected: 0,
+    fallbackRegenerated: 0,
+    malformedPrevented: 0,
+    alignmentFailures: 0,
+  };
+  const out: LearnCardOutput[] = [];
+
+  for (const card of cards) {
+    const title = splitAnswerFromTitle(card.title).trim();
+    const validated = validateLearnTitle(title, { creatorMode });
+    if (!validated.valid) {
+      stats.invalidRejected += 1;
+      continue;
+    }
+    const next = { ...card, title: validated.title, content: card.content.trim().slice(0, 380) };
+    if (!validateQuestionAnswerAlignment(next)) {
+      stats.alignmentFailures += 1;
+      continue;
+    }
+    out.push(next);
+  }
+
+  return { cards: out, titleStats: stats };
+}
+
 /** Last-pass validation — strict templates only. */
 export function finalValidateLearnCards(
   cards: LearnCardOutput[],

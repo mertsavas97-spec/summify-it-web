@@ -85,8 +85,15 @@ import {
   ensureValidLearnTitle,
   finalValidateLearnCards,
   learnTitleValidationDebugStats,
+  lightValidateSourceFirstCards,
   validateQuestionAnswerAlignment,
 } from "./learnTitleQuality";
+import {
+  buildSourceFirstLearn,
+  mergeSourceFirstWithPipeline,
+  sourceFirstLearnDebugStats,
+  stripWeakMemoryAnchors,
+} from "./sourceFirstLearn";
 import {
   runLearnStage,
   runSafeLearnBuild,
@@ -537,6 +544,120 @@ function buildLearnIntelligenceCore(
     risksOrWarnings: result.risksOrWarnings,
   });
 
+  const range = resolveLearnCardTargets({
+    complexity: options.complexity,
+    summary: result.summary,
+    keyInsightCount: result.keyInsights.length,
+    isPresentation,
+    isYoutube: options.isYoutubeTranscript === true,
+  });
+
+  const sourceFirstBuilt = buildSourceFirstLearn({
+    result,
+    options,
+    strategy: learnStrategy,
+    range,
+    knowledgeStructure,
+  });
+  const sourceFirstValidated = lightValidateSourceFirstCards(sourceFirstBuilt.cards, {
+    documentTitle: result.title,
+    strategy: learnStrategy,
+    intelligenceModeId: options.intelligenceModeId,
+  });
+  const sourceFirstDebug = sourceFirstLearnDebugStats(
+    sourceFirstBuilt,
+    sourceFirstBuilt.rejectedCardCount,
+    sourceFirstBuilt.extractedClaimCount,
+  );
+  const useSourceFirstPrimary = sourceFirstValidated.cards.length >= range.min;
+
+  if (useSourceFirstPrimary) {
+    const progression = applyLearningProgression(sourceFirstValidated.cards, learnStrategy, {
+      targetMax: range.max,
+    });
+    const progressionDebug = learnProgressionDebugStats(progression.stats);
+    const finalOrdered = orderCardsForProgressiveUnderstanding(
+      stripWeakMemoryAnchors(progression.cards.slice(0, range.max)),
+    );
+    pipelineCounts.finalOutput = finalOrdered.length;
+    const titleValidationDebug = learnTitleValidationDebugStats(sourceFirstValidated.titleStats);
+    const pipelineDebug = pipelineCountsDebug(pipelineCounts);
+
+    const adaptiveLearnMeta = learnProfile
+      ? runLearnStage(
+          "adaptiveLearnMeta",
+          () => buildLearnDebugMeta([], learnProfile),
+          undefined,
+          failure,
+        )
+      : undefined;
+
+    if (progressionDebug && adaptiveLearnMeta) {
+      adaptiveLearnMeta.learnProgression = progressionDebug;
+    }
+    if (pipelineDebug && adaptiveLearnMeta) {
+      adaptiveLearnMeta.learnPipelineCounts = pipelineDebug;
+    }
+    if (titleValidationDebug && adaptiveLearnMeta) {
+      adaptiveLearnMeta.learnTitleValidation = titleValidationDebug;
+    }
+    if (sourceFirstDebug && adaptiveLearnMeta) {
+      adaptiveLearnMeta.sourceFirstLearn = sourceFirstDebug;
+    }
+
+    const multiFormatLearn = runLearnStage(
+      "multiFormatLearn",
+      () =>
+        buildMultiFormatLearn({
+          modeId: options.intelligenceModeId ?? options.mode,
+          documentDomain:
+            learnProfile?.documentDomain ?? options.personaAdaptivePlan?.documentDomain,
+          structureFamily: options.personaAdaptivePlan?.structureFamily,
+          pipelineMode: options.mode,
+          personaId: options.personaAdaptivePlan?.personaId ?? learnProfile?.personaId,
+          learnCards: finalOrdered,
+          summary: {
+            title: result.title,
+            summary: result.summary,
+            keyInsights: result.keyInsights,
+            risksOrWarnings: result.risksOrWarnings,
+            actionItems: result.actionItems,
+          },
+          knowledgeStructure,
+        }),
+      undefined,
+      failure,
+    );
+    const multiFormatDebug = multiFormatLearn
+      ? learnMultiFormatDebugStats(multiFormatLearn)
+      : undefined;
+    if (multiFormatDebug && adaptiveLearnMeta) {
+      adaptiveLearnMeta.multiFormatLearn = multiFormatDebug;
+    }
+
+    const failureMeta =
+      process.env.NODE_ENV === "development" && failure.stage
+        ? { learnFailureStage: failure.stage, learnFailureMessage: failure.message }
+        : {};
+
+    return {
+      learnCards: finalOrdered,
+      multiFormatLearn,
+      meta: {
+        candidateCount: sourceFirstBuilt.extractedClaimCount,
+        selectedCount: finalOrdered.length,
+        complexity: options.complexity,
+        mode: options.mode,
+        ...failureMeta,
+        ...(adaptiveLearnMeta ? { adaptiveLearn: adaptiveLearnMeta } : {}),
+        ...(multiFormatDebug ? { multiFormatLearn: multiFormatDebug } : {}),
+        ...(pipelineDebug ? { learnPipelineCounts: pipelineDebug } : {}),
+        ...(titleValidationDebug ? { learnTitleValidation: titleValidationDebug } : {}),
+        ...(sourceFirstDebug ? { sourceFirstLearn: sourceFirstDebug } : {}),
+      },
+    };
+  }
+
   const structureCandidates = synthesizeKnowledgeStructureCandidates(result, knowledgeStructure, {
     strategy: learnStrategy,
     intelligenceModeId: options.intelligenceModeId,
@@ -598,13 +719,6 @@ function buildLearnIntelligenceCore(
     result.keyInsights,
     { isPresentation },
   );
-  const range = resolveLearnCardTargets({
-    complexity: options.complexity,
-    summary: result.summary,
-    keyInsightCount: result.keyInsights.length,
-    isPresentation,
-    isYoutube: options.isYoutubeTranscript === true,
-  });
   const candidateCompression = compressLearnCandidates(deduped, knowledgeStructure, {
     targetMax: range.max + 4,
     targetMin: range.min,
@@ -635,6 +749,7 @@ function buildLearnIntelligenceCore(
     isYoutube: options.isYoutubeTranscript === true,
     isPresentation,
   };
+
   const candidateHints = new Map<string, CandidateTraceHint>();
   const finalCards = selected.map((c, i) => {
     const out = toLearnCardOutput(c, outputFlags);
@@ -744,6 +859,10 @@ function buildLearnIntelligenceCore(
     );
   }
 
+  if (sourceFirstValidated.cards.length > 0) {
+    finalOrdered = mergeSourceFirstWithPipeline(sourceFirstValidated.cards, finalOrdered, range);
+  }
+
   const titleValidation = finalValidateLearnCards(finalOrdered, {
     documentTitle: result.title,
     strategy: learnStrategy,
@@ -840,6 +959,9 @@ function buildLearnIntelligenceCore(
   if (titleValidationDebug && adaptiveLearnMeta) {
     adaptiveLearnMeta.learnTitleValidation = titleValidationDebug;
   }
+  if (sourceFirstDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.sourceFirstLearn = sourceFirstDebug;
+  }
 
   const multiFormatLearn = runLearnStage(
     "multiFormatLearn",
@@ -898,6 +1020,7 @@ function buildLearnIntelligenceCore(
       ...(multiFormatDebug ? { multiFormatLearn: multiFormatDebug } : {}),
       ...(pipelineDebug ? { learnPipelineCounts: pipelineDebug } : {}),
       ...(titleValidationDebug ? { learnTitleValidation: titleValidationDebug } : {}),
+      ...(sourceFirstDebug ? { sourceFirstLearn: sourceFirstDebug } : {}),
     },
   };
 }

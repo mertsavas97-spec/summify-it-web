@@ -263,6 +263,16 @@ export type LearnTitleValidationMeta = {
   alignmentFailures: number;
 };
 
+/** Dev-only source-first learn engine (Learn Stabilization 2). */
+export type SourceFirstLearnDebugMeta = {
+  extractedClaimCount: number;
+  selectedClaimCount: number;
+  generatedCardCount: number;
+  rejectedCardCount: number;
+  claimTypes: Record<string, number>;
+  sourceBackedCardCount: number;
+};
+
 /** Dev-only pipeline stage counts (card count regression audit). */
 export type LearnPipelineCountsMeta = {
   rawAiCandidates: number;
@@ -311,6 +321,8 @@ export type AdaptiveLearnDebugMeta = {
   learnPipelineCounts?: LearnPipelineCountsMeta;
   /** Dev-only title validation pass. */
   learnTitleValidation?: LearnTitleValidationMeta;
+  /** Dev-only source-first learn pass (Learn Stabilization 2). */
+  sourceFirstLearn?: SourceFirstLearnDebugMeta;
 };
 
 /** Dev-only practice retention pass (Phase Learn 6.4). */

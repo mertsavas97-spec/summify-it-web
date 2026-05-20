@@ -138,6 +138,10 @@ const BANNED_FRAGMENT = [
   /\baccording to the source\b/i,
   /\bin this source\b/i,
   /\bwhat point does\b/i,
+  /what is the most important idea about/i,
+  /^what changed after (19|20)\d{2}\??$/i,
+  /\brevenue model\??$/i,
+  /^why was (the main subject|this event) a turning point\??$/i,
 ];
 
 const INCOMPLETE_SUBJECT =
