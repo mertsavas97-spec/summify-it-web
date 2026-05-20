@@ -24,7 +24,8 @@ export default function BillingSuccessPage() {
           Billing confirmation received
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
-          When a billing provider is enabled, this page will confirm checkout and return you to the workspace.
+          Your subscription is being activated. It may take a few seconds for your plan to update on your
+          account — refresh if needed after webhooks process.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Button href="/dashboard">Open dashboard</Button>

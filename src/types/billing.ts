@@ -1,6 +1,6 @@
 import type { BillingInterval, PlanId } from "@/types/plan";
 
-export type BillingProvider = "none" | "paddle" | "lemon";
+export type BillingProvider = "none" | "paddle" | "lemon" | "polar";
 
 export type BillingCheckoutPlanId = Exclude<PlanId, "beta" | "free">;
 
@@ -24,4 +24,6 @@ export type BillingPlanMapping = {
   planId: BillingCheckoutPlanId;
   interval: BillingInterval;
   checkoutUrl: string | null;
+  /** Polar catalog price ID (server-only env). */
+  polarPriceId?: string | null;
 };

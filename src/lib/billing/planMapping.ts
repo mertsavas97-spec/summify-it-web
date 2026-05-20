@@ -5,6 +5,7 @@ import type {
 } from "@/types/billing";
 import type { BillingInterval } from "@/types/plan";
 import { getBillingProvider } from "@/lib/billing/provider";
+import { getPolarPriceId } from "@/lib/billing/polar/prices";
 
 const PLAN_ENV_PREFIX: Record<BillingCheckoutPlanId, string> = {
   scholar: "SCHOLAR",
@@ -23,6 +24,7 @@ export function getCheckoutUrl(
 ): string | null {
   const provider = getBillingProvider();
   if (provider === "none") return null;
+  if (provider === "polar") return null;
 
   const mapping = getBillingPlanMapping(provider, planId, interval);
   return mapping?.checkoutUrl ?? null;
@@ -34,6 +36,18 @@ export function getBillingPlanMapping(
   interval: BillingInterval,
 ): BillingPlanMapping | null {
   if (provider === "none") return null;
+
+  if (provider === "polar") {
+    const polarPriceId = getPolarPriceId(planId, interval);
+    if (!polarPriceId) return null;
+    return {
+      provider,
+      planId,
+      interval,
+      checkoutUrl: null,
+      polarPriceId,
+    };
+  }
 
   const providerPrefix = provider === "paddle" ? "PADDLE" : "LEMON";
   const envKey = `${providerPrefix}_${PLAN_ENV_PREFIX[planId]}_${INTERVAL_ENV_KEY[interval]}_CHECKOUT_URL`;

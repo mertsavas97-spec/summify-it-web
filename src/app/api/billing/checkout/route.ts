@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { getOptionalUser } from "@/lib/auth";
-import { getBillingStatusCopy, isBillingEnabled } from "@/lib/billing/provider";
+import { createPolarCheckout } from "@/lib/billing/polar/checkout";
+import { polarErrorToResponse } from "@/lib/billing/polar/api-error";
+import { isPolarPlanConfigured } from "@/lib/billing/polar/prices";
+import {
+  getBillingProvider,
+  getBillingStatusCopy,
+  isBillingEnabled,
+} from "@/lib/billing/provider";
 import {
   getCheckoutUrl,
   isBillingCheckoutPlan,
@@ -41,17 +48,64 @@ export async function POST(request: Request) {
     );
   }
 
-  const url = getCheckoutUrl(planId, interval);
-  if (!url) {
+  const provider = getBillingProvider();
+
+  try {
+    if (provider === "polar") {
+      if (!isPolarPlanConfigured(planId, interval)) {
+        return NextResponse.json(
+          {
+            success: false,
+            provider,
+            error: "Checkout is not configured for this plan.",
+          },
+          { status: 503 },
+        );
+      }
+
+      const checkout = await createPolarCheckout({
+        userId: user.id,
+        email: user.email ?? null,
+        planId,
+        interval,
+      });
+
+      return NextResponse.json({
+        success: true,
+        provider,
+        url: checkout.url,
+        checkoutId: checkout.checkoutId,
+      });
+    }
+
+    const url = getCheckoutUrl(planId, interval);
+    if (!url) {
+      return NextResponse.json(
+        {
+          success: false,
+          provider: status.provider,
+          error: "Checkout is not configured for this plan yet.",
+        },
+        { status: 503 },
+      );
+    }
+
+    return NextResponse.json({ success: true, provider: status.provider, url });
+  } catch (error) {
+    const { message, status, details } = polarErrorToResponse(error);
+
+    if (process.env.NODE_ENV === "development") {
+      console.error("[summify.checkout] failed", { planId, interval, message, details, error });
+    }
+
     return NextResponse.json(
       {
         success: false,
-        provider: status.provider,
-        error: "Checkout is not configured for this plan yet.",
+        provider,
+        error: message,
+        ...(details ? { details } : {}),
       },
-      { status: 503 },
+      { status },
     );
   }
-
-  return NextResponse.json({ success: true, provider: status.provider, url });
 }

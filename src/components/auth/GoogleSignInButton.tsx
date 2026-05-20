@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
+import { setAuthNextCookie } from "@/lib/auth/next-path";
 import { trackEvent } from "@/lib/analytics/events";
 import { mapOAuthSignInError } from "@/lib/auth-errors";
 import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
@@ -59,10 +60,13 @@ export function GoogleSignInButton({
     }
 
     setLoading(true);
+    setAuthNextCookie(nextPath);
     trackEvent("signup_started", { method: "google", intent: "sign_in" });
 
     const supabase = createClient();
-    const redirectTo = getAuthCallbackUrl(nextPath);
+    const browserOrigin =
+      typeof window !== "undefined" ? window.location.origin : undefined;
+    const redirectTo = getAuthCallbackUrl(nextPath, browserOrigin);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

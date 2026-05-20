@@ -11,8 +11,9 @@ BILLING_PROVIDER=none
 Supported values:
 
 - `none` — checkout disabled; pricing shows beta/pending copy.
-- `paddle` — future Paddle checkout path.
-- `lemon` — future Lemon Squeezy checkout path.
+- `polar` — live Polar checkout + webhooks ([POLAR_BILLING.md](./POLAR_BILLING.md)).
+- `paddle` — legacy checkout URL env mapping.
+- `lemon` — legacy checkout URL env mapping.
 
 ## Shared App Flow
 

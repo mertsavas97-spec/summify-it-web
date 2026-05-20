@@ -10,6 +10,9 @@ import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata = pageSeo.pricing;
 
+/** Read BILLING_PROVIDER from env on each request (not at static build time). */
+export const dynamic = "force-dynamic";
+
 export default function PricingPage() {
   const billing = getBillingStatusCopy();
 
@@ -31,15 +34,28 @@ export default function PricingPage() {
         {billing.badge}: <span className="text-violet-100/70">{billing.description}</span>
       </p>
 
-      <PricingSection />
+      <PricingSection billing={billing} />
       <ProductDisclaimer className="mx-auto mt-8 max-w-3xl text-center" />
 
       <div className="mt-12 grid gap-3 sm:grid-cols-3">
-        {[
-          { label: "Provider-neutral", sub: "Paddle or Lemon-ready" },
-          { label: "Checkout paused", sub: "until review approval" },
-          { label: "Beta access", sub: "current access preserved" },
-        ].map((item) => (
+        {(billing.provider === "polar" && billing.enabled
+          ? [
+              { label: "Polar checkout", sub: "Secure subscription billing" },
+              { label: "Cancel anytime", sub: "Manage from your account" },
+              { label: "Free tier", sub: "Open workspace without a card" },
+            ]
+          : billing.provider === "none"
+            ? [
+                { label: "Public beta", sub: "Core access unchanged" },
+                { label: "Checkout paused", sub: "Billing coming soon" },
+                { label: "No card required", sub: "Try the workspace free" },
+              ]
+            : [
+                { label: "Provider-neutral", sub: "Checkout via billing API" },
+                { label: "Secure payments", sub: "Handled by your provider" },
+                { label: "Beta access", sub: "current access preserved" },
+              ]
+        ).map((item) => (
           <div
             key={item.label}
             className="rounded-lg border border-white/[0.05] bg-zinc-900/40 px-4 py-3 text-center"

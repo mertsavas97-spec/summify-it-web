@@ -10,7 +10,8 @@ import {
 } from "@/lib/auth";
 import { pageSeo } from "@/lib/page-metadata";
 import { Button } from "@/components/ui/Button";
-import { getBillingStatusCopy } from "@/lib/billing/provider";
+import { PortalButton } from "@/components/billing/PortalButton";
+import { getBillingProvider, getBillingStatusCopy, isBillingEnabled } from "@/lib/billing/provider";
 import { formatStableDate } from "@/lib/format-date";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
@@ -56,6 +57,11 @@ export default async function AccountPage() {
     ? profile.billing_interval.charAt(0).toUpperCase() + profile.billing_interval.slice(1)
     : "—";
   const billing = getBillingStatusCopy();
+  const billingProvider = getBillingProvider();
+  const polarBillingActive = billingProvider === "polar" && isBillingEnabled();
+  const showManageBilling =
+    polarBillingActive &&
+    Boolean(profile?.polar_customer_id || profile?.polar_subscription_id);
 
   return (
     <article className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -101,9 +107,13 @@ export default async function AccountPage() {
               {billing.accountNote}
             </p>
           </div>
-          <Button href="/pricing" size="sm" variant="secondary">
-            Upgrade options coming soon
-          </Button>
+          {showManageBilling ? (
+            <PortalButton />
+          ) : (
+            <Button href="/pricing" size="sm" variant="secondary">
+              {billing.enabled ? "View plans" : "Upgrade options coming soon"}
+            </Button>
+          )}
         </div>
         <p className="mt-3 rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
           Free includes 3 analyses per day, max 10MB uploads, PDF/TXT/DOCX/YouTube/Web,

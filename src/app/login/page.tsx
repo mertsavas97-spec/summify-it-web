@@ -1,7 +1,10 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { oauthCallbackErrorMessage } from "@/lib/auth-errors";
 import { getOptionalUser } from "@/lib/auth";
+import { isMisconfiguredLocalSiteUrl } from "@/lib/app-origin";
+import { sanitizeNextPath } from "@/lib/auth/next-path";
 import { pageSeo } from "@/lib/page-metadata";
 import Link from "next/link";
 
@@ -32,10 +35,25 @@ function errorCopy(code: string | undefined): string | null {
   }
 }
 
+function isLocalDevHost(host: string | null): boolean {
+  if (!host) return false;
+  const hostname = host.split(":")[0]?.toLowerCase() ?? "";
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const nextPath = params.next?.startsWith("/") ? params.next : "/account";
+  const nextPath = sanitizeNextPath(params.next, "/account");
   const user = await getOptionalUser();
+  const headerStore = await headers();
+  const requestHost = headerStore.get("host");
+  const isLocalDev = isLocalDevHost(requestHost);
+  const forwardedProto = headerStore.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const requestOrigin =
+    requestHost && isLocalDev
+      ? `${forwardedProto === "https" ? "https" : "http"}://${requestHost}`
+      : null;
+  const envMismatch = requestOrigin ? isMisconfiguredLocalSiteUrl(requestOrigin) : false;
 
   if (user) {
     redirect(nextPath);
@@ -54,7 +72,12 @@ export default async function LoginPage({ searchParams }: PageProps) {
         stays free without an account — sign in saves completed analyses to your dashboard.
       </p>
       <div className="mt-8">
-        <LoginForm nextPath={nextPath} errorMessage={errorCopy(params.error)} />
+        <LoginForm
+          nextPath={nextPath}
+          errorMessage={errorCopy(params.error)}
+          isLocalDev={isLocalDev}
+          envMismatch={envMismatch}
+        />
       </div>
       <p className="mt-8 text-center text-xs text-zinc-600">
         <Link href="/upload" className="text-violet-400/80 hover:text-violet-300">

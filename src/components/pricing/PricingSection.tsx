@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import type { BillingStatusCopy } from "@/types/billing";
 import type { BillingInterval } from "@/types/plan";
 import { PricingCards } from "./PricingCards";
 
-export function PricingSection() {
+type PricingSectionProps = {
+  billing: BillingStatusCopy;
+};
+
+export function PricingSection({ billing }: PricingSectionProps) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
 
   return (
@@ -34,7 +39,7 @@ export function PricingSection() {
       </div>
 
       <div className="mt-10">
-        <PricingCards interval={interval} />
+        <PricingCards interval={interval} billing={billing} />
       </div>
     </div>
   );

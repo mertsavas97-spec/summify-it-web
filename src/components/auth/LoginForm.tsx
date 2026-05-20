@@ -4,15 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
+import { clearAuthNextCookie, setAuthNextCookie } from "@/lib/auth/next-path";
 import { trackEvent } from "@/lib/analytics/events";
 import { mapAuthError } from "@/lib/auth-errors";
 import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { LocalAuthDevNote } from "@/components/auth/LocalAuthDevNote";
 import { Button } from "@/components/ui/Button";
 
 type LoginFormProps = {
   nextPath?: string;
   errorMessage?: string | null;
+  /** Set on the server from the request host for localhost checkout testing layout. */
+  isLocalDev?: boolean;
+  envMismatch?: boolean;
 };
 
 type FormStatus = "idle" | "loading" | "sent" | "error";
@@ -20,7 +25,12 @@ type FormStatus = "idle" | "loading" | "sent" | "error";
 const inputClassName =
   "mt-1.5 w-full rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50";
 
-export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProps) {
+export function LoginForm({
+  nextPath = "/account",
+  errorMessage,
+  isLocalDev = false,
+  envMismatch = false,
+}: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +39,6 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
   const [loadingAction, setLoadingAction] = useState<
     "signIn" | "signUp" | "magic" | null
   >(null);
-
   if (!isSupabaseConfigured()) {
     return (
       <p className="rounded-lg border border-amber-500/20 bg-amber-950/20 px-4 py-3 text-sm text-amber-200/90">
@@ -49,6 +58,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
   }
 
   async function completeSessionRedirect() {
+    clearAuthNextCookie();
     router.refresh();
     router.push(nextPath);
   }
@@ -66,6 +76,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     setLoadingAction("signIn");
     setStatus("loading");
+    setAuthNextCookie(nextPath);
     trackEvent("signup_started", { method: "password", intent: "sign_in" });
 
     const supabase = createClient();
@@ -112,6 +123,7 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     setLoadingAction("signUp");
     setStatus("loading");
+    setAuthNextCookie(nextPath);
     trackEvent("signup_started", { method: "password", intent: "sign_up" });
 
     const supabase = createClient();
@@ -119,7 +131,10 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
       email: trimmedEmail,
       password,
       options: {
-        emailRedirectTo: getAuthCallbackUrl(nextPath),
+        emailRedirectTo: getAuthCallbackUrl(
+          nextPath,
+          typeof window !== "undefined" ? window.location.origin : undefined,
+        ),
       },
     });
 
@@ -157,10 +172,13 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
     setLoadingAction("magic");
     setStatus("loading");
+    setAuthNextCookie(nextPath);
     trackEvent("signup_started", { method: "magic_link", intent: "sign_in" });
 
     const supabase = createClient();
-    const redirectTo = getAuthCallbackUrl(nextPath);
+    const browserOrigin =
+      typeof window !== "undefined" ? window.location.origin : undefined;
+    const redirectTo = getAuthCallbackUrl(nextPath, browserOrigin);
 
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmedEmail,
@@ -189,29 +207,8 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
 
   const googleEnabled = isGoogleAuthEnabled();
 
-  return (
-    <div className="space-y-6">
-      <GoogleSignInButton
-        nextPath={nextPath}
-        onError={handleGoogleError}
-        disabled={isBusy || magicSent}
-      />
-
-      {!googleEnabled && isSupabaseConfigured() && (
-        <p className="text-[11px] text-zinc-600">
-          Google sign-in requires{" "}
-          <code className="text-zinc-500">NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true</code> in
-          your environment after the Supabase Google provider is configured.
-        </p>
-      )}
-
-      <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-white/[0.06]" />
-        <span className="text-[11px] text-zinc-600">or sign in with email</span>
-        <span className="h-px flex-1 bg-white/[0.06]" />
-      </div>
-
-      <form onSubmit={handleSignInWithPassword} className="space-y-4">
+  const emailPasswordForm = (
+    <form onSubmit={handleSignInWithPassword} className="space-y-4">
         <label className="block">
           <span className="text-xs font-medium text-zinc-400">Email</span>
           <input
@@ -267,32 +264,90 @@ export function LoginForm({ nextPath = "/account", errorMessage }: LoginFormProp
             {loadingAction === "signUp" ? "Creating account…" : "Create account"}
           </Button>
         </div>
-      </form>
+    </form>
+  );
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <span className="h-px flex-1 bg-white/[0.06]" />
-          <span className="text-[11px] text-zinc-600">or</span>
-          <span className="h-px flex-1 bg-white/[0.06]" />
-        </div>
-
-        <form onSubmit={handleMagicLink}>
-          <Button
-            type="submit"
-            variant="secondary"
-            size="md"
-            className="w-full"
-            disabled={isBusy || magicSent || !email.trim()}
-          >
-            {loadingAction === "magic" ? "Sending link…" : "Email me a sign-in link"}
-          </Button>
-        </form>
-
-        <p className="text-center text-[11px] text-zinc-600">
-          Magic links can be rate-limited during testing — password sign-in is more
-          reliable for local dev.
+  const googleBlock = (
+    <>
+      <GoogleSignInButton
+        nextPath={nextPath}
+        onError={handleGoogleError}
+        disabled={isBusy || magicSent}
+      />
+      {!googleEnabled && isSupabaseConfigured() && (
+        <p className="text-[11px] text-zinc-600">
+          Google sign-in requires{" "}
+          <code className="text-zinc-500">NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true</code> in
+          your environment after the Supabase Google provider is configured.
         </p>
+      )}
+    </>
+  );
+
+  const magicLinkBlock = !isLocalDev ? (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-white/[0.06]" />
+        <span className="text-[11px] text-zinc-600">or</span>
+        <span className="h-px flex-1 bg-white/[0.06]" />
       </div>
+
+      <form onSubmit={handleMagicLink}>
+        <Button
+          type="submit"
+          variant="secondary"
+          size="md"
+          className="w-full"
+          disabled={isBusy || magicSent || !email.trim()}
+        >
+          {loadingAction === "magic" ? "Sending link…" : "Email me a sign-in link"}
+        </Button>
+      </form>
+    </div>
+  ) : (
+    <p className="text-center text-[11px] text-zinc-600">
+      Magic links are disabled for local checkout testing — use password sign-in above.
+    </p>
+  );
+
+  const divider = (
+    <div className="flex items-center gap-3">
+      <span className="h-px flex-1 bg-white/[0.06]" />
+      <span className="text-[11px] text-zinc-600">or</span>
+      <span className="h-px flex-1 bg-white/[0.06]" />
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <LocalAuthDevNote
+        nextPath={nextPath}
+        isLocalDev={isLocalDev}
+        envMismatch={envMismatch}
+      />
+
+      {isLocalDev ? (
+        <>
+          <p className="text-xs font-medium text-violet-300/90">
+            Recommended for local checkout testing
+          </p>
+          {emailPasswordForm}
+          {divider}
+          {googleBlock}
+          {magicLinkBlock}
+        </>
+      ) : (
+        <>
+          {googleBlock}
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-white/[0.06]" />
+            <span className="text-[11px] text-zinc-600">or sign in with email</span>
+            <span className="h-px flex-1 bg-white/[0.06]" />
+          </div>
+          {emailPasswordForm}
+          {magicLinkBlock}
+        </>
+      )}
 
       {message && (
         <p
