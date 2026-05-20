@@ -162,7 +162,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_DEBUG_TOKEN" \
   "https://summify.app/api/admin/test-service-role"
 ```
 
-Expect `serviceRoleConfigured: true`, `jwtRole: "service_role"`, and `writeAccessWorking: true`. If `jwtRole` is `anon`, Netlify has the wrong key in `SUPABASE_SERVICE_ROLE_KEY`.
+Expect `serviceRoleConfigured: true`, `writeAccessWorking: true`. New **Secret** keys (`sb_secret_...`) report `jwtRole: "unknown"` and `keyFormat: "sb_secret"` — that is normal. Success is determined by `sdk.writeOk` / `rest.writeOk`, not JWT decode. If both fail with `permission denied`, confirm the secret matches the project URL and grant `service_role` access on `public.profiles`.
 
 ## Code map
 
