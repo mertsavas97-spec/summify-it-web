@@ -14,6 +14,7 @@ import {
   type ModeLearnStrategyInput,
   type ModeStrategyPattern,
 } from "./modeLearnStrategies";
+import { retrievalPromptForCard } from "./learningProgression";
 
 export type LearnStrategyApplyStats = {
   strategyId: string;
@@ -191,74 +192,12 @@ export function selectCandidatesByStrategy(
   return selected.slice(0, target);
 }
 
-/** Strategy-aware practice prompt (no generic templates when avoidable). */
+/** Strategy-aware practice prompt (Learn 3 recall pressure + mode frames). */
 export function practicePromptForCard(
   card: LearnCardOutput,
   strategy: ModeLearnStrategy,
 ): string {
-  const title = card.title.trim();
-  const pattern = resolveCardStrategyPattern(card);
-
-  if (card.type === "quiz") {
-    const q = card.content.split("\n---\n")[0]?.trim() ?? title;
-    return q.endsWith("?") ? q : `${q}?`;
-  }
-
-  switch (strategy.promptStyle) {
-    case "active_recall":
-      if (title.endsWith("?")) return title;
-      if (pattern === "cause_effect_chain" || pattern === "why_it_matters") {
-        return title.startsWith("Why") ? title : `Why does ${title}?`;
-      }
-      if (pattern === "timeline_chain" || pattern === "historical_anchor") {
-        return `What happened regarding ${title}?`;
-      }
-      if (pattern === "figure_significance") {
-        return `Who or what is ${title}, and why does it matter here?`;
-      }
-      return `What should you recall about ${title}?`;
-
-    case "argument_reconstruction":
-      if (pattern === "evidence") return `What evidence supports: ${title}?`;
-      if (pattern === "limitation") return `What limitation does the source note about ${title}?`;
-      if (pattern === "contradiction") return `What tension or contradiction involves ${title}?`;
-      if (pattern === "methodology") return `What method or approach applies to ${title}?`;
-      return `What claim does the source make about ${title}?`;
-
-    case "decision_recall":
-      if (pattern === "risk_opportunity" || pattern === "risk") {
-        return `What risk or opportunity does the source tie to ${title}?`;
-      }
-      if (pattern === "tradeoff") return `What tradeoff does ${title} involve?`;
-      if (pattern === "metric_significance") return `Which metric or signal relates to ${title}?`;
-      return `What decision or implication follows from ${title}?`;
-
-    case "creative_angle":
-      if (pattern === "hook" || card.type === "memory_hook") {
-        return title.endsWith("?") ? title : `What is the strongest hook in: ${title}?`;
-      }
-      if (pattern === "story_beat") return `Which story beat does ${title} represent?`;
-      if (pattern === "quote") return `What quoted moment supports ${title}?`;
-      return `What reusable angle does ${title} offer?`;
-
-    case "clause_recall":
-      if (pattern === "obligation") return `What obligation does the source state about ${title}?`;
-      if (pattern === "deadline") return `What deadline or timing applies to ${title}?`;
-      if (pattern === "party") return `Which party is associated with ${title}?`;
-      if (pattern === "exception") return `What exception applies to ${title}?`;
-      return `What does the source say about ${title}? (Review only — not legal advice.)`;
-
-    case "mechanism_recall":
-      if (pattern === "failure_mode") return `What failure mode relates to ${title}?`;
-      if (pattern === "dependency_chain") return `What depends on ${title} in this system?`;
-      if (pattern === "configuration" || pattern === "API_behavior") {
-        return `How is ${title} configured or exposed in the source?`;
-      }
-      return `How does ${title} work in this source?`;
-
-    default:
-      return title.endsWith("?") ? title : `Explain ${title}.`;
-  }
+  return retrievalPromptForCard(card, strategy);
 }
 
 /** Filter/reorder output cards by strategy before quality pass. */

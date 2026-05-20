@@ -4,8 +4,13 @@ import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { LearnEntitlementNotice } from "@/components/learn/LearnEntitlementNotice";
 import { LearnOverviewPanel } from "@/components/learn/LearnOverviewPanel";
-import { LearnPracticeActions } from "@/components/learn/LearnPracticeActions";
+import { AnalysisPracticeSession } from "@/components/learn/AnalysisPracticeSession";
 import { MemoryReviewClient } from "@/components/memory/MemoryReviewClient";
+import {
+  enrichReviewItemsAsPracticeCards,
+  sortPracticeSessionCards,
+} from "@/lib/learn/practiceSessionTypes";
+import { getIntelligenceModeLabel, getSourceKindLabel } from "@/lib/saved-analysis-labels";
 import { Badge } from "@/components/ui/Badge";
 import {
   ensureProfileForUser,
@@ -22,10 +27,7 @@ import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getAnalysisById } from "@/server/analyses/getAnalysisById";
 import { getPracticeAnalysesSummary } from "@/server/learn/getPracticeAnalysesSummary";
 import { getDueReviewItems } from "@/server/memory/getDueReviewItems";
-import {
-  countReviewItemsForAnalysis,
-  getReviewItemsForAnalysis,
-} from "@/server/memory/getReviewItemsForAnalysis";
+import { getReviewItemsForAnalysis } from "@/server/memory/getReviewItemsForAnalysis";
 import { getMemoryStats } from "@/server/memory/getMemoryStats";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 
@@ -37,11 +39,12 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 type PageProps = {
-  searchParams: Promise<{ analysisId?: string }>;
+  searchParams: Promise<{ analysisId?: string; start?: string }>;
 };
 
 export default async function LearnPage({ searchParams }: PageProps) {
-  const { analysisId } = await searchParams;
+  const { analysisId, start } = await searchParams;
+  const autoStartPractice = start === "1" || start === "true";
   const loginNext = learnLoginNext(analysisId);
 
   if (!isSupabaseConfigured()) {
@@ -104,62 +107,29 @@ export default async function LearnPage({ searchParams }: PageProps) {
       );
     }
 
-    const [practiceItems, practiceCardCount] = await Promise.all([
-      getReviewItemsForAnalysis(user.id, analysisId),
-      countReviewItemsForAnalysis(user.id, analysisId),
-    ]);
+    const practiceItems = await getReviewItemsForAnalysis(user.id, analysisId);
 
     const displayTitle = saved.title ?? saved.summary?.title ?? "Untitled analysis";
     const hasLearnCards = (saved.learn_cards?.length ?? 0) > 0;
+    const learnCards = saved.learn_cards ?? [];
+    const practiceCards = sortPracticeSessionCards(
+      enrichReviewItemsAsPracticeCards(practiceItems, learnCards),
+    );
 
     return (
       <LearnShell savedCount={savedCount} dailyCount={limits?.daily_analysis_count ?? 0} planLabel={planLabel}>
-        <header className="mt-5 mb-6 rounded-2xl border border-white/[0.08] bg-zinc-950/55 p-5 sm:p-6">
-          <Badge variant="accent">Focused practice</Badge>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-white">Learn</h1>
-          <p className="mt-2 text-sm text-violet-200/90">
-            Practicing: <span className="font-medium text-white">{displayTitle}</span>
-          </p>
-          {saved.source_label ? (
-            <p className="mt-1 truncate text-xs text-zinc-500">{saved.source_label}</p>
-          ) : null}
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-            Practice cards from this analysis only — not your global review queue.
-          </p>
-          <LearnPracticeActions
+        <div className="mt-5" id="practice">
+          <AnalysisPracticeSession
             analysisId={analysisId}
-            hasPracticeCards={practiceCardCount > 0}
-            backHref={`/dashboard/${analysisId}`}
+            documentTitle={displayTitle}
+            sourceLabel={saved.source_label}
+            modeLabel={getIntelligenceModeLabel(saved.intelligence_mode)}
+            sourceKindLabel={getSourceKindLabel(saved.source_kind)}
+            cards={practiceCards}
+            hasLearnCards={hasLearnCards}
+            autoStart={autoStartPractice && practiceCards.length > 0}
           />
-        </header>
-
-        {practiceItems.length === 0 ? (
-          <section className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-8 text-center">
-            <p className="text-sm font-medium text-zinc-200">
-              {hasLearnCards
-                ? "No practice cards yet. Generate a practice set from this analysis."
-                : "No Learn cards on this analysis yet. Re-run with Learn output, then create a practice set."}
-            </p>
-            {!hasLearnCards ? (
-              <Link
-                href={`/dashboard/${analysisId}`}
-                className="mt-5 inline-flex text-xs font-medium text-violet-400/90 hover:text-violet-300"
-              >
-                Back to analysis →
-              </Link>
-            ) : null}
-          </section>
-        ) : (
-          <div id="practice">
-            <MemoryReviewClient
-              initialItems={practiceItems}
-              stats={stats}
-              dailyTarget={planUsage.dailyReviewTarget}
-              sessionTitle="Learn practice"
-              emptyHint="No practice cards are due for this analysis right now. Regenerate a practice set or return later."
-            />
-          </div>
-        )}
+        </div>
       </LearnShell>
     );
   }

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
-import { learnDashboardHref } from "@/lib/learn/paths";
+import { learnDashboardHref, learnPracticeStartHref } from "@/lib/learn/paths";
 import { Button } from "@/components/ui/Button";
 
 type LearnPracticeActionsProps = {
@@ -51,7 +51,7 @@ export function LearnPracticeActions({
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
       {hasPracticeCards ? (
-        <Button href={`${learnDashboardHref(analysisId)}#practice`} size="sm">
+        <Button href={learnPracticeStartHref(analysisId)} size="sm">
           Start practice
         </Button>
       ) : (

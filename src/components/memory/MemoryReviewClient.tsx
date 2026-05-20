@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Eye, Keyboard, Sparkles } from "lucide-react";
+import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 import { trackEvent } from "@/lib/analytics/events";
+import { parsePracticeReviewContext } from "@/lib/learn/practiceReviewContext";
 import { Button } from "@/components/ui/Button";
 import type { ReviewItem, ReviewRating } from "@/types/memory";
 import type { DifficultConcept, ReviewStats } from "@/types/memory";
@@ -237,7 +239,19 @@ export function MemoryReviewClient({
               )}
             </div>
 
-            {active.context ? <p className="mt-4 text-xs text-zinc-600">{active.context}</p> : null}
+            {revealed
+              ? (() => {
+                  const parsed = parsePracticeReviewContext(active.context);
+                  return (
+                    <>
+                      {parsed.label && !parsed.trace ? (
+                        <p className="mt-4 text-xs text-zinc-600">{parsed.label}</p>
+                      ) : null}
+                      <LearnSourceTracePanel trace={parsed.trace} className="mt-4" />
+                    </>
+                  );
+                })()
+              : null}
           </div>
 
           {revealed ? (

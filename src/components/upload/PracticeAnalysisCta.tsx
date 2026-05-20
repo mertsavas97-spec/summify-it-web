@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { learnDashboardHref } from "@/lib/learn/paths";
+import { learnDashboardHref, learnPracticeStartHref } from "@/lib/learn/paths";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
@@ -65,7 +65,7 @@ export function PracticeAnalysisCta({
         return;
       }
 
-      router.push(learnDashboardHref(savedAnalysisId));
+      router.push(learnPracticeStartHref(savedAnalysisId));
     } catch {
       setMessage("Couldn't create a practice set. Try again.");
     } finally {
@@ -120,7 +120,7 @@ export function PracticeAnalysisCta({
           onClick={() => void handlePractice()}
           className="shadow-md shadow-violet-500/15"
         >
-          {loading ? "Preparing session…" : "Start practice session"}
+          {loading ? "Preparing session…" : "Practice this analysis"}
         </Button>
         <Link
           href={learnDashboardHref(savedAnalysisId)}
@@ -143,7 +143,7 @@ function PracticeCardHeader() {
         Practice what you learned
       </h3>
       <p className="mt-1.5 max-w-lg text-[13px] leading-snug text-zinc-400">
-        Turn this analysis into adaptive review cards and reinforce key concepts.
+        Turn this analysis into a practice set and reinforce key concepts.
       </p>
     </div>
   );

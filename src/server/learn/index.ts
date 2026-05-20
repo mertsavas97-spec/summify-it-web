@@ -13,6 +13,18 @@ export {
   practicePromptForCard,
   resolveLearnStrategy,
 } from "./applyModeLearnStrategy";
+export {
+  applyLearningProgression,
+  learnProgressionDebugStats,
+  retrievalPromptForCard,
+  refineMemoryHookContent,
+} from "./learningProgression";
+export {
+  attachSourceTraceToLearnCards,
+  buildSourceTraceSections,
+  encodePracticeReviewContext,
+  sourceTraceDebugStats,
+} from "./sourceTrace";
 export { refineSemanticTitle, isSyntheticTitle } from "./refineLearnTitle";
 export type {
   BuildLearnIntelligenceOptions,

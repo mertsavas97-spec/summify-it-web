@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpen, Loader2, Play } from "lucide-react";
-import { learnDashboardHref } from "@/lib/learn/paths";
+import { learnPracticeStartHref } from "@/lib/learn/paths";
 import { Button } from "@/components/ui/Button";
 
 type AnalysisMemoryActionsProps = {
@@ -38,7 +38,7 @@ export function AnalysisMemoryActions({ analysisId }: AnalysisMemoryActionsProps
       }
 
       if (andOpen) {
-        router.push(learnDashboardHref(analysisId));
+        router.push(learnPracticeStartHref(analysisId));
         return;
       }
 
@@ -85,7 +85,7 @@ export function AnalysisMemoryActions({ analysisId }: AnalysisMemoryActionsProps
           <Button size="sm" variant="ghost" onClick={() => void createPracticeSet(true)} disabled={pending}>
             Create practice set
           </Button>
-          <Button href={learnDashboardHref(analysisId)} size="sm">
+          <Button href={learnPracticeStartHref(analysisId)} size="sm">
             <Play className="h-3.5 w-3.5" aria-hidden />
             Practice
           </Button>

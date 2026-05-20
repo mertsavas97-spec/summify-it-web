@@ -43,6 +43,15 @@ import {
   applyLearnCardQuality,
   learnCardQualityDebugStats,
 } from "./learnCardQuality";
+import {
+  applyLearningProgression,
+  learnProgressionDebugStats,
+} from "./learningProgression";
+import {
+  attachSourceTraceToLearnCards,
+  sourceTraceDebugStats,
+  type CandidateTraceHint,
+} from "./sourceTrace";
 
 const GENERIC_PHRASES = [
   /engaging experience/i,
@@ -527,13 +536,23 @@ export function buildLearnIntelligence(
     isYoutube: options.isYoutubeTranscript === true,
     isPresentation,
   };
-  const finalCards = selected.map((c) => toLearnCardOutput(c, outputFlags));
+  const candidateHints = new Map<string, CandidateTraceHint>();
+  const finalCards = selected.map((c, i) => {
+    const out = toLearnCardOutput(c, outputFlags);
+    const id = out.cardId ?? `learn_${i}_${c.kind}`;
+    candidateHints.set(id, { source: c.source, groupTitle: c.groupTitle });
+    return out;
+  });
   if (finalCards.length < range.min) {
     const usedTitles = new Set(finalCards.map((c) => c.title.toLowerCase()));
-    for (const c of deduped) {
+    for (let i = 0; i < deduped.length; i++) {
+      const c = deduped[i];
       if (finalCards.length >= range.min) break;
       if (usedTitles.has(c.title.toLowerCase())) continue;
-      finalCards.push(toLearnCardOutput(c, outputFlags));
+      const out = toLearnCardOutput(c, outputFlags);
+      const id = out.cardId ?? `learn_fill_${i}_${c.kind}`;
+      candidateHints.set(id, { source: c.source, groupTitle: c.groupTitle });
+      finalCards.push(out);
       usedTitles.add(c.title.toLowerCase());
     }
   }
@@ -554,6 +573,20 @@ export function buildLearnIntelligence(
     targetMax: range.max,
     strategy: learnStrategy,
   });
+  const progression = applyLearningProgression(quality.cards, learnStrategy, {
+    targetMax: range.max,
+  });
+  const progressionDebug = learnProgressionDebugStats(progression.stats);
+
+  const traced = attachSourceTraceToLearnCards(progression.cards, {
+    analysis: result,
+    personaAdaptivePlan: options.personaAdaptivePlan,
+    extractedText: options.extractedText,
+    uiSectionLabels: options.personaAdaptivePlan?.uiSectionLabels,
+    candidateHints,
+  });
+  const traceDebug = sourceTraceDebugStats(traced.stats);
+
   const qualityDebug = learnCardQualityDebugStats(quality.stats);
   const strategyDebug = learnStrategyDebugStats(strategyPass.stats);
 
@@ -570,17 +603,25 @@ export function buildLearnIntelligence(
   if (strategyDebug && adaptiveLearnMeta) {
     adaptiveLearnMeta.learnStrategy = strategyDebug;
   }
+  if (progressionDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.learnProgression = progressionDebug;
+  }
+  if (traceDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.sourceTrace = traceDebug;
+  }
 
   return {
-    learnCards: quality.cards,
+    learnCards: traced.cards,
     meta: {
       candidateCount: withTitles.length,
-      selectedCount: quality.cards.length,
+      selectedCount: traced.cards.length,
       complexity: options.complexity,
       mode: options.mode,
       ...(adaptiveLearnMeta ? { adaptiveLearn: adaptiveLearnMeta } : {}),
       ...(qualityDebug ? { learnCardQuality: qualityDebug } : {}),
       ...(strategyDebug ? { learnStrategy: strategyDebug } : {}),
+      ...(progressionDebug ? { learnProgression: progressionDebug } : {}),
+      ...(traceDebug ? { sourceTrace: traceDebug } : {}),
     },
   };
 }

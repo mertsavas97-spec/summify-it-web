@@ -80,11 +80,17 @@ function applyLearnIntelligence(
     allowedLearnSourceSections: plan?.allowedLearnSourceSections,
     blockedLearnSourceSections: plan?.blockedLearnSourceSections,
     personaAdaptivePlan: plan,
+    extractedText: intelligence.compactedUserPrompt?.slice(0, 24000),
   });
   if (intelligence.cognition) {
     if (learnMeta.adaptiveLearn) {
       intelligence.cognition.adaptiveLearn = learnMeta.adaptiveLearn;
-    } else if (learnMeta.learnStrategy || learnMeta.learnCardQuality) {
+    } else if (
+      learnMeta.learnStrategy ||
+      learnMeta.learnCardQuality ||
+      learnMeta.learnProgression ||
+      learnMeta.sourceTrace
+    ) {
       intelligence.cognition.adaptiveLearn = {
         adaptiveLearnProfileId: "quality_only",
         learnGroups: [],
@@ -98,6 +104,8 @@ function applyLearnIntelligence(
         },
         learnCardQuality: learnMeta.learnCardQuality,
         learnStrategy: learnMeta.learnStrategy,
+        learnProgression: learnMeta.learnProgression,
+        sourceTrace: learnMeta.sourceTrace,
       };
     }
   }

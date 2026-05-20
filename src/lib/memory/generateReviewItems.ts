@@ -1,5 +1,13 @@
-import { practicePromptForCard, resolveLearnStrategy } from "@/server/learn/applyModeLearnStrategy";
+import { resolveLearnStrategy } from "@/server/learn/applyModeLearnStrategy";
 import { applyLearnCardQuality } from "@/server/learn/learnCardQuality";
+import {
+  applyLearningProgression,
+  retrievalPromptForCard,
+} from "@/server/learn/learningProgression";
+import {
+  attachSourceTraceToLearnCards,
+  encodePracticeReviewContext,
+} from "@/server/learn/sourceTrace";
 import type { GeneratedReviewItem, ReviewSourceKind } from "@/types/memory";
 import type { SavedAnalysisSummaryPayload } from "@/types/saved-analysis";
 import type { LearnCardOutput } from "@/types/text-analysis";
@@ -60,19 +68,19 @@ function learnCardToReviewItem(
       source_id: sourceId("learn_card", index, title),
       prompt: question,
       answer,
-      context: title,
+      context: encodePracticeReviewContext(card),
       seedCard: card,
     };
   }
 
-  const prompt = practicePromptForCard(card, strategy);
+  const prompt = retrievalPromptForCard(card, strategy);
 
   return {
     source_kind: "learn_card",
     source_id: sourceId("learn_card", index, title),
     prompt,
     answer: content,
-    context: title,
+    context: encodePracticeReviewContext(card),
     seedCard: card,
   };
 }
@@ -116,7 +124,7 @@ function conceptFromCard(
   const prompt =
     strategy.promptStyle === "active_recall" && !title.endsWith("?")
       ? `Why does ${title} matter in this source?`
-      : practicePromptForCard(card, strategy);
+      : retrievalPromptForCard(card, strategy);
   return {
     source_kind: "important_concept",
     source_id: sourceId("important_concept", index, title),
@@ -149,10 +157,25 @@ export function generateReviewItemsFromAnalysis({
     strategy,
   });
 
+  const { cards: progressed } = applyLearningProgression(qualityCards, strategy, {
+    targetMax: maxItems,
+  });
+
+  const { cards: practiceCards } = attachSourceTraceToLearnCards(progressed, {
+    analysis: {
+      title: summary.title,
+      summary: summary.summary,
+      keyInsights: summary.keyInsights ?? [],
+      risksOrWarnings: summary.risksOrWarnings ?? [],
+      actionItems: summary.actionItems ?? [],
+      learnCards: qualityCards,
+    },
+  });
+
   const items: GeneratedReviewItem[] = [];
   const seen = new Set<string>();
 
-  qualityCards.forEach((card, index) => {
+  practiceCards.forEach((card, index) => {
     const item = learnCardToReviewItem(card, index, strategy);
     if (item) pushUnique(items, seen, item);
   });
@@ -164,7 +187,7 @@ export function generateReviewItemsFromAnalysis({
     });
   }
 
-  qualityCards.forEach((card, index) => {
+  practiceCards.forEach((card, index) => {
     const item = conceptFromCard(card, index, strategy);
     if (item) pushUnique(items, seen, item);
   });

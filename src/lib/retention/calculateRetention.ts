@@ -133,7 +133,7 @@ function dailyGoals(input: {
     },
     {
       id: "generate_review_set",
-      label: "Generate 1 review set",
+      label: "Create 1 practice set",
       target: 1,
       completed: input.generatedToday ? 1 : 0,
       complete: input.generatedToday,
@@ -231,7 +231,7 @@ function comebackPrompt(input: {
     return {
       kind: "fresh_start",
       title: "Build today’s memory stack",
-      body: "Generate a review set from any saved analysis.",
+      body: "Create a practice set from any saved analysis.",
       severity: "low",
     };
   }

@@ -117,7 +117,42 @@ export type AdaptiveLearnProfile = {
   rationale: string;
 };
 
-/** Optional enrichment on API learn cards (Phase 11D). */
+/** Phase Learn 3 — recall / progression metadata (optional on cards). */
+export type RecallDifficultyLevel = "easy" | "medium" | "hard";
+
+export type LearnRetrievalType =
+  | "recognition"
+  | "recall"
+  | "synthesis"
+  | "comparison"
+  | "application"
+  | "chronology"
+  | "mechanism";
+
+export type LearnCognitiveLevel = "factual" | "conceptual" | "relational" | "abstract";
+
+/** Phase Learn 4 — lightweight source grounding for a learn card. */
+export type LearnSourceTraceType =
+  | "summary"
+  | "insight"
+  | "learn_card"
+  | "analysis_section"
+  | "extracted_text"
+  | "synthesized";
+
+export type LearnSourceTraceConfidence = "low" | "medium" | "high";
+
+export type LearnSourceTrace = {
+  sectionTitle?: string;
+  sourceType?: LearnSourceTraceType;
+  excerpt?: string;
+  pageNumber?: number;
+  timestampStart?: string;
+  timestampEnd?: string;
+  confidence?: LearnSourceTraceConfidence;
+};
+
+/** Optional enrichment on API learn cards (Phase 11D + Learn 3 + Learn 4). */
 export type LearnCardEnrichment = {
   cardId?: string;
   groupId?: string;
@@ -128,6 +163,32 @@ export type LearnCardEnrichment = {
   memoryWeight?: number;
   conceptualDensity?: number;
   cardRelationships?: LearnCardRelationship[];
+  recallDifficulty?: RecallDifficultyLevel;
+  retrievalType?: LearnRetrievalType;
+  cognitiveLevel?: LearnCognitiveLevel;
+  prerequisiteCardIds?: string[];
+  reinforcesCardIds?: string[];
+  sourceTrace?: LearnSourceTrace;
+};
+
+/** Dev-only source trace pass (Phase Learn 4). */
+export type LearnSourceTraceDebugMeta = {
+  tracedCardCount: number;
+  highConfidenceCount: number;
+  mediumConfidenceCount: number;
+  lowConfidenceCount: number;
+  missingTraceCount: number;
+};
+
+/** Dev-only learning progression pass (Phase Learn 3). */
+export type LearnProgressionDebugMeta = {
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+  retrievalDistribution: Record<string, number>;
+  cognitiveDistribution: Record<string, number>;
+  relationshipCount: number;
+  hookCount: number;
 };
 
 export type LearnDifficultyStats = {
@@ -167,4 +228,6 @@ export type AdaptiveLearnDebugMeta = {
   difficultyStats: LearnDifficultyStats;
   learnCardQuality?: LearnCardQualityStats;
   learnStrategy?: LearnStrategyDebugMeta;
+  learnProgression?: LearnProgressionDebugMeta;
+  sourceTrace?: LearnSourceTraceDebugMeta;
 };

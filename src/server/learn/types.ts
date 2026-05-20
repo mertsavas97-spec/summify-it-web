@@ -10,6 +10,8 @@ import type {
   AdaptiveLearnDebugMeta,
   LearnCardQualityStats,
   LearnStrategyDebugMeta,
+  LearnProgressionDebugMeta,
+  LearnSourceTraceDebugMeta,
 } from "@/types/adaptive-learn";
 
 /** Final learn card kinds (UI + API output). */
@@ -76,6 +78,8 @@ export type BuildLearnIntelligenceOptions = {
   adaptiveLearnProfile?: AdaptiveLearnProfile;
   /** Phase 11D — skip summary-sentence candidate mining for domain-heavy profiles. */
   deprioritizeSummaryLearnSynthesis?: boolean;
+  /** Phase Learn 4 — optional raw source text for excerpt grounding (not sent to client). */
+  extractedText?: string;
 };
 
 export type LearnIntelligenceMeta = {
@@ -89,6 +93,10 @@ export type LearnIntelligenceMeta = {
   learnCardQuality?: LearnCardQualityStats;
   /** Dev-only Phase Learn 2 strategy pass. */
   learnStrategy?: LearnStrategyDebugMeta;
+  /** Dev-only Phase Learn 3 progression pass. */
+  learnProgression?: LearnProgressionDebugMeta;
+  /** Dev-only Phase Learn 4 source trace pass. */
+  sourceTrace?: LearnSourceTraceDebugMeta;
 };
 
 export type BuildLearnIntelligenceResult = {

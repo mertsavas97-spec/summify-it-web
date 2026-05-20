@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 import type { LearnCardOutput, LearnCardOutputType } from "@/types/text-analysis";
 import { parseQuizContent } from "@/types/text-analysis";
 
@@ -196,6 +197,7 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
               )}
             </div>
           )}
+          <LearnSourceTracePanel trace={card.sourceTrace} />
           <div className="mt-2 flex flex-wrap gap-1 opacity-50 transition-opacity md:opacity-0 md:group-hover:opacity-45">
             <FutureHookButton label="Save" />
             <FutureHookButton label="Remembered" />

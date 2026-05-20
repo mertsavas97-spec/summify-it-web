@@ -10,3 +10,8 @@ export function learnDashboardHref(analysisId?: string | null): string {
 export function learnLoginNext(analysisId?: string | null): string {
   return learnDashboardHref(analysisId);
 }
+
+/** Open Learn for an analysis and auto-start the practice session. */
+export function learnPracticeStartHref(analysisId: string): string {
+  return `${learnDashboardHref(analysisId)}&start=1`;
+}
