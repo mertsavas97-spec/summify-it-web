@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
+
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { JsonLd } from "@/components/seo/JsonLd";
+
 import { siteConfig } from "@/lib/site";
 import { organizationSchema } from "@/lib/schema";
+
 import {
   buildOpenGraph,
   buildPageTitle,
   buildTwitterCard,
   SEO_BRAND,
 } from "@/lib/seo";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,11 +32,14 @@ const defaultTitle = "AI PDF & YouTube Summarizer";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
+
   title: {
     default: buildPageTitle(defaultTitle),
     template: `%s | ${SEO_BRAND}`,
   },
+
   description: siteConfig.description,
+
   keywords: [
     "document intelligence",
     "PDF summarizer",
@@ -39,20 +47,25 @@ export const metadata: Metadata = {
     "PowerPoint summarizer",
     "AI study notes",
   ],
+
   authors: [{ name: SEO_BRAND }],
   creator: SEO_BRAND,
+
   openGraph: buildOpenGraph({
     title: defaultTitle,
     description: siteConfig.description,
     path: "/",
   }),
+
   twitter: buildTwitterCard({
     title: defaultTitle,
     description: siteConfig.description,
   }),
+
   robots: {
     index: true,
     follow: true,
+
     googleBot: {
       index: true,
       follow: true,
@@ -74,7 +87,15 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#0e1016] text-zinc-100">
         <GoogleAnalytics />
+
+        <Script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="MunjXVn2ZCqghekj3PbVfA"
+          strategy="afterInteractive"
+        />
+
         <JsonLd data={organizationSchema()} />
+
         <SiteShell>{children}</SiteShell>
       </body>
     </html>
