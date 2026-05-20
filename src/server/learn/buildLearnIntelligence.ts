@@ -158,9 +158,16 @@ function refineAllTitles(
   }));
 }
 
+const GENERIC_MYTH_TITLES =
+  /^(myth|misconception|clarify the risk|why it matters|importance of|approach critically|potential bias)/i;
+
 function candidatesFromAnalysis(
   result: AnalysisResult,
   isDeckSource: boolean,
+  flags: {
+    suppressRiskActionLearnSynthesis?: boolean;
+    suppressMisconceptionUnlessExplicit?: boolean;
+  },
 ): LearnCandidate[] {
   const out: LearnCandidate[] = [];
 
@@ -196,14 +203,27 @@ function candidatesFromAnalysis(
     });
   }
 
-  result.risksOrWarnings.slice(0, 3).forEach((risk) => {
-    if (/does not provide enough/i.test(risk)) return;
-    const c = makeCandidate("misconception", risk.slice(0, 48), risk, "risk");
-    if (c) out.push(c);
-  });
+  if (!flags.suppressRiskActionLearnSynthesis) {
+    result.risksOrWarnings.slice(0, 3).forEach((risk) => {
+      if (/does not provide enough/i.test(risk)) return;
+      if (
+        /approach critically|consider potential bias|further research/i.test(risk)
+      ) {
+        return;
+      }
+      const c = makeCandidate("misconception", risk.slice(0, 48), risk, "risk");
+      if (c && flags.suppressMisconceptionUnlessExplicit) {
+        if (GENERIC_MYTH_TITLES.test(c.title)) return;
+      }
+      if (c) out.push(c);
+    });
+  }
 
-  if (!isDeckSource) {
+  if (!isDeckSource && !flags.suppressRiskActionLearnSynthesis) {
     result.actionItems.slice(0, 2).forEach((action) => {
+      if (/approach critically|further research|verify with a professional/i.test(action)) {
+        return;
+      }
       const c = makeCandidate("why_it_matters", action.slice(0, 48), action, "action");
       if (c) out.push(c);
     });
@@ -375,7 +395,12 @@ export function buildLearnIntelligence(
   const isPresentation = options.isPresentation === true;
   const isDeckSource = options.isYoutubeTranscript === true || isPresentation;
 
-  const baseCandidates = candidatesFromAnalysis(result, isDeckSource).filter((c) => {
+  const learnFlags = {
+    suppressRiskActionLearnSynthesis: options.suppressRiskActionLearnSynthesis,
+    suppressMisconceptionUnlessExplicit: options.suppressMisconceptionUnlessExplicit,
+  };
+
+  const baseCandidates = candidatesFromAnalysis(result, isDeckSource, learnFlags).filter((c) => {
     if (!isPresentation) return true;
     return !(
       isLowQualityPresentationFragment(c.title) &&

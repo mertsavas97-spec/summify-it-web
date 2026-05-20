@@ -47,6 +47,7 @@ export async function callGroqAnalysis(
     isPresentation?: boolean;
     intelligenceModeLabel?: string;
     modePromptAdjunct?: string;
+    cognitionPromptBlock?: string;
   },
 ): Promise<string> {
   const client = getClient();
@@ -57,6 +58,7 @@ export async function callGroqAnalysis(
     isPresentation: promptOptions?.isPresentation,
     intelligenceModeLabel: promptOptions?.intelligenceModeLabel,
     modePromptAdjunct: promptOptions?.modePromptAdjunct,
+    cognitionPromptBlock: promptOptions?.cognitionPromptBlock,
   });
   const userPrompt = buildUserPromptFromCompacted(compactedUserPrompt);
 

@@ -18,8 +18,9 @@ const RISK_GROUNDING_RULES = `Risk grounding for risksOrWarnings:
 - Every risk must be tied to something stated or clearly implied in the document.
 - If inferred, prefix with "Potential risk:" and cite what triggered the inference.
 - Do not list generic logistics, budget, timing, stakeholder, production, legal, or compliance risks unless the source mentions those topics.
-- If no clear risks exist, include exactly: "The source does not provide enough risk signals."
-- If the profile notes thin or fragmented source quality, state that limitation first.`;
+- If the adaptive plan suppresses risks, use an empty array [] unless the source explicitly discusses material downside.
+- If no clear risks exist and risks are NOT suppressed by the plan, prefer [] over filler — only use "The source does not provide enough risk signals." when the plan expects a risk section and the source is silent.
+- If the profile notes thin or fragmented source quality, state that limitation first (only when relevant).`;
 
 const MODE_ANALYSIS_LENSES: Record<TextAnalysisMode, string> = {
   executive: `Executive analysis lens — prioritize for leadership readers:
@@ -142,8 +143,8 @@ const OUTPUT_FIELD_RULES = `Output field rules (same JSON shape for every mode):
 - title: specific to this document (names, parties, or topics); English prose with preserved proper nouns
 - summary: 2–4 paragraphs, document-specific; open with the document's actual subject, not "this document discusses…"
 - keyInsights: 3–6 non-empty bullets with concrete details (numbers, names, dates, section references); never omit or leave empty
-- risksOrWarnings: follow risk grounding rules above (0–5 items)
-- actionItems: mode-aligned, actionable, citing source context (may be empty)
+- risksOrWarnings: follow risk grounding rules and adaptive plan (0–5 items; [] allowed)
+- actionItems: only when useful per adaptive plan (may be [] — no generic filler)
 - learnCards: 3–5 cards; each card must fulfill its type role and not paraphrase the summary`;
 
 const ANTI_GENERIC_GUARDRAILS = `Anti-generic guardrails:
@@ -177,6 +178,7 @@ export type SystemPromptOptions = {
   isPresentation?: boolean;
   intelligenceModeLabel?: string;
   modePromptAdjunct?: string;
+  cognitionPromptBlock?: string;
 };
 
 export function buildSystemPrompt(
@@ -205,13 +207,17 @@ export function buildSystemPrompt(
     .filter(Boolean)
     .join("\n");
 
+  const cognitionBlock = options?.cognitionPromptBlock?.trim()
+    ? `\n${options.cognitionPromptBlock}\n`
+    : "";
+
   return `You are Summify.it, an adaptive document intelligence workspace.
 Analyze the user's document and return structured JSON only.
 
 ${ANALYSIS_OUTPUT_LANGUAGE_RULES}
 
 Selected backend family: ${mode}
-${intelligenceModeBlock ? `${intelligenceModeBlock}\n` : ""}${MODE_ANALYSIS_LENSES[mode]}${youtubeBlock}${presentationBlock}
+${intelligenceModeBlock ? `${intelligenceModeBlock}\n` : ""}${cognitionBlock}${MODE_ANALYSIS_LENSES[mode]}${youtubeBlock}${presentationBlock}
 
 ${MODE_LEARN_CARD_GUIDANCE[mode]}
 

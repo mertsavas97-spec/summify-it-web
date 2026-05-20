@@ -353,6 +353,12 @@ export function UploadPreviewPanel({
           </section>
         )}
 
+        {intelligence?.adaptationLabel && (
+          <p className="rounded-md border border-violet-500/20 bg-violet-950/25 px-2 py-1 text-[10px] text-violet-300/90">
+            Adapted for: {intelligence.adaptationLabel}
+          </p>
+        )}
+
         {intelligence && (
           <section data-workspace-intelligence-profile>
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">

@@ -102,6 +102,18 @@ export type AnalyzeApiDebugMetadata = {
   fallbackUsed?: boolean;
   failureReason?: string;
   attempts?: AnalyzeApiDebugAttempt[];
+  cognition?: {
+    debugSummary: string;
+    adaptationLabel: string;
+    domain: string;
+    personaId: string;
+    adaptivePlanId: string;
+    structureFamily: string;
+    sectionTitles: string[];
+    suppressedDefaultSections: string[];
+    learnCardStrategySummary: string;
+    primaryDimensions: string[];
+  };
 };
 
 export type AnalyzeApiSuccessResponse = {
@@ -116,6 +128,8 @@ export type AnalyzeApiSuccessResponse = {
   /** True when the analysis was persisted for the signed-in user. */
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;
+  /** Dev: persona × domain adaptation chip label */
+  adaptationLabel?: string;
   debug?: AnalyzeApiDebugMetadata;
 };
 

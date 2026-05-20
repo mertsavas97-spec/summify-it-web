@@ -56,6 +56,7 @@ export async function callGeminiAnalysis(
     isPresentation?: boolean;
     intelligenceModeLabel?: string;
     modePromptAdjunct?: string;
+    cognitionPromptBlock?: string;
   },
 ): Promise<string> {
   const client = getClient();
@@ -66,6 +67,7 @@ export async function callGeminiAnalysis(
     isPresentation: promptOptions?.isPresentation,
     intelligenceModeLabel: promptOptions?.intelligenceModeLabel,
     modePromptAdjunct: promptOptions?.modePromptAdjunct,
+    cognitionPromptBlock: promptOptions?.cognitionPromptBlock,
   });
   const userPrompt = buildUserPromptFromCompacted(compactedUserPrompt);
 

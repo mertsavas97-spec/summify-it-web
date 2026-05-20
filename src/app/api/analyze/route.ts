@@ -77,6 +77,22 @@ function buildSuccessDebug(
     estimatedPromptChars: intelligence.compactedUserPrompt.length,
     providerUsed,
     fallbackUsed,
+    ...(intelligence.cognition
+      ? {
+          cognition: {
+            debugSummary: intelligence.cognition.debugSummary,
+            adaptationLabel: intelligence.cognition.adaptationLabel,
+            domain: intelligence.cognition.domain,
+            personaId: intelligence.cognition.personaId,
+            adaptivePlanId: intelligence.cognition.adaptivePlanId,
+            structureFamily: intelligence.cognition.structureFamily,
+            sectionTitles: intelligence.cognition.sectionTitles,
+            suppressedDefaultSections: intelligence.cognition.suppressedDefaultSections,
+            learnCardStrategySummary: intelligence.cognition.learnCardStrategySummary,
+            primaryDimensions: intelligence.cognition.primaryDimensions,
+          },
+        }
+      : {}),
   };
 }
 
@@ -196,6 +212,9 @@ export async function POST(request: Request) {
 
     if (isDevelopment()) {
       response.debug = buildSuccessDebug(mode, intelligence, providerUsed, fallbackUsed);
+      if (intelligence.cognition?.adaptationLabel) {
+        response.adaptationLabel = intelligence.cognition.adaptationLabel;
+      }
     }
 
     if (isDevelopment()) {

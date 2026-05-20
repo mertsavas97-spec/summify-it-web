@@ -64,6 +64,7 @@ function applyLearnIntelligence(
   sourceContext?: AnalyzeSourceContext,
   modeRouting?: ModeRoutingResult,
 ): AnalysisResult {
+  const plan = intelligence.personaAdaptivePlan;
   const { learnCards } = buildLearnIntelligence(result, {
     mode,
     complexity: intelligence.profile.complexity,
@@ -71,6 +72,10 @@ function applyLearnIntelligence(
     isPresentation: sourceContext?.sourceKind === "presentation",
     learnWeighting: modeRouting?.learnWeighting,
     intelligenceModeId: modeRouting?.intelligenceModeId,
+    suppressRiskActionLearnSynthesis:
+      plan?.learnCardStrategy.suppressRiskActionSynthesis ?? false,
+    suppressMisconceptionUnlessExplicit:
+      plan?.learnCardStrategy.suppressMisconceptionUnlessExplicit ?? false,
   });
   return { ...result, learnCards };
 }
@@ -118,6 +123,7 @@ async function attemptProvider(
               isPresentation,
               intelligenceModeLabel: modeRouting?.label,
               modePromptAdjunct: modeRouting?.promptAdjunct,
+              cognitionPromptBlock: intelligence.cognitionPromptBlock,
             },
           )
         : await callGeminiAnalysis(
@@ -129,6 +135,7 @@ async function attemptProvider(
               isPresentation,
               intelligenceModeLabel: modeRouting?.label,
               modePromptAdjunct: modeRouting?.promptAdjunct,
+              cognitionPromptBlock: intelligence.cognitionPromptBlock,
             },
           );
   } catch (error) {

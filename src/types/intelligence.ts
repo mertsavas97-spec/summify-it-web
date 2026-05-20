@@ -68,4 +68,6 @@ export type AnalysisIntelligenceMetadata = {
   knowledgeLayerSummary: KnowledgeLayerSummaryMetadata;
   tokenBudget: TokenBudgetMetadata;
   adaptivePlan: AdaptiveAnalysisPlanMetadata;
+  /** Present in development when cognition planner ran. */
+  adaptationLabel?: string;
 };

@@ -167,6 +167,7 @@ export type CompactPromptOptions = {
   isPresentation?: boolean;
   sourceContext?: AnalyzeSourceContext;
   analysisMode?: TextAnalysisMode;
+  cognitionPromptBlock?: string;
 };
 
 /**
@@ -210,9 +211,12 @@ export function compactPromptInput(
 
   const groundingBlock = formatGroundingBlock(knowledgeLayer);
   const knowledgeBlock = formatKnowledgeBlock(knowledgeLayer);
+  const cognitionBlock = options?.cognitionPromptBlock?.trim() ?? "";
+
   const prefix = [
     SOURCE_INPUT_LANGUAGE_NOTE,
     profileBlock,
+    cognitionBlock,
     youtubeBlock,
     presentationBlock,
   ]

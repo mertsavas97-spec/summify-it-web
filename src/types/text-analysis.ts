@@ -53,6 +53,18 @@ export type AnalyzeApiDebugMetadata = {
   fallbackUsed?: boolean;
   failureReason?: string;
   attempts?: AnalyzeApiDebugAttempt[];
+  cognition?: {
+    debugSummary: string;
+    adaptationLabel: string;
+    domain: string;
+    personaId: string;
+    adaptivePlanId: string;
+    structureFamily: string;
+    sectionTitles: string[];
+    suppressedDefaultSections: string[];
+    learnCardStrategySummary: string;
+    primaryDimensions: string[];
+  };
 };
 
 export type AnalyzeApiSuccessResponse = {
@@ -62,6 +74,7 @@ export type AnalyzeApiSuccessResponse = {
   result: AnalysisResult;
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;
+  adaptationLabel?: string;
   debug?: AnalyzeApiDebugMetadata;
 } & AnalysisIntelligenceMetadata;
 

@@ -10,6 +10,8 @@ import { buildKnowledgeLayer, summarizeKnowledgeLayer } from "./buildKnowledgeLa
 import { estimateTokenBudget } from "./estimateTokenBudget";
 import { createAdaptiveAnalysisPlan } from "./adaptiveAnalysisPlan";
 import { compactPromptInput } from "./compactPromptInput";
+import { buildCognitionContext } from "@/lib/cognition/buildContext";
+import type { CognitionSourceKind } from "@/types/cognition";
 import type { AnalysisIntelligenceContext, AnalysisSourceHint } from "./types";
 
 export type { AnalysisSourceHint } from "./types";
@@ -71,6 +73,36 @@ export function prepareAnalysisIntelligence(
     options?.modeRouting?.outputDepthHint,
   );
 
+  const modeId =
+    options?.modeRouting?.intelligenceModeId ??
+    (selectedMode === "executive"
+      ? "executive-brief"
+      : selectedMode === "academic"
+        ? "the-student"
+        : selectedMode === "creator"
+          ? "the-creator"
+          : "contract-analyzer");
+
+  const cognitionSourceKind: CognitionSourceKind =
+    options?.sourceHint === "youtube" || isYoutubeTranscript
+      ? "youtube"
+      : options?.sourceHint === "presentation" || isPresentation
+        ? "presentation"
+        : options?.sourceHint === "url"
+          ? "url"
+          : options?.sourceHint === "file"
+            ? "file"
+            : "text";
+
+  const cognition = buildCognitionContext({
+    modeId,
+    sourceKind: cognitionSourceKind,
+    title: knowledgeLayer.titleGuess,
+    textSnippet: cleaned,
+    heuristicTypeGuess: profile.documentTypeGuess,
+    complexityHint: profile.complexity,
+  });
+
   const { compactedCharacterCount, userPrompt } = compactPromptInput(
     cleaned,
     profile,
@@ -81,6 +113,7 @@ export function prepareAnalysisIntelligence(
       isPresentation,
       sourceContext: options?.sourceContext,
       analysisMode: selectedMode,
+      cognitionPromptBlock: cognition.promptBlock,
     },
   );
 
@@ -94,5 +127,22 @@ export function prepareAnalysisIntelligence(
     adaptivePlan,
     compactedUserPrompt: userPrompt,
     analyzeSource: options?.sourceContext,
+    cognitionPromptBlock: cognition.promptBlock,
+    personaAdaptivePlan: cognition.personaAdaptivePlan,
+    cognition: {
+      domain: cognition.documentProfile.domain,
+      personaId: cognition.personaBrain.id,
+      personaFamily: cognition.personaBrain.family,
+      primaryDimensions: cognition.dimensions.primaryDimensions,
+      learnCardDensity: cognition.learnCardBias.maxDensity,
+      learnCardProviderEmphasis: cognition.learnCardBias.providerTypeEmphasis,
+      debugSummary: cognition.debugSummary,
+      adaptationLabel: cognition.personaAdaptivePlan.adaptationLabel,
+      adaptivePlanId: cognition.personaAdaptivePlan.planId,
+      structureFamily: cognition.personaAdaptivePlan.structureFamily,
+      sectionTitles: cognition.personaAdaptivePlan.sections.map((s) => s.title),
+      suppressedDefaultSections: cognition.personaAdaptivePlan.suppressedDefaultSections,
+      learnCardStrategySummary: cognition.personaAdaptivePlan.learnCardStrategy.summary,
+    },
   };
 }

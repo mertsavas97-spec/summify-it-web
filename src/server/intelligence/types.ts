@@ -129,6 +129,23 @@ export type AdaptiveAnalysisPlan = {
   outputDepth: OutputDepth;
 };
 
+/** Server-only cognition debug slice (Phase 11A). */
+export type CognitionDebugMetadata = {
+  domain: string;
+  personaId: string;
+  personaFamily: string;
+  primaryDimensions: string[];
+  learnCardDensity: string;
+  learnCardProviderEmphasis: string;
+  debugSummary: string;
+  adaptationLabel: string;
+  adaptivePlanId: string;
+  structureFamily: string;
+  sectionTitles: string[];
+  suppressedDefaultSections: ("risks" | "actions")[];
+  learnCardStrategySummary: string;
+};
+
 export type AnalysisIntelligenceContext = {
   profile: DocumentProfile;
   knowledgeLayer: KnowledgeLayer;
@@ -138,4 +155,10 @@ export type AnalysisIntelligenceContext = {
   compactedUserPrompt: string;
   /** Server-only — used for prompt/learn tuning; not returned in API metadata. */
   analyzeSource?: AnalyzeSourceContext;
+  /** Server-only — adaptive persona/document cognition (Phase 11A). */
+  cognition?: CognitionDebugMetadata;
+  /** Full cognition prompt block injected into user message. */
+  cognitionPromptBlock?: string;
+  /** Phase 11B structure plan (server-only). */
+  personaAdaptivePlan?: import("@/types/adaptive-analysis").PersonaAdaptivePlan;
 };

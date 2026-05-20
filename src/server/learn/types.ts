@@ -43,6 +43,9 @@ export type BuildLearnIntelligenceOptions = {
   isPresentation?: boolean;
   intelligenceModeId?: IntelligenceModeId;
   learnWeighting?: LearnWeightingProfile;
+  /** Phase 11B — suppress risk/action → learn card synthesis when plan says so. */
+  suppressRiskActionLearnSynthesis?: boolean;
+  suppressMisconceptionUnlessExplicit?: boolean;
 };
 
 export type LearnIntelligenceMeta = {

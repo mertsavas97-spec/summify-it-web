@@ -68,6 +68,7 @@ export async function runTextAnalysis(
       knowledgeLayerSummary: data.knowledgeLayerSummary,
       tokenBudget: data.tokenBudget,
       adaptivePlan: data.adaptivePlan,
+      ...(data.adaptationLabel ? { adaptationLabel: data.adaptationLabel } : {}),
     },
   };
 }
