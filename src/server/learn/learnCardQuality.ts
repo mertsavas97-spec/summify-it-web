@@ -11,12 +11,20 @@ import {
 } from "./learnCognitiveDedup";
 import { isWeakGenericLearnTitle, type KnowledgeStructure } from "./knowledgeStructure";
 import { synthesizeKnowledgeStructureCandidates } from "./knowledgeStructureLearn";
-import { practicePromptForCard, resolveLearnStrategy } from "./applyModeLearnStrategy";
+import { resolveLearnStrategy } from "./applyModeLearnStrategy";
+import {
+  isBannedLearnTitle,
+  isCreatorIntelligenceMode,
+  rewriteTitleFromPattern,
+  sanitizeLearnCardTitle,
+  splitAnswerFromTitle,
+  stripQuestionPrefixes,
+} from "./learnTitleQuality";
 import type { ModeLearnStrategy, ModeLearnStrategyInput, ModeStrategyPattern } from "./modeLearnStrategies";
 
 export type { LearnCardQualityStats } from "@/types/adaptive-learn";
 
-const MAX_TITLE_LENGTH = 90;
+const MAX_TITLE_LENGTH = 110;
 const CONTENT_COMPARE_LEN = 120;
 const DEFAULT_TARGET_MIN = 6;
 const DEFAULT_TARGET_MAX = 12;
@@ -124,6 +132,7 @@ export type LearnCardQualityContext = {
   strategy?: ModeLearnStrategy;
   strategyInput?: ModeLearnStrategyInput;
   knowledgeStructure?: KnowledgeStructure;
+  intelligenceModeId?: string | null;
 };
 
 export type LearnCardQualityResult = {
@@ -266,16 +275,20 @@ function rewriteGenericTitle(
   card: LearnCardOutput,
   documentTitle?: string,
   strategy?: ModeLearnStrategy,
+  intelligenceModeId?: string | null,
 ): string | null {
   const content = card.content.trim();
   const phrase = phraseFromContent(content, documentTitle);
   if (!phrase) return null;
 
-  if (strategy) {
-    const framed = practicePromptForCard(card, strategy);
-    if (framed && !isGenericTitle(framed)) {
-      return framed.replace(/\?+$/, "").slice(0, MAX_TITLE_LENGTH);
-    }
+  const fromPattern = rewriteTitleFromPattern({ card, strategy, documentTitle });
+  if (
+    fromPattern &&
+    !isBannedLearnTitle(fromPattern, {
+      creatorMode: isCreatorIntelligenceMode(intelligenceModeId, strategy),
+    })
+  ) {
+    return fromPattern.slice(0, MAX_TITLE_LENGTH);
   }
 
   switch (card.type) {
@@ -307,19 +320,30 @@ function rewriteGenericTitle(
 function normalizeCardTitle(
   card: LearnCardOutput,
   documentTitle?: string,
+  strategy?: ModeLearnStrategy,
+  intelligenceModeId?: string | null,
 ): { title: string; normalized: boolean } {
-  let title = card.title.trim().replace(/^(insight|concept|quiz|memory hook|why):\s*/i, "");
+  let title = splitAnswerFromTitle(card.title);
+  title = stripQuestionPrefixes(title);
+  title = title.trim().replace(/^(insight|concept|quiz|memory hook|why):\s*/i, "");
   title = title.replace(/^["'“”]+|["'“”]+$/g, "").trim();
   title = trimBrokenTitleTail(title);
   title = toSentenceCaseTitle(title);
 
-  const wasGeneric = isGenericTitle(title);
+  const wasGeneric = isGenericTitle(title) || isBannedLearnTitle(title, {
+    creatorMode: isCreatorIntelligenceMode(intelligenceModeId, strategy),
+  });
   if (wasGeneric) {
-    const rewritten = rewriteGenericTitle(card, documentTitle);
+    const rewritten = rewriteGenericTitle(card, documentTitle, strategy, intelligenceModeId);
     if (rewritten && !isGenericTitle(rewritten)) {
       return { title: rewritten.slice(0, MAX_TITLE_LENGTH), normalized: true };
     }
   }
+
+  title = sanitizeLearnCardTitle(
+    { ...card, title },
+    { documentTitle, strategy, intelligenceModeId },
+  );
 
   if (title.length > MAX_TITLE_LENGTH) {
     title = `${title.slice(0, MAX_TITLE_LENGTH - 1).trim()}…`;
@@ -673,13 +697,23 @@ export function applyLearnCardQuality(
   const normalized: LearnCardOutput[] = [];
 
   for (const card of cards) {
-    const { title, normalized: didNormalize } = normalizeCardTitle(card, context.documentTitle);
+    const { title, normalized: didNormalize } = normalizeCardTitle(
+      card,
+      context.documentTitle,
+      strategy,
+      context.intelligenceModeId,
+    );
     if (didNormalize) normalizedTitleCount += 1;
 
     const candidate: LearnCardOutput = { ...card, title };
 
     if (isGenericTitle(title)) {
-      const rewritten = rewriteGenericTitle(candidate, enrichedContext.documentTitle, strategy);
+      const rewritten = rewriteGenericTitle(
+        candidate,
+        enrichedContext.documentTitle,
+        strategy,
+        enrichedContext.intelligenceModeId,
+      );
       if (!rewritten || isGenericTitle(rewritten)) {
         removedGenericCount += 1;
         continue;

@@ -3,6 +3,7 @@
  * No extra AI calls.
  */
 
+import { stripQuestionPrefixes } from "./learnTitleQuality";
 import type { LearnCandidate } from "./types";
 
 const SYNTHETIC_TITLE_PATTERNS: RegExp[] = [
@@ -224,7 +225,8 @@ export function refineSemanticTitle(
   corpusEntities: Set<string>,
   documentTitle?: string,
 ): string {
-  let title = candidate.title.trim().replace(TITLE_PREFIX_PATTERN, "").trim();
+  let title = stripQuestionPrefixes(candidate.title.trim());
+  title = title.replace(TITLE_PREFIX_PATTERN, "").trim();
   title = stripQuotes(title);
 
   if (!isSyntheticTitle(title) && title.length >= 10 && title.length <= 56) {

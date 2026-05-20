@@ -66,22 +66,45 @@ function applyLearnIntelligence(
   modeRouting?: ModeRoutingResult,
 ): AnalysisResult {
   const plan = intelligence.personaAdaptivePlan;
-  const { learnCards, meta: learnMeta } = buildLearnIntelligence(result, {
-    mode,
+  let learnCards = result.learnCards ?? [];
+  let learnMeta: import("@/server/learn/types").LearnIntelligenceMeta = {
+    candidateCount: learnCards.length,
+    selectedCount: learnCards.length,
     complexity: intelligence.profile.complexity,
-    isYoutubeTranscript: sourceContext?.sourceKind === "youtube",
-    isPresentation: sourceContext?.sourceKind === "presentation",
-    learnWeighting: modeRouting?.learnWeighting,
-    intelligenceModeId: modeRouting?.intelligenceModeId,
-    suppressRiskActionLearnSynthesis:
-      plan?.learnCardStrategy.suppressRiskActionSynthesis ?? false,
-    suppressMisconceptionUnlessExplicit:
-      plan?.learnCardStrategy.suppressMisconceptionUnlessExplicit ?? false,
-    allowedLearnSourceSections: plan?.allowedLearnSourceSections,
-    blockedLearnSourceSections: plan?.blockedLearnSourceSections,
-    personaAdaptivePlan: plan,
-    extractedText: intelligence.compactedUserPrompt?.slice(0, 24000),
-  });
+    mode,
+  };
+
+  try {
+    const built = buildLearnIntelligence(result, {
+      mode,
+      complexity: intelligence.profile.complexity,
+      isYoutubeTranscript: sourceContext?.sourceKind === "youtube",
+      isPresentation: sourceContext?.sourceKind === "presentation",
+      learnWeighting: modeRouting?.learnWeighting,
+      intelligenceModeId: modeRouting?.intelligenceModeId,
+      suppressRiskActionLearnSynthesis:
+        plan?.learnCardStrategy.suppressRiskActionSynthesis ?? false,
+      suppressMisconceptionUnlessExplicit:
+        plan?.learnCardStrategy.suppressMisconceptionUnlessExplicit ?? false,
+      allowedLearnSourceSections: plan?.allowedLearnSourceSections,
+      blockedLearnSourceSections: plan?.blockedLearnSourceSections,
+      personaAdaptivePlan: plan,
+      extractedText: intelligence.compactedUserPrompt?.slice(0, 24000),
+    });
+    learnCards = built.learnCards;
+    learnMeta = built.meta;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("[learn.applyLearnIntelligence]", error);
+      learnMeta = {
+        ...learnMeta,
+        learnFailureStage: "applyLearnIntelligence",
+        learnFailureMessage: message,
+      };
+    }
+    learnCards = result.learnCards?.length ? result.learnCards : learnCards;
+  }
   if (intelligence.cognition) {
     if (learnMeta.adaptiveLearn) {
       intelligence.cognition.adaptiveLearn = learnMeta.adaptiveLearn;

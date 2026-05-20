@@ -9,6 +9,7 @@ import type {
   RecallDifficultyLevel,
 } from "@/types/adaptive-learn";
 import type { LearnCardOutput } from "@/types/text-analysis";
+import { isCreatorIntelligenceMode } from "./learnTitleQuality";
 import { resolveCardStrategyPattern, type ModeLearnStrategy } from "./modeLearnStrategies";
 
 const MAX_HOOKS_PER_SET = 2;
@@ -164,8 +165,9 @@ function stripAnswerLeakage(prompt: string, answer: string): string {
 export function retrievalPromptForCard(
   card: LearnCardOutput,
   strategy: ModeLearnStrategy,
+  intelligenceModeId?: string | null,
 ): string {
-  const title = card.title.trim();
+  const title = card.title.trim().split("---")[0].trim();
   const content = card.content.trim();
   const pattern = resolveCardStrategyPattern(card);
   const retrieval = card.retrievalType ?? classifyRetrieval(card, strategy);
@@ -220,7 +222,10 @@ export function retrievalPromptForCard(
       }
       break;
     case "application":
-      if (strategy.promptStyle === "creative_angle") {
+      if (
+        strategy.promptStyle === "creative_angle" &&
+        isCreatorIntelligenceMode(intelligenceModeId, strategy)
+      ) {
         prompt = `What makes ${subject} reusable as content?`;
       } else if (strategy.promptStyle === "decision_recall") {
         prompt = `What strategic priority does ${subject} suggest?`;

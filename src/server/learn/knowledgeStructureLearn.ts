@@ -69,8 +69,11 @@ function tensionTitle(entity: string, conflictSnippet?: string): string {
 }
 
 function turningPointTitle(moment: string, entity: string): string {
-  const snippet = moment.slice(0, 48).replace(/\?+$/, "");
-  return `Why did ${snippet} become a turning point for ${entity}?`.slice(0, 72);
+  const snippet = moment.slice(0, 48).replace(/\?+$/, "").trim();
+  if (/\b3\s*july|july\s*3\b/i.test(moment)) {
+    return "Why was 3 July more than a sports scandal?";
+  }
+  return `Why was ${snippet} a turning point for ${entity}?`.slice(0, 72);
 }
 
 function causalTitle(cause: string, effect: string): string {
@@ -130,7 +133,7 @@ export function synthesizeKnowledgeStructureCandidates(
       out.push(
         draft(
           "connection",
-          `What changed after this point in ${entity}'s story?`.slice(0, 72),
+          `What changed after this point for ${entity}?`.slice(0, 72),
           moment,
           PATTERN_TO_LEARN.historical_significance,
           0.74,

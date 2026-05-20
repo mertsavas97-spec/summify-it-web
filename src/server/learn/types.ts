@@ -119,6 +119,9 @@ export type LearnIntelligenceMeta = {
   multiFormatLearn?: LearnMultiFormatDebugMeta;
   /** Dev-only pipeline stage counts. */
   learnPipelineCounts?: LearnPipelineCountsMeta;
+  /** Dev-only learn pipeline failure (analysis still succeeds). */
+  learnFailureStage?: string;
+  learnFailureMessage?: string;
 };
 
 export type BuildLearnIntelligenceResult = {

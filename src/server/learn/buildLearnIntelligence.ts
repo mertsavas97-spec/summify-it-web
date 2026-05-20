@@ -81,6 +81,12 @@ import {
   buildMultiFormatLearn,
   learnMultiFormatDebugStats,
 } from "./multiFormatLearning";
+import { finalValidateLearnCards } from "./learnTitleQuality";
+import {
+  runLearnStage,
+  runSafeLearnBuild,
+  type LearnPipelineFailure,
+} from "./safeLearnPipeline";
 
 const GENERIC_PHRASES = [
   /engaging experience/i,
@@ -458,11 +464,29 @@ export function buildLearnIntelligence(
   result: AnalysisResult,
   options: BuildLearnIntelligenceOptions,
 ): BuildLearnIntelligenceResult {
-  const learnProfile =
-    options.adaptiveLearnProfile ??
-    (options.personaAdaptivePlan
-      ? buildAdaptiveLearnProfile(options.personaAdaptivePlan)
-      : undefined);
+  const failure: LearnPipelineFailure = {};
+  return runSafeLearnBuild(
+    () => buildLearnIntelligenceCore(result, options, failure),
+    { result, options },
+    failure,
+  );
+}
+
+function buildLearnIntelligenceCore(
+  result: AnalysisResult,
+  options: BuildLearnIntelligenceOptions,
+  failure: LearnPipelineFailure,
+): BuildLearnIntelligenceResult {
+  const learnProfile = runLearnStage(
+    "adaptiveLearnProfile",
+    () =>
+      options.adaptiveLearnProfile ??
+      (options.personaAdaptivePlan
+        ? buildAdaptiveLearnProfile(options.personaAdaptivePlan)
+        : undefined),
+    undefined,
+    failure,
+  );
 
   const learnStrategy = resolveLearnStrategy({
     modeId: options.intelligenceModeId,
@@ -645,6 +669,7 @@ export function buildLearnIntelligence(
     targetMax: range.max,
     strategy: learnStrategy,
     knowledgeStructure,
+    intelligenceModeId: options.intelligenceModeId,
   });
   pipelineCounts.afterQuality = quality.cards.length;
 
@@ -714,10 +739,8 @@ export function buildLearnIntelligence(
     );
   }
 
-  pipelineCounts.finalOutput = finalOrdered.length;
-  const pipelineDebug = pipelineCountsDebug(pipelineCounts);
-
   const traceDebug = sourceTraceDebugStats(traced.stats);
+  const pipelineDebug = pipelineCountsDebug(pipelineCounts);
 
   const qualityDebug = learnCardQualityDebugStats(quality.stats);
   const strategyDebug = learnStrategyDebugStats(strategyPass.stats);
@@ -741,9 +764,15 @@ export function buildLearnIntelligence(
   });
 
   const adaptiveLearnMeta = learnProfile
-    ? buildLearnDebugMeta(
-        attachCardRelationships(enrichCandidatesForProfile(selected, learnProfile)),
-        learnProfile,
+    ? runLearnStage(
+        "adaptiveLearnMeta",
+        () =>
+          buildLearnDebugMeta(
+            attachCardRelationships(enrichCandidatesForProfile(selected, learnProfile)),
+            learnProfile,
+          ),
+        undefined,
+        failure,
       )
     : undefined;
 
@@ -772,27 +801,48 @@ export function buildLearnIntelligence(
     adaptiveLearnMeta.learnPipelineCounts = pipelineDebug;
   }
 
-  const multiFormatLearn = buildMultiFormatLearn({
-    modeId: options.intelligenceModeId ?? options.mode,
-    documentDomain:
-      learnProfile?.documentDomain ?? options.personaAdaptivePlan?.documentDomain,
-    structureFamily: options.personaAdaptivePlan?.structureFamily,
-    pipelineMode: options.mode,
-    personaId: options.personaAdaptivePlan?.personaId ?? learnProfile?.personaId,
-    learnCards: finalOrdered,
-    summary: {
-      title: result.title,
-      summary: result.summary,
-      keyInsights: result.keyInsights,
-      risksOrWarnings: result.risksOrWarnings,
-      actionItems: result.actionItems,
-    },
-    knowledgeStructure,
+  finalOrdered = finalValidateLearnCards(finalOrdered, {
+    documentTitle: result.title,
+    strategy: learnStrategy,
+    intelligenceModeId: options.intelligenceModeId,
   });
-  const multiFormatDebug = learnMultiFormatDebugStats(multiFormatLearn);
+
+  const multiFormatLearn = runLearnStage(
+    "multiFormatLearn",
+    () =>
+      buildMultiFormatLearn({
+        modeId: options.intelligenceModeId ?? options.mode,
+        documentDomain:
+          learnProfile?.documentDomain ?? options.personaAdaptivePlan?.documentDomain,
+        structureFamily: options.personaAdaptivePlan?.structureFamily,
+        pipelineMode: options.mode,
+        personaId: options.personaAdaptivePlan?.personaId ?? learnProfile?.personaId,
+        learnCards: finalOrdered,
+        summary: {
+          title: result.title,
+          summary: result.summary,
+          keyInsights: result.keyInsights,
+          risksOrWarnings: result.risksOrWarnings,
+          actionItems: result.actionItems,
+        },
+        knowledgeStructure,
+      }),
+    undefined,
+    failure,
+  );
+  const multiFormatDebug = multiFormatLearn
+    ? learnMultiFormatDebugStats(multiFormatLearn)
+    : undefined;
+
+  pipelineCounts.finalOutput = finalOrdered.length;
   if (multiFormatDebug && adaptiveLearnMeta) {
     adaptiveLearnMeta.multiFormatLearn = multiFormatDebug;
   }
+
+  const failureMeta =
+    process.env.NODE_ENV === "development" && failure.stage
+      ? { learnFailureStage: failure.stage, learnFailureMessage: failure.message }
+      : {};
 
   return {
     learnCards: finalOrdered,
@@ -802,6 +852,7 @@ export function buildLearnIntelligence(
       selectedCount: finalOrdered.length,
       complexity: options.complexity,
       mode: options.mode,
+      ...failureMeta,
       ...(adaptiveLearnMeta ? { adaptiveLearn: adaptiveLearnMeta } : {}),
       ...(qualityDebug ? { learnCardQuality: qualityDebug } : {}),
       ...(strategyDebug ? { learnStrategy: strategyDebug } : {}),

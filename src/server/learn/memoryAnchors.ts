@@ -68,6 +68,10 @@ function isValidHook(text: string): boolean {
   if (BAD_HOOK.test(t)) return false;
   if (CHILDISH.test(t)) return false;
   if ((t.match(/\?/g) ?? []).length > 1) return false;
+  if (/\b\w\s+→\s+the\s+/i.test(t)) return false;
+  if (/^\s*however,\s/i.test(t)) return false;
+  if (/\s+→\s*\.{0,2}$/.test(t)) return false;
+  if (/\u2026/.test(t) && t.length < 50) return false;
   return true;
 }
 
