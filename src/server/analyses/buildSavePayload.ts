@@ -8,6 +8,7 @@ import type {
   SavedAnalysisMetadata,
   SavedAnalysisSummaryPayload,
 } from "@/types/saved-analysis";
+import { buildMultiFormatLearn } from "@/server/learn/multiFormatLearning";
 import { resolveSourceLabel } from "./resolveSourceLabel";
 
 export type BuildSavePayloadInput = {
@@ -43,12 +44,31 @@ export function buildSavePayload(input: BuildSavePayloadInput): SaveAnalysisInse
     actionItems: input.result.actionItems,
   };
 
+  const structureFamily = input.intelligence.personaAdaptivePlan?.structureFamily;
+  const multiFormatLearn = buildMultiFormatLearn({
+    modeId: input.intelligenceModeId,
+    documentDomain: input.intelligence.profile.documentTypeGuess,
+    structureFamily,
+    pipelineMode: input.intelligence.adaptivePlan.pipelineType,
+    personaId: input.intelligence.personaAdaptivePlan?.personaId,
+    learnCards: input.result.learnCards,
+    summary: {
+      title: input.result.title,
+      summary: input.result.summary,
+      keyInsights: input.result.keyInsights,
+      risksOrWarnings: input.result.risksOrWarnings,
+      actionItems: input.result.actionItems,
+    },
+  });
+
   const metadata: SavedAnalysisMetadata = {
     fallbackUsed: input.fallbackUsed,
     pipelineType: input.intelligence.adaptivePlan.pipelineType,
     tokenRisk: input.intelligence.tokenBudget.riskLevel,
     documentTypeGuess: input.intelligence.profile.documentTypeGuess,
     knowledgeTitleGuess: input.intelligence.knowledgeLayerSummary.titleGuess,
+    ...(structureFamily ? { structureFamily } : {}),
+    multiFormatLearn,
   };
 
   return {

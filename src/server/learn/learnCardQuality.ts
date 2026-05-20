@@ -5,6 +5,7 @@
 
 import type { LearnCardQualityStats } from "@/types/adaptive-learn";
 import type { LearnCardOutput } from "@/types/text-analysis";
+import { isWeakGenericLearnTitle } from "./knowledgeStructure";
 import { practicePromptForCard, resolveLearnStrategy } from "./applyModeLearnStrategy";
 import type { ModeLearnStrategy, ModeLearnStrategyInput, ModeStrategyPattern } from "./modeLearnStrategies";
 
@@ -155,6 +156,7 @@ function hasNamedEntity(text: string): boolean {
 function isGenericTitle(title: string): boolean {
   const t = title.trim();
   if (t.length < 6) return true;
+  if (isWeakGenericLearnTitle(t)) return true;
   if (GENERIC_TITLE_PATTERNS.some((p) => p.test(t))) return true;
   if (GENERIC_TITLE_PREFIX.test(t)) return true;
   if (/^explain\s+[A-Z]{2,}(\s+[A-Z]{2,})+/i.test(t)) return true;

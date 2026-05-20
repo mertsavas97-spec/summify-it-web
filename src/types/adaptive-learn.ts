@@ -68,7 +68,13 @@ export type LearnCardPattern =
   | "risk_opportunity"
   | "decision_consequence"
   | "fact_recall"
-  | "quiz_application";
+  | "quiz_application"
+  | "causal_reasoning"
+  | "timeline_turning_point"
+  | "institutional_conflict"
+  | "transformation_arc"
+  | "contrast_analysis"
+  | "historical_significance";
 
 export type LearnCardRelationshipType =
   | "chronology_before"
@@ -169,6 +175,23 @@ export type LearnCardEnrichment = {
   prerequisiteCardIds?: string[];
   reinforcesCardIds?: string[];
   sourceTrace?: LearnSourceTrace;
+  /** Phase Learn 6.3 — optional recall aid (not evidence). */
+  memoryAnchor?: LearnCardMemoryAnchor;
+};
+
+/** Phase Learn 6.3 — cognitive anchor on a card. */
+export type LearnCardMemoryAnchor = {
+  type:
+    | "compression_phrase"
+    | "contrast_anchor"
+    | "timeline_anchor"
+    | "emotional_anchor"
+    | "symbolic_anchor"
+    | "cause_effect_anchor"
+    | "identity_anchor"
+    | "mnemonic";
+  text: string;
+  strength: "low" | "medium" | "high";
 };
 
 /** Dev-only source trace pass (Phase Learn 4). */
@@ -210,6 +233,28 @@ export type LearnStrategyDebugMeta = {
   strategyBoostedCount: number;
 };
 
+/** Dev-only knowledge compression pass (Phase Learn 6.2). */
+export type LearnKnowledgeCompressionDebugMeta = {
+  originalCardCount: number;
+  compressedCardCount: number;
+  removedSemanticDuplicates: number;
+  mergedCardCount: number;
+  semanticRegionCount: number;
+  averageKnowledgeDensity: number;
+  averageIdeaUniqueness: number;
+};
+
+/** Dev-only knowledge structure pass (Phase Learn 6.1). */
+export type LearnKnowledgeStructureDebugMeta = {
+  nodeCount: number;
+  clusterCount: number;
+  causalChainCount: number;
+  transformationCount: number;
+  conflictCount: number;
+  timelineMomentCount: number;
+  removedDuplicateClusters: number;
+};
+
 /** Dev-only learn card quality pass (Phase Learn 1). */
 export type LearnCardQualityStats = {
   originalCardCount: number;
@@ -230,4 +275,31 @@ export type AdaptiveLearnDebugMeta = {
   learnStrategy?: LearnStrategyDebugMeta;
   learnProgression?: LearnProgressionDebugMeta;
   sourceTrace?: LearnSourceTraceDebugMeta;
+  knowledgeStructure?: LearnKnowledgeStructureDebugMeta;
+  knowledgeCompression?: LearnKnowledgeCompressionDebugMeta;
+  /** Dev-only Phase Learn 6.3 memory anchors pass. */
+  memoryAnchors?: LearnMemoryAnchorsDebugMeta;
+  retention?: LearnRetentionDebugMeta;
+  /** Dev-only Phase Learn 6.5 multi-format pass. */
+  multiFormatLearn?: import("@/lib/learn/multiFormatTypes").LearnMultiFormatDebugMeta;
+};
+
+/** Dev-only practice retention pass (Phase Learn 6.4). */
+export type LearnRetentionDebugMeta = {
+  sessionReviewedCount: number;
+  weakCount: number;
+  developingCount: number;
+  stableCount: number;
+  strongCount: number;
+  hardestRetrievalType?: string;
+  suggestedReviewCount: number;
+};
+
+/** Dev-only memory anchors pass (Phase Learn 6.3). */
+export type LearnMemoryAnchorsDebugMeta = {
+  anchorCount: number;
+  appliedCardCount: number;
+  skippedCardCount: number;
+  anchorTypes: Record<string, number>;
+  highStrengthCount: number;
 };

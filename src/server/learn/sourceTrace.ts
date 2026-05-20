@@ -415,13 +415,16 @@ export function sourceTraceDebugStats(
 
 /** Compact context for review_items — preserves trace for practice UI. */
 export function encodePracticeReviewContext(card: LearnCardOutput): string {
-  if (!card.sourceTrace?.excerpt && !card.sourceTrace?.sectionTitle) {
+  const hasTrace = Boolean(card.sourceTrace?.excerpt || card.sourceTrace?.sectionTitle);
+  const hasAnchor = Boolean(card.memoryAnchor?.text);
+  if (!hasTrace && !hasAnchor) {
     return card.title;
   }
   return JSON.stringify({
     v: 1,
     label: card.title,
-    trace: card.sourceTrace,
+    trace: hasTrace ? card.sourceTrace : undefined,
+    memoryAnchor: hasAnchor ? card.memoryAnchor : undefined,
   });
 }
 

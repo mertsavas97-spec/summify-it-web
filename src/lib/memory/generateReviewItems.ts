@@ -8,6 +8,8 @@ import {
   attachSourceTraceToLearnCards,
   encodePracticeReviewContext,
 } from "@/server/learn/sourceTrace";
+import { prioritizeReviewItemsByRetention } from "@/lib/memory/adaptivePracticeRegeneration";
+import type { PracticeRetentionHint } from "@/lib/learn/retentionTypes";
 import type { GeneratedReviewItem, ReviewSourceKind } from "@/types/memory";
 import type { SavedAnalysisSummaryPayload } from "@/types/saved-analysis";
 import type { LearnCardOutput } from "@/types/text-analysis";
@@ -20,6 +22,8 @@ type ReviewGenerationInput = {
   intelligenceModeId?: string | null;
   structureFamily?: string | null;
   documentDomain?: string | null;
+  /** Phase Learn 6.4 — session-local retention hint for regeneration. */
+  retentionHint?: PracticeRetentionHint | null;
 };
 
 const DEFAULT_MAX_ITEMS = 16;
@@ -141,6 +145,7 @@ export function generateReviewItemsFromAnalysis({
   intelligenceModeId,
   structureFamily,
   documentDomain,
+  retentionHint,
 }: ReviewGenerationInput): GeneratedReviewItem[] {
   const strategy = resolveLearnStrategy({
     modeId: intelligenceModeId,
@@ -192,5 +197,6 @@ export function generateReviewItemsFromAnalysis({
     if (item) pushUnique(items, seen, item);
   });
 
-  return items.slice(0, maxItems);
+  const prioritized = prioritizeReviewItemsByRetention(items, retentionHint);
+  return prioritized.slice(0, maxItems);
 }

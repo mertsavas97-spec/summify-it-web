@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,15 +12,29 @@ import {
   RotateCcw,
   SkipForward,
 } from "lucide-react";
+import { LearnMemoryAnchorPanel } from "@/components/learn/LearnMemoryAnchorPanel";
+import { PracticeCompletionRetention } from "@/components/learn/PracticeCompletionRetention";
 import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 import { PracticeProgressionBadges } from "@/components/learn/PracticeProgressionBadges";
 import { learnPracticeStartHref } from "@/lib/learn/paths";
+import {
+  loadPracticeRetentionHint,
+  savePracticeRetentionSummary,
+} from "@/lib/learn/practiceRetentionStorage";
+import {
+  buildPracticeRetentionSummary,
+  isReviewItemId,
+  mapOutcomeToReviewRating,
+  orderWeakCardsForReview,
+  recordOutcomeForCard,
+} from "@/lib/learn/practiceRetentionSession";
 import {
   type PracticeCardOutcome,
   type PracticeSessionCard,
   estimatePracticeMinutes,
   sortPracticeSessionCards,
 } from "@/lib/learn/practiceSessionTypes";
+import type { CardRetentionState, PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
 import { Button } from "@/components/ui/Button";
 
 type SessionPhase = "pre" | "active" | "complete" | "weak";
@@ -58,13 +72,9 @@ export function AnalysisPracticeSession({
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [outcomes, setOutcomes] = useState<OutcomeMap>({});
-  const [completionSummary, setCompletionSummary] = useState<{
-    reviewed: number;
-    gotIt: number;
-    reviewAgain: number;
-    skipped: number;
-    weakCardIds: string[];
-  } | null>(null);
+  const [retentionStates, setRetentionStates] = useState<Record<string, CardRetentionState>>({});
+  const [retentionSummary, setRetentionSummary] = useState<PracticeRetentionSummary | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,10 +90,6 @@ export function AnalysisPracticeSession({
     () => Object.values(outcomes).filter((o) => o === "review_again").length,
     [outcomes],
   );
-  const passReviewed = useMemo(
-    () => Object.values(outcomes).filter((o) => o !== "skipped").length,
-    [outcomes],
-  );
   const passSkipped = useMemo(
     () => Object.values(outcomes).filter((o) => o === "skipped").length,
     [outcomes],
@@ -91,37 +97,79 @@ export function AnalysisPracticeSession({
 
   const progressPct = deck.length > 0 ? Math.round((index / deck.length) * 100) : 0;
 
+  const syncReviewToServer = useCallback(
+    async (cardId: string, outcome: PracticeCardOutcome) => {
+      const rating = mapOutcomeToReviewRating(outcome);
+      if (!rating || !isReviewItemId(cardId)) return;
+      try {
+        const response = await fetch("/api/memory/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ itemId: cardId, rating, sessionId }),
+        });
+        const payload = (await response.json()) as { sessionId?: string };
+        if (payload.sessionId) setSessionId(payload.sessionId);
+      } catch {
+        /* non-blocking */
+      }
+    },
+    [sessionId],
+  );
+
   function startSession(cardsToUse: PracticeSessionCard[] = sortedCards, resetOutcomes = true) {
     setDeck(cardsToUse);
     setIndex(0);
     setRevealed(false);
     if (resetOutcomes) {
       setOutcomes({});
-      setCompletionSummary(null);
+      setRetentionStates({});
+      setRetentionSummary(null);
+      setSessionId(null);
     }
     setError(null);
     setPhase(cardsToUse.length > 0 ? "active" : "pre");
   }
 
+  function finishSession(nextOutcomes: OutcomeMap, nextStates: Record<string, CardRetentionState>) {
+    const summary = buildPracticeRetentionSummary({
+      analysisId,
+      cards: sortedCards,
+      outcomes: nextOutcomes,
+      states: Object.values(nextStates),
+    });
+    setRetentionSummary(summary);
+    savePracticeRetentionSummary(summary);
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[learn.retention]", {
+        sessionReviewedCount: summary.sessionReviewedCount,
+        weakCount: summary.weakCount,
+        developingCount: summary.developingCount,
+        stableCount: summary.stableCount,
+        strongCount: summary.strongCount,
+        hardestRetrievalType: summary.hardestRetrievalType,
+        suggestedReviewCount: summary.suggestedReviewCount,
+      });
+    }
+    setPhase("complete");
+  }
+
   function markOutcome(outcome: PracticeCardOutcome) {
     if (!active) return;
+
+    const nextState = recordOutcomeForCard(active, outcome, retentionStates, analysisId);
+    const nextStates = { ...retentionStates, [active.id]: nextState };
     const nextOutcomes = { ...outcomes, [active.id]: outcome };
+
+    setRetentionStates(nextStates);
     setOutcomes(nextOutcomes);
     setRevealed(false);
+    void syncReviewToServer(active.id, outcome);
+
     const nextIndex = index + 1;
     setIndex(nextIndex);
     if (nextIndex >= deck.length) {
-      const weakCardIds = sortedCards
-        .filter((c) => nextOutcomes[c.id] === "review_again")
-        .map((c) => c.id);
-      setCompletionSummary({
-        reviewed: Object.values(nextOutcomes).filter((o) => o !== "skipped").length,
-        gotIt: Object.values(nextOutcomes).filter((o) => o === "got_it").length,
-        reviewAgain: Object.values(nextOutcomes).filter((o) => o === "review_again").length,
-        skipped: Object.values(nextOutcomes).filter((o) => o === "skipped").length,
-        weakCardIds,
-      });
-      setPhase("complete");
+      finishSession(nextOutcomes, nextStates);
     }
   }
 
@@ -129,9 +177,12 @@ export function AnalysisPracticeSession({
     setPending(true);
     setError(null);
     try {
+      const retentionHint = loadPracticeRetentionHint(analysisId);
       const response = await fetch(`/api/analyses/${analysisId}/memory`, {
         method: "POST",
         credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(retentionHint ? { retentionHint } : {}),
       });
       const payload = (await response.json()) as { success?: boolean; error?: string };
       if (!response.ok || !payload.success) {
@@ -155,20 +206,17 @@ export function AnalysisPracticeSession({
   }
 
   function startWeakReview() {
-    const ids = completionSummary?.weakCardIds ?? [];
-    const weakDeck = sortedCards.filter((c) => ids.includes(c.id));
+    const weakIds =
+      retentionSummary?.cardStates
+        .filter((s) => s.retentionStrength === "weak" || s.reviewAgainCount > 0)
+        .map((s) => s.cardId) ??
+      sortedCards.filter((c) => outcomes[c.id] === "review_again").map((c) => c.id);
+
+    const weakDeck = orderWeakCardsForReview(sortedCards, retentionStates, weakIds);
     if (weakDeck.length === 0) return;
     setPhase("weak");
     startSession(weakDeck, true);
   }
-
-  const summary = completionSummary ?? {
-    reviewed: passReviewed,
-    gotIt: passGotIt,
-    reviewAgain: passReviewAgain,
-    skipped: passSkipped,
-    weakCardIds: [] as string[],
-  };
 
   if (cardCount === 0) {
     return (
@@ -247,7 +295,7 @@ export function AnalysisPracticeSession({
     );
   }
 
-  if (phase === "complete") {
+  if (phase === "complete" && retentionSummary) {
     return (
       <section className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-6 sm:p-8 text-center">
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-emerald-400/25 bg-emerald-400/10 text-emerald-200">
@@ -255,15 +303,23 @@ export function AnalysisPracticeSession({
         </div>
         <h2 className="text-lg font-semibold text-white">Practice complete</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500">
-          {summary.reviewed} cards reviewed
-          {summary.skipped > 0 ? ` · ${summary.skipped} skipped` : ""}
+          {retentionSummary.sessionReviewedCount} cards reviewed
+          {retentionSummary.cardStates.filter((s) => s.skippedCount > 0).length > 0
+            ? ` · ${passSkipped} skipped`
+            : ""}
         </p>
         <div className="mx-auto mt-5 grid max-w-sm grid-cols-2 gap-2 text-left">
-          <SummaryStat label="Got it" value={summary.gotIt} />
-          <SummaryStat label="Review again" value={summary.reviewAgain} />
+          <SummaryStat label="Got it" value={retentionSummary.cardStates.reduce((n, s) => n + s.gotItCount, 0)} />
+          <SummaryStat
+            label="Review again"
+            value={retentionSummary.cardStates.reduce((n, s) => n + s.reviewAgainCount, 0)}
+          />
         </div>
+
+        <PracticeCompletionRetention summary={retentionSummary} />
+
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
-          {summary.weakCardIds.length > 0 ? (
+          {retentionSummary.suggestedReviewCount > 0 ? (
             <Button type="button" size="sm" onClick={startWeakReview}>
               Review weak cards
             </Button>
@@ -345,7 +401,10 @@ export function AnalysisPracticeSession({
         </div>
 
         {revealed ? (
-          <LearnSourceTracePanel trace={active.sourceTrace} className="mt-4" />
+          <>
+            <LearnMemoryAnchorPanel anchor={active.memoryAnchor} className="mt-4" />
+            <LearnSourceTracePanel trace={active.sourceTrace} className="mt-4" />
+          </>
         ) : null}
       </article>
 

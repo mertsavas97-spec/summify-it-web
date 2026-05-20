@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Eye, Keyboard, Sparkles } from "lucide-react";
+import { LearnMemoryAnchorPanel } from "@/components/learn/LearnMemoryAnchorPanel";
 import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 import { trackEvent } from "@/lib/analytics/events";
 import { parsePracticeReviewContext } from "@/lib/learn/practiceReviewContext";
@@ -247,6 +248,7 @@ export function MemoryReviewClient({
                       {parsed.label && !parsed.trace ? (
                         <p className="mt-4 text-xs text-zinc-600">{parsed.label}</p>
                       ) : null}
+                      <LearnMemoryAnchorPanel anchor={parsed.memoryAnchor} className="mt-4" />
                       <LearnSourceTracePanel trace={parsed.trace} className="mt-4" />
                     </>
                   );

@@ -2,6 +2,7 @@ import { createClientIfConfigured } from "@/lib/supabase/server";
 import { generateReviewItemsFromAnalysis } from "@/lib/memory/generateReviewItems";
 import { getMemoryPlanLimits } from "@/lib/plan-limits";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
+import type { PracticeRetentionHint } from "@/lib/learn/retentionTypes";
 import type { ReviewItemInsert } from "@/types/memory";
 import type { SavedAnalysisRow } from "@/types/saved-analysis";
 
@@ -18,6 +19,7 @@ export async function generateReviewSetForAnalysis(input: {
   analysisId: string;
   userId: string;
   plan?: string | null;
+  retentionHint?: PracticeRetentionHint | null;
 }): Promise<GenerateReviewSetResult> {
   const supabase = await createClientIfConfigured();
   if (!supabase) {
@@ -68,6 +70,7 @@ export async function generateReviewSetForAnalysis(input: {
     maxItems: Math.min(16, remaining),
     intelligenceModeId: saved.intelligence_mode,
     documentDomain: saved.document_type,
+    retentionHint: input.retentionHint,
   });
 
   const now = new Date().toISOString();

@@ -1,4 +1,5 @@
 import type {
+  LearnCardMemoryAnchor,
   LearnCognitiveLevel,
   LearnRetrievalType,
   LearnSourceTrace,
@@ -17,6 +18,7 @@ export type PracticeSessionCard = {
   retrievalType?: LearnRetrievalType;
   cognitiveLevel?: LearnCognitiveLevel;
   sourceTrace?: LearnSourceTrace;
+  memoryAnchor?: LearnCardMemoryAnchor;
 };
 
 export type PracticeCardOutcome = "got_it" | "review_again" | "skipped";
@@ -67,6 +69,7 @@ export function buildPracticeSessionCardsFromLearn(
       retrievalType: card.retrievalType,
       cognitiveLevel: card.cognitiveLevel,
       sourceTrace: card.sourceTrace,
+      memoryAnchor: card.memoryAnchor,
     };
   });
 }
@@ -87,6 +90,7 @@ export function enrichReviewItemsAsPracticeCards(
       retrievalType: matched?.retrievalType,
       cognitiveLevel: matched?.cognitiveLevel,
       sourceTrace: parsed.trace ?? matched?.sourceTrace,
+      memoryAnchor: parsed.memoryAnchor ?? matched?.memoryAnchor,
     };
   });
 }

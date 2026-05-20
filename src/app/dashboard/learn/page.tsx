@@ -5,6 +5,9 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { LearnEntitlementNotice } from "@/components/learn/LearnEntitlementNotice";
 import { LearnOverviewPanel } from "@/components/learn/LearnOverviewPanel";
 import { AnalysisPracticeSession } from "@/components/learn/AnalysisPracticeSession";
+import { LearnMultiFormatPanel } from "@/components/learn/LearnMultiFormatPanel";
+import { LearnRetentionNotice } from "@/components/learn/LearnRetentionNotice";
+import { buildMultiFormatLearnForSavedAnalysis } from "@/server/learn/multiFormatLearning";
 import { MemoryReviewClient } from "@/components/memory/MemoryReviewClient";
 import {
   enrichReviewItemsAsPracticeCards,
@@ -116,9 +119,22 @@ export default async function LearnPage({ searchParams }: PageProps) {
       enrichReviewItemsAsPracticeCards(practiceItems, learnCards),
     );
 
+    const multiFormatLearn =
+      saved.metadata?.multiFormatLearn ??
+      (hasLearnCards
+        ? buildMultiFormatLearnForSavedAnalysis({
+            intelligence_mode: saved.intelligence_mode,
+            document_type: saved.document_type,
+            summary: saved.summary,
+            learn_cards: learnCards,
+            metadata: saved.metadata,
+          })
+        : null);
+
     return (
       <LearnShell savedCount={savedCount} dailyCount={limits?.daily_analysis_count ?? 0} planLabel={planLabel}>
         <div className="mt-5" id="practice">
+          <LearnRetentionNotice analysisId={analysisId} />
           <AnalysisPracticeSession
             analysisId={analysisId}
             documentTitle={displayTitle}
@@ -129,6 +145,9 @@ export default async function LearnPage({ searchParams }: PageProps) {
             hasLearnCards={hasLearnCards}
             autoStart={autoStartPractice && practiceCards.length > 0}
           />
+          {multiFormatLearn ? (
+            <LearnMultiFormatPanel analysisId={analysisId} multiFormat={multiFormatLearn} />
+          ) : null}
         </div>
       </LearnShell>
     );

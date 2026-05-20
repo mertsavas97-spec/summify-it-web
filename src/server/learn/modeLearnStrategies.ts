@@ -135,18 +135,25 @@ const STUDENT_HISTORICAL: ModeLearnStrategy = {
   ...baseStudent(),
   id: "student_historical",
   label: "Student · Historical",
-  preferredPatterns: [
-    "timeline_chain",
-    "cause_effect_chain",
-    "historical_anchor",
-    "figure_significance",
-    "event_linkage",
-    "fact_recall",
-    "terminology",
-    "why_it_matters",
-    "quiz_application",
-    "memory_hook",
-  ],
+    preferredPatterns: [
+      "timeline_chain",
+      "timeline_turning_point",
+      "cause_effect_chain",
+      "causal_reasoning",
+      "historical_anchor",
+      "historical_significance",
+      "figure_significance",
+      "event_linkage",
+      "contrast_analysis",
+      "narrative_tension",
+      "institutional_conflict",
+      "transformation_arc",
+      "fact_recall",
+      "terminology",
+      "why_it_matters",
+      "quiz_application",
+      "memory_hook",
+    ],
   targetDistribution: {
     concept: 1,
     fact_recall: 1,
@@ -525,7 +532,8 @@ export function resolveCardStrategyPattern(card: {
   if (kind === "misconception") return "misconception_trap";
   if (kind === "connection") {
     if (/cause|effect|because|therefore|led to/i.test(text)) return "cause_effect_chain";
-    if (/versus|vs\.|compared|contrast/i.test(text)) return "compare";
+    if (/versus|vs\.|compared|contrast|contradiction/i.test(text)) return "contrast_analysis";
+    if (/tension|conflict|crisis|pressure/i.test(text)) return "institutional_conflict";
     return "connection";
   }
 

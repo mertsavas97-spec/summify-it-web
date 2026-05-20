@@ -1,3 +1,4 @@
+import type { MultiFormatLearnOutput } from "@/lib/learn/multiFormatTypes";
 import type { LearnCardOutput } from "@/types/text-analysis";
 
 /** Structured summary stored in `saved_analyses.summary` (no raw transcript). */
@@ -16,6 +17,9 @@ export type SavedAnalysisMetadata = {
   tokenRisk?: string;
   documentTypeGuess?: string;
   knowledgeTitleGuess?: string;
+  structureFamily?: string;
+  /** Phase Learn 6.5 — optional multi-format learning outputs. */
+  multiFormatLearn?: MultiFormatLearnOutput;
 };
 
 export type SavedAnalysisRow = {

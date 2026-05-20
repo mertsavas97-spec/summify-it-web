@@ -12,7 +12,15 @@ import type {
   LearnStrategyDebugMeta,
   LearnProgressionDebugMeta,
   LearnSourceTraceDebugMeta,
+  LearnKnowledgeStructureDebugMeta,
+  LearnKnowledgeCompressionDebugMeta,
+  LearnMemoryAnchorsDebugMeta,
+  LearnRetentionDebugMeta,
 } from "@/types/adaptive-learn";
+import type {
+  LearnMultiFormatDebugMeta,
+  MultiFormatLearnOutput,
+} from "@/lib/learn/multiFormatTypes";
 
 /** Final learn card kinds (UI + API output). */
 export type LearnCardKind =
@@ -97,11 +105,23 @@ export type LearnIntelligenceMeta = {
   learnProgression?: LearnProgressionDebugMeta;
   /** Dev-only Phase Learn 4 source trace pass. */
   sourceTrace?: LearnSourceTraceDebugMeta;
+  /** Dev-only Phase Learn 6.1 knowledge structure pass. */
+  knowledgeStructure?: LearnKnowledgeStructureDebugMeta;
+  /** Dev-only Phase Learn 6.2 knowledge compression pass. */
+  knowledgeCompression?: LearnKnowledgeCompressionDebugMeta;
+  /** Dev-only Phase Learn 6.3 memory anchors pass. */
+  memoryAnchors?: LearnMemoryAnchorsDebugMeta;
+  /** Dev-only Phase Learn 6.4 practice retention pass. */
+  retention?: LearnRetentionDebugMeta;
+  /** Dev-only Phase Learn 6.5 multi-format pass. */
+  multiFormatLearn?: LearnMultiFormatDebugMeta;
 };
 
 export type BuildLearnIntelligenceResult = {
   learnCards: import("@/server/ai/schemas").LearnCardOutput[];
   meta: LearnIntelligenceMeta;
+  /** Phase Learn 6.5 — optional client-safe multi-format outputs. */
+  multiFormatLearn?: MultiFormatLearnOutput;
 };
 
 export type AnalysisInputForLearn = Pick<

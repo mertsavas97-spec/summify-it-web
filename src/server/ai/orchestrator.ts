@@ -89,7 +89,11 @@ function applyLearnIntelligence(
       learnMeta.learnStrategy ||
       learnMeta.learnCardQuality ||
       learnMeta.learnProgression ||
-      learnMeta.sourceTrace
+      learnMeta.sourceTrace ||
+      learnMeta.knowledgeStructure ||
+      learnMeta.knowledgeCompression ||
+      learnMeta.memoryAnchors ||
+      learnMeta.multiFormatLearn
     ) {
       intelligence.cognition.adaptiveLearn = {
         adaptiveLearnProfileId: "quality_only",
@@ -106,6 +110,10 @@ function applyLearnIntelligence(
         learnStrategy: learnMeta.learnStrategy,
         learnProgression: learnMeta.learnProgression,
         sourceTrace: learnMeta.sourceTrace,
+        knowledgeStructure: learnMeta.knowledgeStructure,
+        knowledgeCompression: learnMeta.knowledgeCompression,
+        memoryAnchors: learnMeta.memoryAnchors,
+        multiFormatLearn: learnMeta.multiFormatLearn,
       };
     }
   }
