@@ -11,6 +11,9 @@ import {
   buildAdaptiveAnalysisPlan,
 } from "./adaptivePlanner";
 import { buildAdaptivePlanPromptBlock } from "./planPrompt";
+import { buildPersonaLanguageBlock } from "./personaLanguageProfiles";
+import { buildAdaptiveLearnProfile } from "./adaptiveLearnProfiles";
+import { buildAdaptiveLearnPromptBlock } from "./learnPrompt";
 
 export type BuildCognitionContextInput = ClassifyDocumentProfileInput & {
   modeId: IntelligenceModeId | string;
@@ -23,12 +26,19 @@ export type CognitionContextWithPlan = CognitionContext & {
 function formatCognitionPromptBlock(
   ctx: Omit<CognitionContext, "promptBlock" | "debugSummary">,
   plan: PersonaAdaptivePlan,
+  modeId: string,
 ): string {
   const { documentProfile: doc, personaBrain: brain, dimensions: dim, learnCardBias: bias } =
     ctx;
 
+  const learnProfile = buildAdaptiveLearnProfile(plan);
+
   return [
+    buildPersonaLanguageBlock(modeId),
+    "",
     buildAdaptivePlanPromptBlock(plan),
+    "",
+    buildAdaptiveLearnPromptBlock(learnProfile, plan),
     "",
     "COGNITION CONTEXT (Phase 11A — emphasis only):",
     `Document profile: domain=${doc.domain}; subType=${doc.subType}; complexity=${doc.complexity}; density=${doc.density}; structure=${doc.primaryStructure}; confidence=${doc.confidence}.`,
@@ -60,7 +70,7 @@ export function buildCognitionContext(input: BuildCognitionContextInput): Cognit
   const learnCardBias = applyPlanToLearnCardBias(baseBias, personaAdaptivePlan);
 
   const base = { documentProfile, personaBrain, dimensions, learnCardBias };
-  const promptBlock = formatCognitionPromptBlock(base, personaAdaptivePlan);
+  const promptBlock = formatCognitionPromptBlock(base, personaAdaptivePlan, input.modeId);
 
   return {
     ...base,

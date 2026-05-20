@@ -14,6 +14,8 @@ import {
 } from "./presentationSemanticTitles";
 import { refineSemanticTitle } from "./refineLearnTitle";
 import { isLowQualityPresentationFragment } from "@/server/presentation/presentationFragments";
+import { buildAdaptiveLearnProfile } from "@/lib/cognition/adaptiveLearnProfiles";
+import { filterLearnCandidates } from "@/lib/cognition/learnQualityFilters";
 import type {
   BuildLearnIntelligenceOptions,
   BuildLearnIntelligenceResult,
@@ -21,6 +23,14 @@ import type {
   LearnCardKind,
   LearnCardCountRange,
 } from "./types";
+import { synthesizeProfileLearnCandidates } from "./profileLearnSynthesis";
+import {
+  attachCardRelationships,
+  buildLearnDebugMeta,
+  candidateToEnrichedOutput,
+  enrichCandidatesForProfile,
+  sortCandidatesByGroups,
+} from "./adaptiveLearnEnrichment";
 
 const GENERIC_PHRASES = [
   /engaging experience/i,
@@ -161,12 +171,25 @@ function refineAllTitles(
 const GENERIC_MYTH_TITLES =
   /^(myth|misconception|clarify the risk|why it matters|importance of|approach critically|potential bias)/i;
 
+function filterCandidatesByLearnSourcePolicy(
+  candidates: LearnCandidate[],
+  allowed?: LearnCandidate["source"][],
+  blocked?: LearnCandidate["source"][],
+): LearnCandidate[] {
+  return candidates.filter((c) => {
+    if (blocked?.includes(c.source)) return false;
+    if (allowed && allowed.length > 0 && !allowed.includes(c.source)) return false;
+    return true;
+  });
+}
+
 function candidatesFromAnalysis(
   result: AnalysisResult,
   isDeckSource: boolean,
   flags: {
     suppressRiskActionLearnSynthesis?: boolean;
     suppressMisconceptionUnlessExplicit?: boolean;
+    deprioritizeSummaryLearnSynthesis?: boolean;
   },
 ): LearnCandidate[] {
   const out: LearnCandidate[] = [];
@@ -191,7 +214,7 @@ function candidatesFromAnalysis(
     if (c) out.push(c);
   });
 
-  if (!isDeckSource) {
+  if (!isDeckSource && !flags.deprioritizeSummaryLearnSynthesis) {
     splitSentences(result.summary).slice(0, 2).forEach((sentence) => {
       const c = makeCandidate(
         "concept",
@@ -371,11 +394,21 @@ function toLearnCardOutput(
   candidate: LearnCandidate,
   flags: { isYoutube: boolean; isPresentation: boolean },
 ): LearnCardOutput {
-  return {
+  const base: LearnCardOutput = {
     type: candidate.kind as LearnCardOutput["type"],
     title: candidate.title.slice(0, 56),
     content: polishLearnContent(candidate.kind, candidate.content, flags),
   };
+  return candidateToEnrichedOutput(candidate, base);
+}
+
+function shouldDeprioritizeSummary(profileId: string): boolean {
+  return (
+    profileId.startsWith("learn_historical") ||
+    profileId.startsWith("learn_scientific") ||
+    profileId.startsWith("learn_literary") ||
+    profileId.startsWith("learn_technical")
+  );
 }
 
 /**
@@ -385,6 +418,12 @@ export function buildLearnIntelligence(
   result: AnalysisResult,
   options: BuildLearnIntelligenceOptions,
 ): BuildLearnIntelligenceResult {
+  const learnProfile =
+    options.adaptiveLearnProfile ??
+    (options.personaAdaptivePlan
+      ? buildAdaptiveLearnProfile(options.personaAdaptivePlan)
+      : undefined);
+
   const corpus = [
     result.title,
     result.summary,
@@ -398,9 +437,22 @@ export function buildLearnIntelligence(
   const learnFlags = {
     suppressRiskActionLearnSynthesis: options.suppressRiskActionLearnSynthesis,
     suppressMisconceptionUnlessExplicit: options.suppressMisconceptionUnlessExplicit,
+    deprioritizeSummaryLearnSynthesis:
+      options.deprioritizeSummaryLearnSynthesis ??
+      (learnProfile ? shouldDeprioritizeSummary(learnProfile.profileId) : false),
   };
 
-  const baseCandidates = candidatesFromAnalysis(result, isDeckSource, learnFlags).filter((c) => {
+  const profileCandidates = learnProfile
+    ? synthesizeProfileLearnCandidates(result, learnProfile)
+    : [];
+
+  const baseCandidates = filterLearnCandidates(
+    filterCandidatesByLearnSourcePolicy(
+      [...candidatesFromAnalysis(result, isDeckSource, learnFlags), ...profileCandidates],
+      options.allowedLearnSourceSections,
+      options.blockedLearnSourceSections,
+    ),
+  ).filter((c) => {
     if (!isPresentation) return true;
     return !(
       isLowQualityPresentationFragment(c.title) &&
@@ -426,12 +478,20 @@ export function buildLearnIntelligence(
     { isPresentation },
   );
   const range = cardCountForComplexity(options.complexity);
-  const selected = selectDiversified(
-    deduped,
-    options.mode,
-    range,
-    options.learnWeighting,
-  );
+  const selectionPool = learnProfile
+    ? [...enrichCandidatesForProfile(deduped, learnProfile)].sort(
+        (a, b) => b.importance - a.importance,
+      )
+    : deduped;
+
+  let selected = selectDiversified(selectionPool, options.mode, range, options.learnWeighting);
+
+  if (learnProfile) {
+    selected = sortCandidatesByGroups(
+      attachCardRelationships(enrichCandidatesForProfile(selected, learnProfile)),
+      learnProfile,
+    );
+  }
 
   const outputFlags = {
     isYoutube: options.isYoutubeTranscript === true,
@@ -448,6 +508,13 @@ export function buildLearnIntelligence(
     }
   }
 
+  const adaptiveLearnMeta = learnProfile
+    ? buildLearnDebugMeta(
+        attachCardRelationships(enrichCandidatesForProfile(selected, learnProfile)),
+        learnProfile,
+      )
+    : undefined;
+
   return {
     learnCards: finalCards.slice(0, range.max),
     meta: {
@@ -455,6 +522,7 @@ export function buildLearnIntelligence(
       selectedCount: finalCards.length,
       complexity: options.complexity,
       mode: options.mode,
+      ...(adaptiveLearnMeta ? { adaptiveLearn: adaptiveLearnMeta } : {}),
     },
   };
 }

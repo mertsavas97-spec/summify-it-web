@@ -69,6 +69,9 @@ export async function runTextAnalysis(
       tokenBudget: data.tokenBudget,
       adaptivePlan: data.adaptivePlan,
       ...(data.adaptationLabel ? { adaptationLabel: data.adaptationLabel } : {}),
+      ...(data.personaUiSectionLabels
+        ? { personaUiSectionLabels: data.personaUiSectionLabels }
+        : {}),
     },
   };
 }

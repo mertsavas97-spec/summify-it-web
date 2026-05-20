@@ -2,6 +2,8 @@
  * Client-safe intelligence metadata from /api/analyze (no server imports).
  */
 
+import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
+
 export type DocumentTypeGuess =
   | "marketing_deck"
   | "strategy_deck"
@@ -70,4 +72,6 @@ export type AnalysisIntelligenceMetadata = {
   adaptivePlan: AdaptiveAnalysisPlanMetadata;
   /** Present in development when cognition planner ran. */
   adaptationLabel?: string;
+  /** Phase 11C — adaptive section headings from persona plan (optional). */
+  personaUiSectionLabels?: PersonaUiSectionLabels;
 };

@@ -82,17 +82,34 @@ Configure in Polar Dashboard → Settings → Webhooks. Subscribe at minimum to:
 | `order.paid` | Fallback when subscription object is on the order |
 | `checkout.updated` | When status is `succeeded` |
 
-Verification uses the [Standard Webhooks](https://www.standardwebhooks.com/) spec via the `standardwebhooks` package. The handler maps Polar **price IDs** (from env) to Summify plans (`scholar`, `pro`, `team`) and updates `profiles` with the service role client.
+Verification uses the [Standard Webhooks](https://www.standardwebhooks.com/) spec via the `standardwebhooks` package. The handler resolves the Summify plan and updates `profiles` with the service role client (requires `SUPABASE_SERVICE_ROLE_KEY`).
 
 ## Plan mapping
 
-Price IDs are mapped only from server env:
+Resolution order (`src/lib/billing/polar/planResolution.ts`):
+
+1. `metadata.summify_plan` + `metadata.summify_interval` (set at checkout creation)
+2. Polar **price** IDs → env `POLAR_*_PRICE_ID`
+3. Polar **product** IDs → env `POLAR_*_PRODUCT_ID` (required for test products that only expose `product_id` in webhooks)
+
+Env catalog (both price and product IDs map to the same plan):
 
 ```
 POLAR_{SCHOLAR|PRO|TEAM}_{MONTHLY|YEARLY}_PRICE_ID
+POLAR_{SCHOLAR|PRO|TEAM}_{MONTHLY|YEARLY}_PRODUCT_ID
 ```
 
-Webhook payloads may include `price_id`, `product_price_id`, or nested `items[].price.id`.
+User linking order:
+
+1. `metadata.summify_user_id`
+2. `customer_metadata.summify_user_id`
+3. `external_customer_id` / customer `external_id`
+
+Webhook fields read: `price_id`, `product_price_id`, `product_id`, `products[]`, `items[]`, nested `price` / `product_price`.
+
+**$0.50 Pro test product:** set `POLAR_PRO_MONTHLY_PRODUCT_ID` (and/or `POLAR_PRO_MONTHLY_PRICE_ID`) to the test product UUID — it resolves to `plan = pro` like production.
+
+Failed resolution or missing user returns **HTTP 500** (logged, not silent success).
 
 ## Fallback when billing is off
 

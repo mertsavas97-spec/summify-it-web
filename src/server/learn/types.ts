@@ -1,6 +1,14 @@
 import type { AnalysisResult, TextAnalysisMode } from "@/server/ai/schemas";
 import type { ComplexityLevel } from "@/server/intelligence/types";
 import type { IntelligenceModeId, LearnWeightingProfile } from "@/types/modes";
+import type {
+  AdaptiveLearnProfile,
+  LearnAbstractionLevel,
+  LearnCardPattern,
+  LearnCardRelationship,
+  LearnDifficultyLevel,
+  AdaptiveLearnDebugMeta,
+} from "@/types/adaptive-learn";
 
 /** Final learn card kinds (UI + API output). */
 export type LearnCardKind =
@@ -29,6 +37,16 @@ export type LearnCandidate = {
   source: LearnCandidateSource;
   importance: number;
   entities: string[];
+  /** Phase 11D — optional enrichment (internal + API output). */
+  cardId?: string;
+  groupId?: string;
+  groupTitle?: string;
+  learnPattern?: LearnCardPattern;
+  difficulty?: LearnDifficultyLevel;
+  abstractionLevel?: LearnAbstractionLevel;
+  memoryWeight?: number;
+  conceptualDensity?: number;
+  cardRelationships?: LearnCardRelationship[];
 };
 
 export type LearnCardCountRange = {
@@ -46,6 +64,16 @@ export type BuildLearnIntelligenceOptions = {
   /** Phase 11B — suppress risk/action → learn card synthesis when plan says so. */
   suppressRiskActionLearnSynthesis?: boolean;
   suppressMisconceptionUnlessExplicit?: boolean;
+  /** Phase 11C — keep only these candidate origins when non-empty. */
+  allowedLearnSourceSections?: LearnCandidateSource[];
+  /** Phase 11C — drop candidates from these origins before ranking. */
+  blockedLearnSourceSections?: LearnCandidateSource[];
+  /** Phase 11D — persona structure plan (resolves learn profile when profile omitted). */
+  personaAdaptivePlan?: import("@/types/adaptive-analysis").PersonaAdaptivePlan;
+  /** Phase 11D — persona/domain learn profile (from adaptive plan). */
+  adaptiveLearnProfile?: AdaptiveLearnProfile;
+  /** Phase 11D — skip summary-sentence candidate mining for domain-heavy profiles. */
+  deprioritizeSummaryLearnSynthesis?: boolean;
 };
 
 export type LearnIntelligenceMeta = {
@@ -53,6 +81,8 @@ export type LearnIntelligenceMeta = {
   selectedCount: number;
   complexity: ComplexityLevel;
   mode: TextAnalysisMode;
+  /** Dev-only Phase 11D diagnostics. */
+  adaptiveLearn?: AdaptiveLearnDebugMeta;
 };
 
 export type BuildLearnIntelligenceResult = {

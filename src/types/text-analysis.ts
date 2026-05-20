@@ -3,6 +3,7 @@
  */
 
 import type { AnalysisIntelligenceMetadata } from "./intelligence";
+import type { LearnCardEnrichment } from "./adaptive-learn";
 
 export const TEXT_ANALYSIS_MODES = [
   "executive",
@@ -26,7 +27,7 @@ export type LearnCardOutput = {
   type: LearnCardOutputType;
   title: string;
   content: string;
-};
+} & LearnCardEnrichment;
 
 export type AnalysisResult = {
   title: string;
@@ -64,6 +65,18 @@ export type AnalyzeApiDebugMetadata = {
     suppressedDefaultSections: string[];
     learnCardStrategySummary: string;
     primaryDimensions: string[];
+    adaptiveLearn?: {
+      adaptiveLearnProfileId: string;
+      learnGroups: Array<{ id: string; title: string; cardCount: number }>;
+      relationshipCount: number;
+      difficultyStats: {
+        low: number;
+        medium: number;
+        high: number;
+        avgMemoryWeight: number;
+        avgConceptualDensity: number;
+      };
+    };
   };
 };
 

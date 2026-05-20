@@ -1,5 +1,7 @@
 import type { User } from "@supabase/supabase-js";
+import { getAccountPlanLabel } from "@/lib/billing/entitlements";
 import { getPlanDisplayName } from "@/data/pricingPlans";
+import { resolvePlanId } from "@/lib/plan-limits";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { Profile, UserLimits } from "@/types/database";
 import { devLog, devWarn } from "@/server/logging";
@@ -193,7 +195,8 @@ export async function getUserLimits(userId: string): Promise<UserLimits | null> 
   return data as UserLimits;
 }
 
-/** Human-readable plan label for account UI. */
-export function formatPlanLabel(plan: string): string {
-  return getPlanDisplayName(plan);
+/** Human-readable plan label for account/dashboard UI. */
+export function formatPlanLabel(plan: string, profile?: Profile | null): string {
+  if (profile) return getAccountPlanLabel(profile);
+  return getPlanDisplayName(resolvePlanId(plan));
 }

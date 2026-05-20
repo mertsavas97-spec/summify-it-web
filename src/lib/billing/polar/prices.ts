@@ -43,29 +43,14 @@ export function isPolarPlanConfigured(
   return Boolean(getPolarProductId(planId, interval) || getPolarPriceId(planId, interval));
 }
 
-export function buildPolarPriceIdMap(): Map<string, { planId: BillingCheckoutPlanId; interval: BillingInterval }> {
-  const map = new Map<string, { planId: BillingCheckoutPlanId; interval: BillingInterval }>();
-  const plans: BillingCheckoutPlanId[] = ["scholar", "pro", "team"];
-  const intervals: BillingInterval[] = ["monthly", "yearly"];
+import { resolvePlanFromPolarCatalogId } from "@/lib/billing/polar/planResolution";
 
-  for (const planId of plans) {
-    for (const interval of intervals) {
-      const priceId = getPolarPriceId(planId, interval);
-      if (priceId) map.set(priceId, { planId, interval });
-    }
-  }
-
-  return map;
-}
-
-let cachedPriceMap: Map<string, { planId: BillingCheckoutPlanId; interval: BillingInterval }> | null =
-  null;
-
+/** @deprecated Use resolvePlanFromPolarCatalogId — maps price and product env IDs. */
 export function resolvePlanFromPolarPriceId(priceId: string | null | undefined): {
   planId: BillingCheckoutPlanId;
   interval: BillingInterval;
 } | null {
-  if (!priceId) return null;
-  if (!cachedPriceMap) cachedPriceMap = buildPolarPriceIdMap();
-  return cachedPriceMap.get(priceId) ?? null;
+  const resolved = resolvePlanFromPolarCatalogId(priceId);
+  if (!resolved) return null;
+  return { planId: resolved.planId, interval: resolved.interval };
 }

@@ -11,3 +11,6 @@ export {
 } from "./adaptivePlanner";
 export type { BuildAdaptivePlanInput } from "./adaptivePlanner";
 export { buildCognitionSafetyRules } from "./safety";
+export { buildAdaptiveLearnProfile } from "./adaptiveLearnProfiles";
+export { buildAdaptiveLearnPromptBlock } from "./learnPrompt";
+export { filterLearnCandidates, isLowQualityLearnCandidate } from "./learnQualityFilters";

@@ -129,6 +129,15 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
   const [showAnswer, setShowAnswer] = useState(false);
 
   const displayContent = isQuiz && quiz ? quiz.question : card.content;
+  const relCount = card.cardRelationships?.length ?? 0;
+  const difficultyLabel =
+    card.difficulty === "high"
+      ? "Dense"
+      : card.difficulty === "low"
+        ? "Recall"
+        : card.difficulty === "medium"
+          ? "Medium"
+          : null;
 
   return (
     <li
@@ -143,9 +152,27 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
           {style.icon}
         </span>
         <div className="min-w-0 flex-1">
-          <p className={`text-[8px] font-medium uppercase tracking-wider ${style.accent}`}>
-            {style.label}
-          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className={`text-[8px] font-medium uppercase tracking-wider ${style.accent}`}>
+              {style.label}
+            </p>
+            {difficultyLabel ? (
+              <span
+                className="rounded border border-white/[0.06] bg-zinc-950/60 px-1 py-px text-[8px] text-zinc-500"
+                title={`Abstraction: ${card.abstractionLevel ?? "n/a"} · Memory weight: ${card.memoryWeight ?? "n/a"}`}
+              >
+                {difficultyLabel}
+              </span>
+            ) : null}
+            {relCount > 0 ? (
+              <span
+                className="rounded border border-white/[0.06] bg-zinc-950/60 px-1 py-px text-[8px] text-zinc-500"
+                title={card.cardRelationships?.map((r) => `${r.type} → ${r.targetCardId}`).join(", ")}
+              >
+                {relCount} link{relCount === 1 ? "" : "s"}
+              </span>
+            ) : null}
+          </div>
           <p className="mt-0.5 text-sm font-semibold leading-snug text-zinc-50">
             {card.title}
           </p>

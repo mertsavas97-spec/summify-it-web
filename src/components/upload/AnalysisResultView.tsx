@@ -3,9 +3,10 @@
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { IntelligenceModeId } from "@/types/modes";
+import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { AnalysisToolbar } from "./AnalysisToolbar";
 import { LearnSection } from "./LearnSection";
-import type { IntelligenceModeId } from "@/types/modes";
 
 type AnalysisResultViewProps = {
   result: AnalysisResult;
@@ -16,6 +17,8 @@ type AnalysisResultViewProps = {
   sections?: "all" | "summary";
   showToolbar?: boolean;
   showHeader?: boolean;
+  /** Phase 11C — adaptive headings from persona plan (optional). */
+  uiSectionLabels?: PersonaUiSectionLabels;
 };
 
 export function AnalysisResultView({
@@ -27,8 +30,14 @@ export function AnalysisResultView({
   sections = "all",
   showToolbar = true,
   showHeader = true,
+  uiSectionLabels,
 }: AnalysisResultViewProps) {
   const showLearn = sections === "all" && result.learnCards.length > 0;
+
+  const summaryTitle = uiSectionLabels?.summary ?? "Summary";
+  const insightsTitle = uiSectionLabels?.keyInsights ?? "Key insights";
+  const risksTitle = uiSectionLabels?.risks ?? "Risks & warnings";
+  const actionsTitle = uiSectionLabels?.actions ?? "Action items";
 
   const body = (
     <>
@@ -55,12 +64,12 @@ export function AnalysisResultView({
       ) : null}
 
       <div className={embedded ? "" : "divide-y divide-white/[0.04] px-4"}>
-        <CollapsibleSection title="Summary" defaultOpen>
+        <CollapsibleSection title={summaryTitle} defaultOpen>
           <p className="max-w-prose text-sm leading-[1.7] text-zinc-400">{result.summary}</p>
         </CollapsibleSection>
 
         <CollapsibleSection
-          title="Key insights"
+          title={insightsTitle}
           count={result.keyInsights.length}
           defaultOpen
         >
@@ -69,7 +78,7 @@ export function AnalysisResultView({
 
         {result.risksOrWarnings.length > 0 ? (
           <CollapsibleSection
-            title="Risks & warnings"
+            title={risksTitle}
             count={result.risksOrWarnings.length}
             defaultOpen
           >
@@ -79,7 +88,7 @@ export function AnalysisResultView({
 
         {result.actionItems.length > 0 ? (
           <CollapsibleSection
-            title="Action items"
+            title={actionsTitle}
             count={result.actionItems.length}
             defaultOpen
           >

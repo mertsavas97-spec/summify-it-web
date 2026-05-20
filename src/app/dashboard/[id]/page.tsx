@@ -76,7 +76,7 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
 
   const modeId = (saved.intelligence_mode ?? "executive-brief") as IntelligenceModeId;
   const created = formatStableDateTime(saved.created_at);
-  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN, profile);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">

@@ -1,4 +1,8 @@
-import type { AdaptiveAnalysisSection, PersonaAdaptivePlan } from "@/types/adaptive-analysis";
+import type {
+  AdaptiveAnalysisSection,
+  LearnCandidateSourceSection,
+  PersonaAdaptivePlan,
+} from "@/types/adaptive-analysis";
 import type {
   CognitionDocumentProfile,
   CognitionSourceKind,
@@ -29,6 +33,16 @@ function section(
 ): AdaptiveAnalysisSection {
   return { id, title, purpose, dimension, priority, outputHint, maxItems, renderAs };
 }
+
+/** Phase 11C — student learn cards must not synthesize from risks/actions lists. */
+const STUDENT_LEARN_SOURCES_ALLOWED: LearnCandidateSourceSection[] = [
+  "ai_card",
+  "insight",
+  "summary",
+  "synthesized",
+];
+
+const BLOCK_RISK_ACTION_LEARN_SOURCES: LearnCandidateSourceSection[] = ["risk", "action"];
 
 function formatAdaptationLabel(personaId: string, domain: CognitionDocumentProfile["domain"]): string {
   const persona =
@@ -136,6 +150,14 @@ function studentHistoricalPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePl
     safetyGuidance: input.documentProfile.domain === "legal_document" ? "Informational only." : "",
     rationale: "Student lens on historical material — timeline and recall over business risks/actions.",
     adaptationLabel: formatAdaptationLabel(personaBrain.id, documentProfile.domain),
+    allowedLearnSourceSections: STUDENT_LEARN_SOURCES_ALLOWED,
+    blockedLearnSourceSections: BLOCK_RISK_ACTION_LEARN_SOURCES,
+    uiSectionLabels: {
+      summary: "Historical Context",
+      keyInsights: "Timeline · Key Figures · Causes & Consequences",
+      risks: "Source limitations",
+      actions: "Review questions",
+    },
   };
 }
 
@@ -216,6 +238,14 @@ function studentScientificPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePl
     safetyGuidance: "",
     rationale: "Student + scientific/technical — concepts and mechanisms, not business filler.",
     adaptationLabel: formatAdaptationLabel(personaBrain.id, documentProfile.domain),
+    allowedLearnSourceSections: STUDENT_LEARN_SOURCES_ALLOWED,
+    blockedLearnSourceSections: BLOCK_RISK_ACTION_LEARN_SOURCES,
+    uiSectionLabels: {
+      summary: "Core Concepts",
+      keyInsights: "Mechanisms · Key Systems · Processes",
+      risks: "Clarifications",
+      actions: "Practice questions",
+    },
   };
 }
 
@@ -296,6 +326,14 @@ function studentLiteraryPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePlan
     safetyGuidance: "",
     rationale: "Student + literary/creative — themes and interpretation, not generic risks.",
     adaptationLabel: formatAdaptationLabel(personaBrain.id, documentProfile.domain),
+    allowedLearnSourceSections: STUDENT_LEARN_SOURCES_ALLOWED,
+    blockedLearnSourceSections: BLOCK_RISK_ACTION_LEARN_SOURCES,
+    uiSectionLabels: {
+      summary: "Themes & Motifs",
+      keyInsights: "Symbolism · Narrative Voice · Interpretation",
+      risks: "Reading caveats",
+      actions: "Discussion questions",
+    },
   };
 }
 
@@ -648,6 +686,13 @@ function technicalPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePlan {
     safetyGuidance: "",
     rationale: "Technical/developer lens — architecture and implementation.",
     adaptationLabel: formatAdaptationLabel(personaBrain.id, documentProfile.domain),
+    blockedLearnSourceSections: BLOCK_RISK_ACTION_LEARN_SOURCES,
+    uiSectionLabels: {
+      summary: "Technical Architecture",
+      keyInsights: "Key Mechanisms · Workflow Logic",
+      risks: "Dependencies · Failure Points",
+      actions: "Core Terminology",
+    },
   };
 }
 

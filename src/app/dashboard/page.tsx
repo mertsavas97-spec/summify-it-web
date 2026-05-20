@@ -51,7 +51,7 @@ export default async function DashboardPage() {
     getUserAnalyses(user.id, 48),
   ]);
 
-  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN, profile);
   const daily = limits?.daily_analysis_count ?? 0;
   const monthly = limits?.monthly_analysis_count ?? 0;
   const planUsage = getUserPlanLimits(profile?.plan, limits);

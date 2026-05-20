@@ -17,6 +17,7 @@ import type { ModeRoutingResult } from "@/server/intelligence/mode-routing";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devWarn } from "@/server/logging";
 import { buildLearnIntelligence } from "@/server/learn";
+import { applyAdaptivePlanPostProcess } from "@/lib/cognition/postProcessAnalysis";
 import {
   classifyProviderFailure,
   classifyValidationFailure,
@@ -65,7 +66,7 @@ function applyLearnIntelligence(
   modeRouting?: ModeRoutingResult,
 ): AnalysisResult {
   const plan = intelligence.personaAdaptivePlan;
-  const { learnCards } = buildLearnIntelligence(result, {
+  const { learnCards, meta: learnMeta } = buildLearnIntelligence(result, {
     mode,
     complexity: intelligence.profile.complexity,
     isYoutubeTranscript: sourceContext?.sourceKind === "youtube",
@@ -76,7 +77,15 @@ function applyLearnIntelligence(
       plan?.learnCardStrategy.suppressRiskActionSynthesis ?? false,
     suppressMisconceptionUnlessExplicit:
       plan?.learnCardStrategy.suppressMisconceptionUnlessExplicit ?? false,
+    allowedLearnSourceSections: plan?.allowedLearnSourceSections,
+    blockedLearnSourceSections: plan?.blockedLearnSourceSections,
+    personaAdaptivePlan: plan,
   });
+  if (learnMeta.adaptiveLearn) {
+    if (intelligence.cognition) {
+      intelligence.cognition.adaptiveLearn = learnMeta.adaptiveLearn;
+    }
+  }
   return { ...result, learnCards };
 }
 
@@ -155,8 +164,9 @@ async function attemptProvider(
 
   try {
     const parsed = parseAndValidateAnalysisResult(raw, { mode });
+    const postProcessed = applyAdaptivePlanPostProcess(parsed, intelligence.personaAdaptivePlan);
     return applyLearnIntelligence(
-      parsed,
+      postProcessed,
       intelligence,
       mode,
       intelligence.analyzeSource,

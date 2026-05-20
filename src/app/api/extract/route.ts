@@ -14,7 +14,7 @@ import type {
 } from "@/types/extraction";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile } from "@/lib/supabase/profile";
-import { resolvePlanId } from "@/lib/plan-limits";
+import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devError, logServerError } from "@/server/logging";
 
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     const currentUser = await getOptionalUser();
     const profile = currentUser ? await getProfile(currentUser.id) : null;
-    const planId = currentUser ? resolvePlanId(profile?.plan) : "free";
+    const planId = currentUser ? resolveEntitlementPlanIdFromProfile(profile) : "free";
 
     if (isPptxFile(file.name, file.type) && !["beta", "pro", "team"].includes(planId)) {
       const payload: ExtractApiErrorResponse = {

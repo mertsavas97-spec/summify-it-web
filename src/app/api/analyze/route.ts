@@ -16,7 +16,8 @@ import type {
 import type { AnalysisIntelligenceContext } from "@/server/intelligence";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile, getUserLimits } from "@/lib/supabase/profile";
-import { canRunAnalysis, resolvePlanId } from "@/lib/plan-limits";
+import { canRunAnalysis } from "@/lib/plan-limits";
+import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
 import {
   getMaxLearnCardsForPlan,
   isModeIncludedInPlan,
@@ -90,6 +91,9 @@ function buildSuccessDebug(
             suppressedDefaultSections: intelligence.cognition.suppressedDefaultSections,
             learnCardStrategySummary: intelligence.cognition.learnCardStrategySummary,
             primaryDimensions: intelligence.cognition.primaryDimensions,
+            ...(intelligence.cognition.adaptiveLearn
+              ? { adaptiveLearn: intelligence.cognition.adaptiveLearn }
+              : {}),
           },
         }
       : {}),
@@ -147,7 +151,7 @@ export async function POST(request: Request) {
       ? await Promise.all([getProfile(currentUser.id), getUserLimits(currentUser.id)])
       : [null, null] as const;
 
-    const planId = currentUser ? resolvePlanId(profile?.plan) : "free";
+    const planId = currentUser ? resolveEntitlementPlanIdFromProfile(profile) : "free";
     const quota = canRunAnalysis({
       storedPlan: profile?.plan,
       usage: limits,
@@ -208,6 +212,7 @@ export async function POST(request: Request) {
       knowledgeLayerSummary: intelligence.knowledgeLayerSummary,
       tokenBudget: intelligence.tokenBudget,
       adaptivePlan: intelligence.adaptivePlan,
+      personaUiSectionLabels: intelligence.personaAdaptivePlan?.uiSectionLabels,
     };
 
     if (isDevelopment()) {

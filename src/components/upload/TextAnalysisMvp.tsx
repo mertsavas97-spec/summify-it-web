@@ -32,6 +32,7 @@ import {
   formatFailureReasonLabel,
 } from "@/lib/analysis-debug-labels";
 import type { AnalyzeApiDebugMetadata } from "@/types/text-analysis";
+import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
 import { WorkspaceUsageWarning } from "./WorkspaceUsageWarning";
@@ -210,6 +211,7 @@ export function TextAnalysisMvp({
   const [meta, setMeta] = useState<{
     providerUsed: string;
     fallbackUsed: boolean;
+    personaUiSectionLabels?: PersonaUiSectionLabels;
   } | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [savedToWorkspace, setSavedToWorkspace] = useState<boolean | undefined>(
@@ -222,6 +224,9 @@ export function TextAnalysisMvp({
   const displayResult = injectedAnalysis?.result ?? result;
   const displaySavedToWorkspace = injectedAnalysis?.savedToWorkspace ?? savedToWorkspace;
   const displaySavedAnalysisId = injectedAnalysis?.savedAnalysisId ?? savedAnalysisId;
+  const displayUiSectionLabels =
+    injectedAnalysis?.intelligence.personaUiSectionLabels ??
+    meta?.personaUiSectionLabels;
   const displayMeta = injectedAnalysis
     ? {
         providerUsed: injectedAnalysis.providerUsed,
@@ -305,6 +310,7 @@ export function TextAnalysisMvp({
       setMeta({
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
+        personaUiSectionLabels: analysis.intelligence.personaUiSectionLabels,
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
       setSavedAnalysisId(analysis.savedAnalysisId);
@@ -358,6 +364,7 @@ export function TextAnalysisMvp({
             modeId={mode}
             providerUsed={displayMeta.providerUsed}
             fallbackUsed={displayMeta.fallbackUsed}
+            uiSectionLabels={displayUiSectionLabels}
           />
           <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
           <PracticeAnalysisCta

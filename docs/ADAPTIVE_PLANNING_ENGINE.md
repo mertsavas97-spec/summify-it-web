@@ -7,7 +7,8 @@ Phase 11B sits on [Cognitive Foundation](./COGNITIVE_FOUNDATION.md) (11A) and ad
 ```
 extract → intelligence prepass (11A profile) → PersonaBrain + dimensions + learn bias
   → buildAdaptiveAnalysisPlan (11B) → combined prompt block → Groq/Gemini
-  → schema validation → learn post-process (plan-aware) → UI
+  → schema validation → **Phase 11C:** `applyAdaptivePlanPostProcess` (hard suppress + student phrase strip)
+  → learn post-process (`buildLearnIntelligence`, 11C allow/block + **11D adaptive learn**) → UI
 ```
 
 ## Planner architecture
@@ -42,17 +43,18 @@ Plans may set `suppressedDefaultSections`:
 - **`risks`** — `risksOrWarnings` should be `[]` unless the source explicitly discusses downside/conflict/liability.
 - **`actions`** — `actionItems` should be `[]` or review/practice prompts only (not business to-dos).
 
-Prompt + post-processing enforce this for Student historical/scientific/literary and Technical plans.
+Prompting reflects the plan; **hard enforcement** happens after generation in `applyAdaptivePlanPostProcess()`:
 
-Banned generic filler includes: “Further research is needed”, “Approach critically”, “Consider potential bias”.
+- If `suppressedDefaultSections` contains **`risks`**, `risksOrWarnings` is set to `[]`.
+- If it contains **`actions`**, `actionItems` is set to `[]`.
+
+For student plans (`structureFamily` prefix `student_`), generic meta-lines are stripped from summary/bullets via `genericHallucinationPatterns.ts` (e.g. “Further research is needed”, “Potential risk”, “Actionable next steps”).
 
 ## Section → JSON mapping
 
-The UI still renders:
+The workspace renders adaptive **CollapsibleSection** titles when the plan defines `uiSectionLabels` (`summary`, `keyInsights`, `risks`, `actions`). Those labels are returned on `/api/analyze` as `personaUiSectionLabels` (optional); the UI falls back to generic English defaults if omitted.
 
-- `title`, `summary`, `keyInsights`, `risksOrWarnings`, `actionItems`, `learnCards`
-
-The plan instructs the model to **organize** planned sections inside those fields (e.g. timeline bullets → `keyInsights`, review questions → `actionItems` or `quiz` learn cards).
+The plan instructs the model to **organize** planned sections inside those fields (e.g. timeline bullets → `keyInsights`, review questions → `quiz` learn cards — not corporate action lists when actions are suppressed).
 
 ## Learn card routing
 
@@ -61,9 +63,20 @@ The plan instructs the model to **organize** planned sections inside those field
 - Preferred/avoided adaptive types
 - `providerTypeEmphasis` (maps to `concept` | `why` | `memory_hook` | `quiz`)
 - `suppressMisconceptionUnlessExplicit` — reduces generic “Myth” cards
-- `suppressRiskActionSynthesis` — learn layer skips turning risks/actions into cards
+- `suppressRiskActionSynthesis` — learn layer skips turning risks/actions into cards (still reinforced by blocking sources when set per plan).
+- **`allowedLearnSourceSections` / `blockedLearnSourceSections`** (Phase 11C) — filter learn candidates by origin (`ai_card`, `insight`, `summary`, `risk`, `action`, `synthesized`) before ranking.
 
-**Post-process:** `buildLearnIntelligence()` respects plan flags when synthesizing candidates from risks/actions.
+**Post-process:** `buildLearnIntelligence()` applies synthesis guard flags **and** optional allow/block lists so cards are not mined from suppressed domains (e.g. student plans block `risk` / `action` sources entirely).
+
+## Phase 11C — dominance layer
+
+**Persona language:** `buildPersonaLanguageBlock(modeId)` in `personaLanguageProfiles.ts` is prepended to the cognition prompt block (included in the system prompt via `cognitionPromptBlock`). It encodes tone, forbidden registers, and synthesis expectations beyond short adjectives.
+
+**Hard suppression:** `postProcessAnalysis.ts` → `applyAdaptivePlanPostProcess()` runs immediately after JSON validation and **before** learn synthesis.
+
+**Hallucination-ish phrases:** `genericHallucinationPatterns.ts` removes boilerplate meta-commentary for student cognitive families only.
+
+**API:** Success responses may include `personaUiSectionLabels` for client section headings without hardcoding persona strings in React.
 
 ## Safety
 
@@ -77,22 +90,22 @@ Legal/financial plans include informational-only guidance. See `plan.safetyGuida
 - `suppressedDefaultSections`, `learnCardStrategySummary`
 - `adaptationLabel` (also on success response in dev for UI chip)
 
-## Phase 11C readiness
-
-Plans expose stable `structureFamily`, `sections[].dimension`, and `learnCardStrategy` for future:
-
-- Memory graph seeds (`concept_map_seed` sections)
-- Per-section UI blocks (still behind schema migration)
-- Session-level recall weighting by dimension
+Production clients still receive **`personaUiSectionLabels`** when the active plan defines them (not dev-only).
 
 ## Code map
 
 | Path | Role |
 |------|------|
-| `src/types/adaptive-analysis.ts` | Plan types |
+| `src/types/adaptive-analysis.ts` | Plan types + `PersonaUiSectionLabels`, learn source policy |
 | `src/lib/cognition/adaptivePlanner.ts` | Rule engine |
 | `src/lib/cognition/planPrompt.ts` | Plan prompt block |
-| `src/lib/cognition/buildContext.ts` | 11A + 11B assembly |
+| `src/lib/cognition/personaLanguageProfiles.ts` | Phase 11C persona language contract |
+| `src/lib/cognition/genericHallucinationPatterns.ts` | Student meta-phrase stripping |
+| `src/lib/cognition/postProcessAnalysis.ts` | Hard suppress risks/actions + phrase filter |
+| `src/lib/cognition/buildContext.ts` | 11A + 11B + 11C language assembly |
 | `src/server/intelligence/index.ts` | Pipeline hook |
-| `src/server/learn/buildLearnIntelligence.ts` | Plan-aware card synthesis |
-| `src/server/ai/prompts.ts` | Softer default risk/action rules |
+| `src/server/learn/buildLearnIntelligence.ts` | Plan-aware card synthesis + source filter |
+| `src/server/ai/orchestrator.ts` | Post-process then learn layer |
+| `src/server/ai/prompts.ts` | Default risk/action rules |
+
+See also: [Adaptive Learn Intelligence](./ADAPTIVE_LEARN_INTELLIGENCE.md) (Phase 11D).

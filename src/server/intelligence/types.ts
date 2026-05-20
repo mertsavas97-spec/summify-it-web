@@ -144,6 +144,8 @@ export type CognitionDebugMetadata = {
   sectionTitles: string[];
   suppressedDefaultSections: ("risks" | "actions")[];
   learnCardStrategySummary: string;
+  /** Phase 11D — dev-only learn intelligence slice. */
+  adaptiveLearn?: import("@/types/adaptive-learn").AdaptiveLearnDebugMeta;
 };
 
 export type AnalysisIntelligenceContext = {

@@ -1,7 +1,10 @@
 /**
  * Server-side analysis schemas for Phase 4A text pipeline.
- * Safe to mirror in src/types/text-analysis.ts for client display — do not import server modules in client code.
+ * Safe to mirror in src/types/text-analysis.ts for client display — do not import server modules in client components.
  */
+
+import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
+import type { AdaptiveLearnDebugMeta, LearnCardEnrichment } from "@/types/adaptive-learn";
 
 export const TEXT_ANALYSIS_MODES = [
   "executive",
@@ -39,7 +42,7 @@ export type LearnCardOutput = {
   type: LearnCardOutputType;
   title: string;
   content: string;
-};
+} & LearnCardEnrichment;
 
 /** Structured analysis returned by providers and /api/analyze */
 export type AnalysisResult = {
@@ -113,6 +116,7 @@ export type AnalyzeApiDebugMetadata = {
     suppressedDefaultSections: string[];
     learnCardStrategySummary: string;
     primaryDimensions: string[];
+    adaptiveLearn?: AdaptiveLearnDebugMeta;
   };
 };
 
@@ -125,6 +129,8 @@ export type AnalyzeApiSuccessResponse = {
   knowledgeLayerSummary: AnalyzeApiIntelligenceMetadata["knowledgeLayerSummary"];
   tokenBudget: AnalyzeApiIntelligenceMetadata["tokenBudget"];
   adaptivePlan: AnalyzeApiIntelligenceMetadata["adaptivePlan"];
+  /** Phase 11C — CollapsibleSection titles from adaptive plan (when defined). */
+  personaUiSectionLabels?: PersonaUiSectionLabels;
   /** True when the analysis was persisted for the signed-in user. */
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;

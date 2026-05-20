@@ -40,6 +40,23 @@ export type LearnCardStrategy = {
   suppressRiskActionSynthesis: boolean;
 };
 
+/** Matches server learn-layer candidate origins (`LearnCandidateSource`). Client-safe duplicate. */
+export type LearnCandidateSourceSection =
+  | "ai_card"
+  | "insight"
+  | "summary"
+  | "risk"
+  | "action"
+  | "synthesized";
+
+/** Optional adaptive headings for workspace sections (Phase 11C). */
+export type PersonaUiSectionLabels = {
+  summary?: string;
+  keyInsights?: string;
+  risks?: string;
+  actions?: string;
+};
+
 /** Persona-aware structure plan (Phase 11B). */
 export type PersonaAdaptivePlan = {
   planId: string;
@@ -57,4 +74,9 @@ export type PersonaAdaptivePlan = {
   rationale: string;
   /** Human-readable chip, e.g. "Student · Historical" */
   adaptationLabel: string;
+  /** Phase 11C — post-process clears matching learn candidates before ranking. */
+  allowedLearnSourceSections?: LearnCandidateSourceSection[];
+  blockedLearnSourceSections?: LearnCandidateSourceSection[];
+  /** Adaptive CollapsibleSection titles — UI reads from API; omit for generic defaults. */
+  uiSectionLabels?: PersonaUiSectionLabels;
 };

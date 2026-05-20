@@ -45,7 +45,7 @@ export default async function MemoryPage() {
     getDueReviewItems(user.id),
   ]);
 
-  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
+  const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN, profile);
   const planUsage = getUserPlanLimits(profile?.plan, limits);
   const stats = await getMemoryStats(user.id, planUsage.dailyReviewTarget);
 
