@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DeleteAnalysisButton } from "@/components/dashboard/DeleteAnalysisButton";
+import { learnDashboardHref } from "@/lib/learn/paths";
 import { formatStableDate, formatStableDateTime } from "@/lib/format-date";
 import {
   getIntelligenceModeLabel,
@@ -72,15 +73,22 @@ export function SavedAnalysisCard({ analysis, showDelete = true }: SavedAnalysis
           </p>
           <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-zinc-500">{preview}</p>
           <p className="mt-3 text-[11px] font-medium text-violet-400/80 group-hover:text-violet-300">
-            Open session →
+            Open analysis →
           </p>
         </div>
       </Link>
-      {showDelete && (
-        <div className="flex items-center justify-end gap-1 border-t border-white/[0.04] bg-zinc-950/30 px-3 py-1.5">
+      <div className="flex items-center justify-end gap-2 border-t border-white/[0.04] bg-zinc-950/30 px-3 py-1.5">
+        <Link
+          href={learnDashboardHref(analysis.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-md px-2 py-1 text-[11px] font-medium text-violet-400/90 transition-colors hover:bg-violet-500/10 hover:text-violet-300"
+        >
+          Practice
+        </Link>
+        {showDelete ? (
           <DeleteAnalysisButton analysisId={analysis.id} redirectTo="/dashboard" />
-        </div>
-      )}
+        ) : null}
+      </div>
     </article>
   );
 }

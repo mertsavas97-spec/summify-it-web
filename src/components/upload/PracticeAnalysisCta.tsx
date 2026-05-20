@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { learnDashboardHref } from "@/lib/learn/paths";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
@@ -60,13 +61,13 @@ export function PracticeAnalysisCta({
       const data = (await res.json()) as { success?: boolean; error?: string };
 
       if (!res.ok || !data.success) {
-        setMessage(data.error ?? "Review cards could not be prepared yet.");
+        setMessage(data.error ?? "Couldn't create a practice set. Try again.");
         return;
       }
 
-      router.push("/dashboard/memory");
+      router.push(learnDashboardHref(savedAnalysisId));
     } catch {
-      setMessage("We couldn't prepare review cards. Try again in a moment.");
+      setMessage("Couldn't create a practice set. Try again.");
     } finally {
       setLoading(false);
     }
@@ -122,10 +123,10 @@ export function PracticeAnalysisCta({
           {loading ? "Preparing session…" : "Start practice session"}
         </Button>
         <Link
-          href="/dashboard/memory"
+          href={learnDashboardHref(savedAnalysisId)}
           className="text-[11px] text-zinc-500 transition-colors hover:text-violet-300/90"
         >
-          Open memory dashboard →
+          Open Learn →
         </Link>
       </div>
     </FeaturedPracticeCard>

@@ -19,11 +19,11 @@ export function MemoryDashboardPanel({ stats, dailyTarget }: MemoryDashboardPane
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
-            Memory layer
+            Learn
           </p>
-          <h2 className="mt-1 text-base font-semibold text-white">Continue reviewing</h2>
+          <h2 className="mt-1 text-base font-semibold text-white">Continue practicing</h2>
           <p className="mt-1 max-w-lg text-xs leading-relaxed text-zinc-500">
-            Private spaced repetition from your saved analyses. No public share pages include review data.
+            Private practice sets from your saved analyses. No public share pages include review data.
           </p>
           {stats.retention.comebackPrompt ? (
             <p className="mt-2 max-w-lg text-xs font-medium text-violet-200">
@@ -32,9 +32,9 @@ export function MemoryDashboardPanel({ stats, dailyTarget }: MemoryDashboardPane
             </p>
           ) : null}
         </div>
-        <Button href="/dashboard/memory" size="sm">
+        <Button href="/dashboard/learn" size="sm">
           <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-          Review now
+          Open Learn
         </Button>
       </div>
 

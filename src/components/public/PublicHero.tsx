@@ -52,7 +52,7 @@ export function PublicHero({
             <div className="mt-4 max-w-xl text-base leading-relaxed text-zinc-400">
               {description}
             </div>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
               <Button href={primaryCta.href} size="md">
                 {primaryCta.label}
               </Button>

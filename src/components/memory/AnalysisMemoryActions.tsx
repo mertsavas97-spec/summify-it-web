@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Brain, Loader2, RotateCcw } from "lucide-react";
+import { BookOpen, Loader2, Play } from "lucide-react";
+import { learnDashboardHref } from "@/lib/learn/paths";
 import { Button } from "@/components/ui/Button";
 
 type AnalysisMemoryActionsProps = {
@@ -9,16 +11,20 @@ type AnalysisMemoryActionsProps = {
 };
 
 export function AnalysisMemoryActions({ analysisId }: AnalysisMemoryActionsProps) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function generateReviewSet() {
+  async function createPracticeSet(andOpen = false) {
     setPending(true);
     setMessage(null);
     setError(null);
     try {
-      const response = await fetch(`/api/analyses/${analysisId}/memory`, { method: "POST" });
+      const response = await fetch(`/api/analyses/${analysisId}/memory`, {
+        method: "POST",
+        credentials: "same-origin",
+      });
       const payload = (await response.json()) as {
         success: boolean;
         created?: number;
@@ -28,18 +34,23 @@ export function AnalysisMemoryActions({ analysisId }: AnalysisMemoryActionsProps
       };
 
       if (!response.ok || !payload.success) {
-        throw new Error(payload.error ?? "Could not generate review set.");
+        throw new Error(payload.error ?? "Couldn't create a practice set. Try again.");
+      }
+
+      if (andOpen) {
+        router.push(learnDashboardHref(analysisId));
+        return;
       }
 
       if ((payload.created ?? 0) > 0) {
-        setMessage(`${payload.created} cards added to memory.`);
+        setMessage(`${payload.created} cards added to Learn.`);
       } else if (payload.limit != null) {
-        setMessage("Memory limit reached for this plan preview.");
+        setMessage("Practice card limit reached for your plan.");
       } else {
-        setMessage("This analysis is already in memory.");
+        setMessage("Practice set is already up to date for this analysis.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not generate review set.");
+      setError(err instanceof Error ? err.message : "Couldn't create a practice set. Try again.");
     } finally {
       setPending(false);
     }
@@ -50,24 +61,33 @@ export function AnalysisMemoryActions({ analysisId }: AnalysisMemoryActionsProps
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 text-sm font-semibold text-zinc-100">
-            <Brain className="h-4 w-4 text-violet-300" aria-hidden />
-            Memory
+            <BookOpen className="h-4 w-4 text-violet-300" aria-hidden />
+            Learn
           </p>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-zinc-500">
-            Add this saved analysis to private spaced repetition using existing Learn cards and insights.
+            Turn this saved analysis into private practice cards from Learn cards and key insights.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={generateReviewSet} disabled={pending}>
-            {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Brain className="h-3.5 w-3.5" aria-hidden />}
-            Add to memory
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void createPracticeSet(false)}
+            disabled={pending}
+          >
+            {pending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            ) : (
+              <BookOpen className="h-3.5 w-3.5" aria-hidden />
+            )}
+            Add to Learn
           </Button>
-          <Button size="sm" variant="ghost" onClick={generateReviewSet} disabled={pending}>
-            Generate review set
+          <Button size="sm" variant="ghost" onClick={() => void createPracticeSet(true)} disabled={pending}>
+            Create practice set
           </Button>
-          <Button href="/dashboard/memory" size="sm" variant="ghost">
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-            Review
+          <Button href={learnDashboardHref(analysisId)} size="sm">
+            <Play className="h-3.5 w-3.5" aria-hidden />
+            Practice
           </Button>
         </div>
       </div>

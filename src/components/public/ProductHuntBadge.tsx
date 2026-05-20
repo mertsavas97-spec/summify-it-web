@@ -7,7 +7,7 @@ const PRODUCT_HUNT_IMG_SRC =
 /** Official Product Hunt featured badge — marketing pages only. */
 export function ProductHuntBadge() {
   return (
-    <div className="mt-6 flex w-full justify-center">
+    <div className="mt-7 flex w-full justify-center lg:justify-start">
       <a
         href={PRODUCT_HUNT_HREF}
         target="_blank"

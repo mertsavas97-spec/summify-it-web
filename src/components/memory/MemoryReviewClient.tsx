@@ -11,6 +11,9 @@ type MemoryReviewClientProps = {
   initialItems: ReviewItem[];
   stats: ReviewStats;
   dailyTarget: number;
+  /** User-facing session heading (defaults to Learn review). */
+  sessionTitle?: string;
+  emptyHint?: string;
 };
 
 const RATING_META: Record<ReviewRating, { label: string; key: string; className: string }> = {
@@ -20,7 +23,13 @@ const RATING_META: Record<ReviewRating, { label: string; key: string; className:
   easy: { label: "Easy", key: "4", className: "border-sky-500/25 text-sky-200 hover:bg-sky-500/10" },
 };
 
-export function MemoryReviewClient({ initialItems, stats, dailyTarget }: MemoryReviewClientProps) {
+export function MemoryReviewClient({
+  initialItems,
+  stats,
+  dailyTarget,
+  sessionTitle = "Learn review",
+  emptyHint = "Generate a practice set from a saved analysis, or come back when your next review window opens.",
+}: MemoryReviewClientProps) {
   const [items] = useState(initialItems);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -126,9 +135,7 @@ export function MemoryReviewClient({ initialItems, stats, dailyTarget }: MemoryR
       <section className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-8 text-center">
         <ProgressRing value={100} label="Done" />
         <p className="text-sm font-medium text-zinc-200">No cards are due right now.</p>
-        <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-zinc-500">
-          Generate a review set from a saved analysis, or come back when your next review window opens.
-        </p>
+        <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-zinc-500">{emptyHint}</p>
         <Button href="/dashboard" className="mt-5" size="sm" variant="secondary">
           Back to dashboard
         </Button>
@@ -141,9 +148,9 @@ export function MemoryReviewClient({ initialItems, stats, dailyTarget }: MemoryR
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
-            Review session
+            Practice session
           </p>
-          <h1 className="mt-1 text-xl font-semibold text-white">Memory review</h1>
+          <h1 className="mt-1 text-xl font-semibold text-white">{sessionTitle}</h1>
         </div>
         <div className="flex items-center gap-3">
           <ProgressRing value={dailyProgress} label="Goal" />
