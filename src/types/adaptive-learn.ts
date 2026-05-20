@@ -138,10 +138,33 @@ export type LearnDifficultyStats = {
   avgConceptualDensity: number;
 };
 
+/** Dev-only mode learn strategy pass (Phase Learn 2). */
+export type LearnStrategyDebugMeta = {
+  strategyId: string;
+  preferredPatterns: string[];
+  blockedPatterns: string[];
+  targetDistribution: Record<string, number>;
+  actualDistribution: Record<string, number>;
+  strategyFilteredCount: number;
+  strategyBoostedCount: number;
+};
+
+/** Dev-only learn card quality pass (Phase Learn 1). */
+export type LearnCardQualityStats = {
+  originalCardCount: number;
+  filteredCardCount: number;
+  removedGenericCount: number;
+  removedDuplicateCount: number;
+  normalizedTitleCount: number;
+  finalPatternDistribution: Record<string, number>;
+};
+
 /** Dev-only learn intelligence slice. */
 export type AdaptiveLearnDebugMeta = {
   adaptiveLearnProfileId: string;
   learnGroups: Array<{ id: string; title: string; cardCount: number }>;
   relationshipCount: number;
   difficultyStats: LearnDifficultyStats;
+  learnCardQuality?: LearnCardQualityStats;
+  learnStrategy?: LearnStrategyDebugMeta;
 };

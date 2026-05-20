@@ -26,7 +26,7 @@ export async function generateReviewSetForAnalysis(input: {
 
   const { data: analysis, error: analysisError } = await supabase
     .from("saved_analyses")
-    .select("id, user_id, summary, learn_cards")
+    .select("id, user_id, summary, learn_cards, intelligence_mode, document_type")
     .eq("id", input.analysisId)
     .eq("user_id", input.userId)
     .maybeSingle();
@@ -58,11 +58,16 @@ export async function generateReviewSetForAnalysis(input: {
     };
   }
 
-  const saved = analysis as Pick<SavedAnalysisRow, "id" | "user_id" | "summary" | "learn_cards">;
+  const saved = analysis as Pick<
+    SavedAnalysisRow,
+    "id" | "user_id" | "summary" | "learn_cards" | "intelligence_mode" | "document_type"
+  >;
   const generated = generateReviewItemsFromAnalysis({
     summary: saved.summary,
     learnCards: saved.learn_cards ?? [],
     maxItems: Math.min(16, remaining),
+    intelligenceModeId: saved.intelligence_mode,
+    documentDomain: saved.document_type,
   });
 
   const now = new Date().toISOString();

@@ -1,3 +1,5 @@
+import { practicePromptForCard, resolveLearnStrategy } from "@/server/learn/applyModeLearnStrategy";
+import { applyLearnCardQuality } from "@/server/learn/learnCardQuality";
 import type { GeneratedReviewItem, ReviewSourceKind } from "@/types/memory";
 import type { SavedAnalysisSummaryPayload } from "@/types/saved-analysis";
 import type { LearnCardOutput } from "@/types/text-analysis";
@@ -7,6 +9,9 @@ type ReviewGenerationInput = {
   summary: SavedAnalysisSummaryPayload;
   learnCards: LearnCardOutput[];
   maxItems?: number;
+  intelligenceModeId?: string | null;
+  structureFamily?: string | null;
+  documentDomain?: string | null;
 };
 
 const DEFAULT_MAX_ITEMS = 16;
@@ -36,7 +41,11 @@ function pushUnique(
   items.push(item);
 }
 
-function learnCardToReviewItem(card: LearnCardOutput, index: number): GeneratedReviewItem | null {
+function learnCardToReviewItem(
+  card: LearnCardOutput,
+  index: number,
+  strategy = resolveLearnStrategy({}),
+): GeneratedReviewItem | null {
   const title = cleanText(card.title);
   const content = cleanText(card.content);
   if (!title || !content) return null;
@@ -56,12 +65,7 @@ function learnCardToReviewItem(card: LearnCardOutput, index: number): GeneratedR
     };
   }
 
-  const prompt =
-    card.type === "memory_hook"
-      ? `What memory hook helps recall ${title}?`
-      : card.type === "misconception"
-        ? `What misconception should you avoid about ${title}?`
-        : `Explain ${title}.`;
+  const prompt = practicePromptForCard(card, strategy);
 
   return {
     source_kind: "learn_card",
@@ -73,28 +77,50 @@ function learnCardToReviewItem(card: LearnCardOutput, index: number): GeneratedR
   };
 }
 
+function insightSubject(insight: string): string | null {
+  const match = insight.match(
+    /\b([A-Z][a-z]+(?:\s+(?:of|in|on|the|and|as|for|to)\s+)?[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\b/,
+  );
+  return match?.[1]?.trim() ?? null;
+}
+
 function insightToReviewItem(insight: string, index: number): GeneratedReviewItem | null {
   const answer = cleanText(insight);
   if (answer.length < 24) return null;
+  const subject = insightSubject(insight);
+  const prompt = subject
+    ? `What is the main takeaway about ${subject}?`
+    : `What point does this source emphasize in: ${answer.slice(0, 72)}?`;
   return {
     source_kind: "key_insight",
     source_id: sourceId("key_insight", index, answer),
-    prompt: "What is the key insight?",
+    prompt,
     answer,
-    context: "Key insight",
+    context: subject ?? "Key insight",
   };
 }
 
-function conceptFromCard(card: LearnCardOutput, index: number): GeneratedReviewItem | null {
+function conceptFromCard(
+  card: LearnCardOutput,
+  index: number,
+  strategy = resolveLearnStrategy({}),
+): GeneratedReviewItem | null {
   const title = cleanText(card.title);
   const content = cleanText(card.content);
   if (!title || !content || !["concept", "connection", "why_it_matters", "why"].includes(card.type)) {
     return null;
   }
+  if (strategy.promptStyle === "decision_recall" || strategy.id === "researcher") {
+    return null;
+  }
+  const prompt =
+    strategy.promptStyle === "active_recall" && !title.endsWith("?")
+      ? `Why does ${title} matter in this source?`
+      : practicePromptForCard(card, strategy);
   return {
     source_kind: "important_concept",
     source_id: sourceId("important_concept", index, title),
-    prompt: `Why does ${title} matter?`,
+    prompt,
     answer: content,
     context: "Important concept",
   };
@@ -104,22 +130,42 @@ export function generateReviewItemsFromAnalysis({
   summary,
   learnCards,
   maxItems = DEFAULT_MAX_ITEMS,
+  intelligenceModeId,
+  structureFamily,
+  documentDomain,
 }: ReviewGenerationInput): GeneratedReviewItem[] {
+  const strategy = resolveLearnStrategy({
+    modeId: intelligenceModeId,
+    structureFamily,
+    domain: documentDomain,
+  });
+
+  const { cards: qualityCards } = applyLearnCardQuality(learnCards, {
+    documentTitle: summary.title,
+    summary: summary.summary,
+    keyInsights: summary.keyInsights,
+    targetMin: 2,
+    targetMax: maxItems,
+    strategy,
+  });
+
   const items: GeneratedReviewItem[] = [];
   const seen = new Set<string>();
 
-  learnCards.forEach((card, index) => {
-    const item = learnCardToReviewItem(card, index);
+  qualityCards.forEach((card, index) => {
+    const item = learnCardToReviewItem(card, index, strategy);
     if (item) pushUnique(items, seen, item);
   });
 
-  summary.keyInsights?.forEach((insight, index) => {
-    const item = insightToReviewItem(insight, index);
-    if (item) pushUnique(items, seen, item);
-  });
+  if (strategy.id !== "executive" && strategy.id !== "researcher") {
+    summary.keyInsights?.forEach((insight, index) => {
+      const item = insightToReviewItem(insight, index);
+      if (item) pushUnique(items, seen, item);
+    });
+  }
 
-  learnCards.forEach((card, index) => {
-    const item = conceptFromCard(card, index);
+  qualityCards.forEach((card, index) => {
+    const item = conceptFromCard(card, index, strategy);
     if (item) pushUnique(items, seen, item);
   });
 

@@ -8,6 +8,8 @@ import type {
   LearnCardRelationship,
   LearnDifficultyLevel,
   AdaptiveLearnDebugMeta,
+  LearnCardQualityStats,
+  LearnStrategyDebugMeta,
 } from "@/types/adaptive-learn";
 
 /** Final learn card kinds (UI + API output). */
@@ -83,6 +85,10 @@ export type LearnIntelligenceMeta = {
   mode: TextAnalysisMode;
   /** Dev-only Phase 11D diagnostics. */
   adaptiveLearn?: AdaptiveLearnDebugMeta;
+  /** Dev-only Phase Learn 1 quality pass. */
+  learnCardQuality?: LearnCardQualityStats;
+  /** Dev-only Phase Learn 2 strategy pass. */
+  learnStrategy?: LearnStrategyDebugMeta;
 };
 
 export type BuildLearnIntelligenceResult = {

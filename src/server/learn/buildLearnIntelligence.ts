@@ -31,6 +31,18 @@ import {
   enrichCandidatesForProfile,
   sortCandidatesByGroups,
 } from "./adaptiveLearnEnrichment";
+import {
+  applyStrategyToCandidateRanking,
+  applyStrategyToLearnCards,
+  filterCandidatesByStrategy,
+  learnStrategyDebugStats,
+  resolveLearnStrategy,
+  selectCandidatesByStrategy,
+} from "./applyModeLearnStrategy";
+import {
+  applyLearnCardQuality,
+  learnCardQualityDebugStats,
+} from "./learnCardQuality";
 
 const GENERIC_PHRASES = [
   /engaging experience/i,
@@ -424,6 +436,14 @@ export function buildLearnIntelligence(
       ? buildAdaptiveLearnProfile(options.personaAdaptivePlan)
       : undefined);
 
+  const learnStrategy = resolveLearnStrategy({
+    modeId: options.intelligenceModeId,
+    structureFamily: options.personaAdaptivePlan?.structureFamily,
+    domain: learnProfile?.documentDomain ?? options.personaAdaptivePlan?.documentDomain,
+    personaId: options.personaAdaptivePlan?.personaId ?? learnProfile?.personaId,
+    pipelineMode: options.mode,
+  });
+
   const corpus = [
     result.title,
     result.summary,
@@ -446,13 +466,18 @@ export function buildLearnIntelligence(
     ? synthesizeProfileLearnCandidates(result, learnProfile)
     : [];
 
-  const baseCandidates = filterLearnCandidates(
+  const policyFiltered = filterLearnCandidates(
     filterCandidatesByLearnSourcePolicy(
       [...candidatesFromAnalysis(result, isDeckSource, learnFlags), ...profileCandidates],
       options.allowedLearnSourceSections,
       options.blockedLearnSourceSections,
     ),
-  ).filter((c) => {
+  );
+
+  const { candidates: strategyFilteredCandidates, filteredCount: strategyFilteredCount } =
+    filterCandidatesByStrategy(policyFiltered, learnStrategy);
+
+  const baseCandidates = strategyFilteredCandidates.filter((c) => {
     if (!isPresentation) return true;
     return !(
       isLowQualityPresentationFragment(c.title) &&
@@ -467,9 +492,11 @@ export function buildLearnIntelligence(
     isPresentation,
   );
 
-  const ranked = rankLearnCandidates(withTitles, options.mode, entitySet, {
+  const rankedBase = rankLearnCandidates(withTitles, options.mode, entitySet, {
     isPresentation,
   });
+  const { candidates: ranked, boostedCount: strategyBoostedCount } =
+    applyStrategyToCandidateRanking(rankedBase, learnStrategy);
   const deduped = dedupeLearnCandidates(
     ranked,
     result.summary,
@@ -484,7 +511,10 @@ export function buildLearnIntelligence(
       )
     : deduped;
 
-  let selected = selectDiversified(selectionPool, options.mode, range, options.learnWeighting);
+  let selected = selectCandidatesByStrategy(selectionPool, learnStrategy, range);
+  if (selected.length < range.min) {
+    selected = selectDiversified(selectionPool, options.mode, range, options.learnWeighting);
+  }
 
   if (learnProfile) {
     selected = sortCandidatesByGroups(
@@ -508,6 +538,25 @@ export function buildLearnIntelligence(
     }
   }
 
+  const strategyPass = applyStrategyToLearnCards(
+    finalCards.slice(0, range.max),
+    learnStrategy,
+    range.max,
+  );
+  strategyPass.stats.strategyFilteredCount += strategyFilteredCount;
+  strategyPass.stats.strategyBoostedCount += strategyBoostedCount;
+
+  const quality = applyLearnCardQuality(strategyPass.items, {
+    documentTitle: result.title,
+    summary: result.summary,
+    keyInsights: result.keyInsights,
+    targetMin: range.min,
+    targetMax: range.max,
+    strategy: learnStrategy,
+  });
+  const qualityDebug = learnCardQualityDebugStats(quality.stats);
+  const strategyDebug = learnStrategyDebugStats(strategyPass.stats);
+
   const adaptiveLearnMeta = learnProfile
     ? buildLearnDebugMeta(
         attachCardRelationships(enrichCandidatesForProfile(selected, learnProfile)),
@@ -515,14 +564,23 @@ export function buildLearnIntelligence(
       )
     : undefined;
 
+  if (qualityDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.learnCardQuality = qualityDebug;
+  }
+  if (strategyDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.learnStrategy = strategyDebug;
+  }
+
   return {
-    learnCards: finalCards.slice(0, range.max),
+    learnCards: quality.cards,
     meta: {
       candidateCount: withTitles.length,
-      selectedCount: finalCards.length,
+      selectedCount: quality.cards.length,
       complexity: options.complexity,
       mode: options.mode,
       ...(adaptiveLearnMeta ? { adaptiveLearn: adaptiveLearnMeta } : {}),
+      ...(qualityDebug ? { learnCardQuality: qualityDebug } : {}),
+      ...(strategyDebug ? { learnStrategy: strategyDebug } : {}),
     },
   };
 }

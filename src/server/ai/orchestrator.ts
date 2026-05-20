@@ -81,9 +81,24 @@ function applyLearnIntelligence(
     blockedLearnSourceSections: plan?.blockedLearnSourceSections,
     personaAdaptivePlan: plan,
   });
-  if (learnMeta.adaptiveLearn) {
-    if (intelligence.cognition) {
+  if (intelligence.cognition) {
+    if (learnMeta.adaptiveLearn) {
       intelligence.cognition.adaptiveLearn = learnMeta.adaptiveLearn;
+    } else if (learnMeta.learnStrategy || learnMeta.learnCardQuality) {
+      intelligence.cognition.adaptiveLearn = {
+        adaptiveLearnProfileId: "quality_only",
+        learnGroups: [],
+        relationshipCount: 0,
+        difficultyStats: {
+          low: 0,
+          medium: 0,
+          high: 0,
+          avgMemoryWeight: 0,
+          avgConceptualDensity: 0,
+        },
+        learnCardQuality: learnMeta.learnCardQuality,
+        learnStrategy: learnMeta.learnStrategy,
+      };
     }
   }
   return { ...result, learnCards };

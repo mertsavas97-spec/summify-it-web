@@ -65,18 +65,7 @@ export type AnalyzeApiDebugMetadata = {
     suppressedDefaultSections: string[];
     learnCardStrategySummary: string;
     primaryDimensions: string[];
-    adaptiveLearn?: {
-      adaptiveLearnProfileId: string;
-      learnGroups: Array<{ id: string; title: string; cardCount: number }>;
-      relationshipCount: number;
-      difficultyStats: {
-        low: number;
-        medium: number;
-        high: number;
-        avgMemoryWeight: number;
-        avgConceptualDensity: number;
-      };
-    };
+    adaptiveLearn?: import("@/types/adaptive-learn").AdaptiveLearnDebugMeta;
   };
 };
 
