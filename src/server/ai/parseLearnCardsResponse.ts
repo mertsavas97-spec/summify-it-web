@@ -58,34 +58,109 @@ function isAnswerIdenticalToQuestion(question: string, answer: string): boolean 
   return normalizeCardText(question) === normalizeCardText(answer);
 }
 
+/** Shared token (>5 chars) in Q and A — non-English names, technical terms, etc. */
+function hasSharedLongWordAnchor(question: string, answer: string): boolean {
+  const longWords = (text: string) =>
+    new Set(
+      (text.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter((w) => w.length > 5),
+    );
+  const inQuestion = longWords(question);
+  for (const w of longWords(answer)) {
+    if (inQuestion.has(w)) return true;
+  }
+  return false;
+}
+
+/** Answer-only: any token longer than 6 chars (e.g. allegations, technical terms). */
+function hasLongWordInAnswer(answer: string): boolean {
+  const tokens = answer.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  return tokens.some((w) => w.length > 6);
+}
+
 function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: string): boolean {
   const question = card.question.trim();
   const answer = card.answer.trim();
-  if (!question || !answer) return false;
-  if (isAnswerIdenticalToQuestion(question, answer)) return false;
-  if (sharedWordCount(question, answer) > 3) return false;
-  if (/^significant changes occurred|changes occurred significantly/i.test(answer)) return false;
+  if (!question || !answer) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "empty",
+    });
+    return false;
+  }
+  if (isAnswerIdenticalToQuestion(question, answer)) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "identical",
+    });
+    return false;
+  }
+  if (sharedWordCount(question, answer) > 6) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "overlap",
+    });
+    return false;
+  }
+  if (/^significant changes occurred|changes occurred significantly/i.test(answer)) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "banned_phrase",
+    });
+    return false;
+  }
   if (
     documentTitle &&
     documentTitle.length >= 8 &&
     answer.toLowerCase().includes(documentTitle.toLowerCase().slice(0, 40))
   ) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "title_repeat",
+    });
     return false;
   }
   const hasAnchor =
     /\b(19|20)\d{2}\b/.test(answer) ||
     /\b\d+([.,]\d+)?%?\b/.test(answer) ||
     /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/.test(answer) ||
-    /\b(because|led to|resulted|therefore|due to|caused)\b/i.test(answer);
-  if (!hasAnchor) return false;
-  if (/^what changed after\b/i.test(question)) return false;
-  if (question.length > QUESTION_MAX || answer.length > ANSWER_MAX) return false;
+    /\b(because|led to|resulted|therefore|due to|caused)\b/i.test(answer) ||
+    hasSharedLongWordAnchor(question, answer) ||
+    hasLongWordInAnswer(answer);
+  if (!hasAnchor) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "no_anchor",
+    });
+    return false;
+  }
+  if (/^what changed after\b/i.test(question)) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "banned_stem",
+    });
+    return false;
+  }
+  if (question.length > QUESTION_MAX || answer.length > ANSWER_MAX) {
+    console.warn("[summify.parser] card_rejected", {
+      question: card.question,
+      answer: card.answer,
+      rule: "length",
+    });
+    return false;
+  }
   return true;
 }
 
 function personNamesInCard(card: GeneratedLearnCard): string[] {
   const text = `${card.question} ${card.answer}`;
-  return (text.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g) ?? []).map((n) => n.toLowerCase());
+  return (text.match(/\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g) ?? []).map((n) => n.toLowerCase());
 }
 
 function mapToProviderType(raw: string): LearnCardProviderType | null {
