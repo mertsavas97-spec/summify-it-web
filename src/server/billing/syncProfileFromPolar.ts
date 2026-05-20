@@ -8,12 +8,14 @@ import { isActiveSubscriptionStatus } from "@/lib/billing/entitlements";
 import type { BillingInterval, PlanId } from "@/types/plan";
 import { devLog, devWarn } from "@/server/logging";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  patchPolarSyncSnapshot,
-  recordPolarSyncSnapshot,
-  type PolarSyncDebugSnapshot,
-  type PolarUserResolutionSource,
-} from "@/server/billing/polarSyncDebug";
+import { finishPolarWebhookDebug } from "@/server/billing/polarWebhookDebugStore";
+
+export type PolarUserResolutionSource =
+  | "metadata"
+  | "customer_metadata"
+  | "external_customer_id"
+  | "auth_email"
+  | "profile_email";
 
 export type ProfileBillingUpdate = {
   userId: string;
@@ -209,9 +211,6 @@ export async function resolvePolarUserId(
   }
 
   if (!client) {
-    patchPolarSyncSnapshot({
-      userResolution: { userId: null, source: null, attemptedSources: attempted },
-    });
     return null;
   }
 
@@ -232,11 +231,21 @@ export async function resolvePolarUserId(
     }
   }
 
-  patchPolarSyncSnapshot({
-    userResolution: { userId: null, source: null, attemptedSources: attempted },
-  });
-
   return null;
+}
+
+/** Resolve profiles.id from email (profile row, then auth.users). */
+export async function resolveUserIdByEmailForAdmin(email: string): Promise<string> {
+  const admin = getAdminOrThrow();
+  const normalized = email.trim().toLowerCase();
+  const fromProfile = await findProfileIdByEmail(admin, normalized);
+  if (fromProfile) return fromProfile;
+  const fromAuth = await findAuthUserIdByEmail(admin, normalized);
+  if (fromAuth) return fromAuth;
+  throw new PolarProfileSyncError(
+    `No user found for email ${normalized}`,
+    "user_unresolved",
+  );
 }
 
 /** @deprecated Use resolvePolarUserId — sync extraction for tests. */
@@ -261,7 +270,7 @@ export function extractPolarUserId(data: Record<string, unknown>): string | null
   return null;
 }
 
-async function ensureProfileRow(
+export async function ensureProfileRow(
   admin: SupabaseClient,
   userId: string,
   email: string | null,
@@ -377,6 +386,7 @@ function planForPaidEvent(data: Record<string, unknown>, eventKind: string) {
 type SyncContext = {
   eventKind: string;
   data: Record<string, unknown>;
+  debugEventId?: string | null;
 };
 
 async function runPolarSync(
@@ -386,23 +396,13 @@ async function runPolarSync(
     admin: SupabaseClient;
   }) => Promise<ProfileBillingUpdate>,
 ): Promise<boolean> {
-  const { eventKind, data } = ctx;
+  const { eventKind, data, debugEventId } = ctx;
   const admin = getAdminOrThrow();
   const payloadSummary = summarizePolarPayload(data, eventKind);
 
-  const snapshot: PolarSyncDebugSnapshot = {
-    at: new Date().toISOString(),
-    eventType: eventKind,
-    payloadSummary,
-    userResolution: null,
-    planResolution: null,
-    profileUpdate: null,
-    error: null,
-  };
+  devLog("[summify.billing] polar_sync_start", { eventKind, payloadSummary, debugEventId });
 
-  recordPolarSyncSnapshot(snapshot);
-
-  devLog("[summify.billing] polar_sync_start", { eventKind, payloadSummary });
+  let resolvedUserId: string | null = null;
 
   try {
     const user = await resolvePolarUserId(data, admin);
@@ -413,12 +413,7 @@ async function runPolarSync(
       );
     }
 
-    snapshot.userResolution = {
-      userId: user.userId,
-      source: user.source,
-      attemptedSources: [user.source],
-    };
-    patchPolarSyncSnapshot({ userResolution: snapshot.userResolution });
+    resolvedUserId = user.userId;
 
     devLog("[summify.billing] polar_sync_user_resolved", {
       userId: user.userId,
@@ -430,49 +425,25 @@ async function runPolarSync(
 
     const update = await buildUpdate({ user, admin });
 
-    if (update.plan && ["pro", "team", "scholar"].includes(update.plan)) {
-      snapshot.planResolution = {
-        planId: update.plan,
-        interval: update.billingInterval ?? null,
-        source: "paid_activation",
-      };
-    } else if (update.plan) {
-      snapshot.planResolution = {
-        planId: update.plan,
-        interval: update.billingInterval ?? null,
-        source: "downgrade",
-      };
-    }
-
     const resolvedPlan = resolvePlanFromPolarPayload(data);
-    if (resolvedPlan) {
-      snapshot.planResolution = {
-        planId: resolvedPlan.planId,
-        interval: resolvedPlan.interval,
-        source: resolvedPlan.source,
-      };
-    }
-
-    patchPolarSyncSnapshot({ planResolution: snapshot.planResolution });
 
     devLog("[summify.billing] polar_sync_plan_resolved", {
-      planResolution: snapshot.planResolution,
+      planId: update.plan ?? resolvedPlan?.planId ?? null,
+      interval: update.billingInterval ?? resolvedPlan?.interval ?? null,
+      source: resolvedPlan?.source ?? null,
     });
 
     await syncProfileBilling(update);
 
-    snapshot.profileUpdate = {
-      success: true,
-      userId: update.userId,
-      plan: update.plan ?? null,
-      subscriptionStatus: update.subscriptionStatus ?? null,
-      billingInterval: update.billingInterval ?? null,
+    await finishPolarWebhookDebug(debugEventId ?? null, {
+      syncStatus: "success",
+      resolvedUserId: update.userId,
+      resolvedPlan: update.plan ?? null,
+      resolvedInterval: update.billingInterval ?? null,
       polarCustomerId: update.polarCustomerId ?? null,
       polarSubscriptionId: update.polarSubscriptionId ?? null,
-      currentPeriodEnd: update.currentPeriodEnd ?? null,
-    };
-    patchPolarSyncSnapshot({ profileUpdate: snapshot.profileUpdate, error: null });
-    recordPolarSyncSnapshot({ ...snapshot, error: null });
+      customerEmail: emails[0] ?? null,
+    });
 
     return true;
   } catch (error) {
@@ -484,9 +455,12 @@ async function runPolarSync(
             "handler_error",
           );
 
-    snapshot.error = { code: syncError.code, message: syncError.message };
-    patchPolarSyncSnapshot({ error: snapshot.error });
-    recordPolarSyncSnapshot(snapshot);
+    await finishPolarWebhookDebug(debugEventId ?? null, {
+      syncStatus: "failed",
+      resolvedUserId,
+      errorCode: syncError.code,
+      errorMessage: syncError.message,
+    });
 
     devWarn("[summify.billing] polar_sync_failed", {
       eventKind,
@@ -502,8 +476,9 @@ async function runPolarSync(
 export async function applyPolarSubscriptionEvent(
   data: Record<string, unknown>,
   eventKind = "subscription",
+  debugEventId?: string | null,
 ): Promise<boolean> {
-  return runPolarSync({ eventKind, data }, async ({ user }) => {
+  return runPolarSync({ eventKind, data, debugEventId }, async ({ user }) => {
     const status = readString(data, "status");
     const subscriptionId = readString(data, "id");
     const customerId = extractCustomerId(data);
@@ -534,6 +509,7 @@ export async function applyPolarSubscriptionEvent(
 export async function applyPolarOrderPaidEvent(
   data: Record<string, unknown>,
   eventKind = "order.paid",
+  debugEventId?: string | null,
 ): Promise<boolean> {
   const subscription = asRecord(data.subscription);
   if (subscription) {
@@ -547,10 +523,11 @@ export async function applyPolarOrderPaidEvent(
         customer_email: data.customer_email,
       },
       eventKind,
+      debugEventId,
     );
   }
 
-  return runPolarSync({ eventKind, data }, async ({ user }) => {
+  return runPolarSync({ eventKind, data, debugEventId }, async ({ user }) => {
     const mapped = planForPaidEvent(data, eventKind);
     const status = readString(data, "status");
 
@@ -569,6 +546,7 @@ export async function applyPolarOrderPaidEvent(
 /** checkout.updated with status succeeded — metadata-first activation. */
 export async function applyPolarCheckoutSucceededEvent(
   data: Record<string, unknown>,
+  debugEventId?: string | null,
 ): Promise<boolean> {
   const subscriptionId = readString(data, "subscription_id");
   const subscription = asRecord(data.subscription);
@@ -583,6 +561,7 @@ export async function applyPolarCheckoutSucceededEvent(
         customer_email: data.customer_email,
       },
       "checkout.updated",
+      debugEventId,
     );
   }
 
@@ -594,8 +573,9 @@ export async function applyPolarCheckoutSucceededEvent(
         status: "active",
       },
       "checkout.updated",
+      debugEventId,
     );
   }
 
-  return applyPolarOrderPaidEvent(data, "checkout.updated");
+  return applyPolarOrderPaidEvent(data, "checkout.updated", debugEventId);
 }

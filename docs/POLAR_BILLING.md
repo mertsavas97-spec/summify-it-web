@@ -119,7 +119,10 @@ User resolution order (`resolvePolarUserId`):
 4. `customer.email` → `auth.users` (admin API)
 5. `customer_email` / checkout email → `profiles.email`
 
-Debug (development): set `ADMIN_DEBUG_TOKEN`, then `POST /api/admin/debug-polar-last-event` with header `Authorization: Bearer <token>` or `x-admin-debug-token`.
+Debug (serverless-safe): run [`docs/SUPABASE_MIGRATION_POLAR_WEBHOOK_DEBUG.sql`](./SUPABASE_MIGRATION_POLAR_WEBHOOK_DEBUG.sql), set `ADMIN_DEBUG_TOKEN`, then:
+
+- `POST /api/admin/debug-polar-last-event` — optional body `{ "email": "user@example.com" }`, reads latest row from `polar_webhook_debug_events`
+- `POST /api/admin/manual-plan-sync` — emergency profile update by email (same token)
 
 ## Fallback when billing is off
 
