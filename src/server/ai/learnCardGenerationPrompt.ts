@@ -1,94 +1,62 @@
 /**
- * Learn / practice flashcard generation — precision extraction prompt (dedicated AI call).
+ * Phase 2 — flashcards from fact inventory only (no source text).
  */
 
-export const LEARN_CARD_GENERATION_SYSTEM = `You are a precision knowledge extraction engine.
-Your only job is to find specific, memorable, testable
-facts inside a document and turn them into flashcards.
+import type { FactInventory } from "./factInventory";
 
-EXTRACTION RULES — follow in order:
+export const PHASE2_FLASHCARD_SYSTEM = `You are a flashcard writer. Your only input is a fact inventory JSON.
+Your only output is a flashcard JSON object.
 
-Step 1 — Build an inventory BEFORE writing any cards.
-Scan the entire text and list:
-- Every named person mentioned
-- Every date or year mentioned  
-- Every number or statistic mentioned
-- Every named event or operation mentioned
-- Every cause → effect relationship
-- Every contrast or turning point
+RULES — all mandatory:
 
-Step 2 — Build cards ONLY from this inventory.
-Never write a card about something not in your inventory.
-If you cannot find {CARD_COUNT} real facts, write fewer cards.
+Question format:
+- Use only these patterns: "Who did X?", "When did X happen?",
+  "What caused X?", "What resulted from X?", "How many X?",
+  "Which manager did X?", "What was the outcome of X?"
+- Max 80 characters
+- Never copy a sentence from the inventory as the question stem
+- Never start with "What changed after [long clause]?"
 
-Step 3 — Card quality rules:
-- Question and answer must NOT share more than 3 words
-- Answer must contain at least one anchor:
-  a name, number, date, place, or direct cause
-- Answer must be verifiable from the source text
-- Question must be answerable without reading the source
+Answer format:
+- Must contain at least one anchor from the inventory
+  (a name, number, year, place, or direct cause)
+- Must not restate the question
+- Must not repeat the document title
+- Max 160 characters
 
-Step 4 — Duplicate check:
-- No two cards can test the same fact
-- No two cards can name the same person unless
-  asking about genuinely different facts about them
+Deduplication:
+- No two cards may test the same fact
+- A person may appear in at most 2 cards, each testing a different fact
 
-Step 5 — Question format rules:
-- Never start a question with the answer
-- Never ask "What changed after [X]?" where X is 
-  a long sentence from the text
-- Good formats: "Who did X?", "When did X happen?",
-  "What caused X?", "What resulted from X?",
-  "How many X?", "Why did X happen?"
-- Bad formats: "What changed after [copied sentence]?"
-
-BANNED content in answers:
-- Document title repetition
-- Phrases longer than 5 words copied verbatim from
-  the document title
-- Vague answers like "significant changes occurred"
-- Answers that restate the question`;
-
-export type LearnCardGenerationUserInput = {
-  contentType: string;
-  language: string;
-  cardCount: number;
-  content: string;
-};
-
-export function buildLearnCardGenerationSystemPrompt(cardCount: number): string {
-  return LEARN_CARD_GENERATION_SYSTEM.replace(/\{CARD_COUNT\}/g, String(cardCount));
-}
-
-export function buildLearnCardGenerationUserPrompt(
-  input: LearnCardGenerationUserInput,
-): string {
-  return `Content type: ${input.contentType}
-Language: ${input.language}
-Generate ${input.cardCount} cards.
-
-IMPORTANT: Return ONLY valid JSON.
-No markdown, no explanation, no backticks.
+Return ONLY valid JSON. No markdown, no explanation.
 Start with { end with }.
 
 Schema:
 {
   "cards": [
     {
-      "type": "fact|definition|cause|consequence|connection|number",
+      "type": "fact|cause|consequence|number|connection",
       "difficulty": "easy|medium|hard",
       "topic": "max 25 chars",
-      "question": "max 120 chars",
-      "answer": "max 200 chars, must contain specific detail"
+      "question": "max 80 chars",
+      "answer": "max 160 chars"
     }
   ]
-}
+}`;
 
-Content:
-${input.content}
+export type Phase2FlashcardUserInput = {
+  cardCount: number;
+  language: string;
+  inventory: FactInventory;
+};
 
-After generating, verify each card against Step 2-5.
-Remove any card that fails any rule.`;
+export function buildPhase2FlashcardUserPrompt(input: Phase2FlashcardUserInput): string {
+  return `Generate ${input.cardCount} flashcards.
+Language: ${input.language}
+
+Use ONLY facts from this inventory — do not invent or infer:
+
+${JSON.stringify(input.inventory, null, 2)}`;
 }
 
 export function resolveLearnContentType(input: {

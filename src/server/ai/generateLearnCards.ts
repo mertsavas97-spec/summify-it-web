@@ -1,19 +1,28 @@
 /**
- * SERVER ONLY — dedicated AI call for learn / practice flashcards.
+ * SERVER ONLY — two-phase learn / practice flashcards (inventory → cards).
  */
 
 import Groq from "groq-sdk";
 import { GoogleGenAI } from "@google/genai";
 import { AI_CONFIG } from "./config";
 import {
-  buildLearnCardGenerationSystemPrompt,
-  buildLearnCardGenerationUserPrompt,
+  PHASE1_FACT_INVENTORY_SYSTEM,
+  isFactInventoryUsable,
+  parseFactInventoryResponse,
+  type FactInventory,
+} from "./factInventory";
+import {
+  PHASE2_FLASHCARD_SYSTEM,
+  buildPhase2FlashcardUserPrompt,
   resolveLearnContentType,
 } from "./learnCardGenerationPrompt";
 import { parseLearnCardsGenerationResponse } from "./parseLearnCardsResponse";
 import type { LearnCardOutput } from "./schemas";
 import type { AnalysisProviderName } from "./analysis-failure";
 import { devWarn } from "@/server/logging";
+
+const PHASE1_MAX_TOKENS = 1000;
+const PHASE2_MAX_TOKENS = 1000;
 
 function getGroqClient(): Groq {
   const apiKey = process.env.GROQ_API_KEY;
@@ -27,7 +36,7 @@ function getGeminiClient(): GoogleGenAI {
   return new GoogleGenAI({ apiKey });
 }
 
-async function callGroqLearnCards(system: string, user: string): Promise<string> {
+async function callGroqJson(system: string, user: string, maxTokens: number): Promise<string> {
   const client = getGroqClient();
   const completion = await client.chat.completions.create(
     {
@@ -37,17 +46,17 @@ async function callGroqLearnCards(system: string, user: string): Promise<string>
         { role: "user", content: user },
       ],
       temperature: AI_CONFIG.temperature,
-      max_tokens: AI_CONFIG.maxOutputTokens,
+      max_tokens: maxTokens,
       response_format: { type: "json_object" },
     },
     { timeout: AI_CONFIG.timeoutMs },
   );
   const content = completion.choices[0]?.message?.content;
-  if (!content?.trim()) throw new Error("Groq returned an empty learn-card response.");
+  if (!content?.trim()) throw new Error("Groq returned an empty response.");
   return content;
 }
 
-async function callGeminiLearnCards(system: string, user: string): Promise<string> {
+async function callGeminiJson(system: string, user: string, maxTokens: number): Promise<string> {
   const client = getGeminiClient();
   const response = await client.models.generateContent({
     model: AI_CONFIG.providers.gemini.model,
@@ -55,13 +64,73 @@ async function callGeminiLearnCards(system: string, user: string): Promise<strin
     config: {
       systemInstruction: system,
       temperature: AI_CONFIG.temperature,
-      maxOutputTokens: AI_CONFIG.maxOutputTokens,
+      maxOutputTokens: maxTokens,
       responseMimeType: "application/json",
     },
   });
   const text = response.text;
-  if (!text?.trim()) throw new Error("Gemini returned an empty learn-card response.");
+  if (!text?.trim()) throw new Error("Gemini returned an empty response.");
   return text;
+}
+
+async function callProviderJson(
+  provider: AnalysisProviderName,
+  system: string,
+  user: string,
+  maxTokens: number,
+): Promise<string> {
+  return provider === "groq"
+    ? callGroqJson(system, user, maxTokens)
+    : callGeminiJson(system, user, maxTokens);
+}
+
+async function extractFactInventory(
+  provider: AnalysisProviderName,
+  content: string,
+): Promise<FactInventory | null> {
+  const userContent = content.slice(0, AI_CONFIG.input.maxChars);
+  try {
+    const raw = await callProviderJson(
+      provider,
+      PHASE1_FACT_INVENTORY_SYSTEM,
+      userContent,
+      PHASE1_MAX_TOKENS,
+    );
+    return parseFactInventoryResponse(raw);
+  } catch (error) {
+    devWarn("[summify.learnCards] phase1 inventory failed", {
+      provider,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+async function generateFlashcardsFromInventory(
+  provider: AnalysisProviderName,
+  inventory: FactInventory,
+  cardCount: number,
+  language: string,
+  documentTitle?: string,
+  maxCards?: number,
+): Promise<LearnCardOutput[]> {
+  const user = buildPhase2FlashcardUserPrompt({
+    cardCount,
+    language,
+    inventory,
+  });
+
+  const raw = await callProviderJson(
+    provider,
+    PHASE2_FLASHCARD_SYSTEM,
+    user,
+    PHASE2_MAX_TOKENS,
+  );
+
+  return parseLearnCardsGenerationResponse(raw, {
+    documentTitle,
+    maxCards: maxCards ?? cardCount,
+  });
 }
 
 export type GenerateLearnCardsInput = {
@@ -75,29 +144,29 @@ export type GenerateLearnCardsInput = {
 };
 
 /**
- * Generate learn cards via the precision extraction prompt (Groq or Gemini).
+ * Phase 1 inventory → Phase 2 flashcards (Groq or Gemini).
+ * Returns [] if inventory has zero facts or Phase 1 fails — no source-text fallback.
  */
 export async function generateLearnCardsFromContent(
   input: GenerateLearnCardsInput,
 ): Promise<LearnCardOutput[]> {
   const cardCount = Math.max(4, Math.min(12, input.cardCount));
-  const system = buildLearnCardGenerationSystemPrompt(cardCount);
-  const user = buildLearnCardGenerationUserPrompt({
-    contentType: input.contentType,
-    language: input.language ?? "English",
+  const content = input.content.slice(0, AI_CONFIG.input.maxChars);
+  const language = input.language ?? "English";
+
+  const inventory = await extractFactInventory(input.provider, content);
+  if (!inventory || !isFactInventoryUsable(inventory)) {
+    return [];
+  }
+
+  return generateFlashcardsFromInventory(
+    input.provider,
+    inventory,
     cardCount,
-    content: input.content.slice(0, AI_CONFIG.input.maxChars),
-  });
-
-  const raw =
-    input.provider === "groq"
-      ? await callGroqLearnCards(system, user)
-      : await callGeminiLearnCards(system, user);
-
-  return parseLearnCardsGenerationResponse(raw, {
-    documentTitle: input.documentTitle,
-    maxCards: input.maxCards ?? cardCount,
-  });
+    language,
+    input.documentTitle,
+    input.maxCards ?? cardCount,
+  );
 }
 
 export type GenerateLearnCardsContext = {
