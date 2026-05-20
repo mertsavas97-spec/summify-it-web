@@ -48,6 +48,8 @@ type AnalysisPracticeSessionProps = {
   cards: PracticeSessionCard[];
   hasLearnCards: boolean;
   autoStart?: boolean;
+  /** When false, practice runs from in-memory cards (live analysis) without workspace save. */
+  practicePersisted?: boolean;
 };
 
 type OutcomeMap = Record<string, PracticeCardOutcome>;
@@ -61,6 +63,7 @@ export function AnalysisPracticeSession({
   cards: initialCards,
   hasLearnCards,
   autoStart = false,
+  practicePersisted = true,
 }: AnalysisPracticeSessionProps) {
   const router = useRouter();
   const sortedCards = useMemo(() => sortPracticeSessionCards(initialCards), [initialCards]);
@@ -174,6 +177,10 @@ export function AnalysisPracticeSession({
   }
 
   async function createPracticeSet(startAfter = false) {
+    if (!practicePersisted) {
+      if (sortedCards.length > 0) startSession(sortedCards, true);
+      return;
+    }
     setPending(true);
     setError(null);
     try {
@@ -233,10 +240,10 @@ export function AnalysisPracticeSession({
             className="mt-5"
             size="sm"
             disabled={pending}
-            onClick={() => void createPracticeSet(false)}
+            onClick={() => void createPracticeSet(practicePersisted ? false : true)}
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-            Create practice set
+            {practicePersisted ? "Create practice set" : "Start practice"}
           </Button>
         ) : (
           <Button href={`/dashboard/${analysisId}`} className="mt-5" size="sm" variant="secondary">

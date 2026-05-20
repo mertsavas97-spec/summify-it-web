@@ -255,6 +255,14 @@ export type LearnKnowledgeStructureDebugMeta = {
   removedDuplicateClusters: number;
 };
 
+/** Dev-only title validation pass (Learn stabilization). */
+export type LearnTitleValidationMeta = {
+  invalidRejected: number;
+  fallbackRegenerated: number;
+  malformedPrevented: number;
+  alignmentFailures: number;
+};
+
 /** Dev-only pipeline stage counts (card count regression audit). */
 export type LearnPipelineCountsMeta = {
   rawAiCandidates: number;
@@ -301,6 +309,8 @@ export type AdaptiveLearnDebugMeta = {
   multiFormatLearn?: import("@/lib/learn/multiFormatTypes").LearnMultiFormatDebugMeta;
   /** Dev-only pipeline stage counts. */
   learnPipelineCounts?: LearnPipelineCountsMeta;
+  /** Dev-only title validation pass. */
+  learnTitleValidation?: LearnTitleValidationMeta;
 };
 
 /** Dev-only practice retention pass (Phase Learn 6.4). */

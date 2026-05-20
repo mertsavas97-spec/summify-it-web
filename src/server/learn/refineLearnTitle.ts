@@ -3,7 +3,7 @@
  * No extra AI calls.
  */
 
-import { stripQuestionPrefixes } from "./learnTitleQuality";
+import { buildSafeLearnTitle, stripQuestionPrefixes, validateLearnTitle } from "./validateLearnTitle";
 import type { LearnCandidate } from "./types";
 
 const SYNTHETIC_TITLE_PATTERNS: RegExp[] = [
@@ -182,17 +182,14 @@ function refineByKind(
 
   switch (candidate.kind) {
     case "connection": {
-      const parts = content.split(/\s+(?:with|and|↔|→)\s+/i);
-      if (parts.length >= 2) {
-        const a = extractEditorialPhrase(parts[0], entities);
-        const b = extractEditorialPhrase(parts[1], entities);
-        return titleCase(`${a} ↔ ${b}`).slice(0, 56);
+      const ents = capitalizedPhrases(content);
+      if (ents.length >= 2) {
+        return `How did ${ents[0]} relate to ${ents[1]}?`.slice(0, 72);
       }
-      const quoted = content.match(/“([^”]{8,50})”\s+with\s+“([^”]{8,50})”/);
-      if (quoted) {
-        return titleCase(`${quoted[1]} ↔ ${quoted[2]}`).slice(0, 56);
+      if (ents.length === 1) {
+        return `What linked ${ents[0]} to the wider conflict?`.slice(0, 72);
       }
-      return extractEditorialPhrase(content, entities);
+      return `How do the main forces in this narrative interact?`.slice(0, 72);
     }
     case "misconception":
       return extractEditorialPhrase(
@@ -229,18 +226,24 @@ export function refineSemanticTitle(
   title = title.replace(TITLE_PREFIX_PATTERN, "").trim();
   title = stripQuotes(title);
 
-  if (!isSyntheticTitle(title) && title.length >= 10 && title.length <= 56) {
-    const hasEntity = [...corpusEntities].some((e) => title.toLowerCase().includes(e));
-    const hasCaps = /[A-Z][a-z]+/.test(title);
-    if (hasEntity || hasCaps) {
-      return titleCase(title).slice(0, 56);
-    }
+  if (!isSyntheticTitle(title) && validateLearnTitle(title).valid) {
+    return title.slice(0, 72);
   }
 
   const fromContent = refineByKind(candidate, corpusEntities);
-  if (fromContent && !isSyntheticTitle(fromContent)) {
+  if (fromContent && validateLearnTitle(fromContent).valid) {
     return fromContent;
   }
+
+  const safe = buildSafeLearnTitle({
+    card: {
+      type: candidate.kind === "why_it_matters" ? "why_it_matters" : candidate.kind,
+      title: candidate.title,
+      content: candidate.content,
+    },
+    documentTitle,
+  });
+  if (validateLearnTitle(safe).valid) return safe.slice(0, 72);
 
   if (documentTitle && documentTitle.length > 5) {
     return titleCase(documentTitle).slice(0, 56);

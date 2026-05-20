@@ -50,7 +50,7 @@ function fallbackLearnCards(result: AnalysisResult, min = 6): LearnCardOutput[] 
 
   return finalValidateLearnCards(out.slice(0, 12), {
     documentTitle: result.title,
-  });
+  }).cards;
 }
 
 /**

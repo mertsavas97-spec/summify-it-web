@@ -87,8 +87,10 @@ function contrastTitle(a: string, b: string): string {
 }
 
 function transformationTitle(line: string, entity: string): string {
-  const hook = line.slice(0, 56).replace(/\?+$/, "");
-  return `How did ${entity} change after: ${hook}?`.slice(0, 72);
+  if (/\bcoexist|success.*crisis|sporting.*politic/i.test(line)) {
+    return "How did sporting success coexist with institutional crisis?";
+  }
+  return `How did ${entity} transform across this period?`.slice(0, 72);
 }
 
 /** Higher-order learn cards from extracted knowledge structure. */

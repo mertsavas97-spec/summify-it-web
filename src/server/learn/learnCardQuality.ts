@@ -548,7 +548,7 @@ function fallbackTitleForInsight(
   if (priority === "timeline_chain" || priority === "historical_anchor") {
     return `Which period best captures the shift involving ${subject}?`.slice(0, MAX_TITLE_LENGTH);
   }
-  return `Why does ${subject} matter in this source?`.slice(0, MAX_TITLE_LENGTH);
+  return `Why does ${subject} matter in this document?`.slice(0, MAX_TITLE_LENGTH);
 }
 
 function learnPatternFromPriority(priority: ModeStrategyPattern): LearnCardOutput["learnPattern"] {

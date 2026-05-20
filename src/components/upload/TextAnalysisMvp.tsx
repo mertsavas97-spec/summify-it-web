@@ -393,6 +393,18 @@ export function TextAnalysisMvp({
           <PracticeAnalysisCta
             savedToWorkspace={displaySavedToWorkspace}
             savedAnalysisId={displaySavedAnalysisId}
+            learnCards={displayResult.learnCards}
+            documentTitle={displayResult.title}
+            modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}
+            sourceKindLabel={
+              extractionMeta?.sourceKind === "youtube"
+                ? "YouTube"
+                : extractionMeta?.sourceKind === "presentation"
+                  ? "Presentation"
+                  : extractionMeta?.sourceKind === "url"
+                    ? "Article"
+                    : "Document"
+            }
           />
 
           <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />

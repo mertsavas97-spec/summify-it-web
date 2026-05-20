@@ -9,7 +9,7 @@ import type {
   RecallDifficultyLevel,
 } from "@/types/adaptive-learn";
 import type { LearnCardOutput } from "@/types/text-analysis";
-import { isCreatorIntelligenceMode } from "./learnTitleQuality";
+import { isCreatorIntelligenceMode, validateLearnTitle } from "./validateLearnTitle";
 import { resolveCardStrategyPattern, type ModeLearnStrategy } from "./modeLearnStrategies";
 
 const MAX_HOOKS_PER_SET = 2;
@@ -172,7 +172,7 @@ export function retrievalPromptForCard(
   const pattern = resolveCardStrategyPattern(card);
   const retrieval = card.retrievalType ?? classifyRetrieval(card, strategy);
   const entities = extractEntities(content);
-  const subject = entities[0] ?? title.replace(/\?+$/, "").slice(0, 48);
+  const subject = entities[0] ?? "the main topic";
 
   if (card.type === "quiz") {
     const q = content.split("\n---\n")[0]?.trim() ?? title;
@@ -187,7 +187,7 @@ export function retrievalPromptForCard(
     if (retrieval === "mechanism") {
       return stripAnswerLeakage(`How does ${subject} work step by step?`, content);
     }
-    return stripAnswerLeakage(`Why does ${subject} matter in this source?`, content);
+    return stripAnswerLeakage(`Why does ${subject} matter in this document?`, content);
   }
 
   let prompt: string;
@@ -240,14 +240,16 @@ export function retrievalPromptForCard(
       prompt = title.endsWith("?") ? title : `What identifies ${subject} in this source?`;
       break;
     default:
-      if (title.endsWith("?") && !/^what is\b/i.test(title)) {
+      if (title.endsWith("?") && validateLearnTitle(title).valid) {
         prompt = title;
       } else if (pattern === "cause_effect_chain" || card.type === "why_it_matters") {
-        prompt = title.startsWith("Why") ? title : `Why did ${subject} happen according to the source?`;
+        prompt = title.startsWith("Why") ? title : `Why did ${subject} become decisive here?`;
       } else if (pattern === "figure_significance") {
         prompt = `Who or what is ${subject}, and what role do they play?`;
       } else {
-        prompt = title.endsWith("?") ? title : `Why does ${subject} matter in this source?`;
+        prompt = title.endsWith("?") && validateLearnTitle(title).valid
+          ? title
+          : `Why does ${subject} matter in this document?`;
       }
   }
 

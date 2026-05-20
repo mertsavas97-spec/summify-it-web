@@ -394,7 +394,7 @@ function buildOralQuiz(
       ? c.content.split("\n---\n")[0]?.trim()
       : c.title.endsWith("?")
         ? c.title
-        : `Why does ${c.title.slice(0, 48)} matter in this source?`;
+        : `Why does this idea matter in the document?`;
     const answer = isQuiz ? c.content.split("\n---\n")[1]?.trim() : c.content.slice(0, 200);
 
     return {

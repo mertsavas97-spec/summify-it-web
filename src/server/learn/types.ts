@@ -17,6 +17,7 @@ import type {
   LearnMemoryAnchorsDebugMeta,
   LearnRetentionDebugMeta,
   LearnPipelineCountsMeta,
+  LearnTitleValidationMeta,
 } from "@/types/adaptive-learn";
 import type {
   LearnMultiFormatDebugMeta,
@@ -122,6 +123,7 @@ export type LearnIntelligenceMeta = {
   /** Dev-only learn pipeline failure (analysis still succeeds). */
   learnFailureStage?: string;
   learnFailureMessage?: string;
+  learnTitleValidation?: LearnTitleValidationMeta;
 };
 
 export type BuildLearnIntelligenceResult = {

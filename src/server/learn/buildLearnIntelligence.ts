@@ -81,7 +81,12 @@ import {
   buildMultiFormatLearn,
   learnMultiFormatDebugStats,
 } from "./multiFormatLearning";
-import { finalValidateLearnCards } from "./learnTitleQuality";
+import {
+  ensureValidLearnTitle,
+  finalValidateLearnCards,
+  learnTitleValidationDebugStats,
+  validateQuestionAnswerAlignment,
+} from "./learnTitleQuality";
 import {
   runLearnStage,
   runSafeLearnBuild,
@@ -739,6 +744,38 @@ function buildLearnIntelligenceCore(
     );
   }
 
+  const titleValidation = finalValidateLearnCards(finalOrdered, {
+    documentTitle: result.title,
+    strategy: learnStrategy,
+    intelligenceModeId: options.intelligenceModeId,
+  });
+  finalOrdered = titleValidation.cards;
+
+  if (finalOrdered.length < range.min && hasEnoughSource) {
+    const usedTitles = new Set(finalOrdered.map((c) => c.title.toLowerCase()));
+    for (const insight of result.keyInsights) {
+      if (finalOrdered.length >= range.min) break;
+      const draft: LearnCardOutput = {
+        type: "why_it_matters",
+        title: insight.slice(0, 80),
+        content: insight.slice(0, 380),
+        learnPattern: "cause_effect_chain",
+      };
+      const { title } = ensureValidLearnTitle(draft, {
+        documentTitle: result.title,
+        strategy: learnStrategy,
+        intelligenceModeId: options.intelligenceModeId,
+      });
+      if (usedTitles.has(title.toLowerCase())) continue;
+      if (!validateQuestionAnswerAlignment({ ...draft, title })) continue;
+      finalOrdered.push({ ...draft, title });
+      usedTitles.add(title.toLowerCase());
+    }
+  }
+
+  pipelineCounts.finalOutput = finalOrdered.length;
+  const titleValidationDebug = learnTitleValidationDebugStats(titleValidation.titleStats);
+
   const traceDebug = sourceTraceDebugStats(traced.stats);
   const pipelineDebug = pipelineCountsDebug(pipelineCounts);
 
@@ -800,12 +837,9 @@ function buildLearnIntelligenceCore(
   if (pipelineDebug && adaptiveLearnMeta) {
     adaptiveLearnMeta.learnPipelineCounts = pipelineDebug;
   }
-
-  finalOrdered = finalValidateLearnCards(finalOrdered, {
-    documentTitle: result.title,
-    strategy: learnStrategy,
-    intelligenceModeId: options.intelligenceModeId,
-  });
+  if (titleValidationDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.learnTitleValidation = titleValidationDebug;
+  }
 
   const multiFormatLearn = runLearnStage(
     "multiFormatLearn",
@@ -863,6 +897,7 @@ function buildLearnIntelligenceCore(
       ...(memoryAnchorsDebug ? { memoryAnchors: memoryAnchorsDebug } : {}),
       ...(multiFormatDebug ? { multiFormatLearn: multiFormatDebug } : {}),
       ...(pipelineDebug ? { learnPipelineCounts: pipelineDebug } : {}),
+      ...(titleValidationDebug ? { learnTitleValidation: titleValidationDebug } : {}),
     },
   };
 }
