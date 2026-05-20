@@ -28,6 +28,7 @@ import type { PlanId } from "@/types/plan";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { IntelligenceLoadingStages } from "./IntelligenceLoadingStages";
 import { AnalysisResultView } from "./AnalysisResultView";
+import { AnalysisToolbar } from "./AnalysisToolbar";
 import { IntelligenceModeSelector } from "./IntelligenceModeSelector";
 import {
   formatAttemptSummary,
@@ -367,18 +368,43 @@ export function TextAnalysisMvp({
       </div>
 
       {displayMeta && displayResult && (
-        <div className="mt-4" data-workspace-analysis-result>
+        <div className="mt-6 space-y-5" data-workspace-analysis-result>
+          <header
+            className="rounded-xl border border-white/[0.08] bg-zinc-950/50 px-4 py-4 sm:px-5"
+            data-workspace-analysis-hero
+          >
+            <div className="min-w-0 max-w-prose">
+              <h3 className="text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
+                {displayResult.title}
+              </h3>
+              <p className="mt-1.5 text-[11px] text-zinc-500">
+                Provider:{" "}
+                <span className="font-mono text-zinc-400">{displayMeta.providerUsed}</span>
+                {displayMeta.fallbackUsed ? (
+                  <span className="text-amber-400/90"> · fallback</span>
+                ) : null}
+              </p>
+            </div>
+            <div className="mt-4 border-t border-white/[0.06] pt-4">
+              <AnalysisToolbar result={displayResult} />
+            </div>
+          </header>
+
+          <PracticeAnalysisCta
+            savedToWorkspace={displaySavedToWorkspace}
+            savedAnalysisId={displaySavedAnalysisId}
+          />
+
+          <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
+
           <AnalysisResultView
             result={displayResult}
             modeId={mode}
             providerUsed={displayMeta.providerUsed}
             fallbackUsed={displayMeta.fallbackUsed}
             uiSectionLabels={displayUiSectionLabels}
-          />
-          <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
-          <PracticeAnalysisCta
-            savedToWorkspace={displaySavedToWorkspace}
-            savedAnalysisId={displaySavedAnalysisId}
+            showHeader={false}
+            showToolbar={false}
           />
         </div>
       )}

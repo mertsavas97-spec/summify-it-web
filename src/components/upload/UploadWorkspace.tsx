@@ -477,7 +477,6 @@ export function UploadWorkspace() {
         </div>
 
         <div className="min-w-0 space-y-4 lg:sticky lg:top-[4.5rem] lg:z-10 lg:max-h-[calc(100vh-5.5rem)] lg:self-start">
-          <DemoWorkflowBlock className="hidden lg:block" limit={2} />
           <UploadPreviewPanel
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
             sourceLabel={sourceLabel}
@@ -489,6 +488,11 @@ export function UploadWorkspace() {
             youtubePipelineActive={youtubePipelineBusy}
             urlPipelineActive={urlPipelineBusy}
             intelligence={analysisIntelligence}
+          />
+          <DemoWorkflowBlock
+            className="hidden lg:block"
+            limit={2}
+            variant="subtle"
           />
         </div>
       </div>

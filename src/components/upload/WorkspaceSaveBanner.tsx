@@ -39,7 +39,7 @@ export function WorkspaceSaveBanner({ savedToWorkspace }: WorkspaceSaveBannerPro
 
   if (savedToWorkspace) {
     return (
-      <p className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-950/20 px-3 py-2 text-xs text-emerald-300/90">
+      <p className="rounded-lg border border-emerald-500/15 bg-emerald-950/15 px-3 py-2 text-xs text-emerald-300/80">
         Saved to your workspace.{" "}
         <Link href="/dashboard" className="font-medium underline-offset-2 hover:underline">
           Dashboard
@@ -50,7 +50,7 @@ export function WorkspaceSaveBanner({ savedToWorkspace }: WorkspaceSaveBannerPro
 
   if (!user && supabaseConfigured) {
     return (
-      <p className="mt-3 text-xs text-zinc-600">
+      <p className="text-xs text-zinc-600">
         <Link
           href="/login?next=/upload"
           className="text-violet-400/80 hover:text-violet-300"

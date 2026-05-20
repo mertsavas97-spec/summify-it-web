@@ -79,26 +79,34 @@ export function UploadPreviewPanel({
   const isYoutubeSource = metadata?.sourceKind === "youtube";
   const isPresentationSource = metadata?.sourceKind === "presentation";
 
+  const intelligenceSubtitle = isYoutubeSource
+    ? "Video transcript · source understanding"
+    : isUrlSource
+      ? "Web article · source understanding"
+      : isPresentationSource
+        ? "Presentation deck · source understanding"
+        : metadata?.fileType === "docx"
+          ? "Document · source understanding"
+          : "Uploaded source · analysis metadata";
+
   return (
     <aside
-      className="flex max-h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-950/60 shadow-lg shadow-black/20"
+      className="relative flex max-h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-xl border border-violet-500/15 bg-gradient-to-b from-violet-950/15 via-zinc-950/70 to-zinc-950/90 shadow-lg shadow-black/25"
       data-workspace-source-pane
       data-workspace-preview-panel
     >
-      <div className="shrink-0 border-b border-white/[0.06] bg-zinc-900/40 px-4 py-3">
-        <p className="text-xs font-medium text-zinc-300">Document intelligence</p>
-        <p className="text-[10px] text-zinc-600">
-          {isYoutubeSource
-            ? "Video transcript intelligence"
-            : isUrlSource
-              ? "Web article intelligence"
-              : isPresentationSource
-                ? "Presentation deck intelligence"
-                : "Source preview · citations & chunk nav coming soon"}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-violet-600/10 to-transparent"
+        aria-hidden
+      />
+      <div className="relative shrink-0 border-b border-white/[0.08] px-4 py-4 sm:px-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
+          Document intelligence
         </p>
+        <p className="mt-1 text-sm font-medium text-zinc-200">{intelligenceSubtitle}</p>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3.5 sm:p-4">
+      <div className="relative min-h-0 flex-1 space-y-4 overflow-y-auto p-3.5 sm:p-4">
         {youtubePipelineActive && (
           <IntelligenceLoadingStages
             key="youtube-pipeline-loading"
@@ -120,12 +128,12 @@ export function UploadPreviewPanel({
           <IntelligenceLoadingStages key="analyze-loading" active group="analyze" />
         )}
 
-        <section>
+        <section data-workspace-document-source>
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-            Source
+            Source file
           </p>
           {metadata && sourceLabel ? (
-            <div className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-900/80 p-2.5">
+            <div className="mt-2.5 rounded-lg border border-white/[0.1] bg-gradient-to-b from-zinc-900/90 to-zinc-950/80 p-3 shadow-inner shadow-black/20">
               {isYoutubeSource && (
                 <YoutubeThumbnail
                   videoId={metadata.videoId}
@@ -152,7 +160,7 @@ export function UploadPreviewPanel({
                 </p>
               )}
 
-              <p className="truncate text-sm font-medium text-zinc-200">
+              <p className="truncate text-base font-semibold tracking-tight text-zinc-100">
                 {isUrlSource
                   ? metadata.title
                   : isYoutubeSource
@@ -175,10 +183,10 @@ export function UploadPreviewPanel({
                 </p>
               )}
 
-              <div className="mt-2.5 space-y-1.5 text-[10px]">
+              <div className="mt-3 space-y-2 border-t border-white/[0.06] pt-3 text-[11px]">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-zinc-600">Type</span>
-                  <span className="text-zinc-400">
+                  <span className="font-medium text-zinc-500">Type</span>
+                  <span className="font-medium text-zinc-300">
                     {isUrlSource
                       ? "Web Article"
                       : isYoutubeSource
@@ -245,7 +253,7 @@ export function UploadPreviewPanel({
                     {metadata.repeatedThemes.length > 0 && (
                       <div className="flex flex-col gap-1">
                         <span className="text-zinc-600">Themes</span>
-                        <span className="text-zinc-400">
+                        <span className="font-medium text-zinc-300">
                           {metadata.repeatedThemes.join(", ")}
                         </span>
                       </div>
@@ -369,9 +377,9 @@ export function UploadPreviewPanel({
         {intelligence && (
           <section data-workspace-intelligence-profile>
             <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-              Adaptive profile
+              Analysis profile
             </p>
-            <div className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-900/80 p-3 text-[10px]">
+            <div className="mt-2 rounded-lg border border-white/[0.08] bg-zinc-900/60 p-3 text-[11px]">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-zinc-600">Type</span>
@@ -400,7 +408,7 @@ export function UploadPreviewPanel({
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-zinc-600">Pipeline</span>
-                  <span className="text-zinc-400">
+                  <span className="font-medium text-zinc-300">
                     {PIPELINE_LABELS[intelligence.adaptivePlan.pipelineType]}
                   </span>
                 </div>
@@ -417,11 +425,11 @@ export function UploadPreviewPanel({
           </section>
         )}
 
-        <section data-workspace-intelligence-lens>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+        <section data-workspace-intelligence-lens className="opacity-90">
+          <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-600">
             Intelligence lens
           </p>
-          <div className="mt-2 rounded-lg border border-violet-500/20 bg-violet-950/20 px-3 py-2.5 transition-colors hover:border-violet-500/30">
+          <div className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
               <p className="text-xs font-medium text-violet-200">
                 {intelligenceMode?.label ?? intelligenceModeId}
