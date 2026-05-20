@@ -5,7 +5,6 @@ import type { PipelineStage, PipelineStageStatus } from "@/core/types";
 
 type PipelineStagesProps = {
   activeStage: PipelineStage | null;
-  previewOnly?: boolean;
 };
 
 function stageStatus(
@@ -30,22 +29,10 @@ const statusStyles: Record<PipelineStageStatus, string> = {
   skipped: "border-white/[0.04] bg-transparent text-zinc-700",
 };
 
-export function PipelineStages({
-  activeStage,
-  previewOnly = true,
-}: PipelineStagesProps) {
+export function PipelineStages({ activeStage }: PipelineStagesProps) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-zinc-400">
-          Intelligence pipeline
-        </p>
-        {previewOnly && (
-          <span className="rounded border border-amber-500/20 bg-amber-950/30 px-1.5 py-0.5 text-[9px] font-medium text-amber-400/90">
-            Preview states · not live
-          </span>
-        )}
-      </div>
+      <p className="text-xs font-medium text-zinc-400">Intelligence pipeline</p>
       <ol className="flex flex-wrap gap-1.5">
         {pipelineStages.map((def, index) => {
           const status = stageStatus(def.stage, activeStage);

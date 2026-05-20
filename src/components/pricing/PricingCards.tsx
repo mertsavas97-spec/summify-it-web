@@ -1,6 +1,11 @@
 import { getPricingPlansForInterval } from "@/data/pricingPlans";
 import { getPlanCheckoutLabel } from "@/lib/billing/provider";
-import type { BillingStatusCopy } from "@/types/billing";
+import {
+  getPricingPlanFootnote,
+  isPlanCheckoutEnabled,
+  isScholarCheckoutComingSoon,
+} from "@/lib/billing/plan-availability";
+import type { BillingCheckoutPlanId, BillingStatusCopy } from "@/types/billing";
 import type { BillingInterval } from "@/types/plan";
 import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +16,12 @@ type PricingCardsProps = {
   billing: BillingStatusCopy;
 };
 
+function PlanFootnote({ text }: { text: string }) {
+  return (
+    <p className="mt-2 text-center text-[11px] leading-relaxed text-zinc-500">{text}</p>
+  );
+}
+
 export function PricingCards({ interval, billing }: PricingCardsProps) {
   const plans = getPricingPlansForInterval(interval);
 
@@ -18,6 +29,9 @@ export function PricingCards({ interval, billing }: PricingCardsProps) {
     <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
       {plans.map((plan) => {
         const isPro = plan.highlighted;
+        const footnote = getPricingPlanFootnote(plan.id);
+        const checkoutEnabled =
+          (plan.id === "pro" || plan.id === "team") && isPlanCheckoutEnabled(plan.id);
 
         return (
           <article
@@ -35,7 +49,9 @@ export function PricingCards({ interval, billing }: PricingCardsProps) {
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              {plan.badge && <Badge variant={plan.comingSoon ? "muted" : "accent"}>{plan.badge}</Badge>}
+              {plan.badge && (
+                <Badge variant={plan.comingSoon ? "muted" : "accent"}>{plan.badge}</Badge>
+              )}
               {plan.savings && (
                 <span className="text-[11px] font-medium text-emerald-400">{plan.savings}</span>
               )}
@@ -70,29 +86,35 @@ export function PricingCards({ interval, billing }: PricingCardsProps) {
               ))}
             </ul>
 
-            {plan.id === "free" ? (
-              <Button
-                href={plan.ctaHref ?? "/upload"}
-                variant={isPro ? "primary" : "secondary"}
-                className="mt-6 w-full"
-                size="md"
-              >
-                {plan.cta}
-              </Button>
-            ) : plan.id === "scholar" || plan.id === "pro" || plan.id === "team" ? (
-              <CheckoutButton
-                plan={plan.id}
-                interval={interval}
-                label={getPlanCheckoutLabel(plan.id, billing)}
-                variant={isPro ? "primary" : "secondary"}
-                className="mt-6"
-                billing={billing}
-              />
-            ) : (
-              <Button href="/upload" variant="secondary" className="mt-6 w-full" size="md">
-                Open workspace
-              </Button>
-            )}
+            <div className="mt-6">
+              {plan.id === "free" ? (
+                <Button
+                  href={plan.ctaHref ?? "/upload"}
+                  variant={isPro ? "primary" : "secondary"}
+                  className="w-full"
+                  size="md"
+                >
+                  {plan.cta}
+                </Button>
+              ) : isScholarCheckoutComingSoon(plan.id) ? (
+                <Button type="button" variant="secondary" className="w-full" size="md" disabled>
+                  {getPlanCheckoutLabel("scholar", billing)}
+                </Button>
+              ) : checkoutEnabled ? (
+                <CheckoutButton
+                  plan={plan.id as "pro" | "team"}
+                  interval={interval}
+                  label={getPlanCheckoutLabel(plan.id as BillingCheckoutPlanId, billing)}
+                  variant={isPro ? "primary" : "secondary"}
+                  billing={billing}
+                />
+              ) : (
+                <Button href="/upload" variant="secondary" className="w-full" size="md">
+                  Open workspace
+                </Button>
+              )}
+              {footnote ? <PlanFootnote text={footnote} /> : null}
+            </div>
           </article>
         );
       })}

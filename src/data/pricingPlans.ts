@@ -137,8 +137,10 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     name: "Scholar",
     tagline: "Built for students and exam prep",
     description:
-      "More daily analyses, deeper modes, and full analysis history. Student verification coming later.",
+      "More daily analyses, deeper modes, and full analysis history. Checkout opens when student access launches.",
     enforceLimits: true,
+    comingSoon: true,
+    badge: "Coming soon",
     limits: {
       analysesPerDay: 10,
       maxFileSizeMb: 25,
@@ -164,7 +166,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       "Full analysis history",
       "Student verification (coming soon)",
     ],
-    cta: "Start Scholar",
+    cta: "Coming soon",
     billing: {
       monthly: {
         amountCents: 499,
@@ -242,7 +244,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
     name: "Team",
     tagline: "Shared intelligence for groups",
     description:
-      "Seats, shared library, API access, and custom modes for teams and agencies.",
+      "Up to 5 seats with Pro-level intelligence. Billing is live; team invites and workspace tools roll out during beta.",
     enforceLimits: true,
     comingSoon: false,
     limits: {
@@ -262,12 +264,12 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       invoices: true,
     },
     featureBullets: [
-      "5 seats included",
-      "Shared team library",
-      "API access",
-      "Custom intelligence modes",
-      "Invoices & team workspace",
+      "Up to 5 seats included",
       "Everything in Pro",
+      "Shared team library (rolling out)",
+      "API access (rolling out)",
+      "Custom intelligence modes (rolling out)",
+      "Invoices via Polar",
     ],
     badge: "Team",
     cta: "Start Team",

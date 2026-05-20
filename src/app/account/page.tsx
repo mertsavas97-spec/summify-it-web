@@ -14,6 +14,7 @@ import { PortalButton } from "@/components/billing/PortalButton";
 import { getBillingProvider, getBillingStatusCopy, isBillingEnabled } from "@/lib/billing/provider";
 import { formatStableDate } from "@/lib/format-date";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { TEAM_ACCOUNT_PLACEHOLDER } from "@/lib/billing/plan-availability";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
@@ -62,6 +63,7 @@ export default async function AccountPage() {
   const showManageBilling =
     polarBillingActive &&
     Boolean(profile?.polar_customer_id || profile?.polar_subscription_id);
+  const isTeamPlan = profile?.plan === "team";
 
   return (
     <article className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -125,6 +127,11 @@ export default async function AccountPage() {
           <StatRow label="Billing interval" value={billingInterval} />
           <StatRow label="Renewal date" value={renewalDate} />
         </div>
+        {isTeamPlan ? (
+          <p className="mt-4 rounded-lg border border-violet-500/20 bg-violet-950/20 px-3 py-2.5 text-xs leading-relaxed text-violet-200/90">
+            {TEAM_ACCOUNT_PLACEHOLDER}
+          </p>
+        ) : null}
       </section>
 
       {recentAnalyses.length > 0 && (

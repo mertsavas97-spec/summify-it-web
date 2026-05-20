@@ -8,11 +8,12 @@ import {
   saveCheckoutIntent,
   type CheckoutIntent,
 } from "@/lib/billing/checkout-intent";
+import { isPlanCheckoutEnabled } from "@/lib/billing/plan-availability";
 import { readCheckoutApiError } from "@/lib/billing/polar/api-error";
 import { Button } from "@/components/ui/Button";
 
 type CheckoutButtonProps = {
-  plan: Exclude<PlanId, "beta">;
+  plan: Extract<PlanId, "pro" | "team">;
   interval: BillingInterval;
   label: string;
   variant?: "primary" | "secondary" | "ghost";
@@ -52,6 +53,11 @@ export function CheckoutButton({
 
   const runCheckout = useCallback(
     async (target: CheckoutIntent) => {
+      if (!isPlanCheckoutEnabled(target.planId)) {
+        devWarn("checkout blocked — plan not available", { planId: target.planId });
+        return;
+      }
+
       if (!shouldCallCheckoutApi(billing)) {
         devWarn("checkout blocked — billing not enabled", {
           provider: billing.provider,
@@ -122,6 +128,8 @@ export function CheckoutButton({
   );
 
   const startCheckout = useCallback(() => {
+    if (!isPlanCheckoutEnabled(plan)) return;
+
     const intent: CheckoutIntent = {
       planId: plan as CheckoutIntent["planId"],
       interval,
@@ -144,7 +152,7 @@ export function CheckoutButton({
     if (resumedRef.current || !shouldCallCheckoutApi(billing)) return;
 
     const intent = consumeCheckoutIntent();
-    if (!intent) return;
+    if (!intent || !isPlanCheckoutEnabled(intent.planId)) return;
 
     resumedRef.current = true;
     const timer = window.setTimeout(() => {

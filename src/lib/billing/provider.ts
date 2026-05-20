@@ -1,4 +1,8 @@
 import type { BillingCheckoutPlanId, BillingProvider, BillingStatusCopy } from "@/types/billing";
+import {
+  isPlanCheckoutEnabled,
+  isScholarCheckoutComingSoon,
+} from "@/lib/billing/plan-availability";
 import { isPolarConfigured } from "@/lib/billing/polar/config";
 
 const BILLING_PROVIDERS = ["none", "paddle", "lemon", "polar"] as const;
@@ -88,13 +92,21 @@ export function getPlanCheckoutLabel(
     return "Join beta";
   }
 
+  if (isScholarCheckoutComingSoon(planId)) {
+    return "Coming soon";
+  }
+
   if (billing.provider === "polar") {
     const labels: Record<BillingCheckoutPlanId, string> = {
-      scholar: "Start Scholar",
+      scholar: "Coming soon",
       pro: "Start Pro",
       team: "Start Team",
     };
     return labels[planId];
+  }
+
+  if (!isPlanCheckoutEnabled(planId)) {
+    return "Coming soon";
   }
 
   return "Continue to checkout";

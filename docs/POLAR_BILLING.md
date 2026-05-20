@@ -36,9 +36,19 @@ Run [`docs/SUPABASE_MIGRATION_10A_POLAR_BILLING.sql`](./SUPABASE_MIGRATION_10A_P
 
 (`plan` already exists on `profiles`.)
 
+## Plan availability (product)
+
+| Plan | Checkout | Notes |
+|------|----------|--------|
+| **Scholar** | Coming soon | Visible on `/pricing`; CTA disabled; API returns 403. |
+| **Pro** | Active | Primary paid tier for checkout testing and production. |
+| **Team** | Active billing | Polar checkout works; seat billing includes up to 5 seats. Team invite management and workspace UI are **not** shipped yet — account shows a placeholder. |
+
+Env vars for Scholar may remain configured for a future launch; checkout is blocked in app code until student access ships.
+
 ## Checkout flow
 
-1. User selects Scholar / Pro / Team on `/pricing` (monthly or yearly).
+1. User selects **Pro** or **Team** on `/pricing` (monthly or yearly). Scholar is shown as coming soon.
 2. `CheckoutButton` → `POST /api/billing/checkout` with `{ planId, interval }` (authenticated).
 3. Server validates plan + interval, resolves `POLAR_*_PRICE_ID` from env (never trusts client price IDs).
 4. Server creates Polar checkout via `POST /v1/checkouts/` with:

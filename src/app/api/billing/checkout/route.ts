@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getOptionalUser } from "@/lib/auth";
 import { createPolarCheckout } from "@/lib/billing/polar/checkout";
+import {
+  isPlanCheckoutEnabled,
+  SCHOLAR_COMING_SOON_MESSAGE,
+} from "@/lib/billing/plan-availability";
 import { polarErrorToResponse } from "@/lib/billing/polar/api-error";
 import { isPolarPlanConfigured } from "@/lib/billing/polar/prices";
 import {
@@ -49,6 +53,20 @@ export async function POST(request: Request) {
   }
 
   const provider = getBillingProvider();
+
+  if (!isPlanCheckoutEnabled(planId)) {
+    return NextResponse.json(
+      {
+        success: false,
+        provider,
+        error:
+          planId === "scholar"
+            ? SCHOLAR_COMING_SOON_MESSAGE
+            : "Checkout is not available for this plan yet.",
+      },
+      { status: 403 },
+    );
+  }
 
   try {
     if (provider === "polar") {
