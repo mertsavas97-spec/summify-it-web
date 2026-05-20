@@ -13,13 +13,23 @@ import { readCheckoutApiError } from "@/lib/billing/polar/api-error";
 import { Button } from "@/components/ui/Button";
 
 type CheckoutButtonProps = {
-  plan: Extract<PlanId, "pro" | "team">;
+  plan: Extract<PlanId, "pro" | "team" | "scholar">;
   interval: BillingInterval;
   label: string;
   variant?: "primary" | "secondary" | "ghost";
   className?: string;
   billing: BillingStatusCopy;
+  /** Pricing page: Scholar checkout for verified .edu accounts only. */
+  allowScholarCheckout?: boolean;
 };
+
+function isCheckoutPlanAllowed(
+  planId: CheckoutIntent["planId"],
+  allowScholarCheckout: boolean,
+): boolean {
+  if (planId === "scholar") return allowScholarCheckout;
+  return isPlanCheckoutEnabled(planId);
+}
 
 function devLog(message: string, data?: Record<string, unknown>) {
   if (process.env.NODE_ENV === "development") {
@@ -46,6 +56,7 @@ export function CheckoutButton({
   variant = "primary",
   className,
   billing,
+  allowScholarCheckout = false,
 }: CheckoutButtonProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +64,7 @@ export function CheckoutButton({
 
   const runCheckout = useCallback(
     async (target: CheckoutIntent) => {
-      if (!isPlanCheckoutEnabled(target.planId)) {
+      if (!isCheckoutPlanAllowed(target.planId, allowScholarCheckout)) {
         devWarn("checkout blocked — plan not available", { planId: target.planId });
         return;
       }
@@ -124,11 +135,11 @@ export function CheckoutButton({
         setPending(false);
       }
     },
-    [billing],
+    [billing, allowScholarCheckout],
   );
 
   const startCheckout = useCallback(() => {
-    if (!isPlanCheckoutEnabled(plan)) return;
+    if (!isCheckoutPlanAllowed(plan as CheckoutIntent["planId"], allowScholarCheckout)) return;
 
     const intent: CheckoutIntent = {
       planId: plan as CheckoutIntent["planId"],
@@ -138,7 +149,7 @@ export function CheckoutButton({
       saveCheckoutIntent(intent);
     }
     void runCheckout(intent);
-  }, [plan, interval, billing, runCheckout]);
+  }, [plan, interval, billing, allowScholarCheckout, runCheckout]);
 
   useEffect(() => {
     devLog("billing status", {
@@ -152,7 +163,7 @@ export function CheckoutButton({
     if (resumedRef.current || !shouldCallCheckoutApi(billing)) return;
 
     const intent = consumeCheckoutIntent();
-    if (!intent || !isPlanCheckoutEnabled(intent.planId)) return;
+    if (!intent || !isCheckoutPlanAllowed(intent.planId, allowScholarCheckout)) return;
 
     resumedRef.current = true;
     const timer = window.setTimeout(() => {
@@ -161,7 +172,7 @@ export function CheckoutButton({
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [billing, runCheckout]);
+  }, [billing, allowScholarCheckout, runCheckout]);
 
   return (
     <div className={className}>

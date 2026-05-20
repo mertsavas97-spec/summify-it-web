@@ -37,6 +37,7 @@ export function PracticeAnalysisCta({
   const [ready, setReady] = useState(!supabaseConfigured);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [practiceStartSignal, setPracticeStartSignal] = useState(0);
 
   const hasLearnCards = learnCards.length > 0;
   const practiceCards = hasLearnCards ? buildPracticeSessionCardsFromLearn(learnCards) : [];
@@ -61,6 +62,16 @@ export function PracticeAnalysisCta({
 
     return () => subscription.unsubscribe();
   }, []);
+
+  function handleStartInlinePractice() {
+    setMessage(null);
+    setPracticeStartSignal((n) => n + 1);
+    requestAnimationFrame(() => {
+      document
+        .querySelector("[data-workspace-practice-session]")
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  }
 
   async function handlePractice() {
     if (!savedAnalysisId || loading) return;
@@ -124,11 +135,10 @@ export function PracticeAnalysisCta({
               <Button
                 type="button"
                 size="sm"
-                disabled={loading}
-                onClick={() => void handlePractice()}
+                onClick={handleStartInlinePractice}
                 className="shadow-md shadow-violet-500/15"
               >
-                {loading ? "Preparing session…" : "Practice this analysis"}
+                Practice this analysis
               </Button>
               <Link
                 href={learnDashboardHref(savedAnalysisId)}
@@ -146,15 +156,18 @@ export function PracticeAnalysisCta({
           </p>
         )}
 
-        <AnalysisPracticeSession
-          analysisId={sessionId}
-          documentTitle={documentTitle}
-          modeLabel={modeLabel}
-          sourceKindLabel={sourceKindLabel}
-          cards={practiceCards}
-          hasLearnCards
-          practicePersisted={Boolean(savedAnalysisId)}
-        />
+        <div data-workspace-practice-session>
+          <AnalysisPracticeSession
+            analysisId={sessionId}
+            documentTitle={documentTitle}
+            modeLabel={modeLabel}
+            sourceKindLabel={sourceKindLabel}
+            cards={practiceCards}
+            hasLearnCards
+            startSignal={practiceStartSignal}
+            practicePersisted={Boolean(savedAnalysisId)}
+          />
+        </div>
       </div>
     );
   }

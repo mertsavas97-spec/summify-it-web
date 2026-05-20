@@ -2,6 +2,8 @@ import { PricingPageTracker } from "@/components/analytics/PricingPageTracker";
 import { PricingSection } from "@/components/pricing/PricingSection";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { getOptionalUser } from "@/lib/auth";
+import { isEduEmail } from "@/lib/auth/edu-email";
 import { getBillingStatusCopy } from "@/lib/billing/provider";
 import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
@@ -13,8 +15,10 @@ export const metadata = pageSeo.pricing;
 /** Read BILLING_PROVIDER from env on each request (not at static build time). */
 export const dynamic = "force-dynamic";
 
-export default function PricingPage() {
+export default async function PricingPage() {
   const billing = getBillingStatusCopy();
+  const user = await getOptionalUser();
+  const scholarCheckoutEligible = isEduEmail(user?.email);
 
   return (
     <>
@@ -34,7 +38,7 @@ export default function PricingPage() {
         {billing.badge}: <span className="text-violet-100/70">{billing.description}</span>
       </p>
 
-      <PricingSection billing={billing} />
+      <PricingSection billing={billing} scholarCheckoutEligible={scholarCheckoutEligible} />
       <ProductDisclaimer className="mx-auto mt-8 max-w-3xl text-center" />
 
       <div className="mt-12 grid gap-3 sm:grid-cols-3">

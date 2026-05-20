@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -48,6 +48,8 @@ type AnalysisPracticeSessionProps = {
   cards: PracticeSessionCard[];
   hasLearnCards: boolean;
   autoStart?: boolean;
+  /** Increment from parent to start the session inline (same as "Start practice"). */
+  startSignal?: number;
   /** When false, practice runs from in-memory cards (live analysis) without workspace save. */
   practicePersisted?: boolean;
 };
@@ -63,6 +65,7 @@ export function AnalysisPracticeSession({
   cards: initialCards,
   hasLearnCards,
   autoStart = false,
+  startSignal = 0,
   practicePersisted = true,
 }: AnalysisPracticeSessionProps) {
   const router = useRouter();
@@ -120,19 +123,27 @@ export function AnalysisPracticeSession({
     [sessionId],
   );
 
-  function startSession(cardsToUse: PracticeSessionCard[] = sortedCards, resetOutcomes = true) {
-    setDeck(cardsToUse);
-    setIndex(0);
-    setRevealed(false);
-    if (resetOutcomes) {
-      setOutcomes({});
-      setRetentionStates({});
-      setRetentionSummary(null);
-      setSessionId(null);
-    }
-    setError(null);
-    setPhase(cardsToUse.length > 0 ? "active" : "pre");
-  }
+  const startSession = useCallback(
+    (cardsToUse: PracticeSessionCard[] = sortedCards, resetOutcomes = true) => {
+      setDeck(cardsToUse);
+      setIndex(0);
+      setRevealed(false);
+      if (resetOutcomes) {
+        setOutcomes({});
+        setRetentionStates({});
+        setRetentionSummary(null);
+        setSessionId(null);
+      }
+      setError(null);
+      setPhase(cardsToUse.length > 0 ? "active" : "pre");
+    },
+    [sortedCards],
+  );
+
+  useEffect(() => {
+    if (!startSignal || sortedCards.length === 0) return;
+    startSession(sortedCards, true);
+  }, [startSignal, sortedCards, startSession]);
 
   function finishSession(nextOutcomes: OutcomeMap, nextStates: Record<string, CardRetentionState>) {
     const summary = buildPracticeRetentionSummary({

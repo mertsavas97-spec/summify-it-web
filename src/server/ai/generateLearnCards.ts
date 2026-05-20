@@ -21,7 +21,7 @@ import type { LearnCardOutput } from "./schemas";
 import type { AnalysisProviderName } from "./analysis-failure";
 import { devWarn } from "@/server/logging";
 
-const PHASE1_MAX_TOKENS = 1000;
+const PHASE1_MAX_TOKENS = 2000;
 const PHASE2_MAX_TOKENS = 1000;
 
 function getGroqClient(): Groq {
@@ -150,7 +150,7 @@ export type GenerateLearnCardsInput = {
 export async function generateLearnCardsFromContent(
   input: GenerateLearnCardsInput,
 ): Promise<LearnCardOutput[]> {
-  const cardCount = Math.max(4, Math.min(12, input.cardCount));
+  const cardCount = Math.max(4, Math.min(20, Math.round(input.cardCount)));
   const content = input.content.slice(0, AI_CONFIG.input.maxChars);
   const language = input.language ?? "English";
 

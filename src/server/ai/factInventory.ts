@@ -7,6 +7,7 @@ import { extractJsonFromText } from "./validate-response";
 export const PHASE1_FACT_INVENTORY_SYSTEM = `You are a fact extraction engine. Your only output is a JSON object.
 
 Extract every verifiable, specific fact from the content below.
+Be exhaustive, not selective: extract every named person, date, number, event, and cause-effect pair you can find.
 Group them into these categories:
 
 - people: [{name, role_or_context}]
@@ -17,6 +18,7 @@ Group them into these categories:
 - contrasts: [{before, after}]
 
 Rules:
+- Be exhaustive, not selective.
 - Only extract facts explicitly stated in the text. No inferences.
 - Each item must be a concrete, testable detail.
 - If a category has no entries, return an empty array.

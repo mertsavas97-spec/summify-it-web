@@ -7,9 +7,10 @@ import { PricingCards } from "./PricingCards";
 
 type PricingSectionProps = {
   billing: BillingStatusCopy;
+  scholarCheckoutEligible: boolean;
 };
 
-export function PricingSection({ billing }: PricingSectionProps) {
+export function PricingSection({ billing, scholarCheckoutEligible }: PricingSectionProps) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
 
   return (
@@ -39,7 +40,11 @@ export function PricingSection({ billing }: PricingSectionProps) {
       </div>
 
       <div className="mt-10">
-        <PricingCards interval={interval} billing={billing} />
+        <PricingCards
+          interval={interval}
+          billing={billing}
+          scholarCheckoutEligible={scholarCheckoutEligible}
+        />
       </div>
     </div>
   );

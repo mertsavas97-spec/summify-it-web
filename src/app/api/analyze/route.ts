@@ -16,7 +16,7 @@ import type {
 import type { AnalysisIntelligenceContext } from "@/server/intelligence";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile, getUserLimits } from "@/lib/supabase/profile";
-import { canRunAnalysis } from "@/lib/plan-limits";
+import { canRunAnalysis, getUserPlanLimits } from "@/lib/plan-limits";
 import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
 import { canAccessMode } from "@/lib/mode-access";
 import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
@@ -190,12 +190,18 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 403 });
     }
 
+    const planLimits = getUserPlanLimits(profile?.plan, limits);
+
     const orchestratorResult = await runAnalysisOrchestrator(
       rawText,
       mode,
       sourceHint,
       sourceContext,
       modeRouting,
+      {
+        maxLearnCards: planLimits.maxLearnCards,
+        planId: planLimits.planId,
+      },
     );
     const { result, providerUsed, fallbackUsed, intelligence: ctx } =
       orchestratorResult;

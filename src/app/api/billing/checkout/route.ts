@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOptionalUser } from "@/lib/auth";
+import { isEduEmail } from "@/lib/auth/edu-email";
 import { createPolarCheckout } from "@/lib/billing/polar/checkout";
 import {
   isPlanCheckoutEnabled,
@@ -54,7 +55,9 @@ export async function POST(request: Request) {
 
   const provider = getBillingProvider();
 
-  if (!isPlanCheckoutEnabled(planId)) {
+  const scholarEduCheckout = planId === "scholar" && isEduEmail(user.email);
+
+  if (!isPlanCheckoutEnabled(planId) && !scholarEduCheckout) {
     return NextResponse.json(
       {
         success: false,

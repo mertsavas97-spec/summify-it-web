@@ -3,7 +3,6 @@ import { getPlanCheckoutLabel } from "@/lib/billing/provider";
 import {
   getPricingPlanFootnote,
   isPlanCheckoutEnabled,
-  isScholarCheckoutComingSoon,
 } from "@/lib/billing/plan-availability";
 import type { BillingCheckoutPlanId, BillingStatusCopy } from "@/types/billing";
 import type { BillingInterval } from "@/types/plan";
@@ -11,9 +10,15 @@ import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
+const SCHOLAR_EDU_UNAVAILABLE =
+  "Only available for .edu email addresses.";
+const SCHOLAR_EDU_FOOTNOTE =
+  "Available for verified students — sign up with a .edu email address to unlock.";
+
 type PricingCardsProps = {
   interval: BillingInterval;
   billing: BillingStatusCopy;
+  scholarCheckoutEligible: boolean;
 };
 
 function PlanFootnote({ text }: { text: string }) {
@@ -22,16 +27,23 @@ function PlanFootnote({ text }: { text: string }) {
   );
 }
 
-export function PricingCards({ interval, billing }: PricingCardsProps) {
+export function PricingCards({
+  interval,
+  billing,
+  scholarCheckoutEligible,
+}: PricingCardsProps) {
   const plans = getPricingPlansForInterval(interval);
 
   return (
     <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
       {plans.map((plan) => {
         const isPro = plan.highlighted;
-        const footnote = getPricingPlanFootnote(plan.id);
+        const isScholar = plan.id === "scholar";
+        const footnote = isScholar ? SCHOLAR_EDU_FOOTNOTE : getPricingPlanFootnote(plan.id);
         const checkoutEnabled =
           (plan.id === "pro" || plan.id === "team") && isPlanCheckoutEnabled(plan.id);
+        const showScholarCheckout =
+          isScholar && scholarCheckoutEligible && billing.enabled;
 
         return (
           <article
@@ -96,10 +108,21 @@ export function PricingCards({ interval, billing }: PricingCardsProps) {
                 >
                   {plan.cta}
                 </Button>
-              ) : isScholarCheckoutComingSoon(plan.id) ? (
-                <Button type="button" variant="secondary" className="w-full" size="md" disabled>
-                  {getPlanCheckoutLabel("scholar", billing)}
-                </Button>
+              ) : isScholar ? (
+                showScholarCheckout ? (
+                  <CheckoutButton
+                    plan="scholar"
+                    interval={interval}
+                    label="Start Scholar"
+                    variant="primary"
+                    billing={billing}
+                    allowScholarCheckout
+                  />
+                ) : (
+                  <p className="text-center text-xs leading-relaxed text-zinc-400">
+                    {SCHOLAR_EDU_UNAVAILABLE}
+                  </p>
+                )
               ) : checkoutEnabled ? (
                 <CheckoutButton
                   plan={plan.id as "pro" | "team"}
