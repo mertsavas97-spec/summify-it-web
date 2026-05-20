@@ -368,13 +368,13 @@ export function TextAnalysisMvp({
       </div>
 
       {displayMeta && displayResult && (
-        <div className="mt-6 space-y-5" data-workspace-analysis-result>
+        <div className="mt-5 space-y-4" data-workspace-analysis-result>
           <header
-            className="rounded-xl border border-white/[0.08] bg-zinc-950/50 px-4 py-4 sm:px-5"
+            className="rounded-xl border border-white/[0.08] bg-zinc-950/50 px-4 py-3.5 sm:px-5 sm:py-4"
             data-workspace-analysis-hero
           >
             <div className="min-w-0 max-w-prose">
-              <h3 className="text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
+              <h3 className="text-base font-semibold leading-snug tracking-tight text-white sm:text-lg">
                 {displayResult.title}
               </h3>
               <p className="mt-1.5 text-[11px] text-zinc-500">
@@ -385,7 +385,7 @@ export function TextAnalysisMvp({
                 ) : null}
               </p>
             </div>
-            <div className="mt-4 border-t border-white/[0.06] pt-4">
+            <div className="mt-3 border-t border-white/[0.06] pt-3">
               <AnalysisToolbar result={displayResult} />
             </div>
           </header>
