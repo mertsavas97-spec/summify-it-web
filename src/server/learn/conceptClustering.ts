@@ -2,6 +2,7 @@
  * Phase Learn 6.1 — semantic concept clustering to collapse duplicate knowledge regions.
  */
 
+import { cognitiveQuestionKey } from "./learnCognitiveDedup";
 import type { KnowledgeStructure } from "./knowledgeStructure";
 import { capitalizedPhrases, tokenize } from "./knowledgeStructure";
 import type { LearnCandidate } from "./types";
@@ -13,7 +14,8 @@ export type ConceptCluster = {
   strength: number;
 };
 
-const CLUSTER_OVERLAP_THRESHOLD = 0.48;
+/** Higher = fewer clusters (less aggressive collapse). */
+const CLUSTER_OVERLAP_THRESHOLD = 0.58;
 const ENTITY_OVERLAP_BOOST = 0.22;
 
 function normalizeFingerprint(text: string): Set<string> {
@@ -124,36 +126,49 @@ export function collapseCandidatesByConceptClusters(
     }
 
     const members = indices.map((i) => candidates[i]);
-    const winner = [...members].sort((a, b) => b.importance - a.importance)[0];
     const label = clusterLabelForGroup(members, structure);
     const memberIds = indices.map((i) => candidateKey(candidates[i], i));
+
+    const byCognitive = new Map<string, LearnCandidate>();
+    for (const m of members) {
+      const op = cognitiveQuestionKey(m);
+      const existing = byCognitive.get(op);
+      if (!existing || m.importance > existing.importance) {
+        byCognitive.set(op, m);
+      }
+    }
+
+    const winners = [...byCognitive.values()].sort((a, b) => b.importance - a.importance);
+    const maxKeep = Math.min(4, winners.length);
 
     clusters.push({
       id: `cluster_${clusters.length}`,
       label,
       memberIds,
-      strength: winner.importance,
+      strength: winners[0]?.importance ?? 0.5,
     });
 
-    removedDuplicateClusters += indices.length - 1;
+    removedDuplicateClusters += indices.length - maxKeep;
 
-    const enriched: LearnCandidate = {
-      ...winner,
-      importance: Math.min(1, winner.importance + 0.06),
-      groupTitle: winner.groupTitle ?? label,
-      entities: [
-        ...new Set([
-          ...winner.entities,
-          ...capitalizedPhrases(`${winner.title} ${winner.content}`),
-        ]),
-      ],
-    };
+    for (const winner of winners.slice(0, maxKeep)) {
+      const enriched: LearnCandidate = {
+        ...winner,
+        importance: Math.min(1, winner.importance + 0.06),
+        groupTitle: winner.groupTitle ?? label,
+        entities: [
+          ...new Set([
+            ...winner.entities,
+            ...capitalizedPhrases(`${winner.title} ${winner.content}`),
+          ]),
+        ],
+      };
 
-    if (/^what defines\b/i.test(enriched.title) && label.length > 8) {
-      enriched.title = label.slice(0, 72);
+      if (/^what defines\b/i.test(enriched.title) && label.length > 8) {
+        enriched.title = `What role does ${label.slice(0, 40)} play in the source?`.slice(0, 72);
+      }
+
+      kept.push(enriched);
     }
-
-    kept.push(enriched);
   }
 
   return {

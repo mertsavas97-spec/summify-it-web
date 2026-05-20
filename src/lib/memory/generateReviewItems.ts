@@ -153,12 +153,15 @@ export function generateReviewItemsFromAnalysis({
     domain: documentDomain,
   });
 
+  const practiceMin = Math.min(6, learnCards.length);
+  const practiceMax = Math.max(practiceMin, Math.min(maxItems, learnCards.length));
+
   const { cards: qualityCards } = applyLearnCardQuality(learnCards, {
     documentTitle: summary.title,
     summary: summary.summary,
     keyInsights: summary.keyInsights,
-    targetMin: 2,
-    targetMax: maxItems,
+    targetMin: practiceMin,
+    targetMax: practiceMax,
     strategy,
   });
 

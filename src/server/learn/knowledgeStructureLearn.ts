@@ -60,9 +60,12 @@ function primaryEntity(structure: KnowledgeStructure, fallback: string): string 
   return entity?.label ?? structure.majorThemes[0] ?? fallback;
 }
 
-function tensionTitle(entity: string, era?: string): string {
-  const scope = era ? `${era}` : entity;
-  return `What tension defines ${scope} according to the source?`.slice(0, 72);
+function tensionTitle(entity: string, conflictSnippet?: string): string {
+  const hook = conflictSnippet?.slice(0, 36).replace(/\?+$/, "").trim();
+  if (hook && hook.length > 12) {
+    return `What tension does “${hook}” create for ${entity}?`.slice(0, 72);
+  }
+  return `What institutional or social tension shapes ${entity} in this source?`.slice(0, 72);
 }
 
 function turningPointTitle(moment: string, entity: string): string {
@@ -99,7 +102,7 @@ export function synthesizeKnowledgeStructureCandidates(
   const entity = primaryEntity(structure, result.title);
   const chronology = isChronologySensitiveMode(options.intelligenceModeId, options.pipelineMode);
 
-  for (const chain of structure.causalChains.slice(0, 3)) {
+  for (const chain of structure.causalChains.slice(0, 5)) {
     out.push(
       draft(
         "why_it_matters",
@@ -113,7 +116,7 @@ export function synthesizeKnowledgeStructureCandidates(
   }
 
   if (chronology) {
-    for (const moment of structure.timelineMoments.slice(0, 3)) {
+    for (const moment of structure.timelineMoments.slice(0, 4)) {
       out.push(
         draft(
           "memory_hook",
@@ -141,7 +144,7 @@ export function synthesizeKnowledgeStructureCandidates(
     out.push(
       draft(
         "connection",
-        tensionTitle(entity),
+        tensionTitle(entity, conflict),
         conflict,
         PATTERN_TO_LEARN.institutional_conflict,
         0.78,

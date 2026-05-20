@@ -4,7 +4,6 @@
 
 import type { AnalysisResult, LearnCardOutput, TextAnalysisMode } from "@/server/ai/schemas";
 import { buildLearnKindTargets } from "@/server/intelligence/mode-routing";
-import type { ComplexityLevel } from "@/server/intelligence/types";
 import type { LearnWeightingProfile } from "@/types/modes";
 import { dedupeLearnCandidates } from "./dedupeLearnCards";
 import { rankLearnCandidates } from "./rankLearnCandidates";
@@ -42,7 +41,15 @@ import {
 import {
   applyLearnCardQuality,
   learnCardQualityDebugStats,
+  lightLearnCardQualityPass,
 } from "./learnCardQuality";
+import { resolveLearnCardTargets } from "./learnCardTargets";
+import {
+  createReservePool,
+  pushReserveCandidates,
+  refillLearnCardsFromReserve,
+} from "./learnCardReserve";
+import { createPipelineCounts, pipelineCountsDebug } from "./learnPipelineCounts";
 import {
   applyLearningProgression,
   learnProgressionDebugStats,
@@ -104,16 +111,6 @@ function mapProviderType(type: string): LearnCardKind {
   return "concept";
 }
 
-function cardCountForComplexity(complexity: ComplexityLevel): LearnCardCountRange {
-  switch (complexity) {
-    case "low":
-      return { min: 3, max: 5 };
-    case "high":
-      return { min: 8, max: 10 };
-    default:
-      return { min: 5, max: 7 };
-  }
-}
 
 function modeKindTargets(
   mode: TextAnalysisMode,
@@ -370,7 +367,7 @@ function selectDiversified(
   range: LearnCardCountRange,
   learnWeighting?: LearnWeightingProfile,
 ): LearnCandidate[] {
-  const target = range.max;
+  const target = range.target ?? range.max;
   const targets = learnWeighting
     ? buildLearnKindTargets(mode, learnWeighting, target)
     : modeKindTargets(mode, target);
@@ -493,9 +490,16 @@ export function buildLearnIntelligence(
       (learnProfile ? shouldDeprioritizeSummary(learnProfile.profileId) : false),
   };
 
+  const pipelineCounts = createPipelineCounts();
+  const reservePool = createReservePool();
+
+  const rawAiCandidates = candidatesFromAnalysis(result, isDeckSource, learnFlags);
+  pipelineCounts.rawAiCandidates = rawAiCandidates.length;
+
   const profileCandidates = learnProfile
     ? synthesizeProfileLearnCandidates(result, learnProfile)
     : [];
+  pipelineCounts.profileCandidates = profileCandidates.length;
 
   const knowledgeStructure = extractKnowledgeStructure({
     title: result.title,
@@ -509,14 +513,13 @@ export function buildLearnIntelligence(
     intelligenceModeId: options.intelligenceModeId,
     pipelineMode: options.mode,
   });
+  pipelineCounts.knowledgeStructureCandidates = structureCandidates.length;
 
-  const mergedRaw = [
-    ...candidatesFromAnalysis(result, isDeckSource, learnFlags),
-    ...profileCandidates,
-    ...structureCandidates,
-  ];
+  const mergedRaw = [...rawAiCandidates, ...profileCandidates, ...structureCandidates];
+  pipelineCounts.mergedCandidates = mergedRaw.length;
 
   const clustered = collapseCandidatesByConceptClusters(mergedRaw, knowledgeStructure);
+  pipelineCounts.afterConceptClustering = clustered.candidates.length;
 
   const policyFiltered = filterLearnCandidates(
     filterCandidatesByLearnSourcePolicy(
@@ -528,6 +531,12 @@ export function buildLearnIntelligence(
 
   const { candidates: strategyFilteredCandidates, filteredCount: strategyFilteredCount } =
     filterCandidatesByStrategy(policyFiltered, learnStrategy);
+  pipelineCounts.afterStrategyFiltering = strategyFilteredCandidates.length;
+
+  const strategyRemoved = policyFiltered.filter(
+    (c) => !strategyFilteredCandidates.some((k) => k.title === c.title && k.content === c.content),
+  );
+  pushReserveCandidates(reservePool, strategyRemoved);
 
   const baseCandidates = strategyFilteredCandidates.filter((c) => {
     if (!isPresentation) return true;
@@ -560,12 +569,20 @@ export function buildLearnIntelligence(
     result.keyInsights,
     { isPresentation },
   );
-  const range = cardCountForComplexity(options.complexity);
+  const range = resolveLearnCardTargets({
+    complexity: options.complexity,
+    summary: result.summary,
+    keyInsightCount: result.keyInsights.length,
+    isPresentation,
+    isYoutube: options.isYoutubeTranscript === true,
+  });
   const candidateCompression = compressLearnCandidates(deduped, knowledgeStructure, {
-    targetMax: range.max + 2,
+    targetMax: range.max + 4,
     targetMin: range.min,
   });
+  pushReserveCandidates(reservePool, candidateCompression.result.removedCards);
   const compressedPool = candidateCompression.result.keptCards;
+  pipelineCounts.afterCompression = compressedPool.length;
   const selectionPool = learnProfile
     ? [...enrichCandidatesForProfile(compressedPool, learnProfile)].sort(
         (a, b) => b.importance - a.importance,
@@ -583,6 +600,7 @@ export function buildLearnIntelligence(
       learnProfile,
     );
   }
+  pipelineCounts.afterSelection = selected.length;
 
   const outputFlags = {
     isYoutube: options.isYoutubeTranscript === true,
@@ -610,10 +628,12 @@ export function buildLearnIntelligence(
   }
 
   const strategyPass = applyStrategyToLearnCards(
-    finalCards.slice(0, range.max),
+    finalCards.slice(0, range.max + 2),
     learnStrategy,
     range.max,
+    range.min,
   );
+  pipelineCounts.afterStrategyPass = strategyPass.items.length;
   strategyPass.stats.strategyFilteredCount += strategyFilteredCount;
   strategyPass.stats.strategyBoostedCount += strategyBoostedCount;
 
@@ -624,14 +644,33 @@ export function buildLearnIntelligence(
     targetMin: range.min,
     targetMax: range.max,
     strategy: learnStrategy,
+    knowledgeStructure,
   });
+  pipelineCounts.afterQuality = quality.cards.length;
+
   const outputCompression = compressLearnCardOutputs(quality.cards, knowledgeStructure, {
     targetMax: range.max,
     targetMin: range.min,
   });
+  pushReserveCandidates(
+    reservePool,
+    outputCompression.result.removedCards.map((c, i) => ({
+      kind: (c.type === "why" ? "why_it_matters" : c.type) as LearnCandidate["kind"],
+      title: c.title,
+      content: c.content,
+      source: "ai_card",
+      importance: 0.65,
+      entities: [],
+      learnPattern: c.learnPattern,
+      cardId: c.cardId ?? `removed_out_${i}`,
+    })),
+  );
+  pipelineCounts.afterOutputCompression = outputCompression.result.keptCards.length;
+
   const progression = applyLearningProgression(outputCompression.result.keptCards, learnStrategy, {
     targetMax: range.max,
   });
+  pipelineCounts.afterProgression = progression.cards.length;
   const progressionDebug = learnProgressionDebugStats(progression.stats);
 
   const memoryAnchored = applyMemoryAnchorsToLearnCards(
@@ -648,7 +687,36 @@ export function buildLearnIntelligence(
     uiSectionLabels: options.personaAdaptivePlan?.uiSectionLabels,
     candidateHints,
   });
-  const finalOrdered = orderCardsForProgressiveUnderstanding(traced.cards);
+  let finalOrdered = orderCardsForProgressiveUnderstanding(traced.cards);
+
+  const hasEnoughSource =
+    result.summary.length + result.keyInsights.join("").length >= 400;
+  if (finalOrdered.length < range.min && hasEnoughSource) {
+    finalOrdered = refillLearnCardsFromReserve({
+      current: finalOrdered,
+      pool: reservePool,
+      range,
+      knowledgeStructure,
+      result,
+      learnStrategy,
+      outputFlags,
+      toOutput: toLearnCardOutput,
+    });
+    finalOrdered = lightLearnCardQualityPass(finalOrdered, range.max);
+    finalOrdered = orderCardsForProgressiveUnderstanding(
+      attachSourceTraceToLearnCards(finalOrdered, {
+        analysis: result,
+        personaAdaptivePlan: options.personaAdaptivePlan,
+        extractedText: options.extractedText,
+        uiSectionLabels: options.personaAdaptivePlan?.uiSectionLabels,
+        candidateHints,
+      }).cards,
+    );
+  }
+
+  pipelineCounts.finalOutput = finalOrdered.length;
+  const pipelineDebug = pipelineCountsDebug(pipelineCounts);
+
   const traceDebug = sourceTraceDebugStats(traced.stats);
 
   const qualityDebug = learnCardQualityDebugStats(quality.stats);
@@ -700,6 +768,9 @@ export function buildLearnIntelligence(
   if (memoryAnchorsDebug && adaptiveLearnMeta) {
     adaptiveLearnMeta.memoryAnchors = memoryAnchorsDebug;
   }
+  if (pipelineDebug && adaptiveLearnMeta) {
+    adaptiveLearnMeta.learnPipelineCounts = pipelineDebug;
+  }
 
   const multiFormatLearn = buildMultiFormatLearn({
     modeId: options.intelligenceModeId ?? options.mode,
@@ -740,6 +811,7 @@ export function buildLearnIntelligence(
       ...(compressionDebug ? { knowledgeCompression: compressionDebug } : {}),
       ...(memoryAnchorsDebug ? { memoryAnchors: memoryAnchorsDebug } : {}),
       ...(multiFormatDebug ? { multiFormatLearn: multiFormatDebug } : {}),
+      ...(pipelineDebug ? { learnPipelineCounts: pipelineDebug } : {}),
     },
   };
 }

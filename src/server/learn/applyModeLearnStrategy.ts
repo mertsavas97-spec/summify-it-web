@@ -156,7 +156,7 @@ export function selectCandidatesByStrategy(
   strategy: ModeLearnStrategy,
   range: LearnCardCountRange,
 ): LearnCandidate[] {
-  const target = range.max;
+  const target = range.target ?? range.max;
   const scale = target / 8;
   const selected: LearnCandidate[] = [];
   const used = new Set<string>();
@@ -205,6 +205,7 @@ export function applyStrategyToLearnCards(
   cards: LearnCardOutput[],
   strategy: ModeLearnStrategy,
   targetMax: number,
+  targetMin = 6,
 ): LearnStrategyApplyResult<LearnCardOutput> {
   const stats = emptyStats(strategy);
   const filtered: LearnCardOutput[] = [];
@@ -235,22 +236,32 @@ export function applyStrategyToLearnCards(
     return patternPreferenceBoost(pb, strategy) - patternPreferenceBoost(pa, strategy);
   });
 
-  const patternCounts = new Map<string, number>();
   const out: LearnCardOutput[] = [];
+  const used = new Set<LearnCardOutput>();
 
   for (const card of sorted) {
+    if (out.length >= targetMin) break;
+    out.push(card);
+    used.add(card);
+  }
+
+  const patternCounts = new Map<string, number>();
+  for (const card of sorted) {
+    if (out.length >= targetMax) break;
+    if (used.has(card)) continue;
     const key = resolveCardStrategyPattern(card);
     const count = patternCounts.get(key) ?? 0;
     if (count >= strategy.maxPerPattern) continue;
     out.push(card);
+    used.add(card);
     patternCounts.set(key, count + 1);
-    if (out.length >= targetMax) break;
   }
 
   for (const card of sorted) {
     if (out.length >= targetMax) break;
-    if (out.includes(card)) continue;
+    if (used.has(card)) continue;
     out.push(card);
+    used.add(card);
   }
 
   stats.actualDistribution = distributionOf(out.slice(0, targetMax));

@@ -11,6 +11,7 @@ import {
   isWeakGenericLearnTitle,
   tokenize,
 } from "./knowledgeStructure";
+import { cognitiveQuestionKey } from "./learnCognitiveDedup";
 import type { LearnCandidate } from "./types";
 
 /** Pipeline learn card (candidate stage). */
@@ -63,8 +64,9 @@ type UniquenessContext = {
   causalKeys: Set<string>;
 };
 
-const REGION_MERGE_THRESHOLD = 0.38;
-const TITLE_SIM_THRESHOLD = 0.55;
+const REGION_MERGE_THRESHOLD = 0.5;
+const TITLE_SIM_THRESHOLD = 0.64;
+const MAX_CARDS_PER_REGION = 4;
 const NARRATIVE_MARKERS: Array<{ role: string; re: RegExp }> = [
   { role: "rise", re: /\b(rise|rising|growth|surge|expansion)\b/i },
   { role: "collapse", re: /\b(collapse|fall|decline|crisis|bankrupt)\b/i },
@@ -412,45 +414,61 @@ function collapseRegions<T extends LearnCandidate>(
     }
 
     const members = region.indices.map((i) => cards[i]);
-    let winner = members[0];
-    let best = combinedRetentionScore(winner, context);
-
-    for (let m = 1; m < members.length; m++) {
-      const score = combinedRetentionScore(members[m], context);
-      if (score > best) {
-        best = score;
-        winner = members[m];
+    const byCognitive = new Map<string, T>();
+    for (const member of members) {
+      const op = cognitiveQuestionKey(member);
+      const existing = byCognitive.get(op);
+      if (
+        !existing ||
+        combinedRetentionScore(member, context) > combinedRetentionScore(existing, context)
+      ) {
+        byCognitive.set(op, member);
       }
     }
 
-    const lowDensity = members.filter((c) => calculateKnowledgeDensity(c) < 0.48);
-    if (lowDensity.length >= 2) {
-      const merged = mergeWeakPair(lowDensity[0], lowDensity[1]);
-      if (merged) {
-        winner = reduceVerbosity(merged) as T;
+    let winners = [...byCognitive.values()].sort(
+      (a, b) => combinedRetentionScore(b, context) - combinedRetentionScore(a, context),
+    );
+
+    if (winners.length === 1 && members.length >= 2) {
+      const lowDensity = members.filter((c) => calculateKnowledgeDensity(c) < 0.42);
+      if (lowDensity.length >= 2) {
+        const merged = mergeWeakPair(lowDensity[0], lowDensity[1]);
+        if (merged) {
+          winners = [reduceVerbosity(merged) as T];
+        }
       }
     }
 
-    winner = reduceVerbosity({ ...winner, importance: Math.min(1, (winner.importance ?? 0.5) + 0.05) });
-    kept.push(winner);
-    registerKept(context, winner);
+    const keptInRegion = winners.slice(0, MAX_CARDS_PER_REGION);
+    const keptIds = new Set<string>();
 
-    const keptId = stableId(winner, region.indices[0]);
+    for (const winner of keptInRegion) {
+      const card = reduceVerbosity({
+        ...winner,
+        importance: Math.min(1, (winner.importance ?? 0.5) + 0.05),
+      });
+      kept.push(card);
+      registerKept(context, card);
+      keptIds.add(stableId(card, region.indices[0]));
+    }
+
     const removedIds: string[] = [];
     for (const idx of region.indices) {
       const c = cards[idx];
-      if (stableId(c, idx) !== keptId) {
+      const id = stableId(c, idx);
+      if (!keptIds.has(id)) {
         removed.push(c);
-        removedIds.push(stableId(c, idx));
+        removedIds.push(id);
       }
     }
 
-    if (removedIds.length > 0) {
+    if (removedIds.length > 0 && keptInRegion[0]) {
       clusters.push({
         clusterId: `region_${clusters.length}`,
         topic: region.label,
         removedCardIds: removedIds,
-        keptCardId: keptId,
+        keptCardId: stableId(keptInRegion[0], region.indices[0]),
       });
     }
   }
@@ -556,8 +574,9 @@ export function compressLearnCandidates(
   options?: { targetMax?: number; targetMin?: number },
 ): { result: KnowledgeCompressionResult<LearnCandidate>; stats: CompressionStats } {
   const targetMax = options?.targetMax ?? candidates.length;
-  const targetMin = options?.targetMin ?? 3;
+  const targetMin = options?.targetMin ?? 6;
   const original = candidates.length;
+  const lightPass = targetMin >= 6 && candidates.length <= 28;
 
   if (candidates.length <= 1) {
     const kept = candidates.map((c) => reduceVerbosity(c));
@@ -578,10 +597,16 @@ export function compressLearnCandidates(
   const removed: LearnCandidate[] = [];
   let mergedCount = 0;
 
-  const regionMerged = collapseRegions(candidates, regions, context, clusters, removed);
+  const regionMerged = lightPass
+    ? candidates.map((c) => reduceVerbosity(c))
+    : collapseRegions(candidates, regions, context, clusters, removed);
   mergedCount = clusters.filter((c) => c.removedCardIds.length > 1).length;
 
-  const balanced = selectCoverageBalanced(regionMerged, targetMax, targetMin);
+  const balanced = selectCoverageBalanced(
+    regionMerged,
+    Math.max(targetMax, targetMin),
+    targetMin,
+  );
   const semanticRegions = detectSemanticRegions(balanced).map((r) => ({
     label: r.label,
     cardIds: r.cardIds,

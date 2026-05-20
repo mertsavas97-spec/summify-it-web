@@ -5,7 +5,12 @@
 
 import type { LearnCardQualityStats } from "@/types/adaptive-learn";
 import type { LearnCardOutput } from "@/types/text-analysis";
-import { isWeakGenericLearnTitle } from "./knowledgeStructure";
+import {
+  cognitiveQuestionKeyFromOutput,
+  isSameCognitiveQuestion,
+} from "./learnCognitiveDedup";
+import { isWeakGenericLearnTitle, type KnowledgeStructure } from "./knowledgeStructure";
+import { synthesizeKnowledgeStructureCandidates } from "./knowledgeStructureLearn";
 import { practicePromptForCard, resolveLearnStrategy } from "./applyModeLearnStrategy";
 import type { ModeLearnStrategy, ModeLearnStrategyInput, ModeStrategyPattern } from "./modeLearnStrategies";
 
@@ -13,9 +18,9 @@ export type { LearnCardQualityStats } from "@/types/adaptive-learn";
 
 const MAX_TITLE_LENGTH = 90;
 const CONTENT_COMPARE_LEN = 120;
-const DEFAULT_TARGET_MIN = 3;
-const DEFAULT_TARGET_MAX = 10;
-const MAX_SAME_PATTERN = 2;
+const DEFAULT_TARGET_MIN = 6;
+const DEFAULT_TARGET_MAX = 12;
+const MAX_SAME_PATTERN = 3;
 
 const PRESERVE_ACRONYMS = new Set([
   "AI",
@@ -118,6 +123,7 @@ export type LearnCardQualityContext = {
   /** Phase Learn 2 — mode strategy (resolved from input if omitted). */
   strategy?: ModeLearnStrategy;
   strategyInput?: ModeLearnStrategyInput;
+  knowledgeStructure?: KnowledgeStructure;
 };
 
 export type LearnCardQualityResult = {
@@ -401,6 +407,8 @@ function tokenOverlap(a: string, b: string): number {
 }
 
 function isNearDuplicate(a: LearnCardOutput, b: LearnCardOutput): boolean {
+  if (isSameCognitiveQuestion(a, b)) return true;
+
   const titleA = normalizeText(a.title);
   const titleB = normalizeText(b.title);
   if (titleA && titleA === titleB) return true;
@@ -411,7 +419,7 @@ function isNearDuplicate(a: LearnCardOutput, b: LearnCardOutput): boolean {
 
   const combinedA = `${a.title} ${a.content.slice(0, CONTENT_COMPARE_LEN)}`;
   const combinedB = `${b.title} ${b.content.slice(0, CONTENT_COMPARE_LEN)}`;
-  if (tokenOverlap(combinedA, combinedB) >= 0.72) return true;
+  if (tokenOverlap(combinedA, combinedB) >= 0.78) return true;
 
   return false;
 }
@@ -444,25 +452,38 @@ function enforcePatternDiversity(
   cards: LearnCardOutput[],
   targetMax: number,
   maxPerPattern = MAX_SAME_PATTERN,
+  targetMin = DEFAULT_TARGET_MIN,
 ): LearnCardOutput[] {
-  if (cards.length < 6) return cards.slice(0, targetMax);
-
-  const patternCounts = new Map<string, number>();
   const out: LearnCardOutput[] = [];
+  const used = new Set<string>();
 
   for (const card of cards) {
+    if (out.length >= targetMin) break;
+    const key = cognitiveQuestionKeyFromOutput(card);
+    if (used.has(key)) continue;
+    out.push(card);
+    used.add(key);
+  }
+
+  const patternCounts = new Map<string, number>();
+  for (const card of cards) {
+    if (out.length >= targetMax) break;
+    const cogKey = cognitiveQuestionKeyFromOutput(card);
+    if (used.has(cogKey)) continue;
     const key = patternKey(card);
     const count = patternCounts.get(key) ?? 0;
     if (count >= maxPerPattern) continue;
     out.push(card);
+    used.add(cogKey);
     patternCounts.set(key, count + 1);
-    if (out.length >= targetMax) break;
   }
 
   for (const card of cards) {
     if (out.length >= targetMax) break;
-    if (out.includes(card)) continue;
+    const cogKey = cognitiveQuestionKeyFromOutput(card);
+    if (used.has(cogKey)) continue;
     out.push(card);
+    used.add(cogKey);
   }
 
   return out.slice(0, targetMax);
@@ -500,7 +521,10 @@ function fallbackTitleForInsight(
   if (priority === "timeline_chain" || priority === "historical_anchor") {
     return `What happened regarding ${subject}?`.slice(0, MAX_TITLE_LENGTH);
   }
-  return `What defines ${subject} in this source?`.slice(0, MAX_TITLE_LENGTH);
+  if (priority === "timeline_chain" || priority === "historical_anchor") {
+    return `Which period best captures the shift involving ${subject}?`.slice(0, MAX_TITLE_LENGTH);
+  }
+  return `Why does ${subject} matter in this source?`.slice(0, MAX_TITLE_LENGTH);
 }
 
 function learnPatternFromPriority(priority: ModeStrategyPattern): LearnCardOutput["learnPattern"] {
@@ -530,14 +554,57 @@ function buildFallbackCards(
   existing: LearnCardOutput[],
 ): LearnCardOutput[] {
   const fallbacks: LearnCardOutput[] = [];
+  const usedKeys = new Set(existing.map((c) => cognitiveQuestionKeyFromOutput(c)));
   const usedTitles = new Set(existing.map((c) => normalizeText(c.title)));
   const strategy = context.strategy;
 
+  if (context.knowledgeStructure && strategy) {
+    const structureCandidates = synthesizeKnowledgeStructureCandidates(
+      {
+        title: context.documentTitle ?? "Document",
+        summary: context.summary ?? "",
+        keyInsights: context.keyInsights ?? [],
+        risksOrWarnings: [],
+        actionItems: [],
+        learnCards: existing,
+      },
+      context.knowledgeStructure,
+      { strategy },
+    );
+    for (const c of structureCandidates) {
+      if (fallbacks.length >= 8) break;
+      const key = cognitiveQuestionKeyFromOutput({
+        title: c.title,
+        type: c.kind === "why_it_matters" ? "why_it_matters" : c.kind,
+        learnPattern: c.learnPattern,
+        content: c.content,
+      });
+      if (usedKeys.has(key) || usedTitles.has(normalizeText(c.title))) continue;
+      fallbacks.push({
+        type: c.kind === "why_it_matters" ? "why_it_matters" : (c.kind as LearnCardOutput["type"]),
+        title: c.title,
+        content: c.content,
+        learnPattern: c.learnPattern,
+        groupTitle: c.groupTitle,
+      });
+      usedKeys.add(key);
+      usedTitles.add(normalizeText(c.title));
+    }
+  }
+
   const insights = context.keyInsights ?? [];
   for (const insight of insights) {
-    if (fallbacks.length >= 3) break;
+    if (fallbacks.length >= 6) break;
     const title = fallbackTitleForInsight(insight, strategy);
-    if (!title || usedTitles.has(normalizeText(title))) continue;
+    if (!title || usedTitles.has(normalizeText(title))) {
+      continue;
+    }
+    const cogKey = cognitiveQuestionKeyFromOutput({
+      title,
+      type: "concept",
+      content: insight,
+    });
+    if (usedKeys.has(cogKey)) continue;
     const priority = strategy?.fallbackPriorities[0] ?? "terminology";
 
     fallbacks.push({
@@ -547,9 +614,10 @@ function buildFallbackCards(
       learnPattern: learnPatternFromPriority(priority),
     });
     usedTitles.add(normalizeText(title));
+    usedKeys.add(cogKey);
   }
 
-  if (fallbacks.length === 0 && context.summary) {
+  if (fallbacks.length < 3 && context.summary) {
     const sentences = context.summary
       .split(/(?<=[.!?])\s+/)
       .map((s) => s.trim())
@@ -637,12 +705,12 @@ export function applyLearnCardQuality(
   }
 
   const { cards: deduped, removed: removedDuplicateCount } = dedupeCards(normalized);
-  let filtered = enforcePatternDiversity(deduped, targetMax, maxPerPattern);
+  let filtered = enforcePatternDiversity(deduped, targetMax, maxPerPattern, targetMin);
 
   if (filtered.length < targetMin) {
     const fallbacks = buildFallbackCards(enrichedContext, filtered);
     const merged = dedupeCards([...filtered, ...fallbacks]).cards;
-    filtered = enforcePatternDiversity(merged, targetMax, maxPerPattern);
+    filtered = enforcePatternDiversity(merged, targetMax, maxPerPattern, targetMin);
   }
 
   const stats: LearnCardQualityStats = {
@@ -655,6 +723,17 @@ export function applyLearnCardQuality(
   };
 
   return { cards: filtered, stats };
+}
+
+/** Light pass after reserve refill — dedupe only, no aggressive pattern culling. */
+export function lightLearnCardQualityPass(
+  cards: LearnCardOutput[],
+  targetMax: number,
+): LearnCardOutput[] {
+  const { cards: deduped } = dedupeCards(cards);
+  return deduped
+    .filter((c) => !isGenericTitle(c.title) && !isWeakGenericLearnTitle(c.title))
+    .slice(0, targetMax);
 }
 
 /** Dev-only stats for cognition / adaptive learn debug. */

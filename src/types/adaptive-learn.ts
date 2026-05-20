@@ -255,6 +255,23 @@ export type LearnKnowledgeStructureDebugMeta = {
   removedDuplicateClusters: number;
 };
 
+/** Dev-only pipeline stage counts (card count regression audit). */
+export type LearnPipelineCountsMeta = {
+  rawAiCandidates: number;
+  profileCandidates: number;
+  knowledgeStructureCandidates: number;
+  mergedCandidates: number;
+  afterConceptClustering: number;
+  afterStrategyFiltering: number;
+  afterCompression: number;
+  afterSelection: number;
+  afterStrategyPass: number;
+  afterQuality: number;
+  afterOutputCompression: number;
+  afterProgression: number;
+  finalOutput: number;
+};
+
 /** Dev-only learn card quality pass (Phase Learn 1). */
 export type LearnCardQualityStats = {
   originalCardCount: number;
@@ -282,6 +299,8 @@ export type AdaptiveLearnDebugMeta = {
   retention?: LearnRetentionDebugMeta;
   /** Dev-only Phase Learn 6.5 multi-format pass. */
   multiFormatLearn?: import("@/lib/learn/multiFormatTypes").LearnMultiFormatDebugMeta;
+  /** Dev-only pipeline stage counts. */
+  learnPipelineCounts?: LearnPipelineCountsMeta;
 };
 
 /** Dev-only practice retention pass (Phase Learn 6.4). */

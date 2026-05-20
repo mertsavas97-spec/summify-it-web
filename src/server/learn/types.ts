@@ -16,6 +16,7 @@ import type {
   LearnKnowledgeCompressionDebugMeta,
   LearnMemoryAnchorsDebugMeta,
   LearnRetentionDebugMeta,
+  LearnPipelineCountsMeta,
 } from "@/types/adaptive-learn";
 import type {
   LearnMultiFormatDebugMeta,
@@ -63,6 +64,7 @@ export type LearnCandidate = {
 
 export type LearnCardCountRange = {
   min: number;
+  target: number;
   max: number;
 };
 
@@ -115,6 +117,8 @@ export type LearnIntelligenceMeta = {
   retention?: LearnRetentionDebugMeta;
   /** Dev-only Phase Learn 6.5 multi-format pass. */
   multiFormatLearn?: LearnMultiFormatDebugMeta;
+  /** Dev-only pipeline stage counts. */
+  learnPipelineCounts?: LearnPipelineCountsMeta;
 };
 
 export type BuildLearnIntelligenceResult = {

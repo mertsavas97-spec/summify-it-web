@@ -2,6 +2,7 @@ import {
   normalizeDeckText,
   presentationSemanticStems,
 } from "@/server/presentation/presentationFragments";
+import { cognitiveQuestionKey } from "./learnCognitiveDedup";
 import type { LearnCandidate } from "./types";
 
 function normalizeKey(text: string): string {
@@ -68,6 +69,7 @@ export function dedupeLearnCandidates(
   const corpus: string[] = [summary, ...extraCorpus];
   const usedTimestamps = new Set<string>();
   const usedDeckKeys = new Set<string>();
+  const usedCognitive = new Set<string>();
 
   for (const candidate of ranked) {
     const text = `${candidate.title} ${candidate.content}`;
@@ -78,6 +80,9 @@ export function dedupeLearnCandidates(
 
     const tooClose = corpus.some((other) => compare(other) >= overlapThreshold);
     if (tooClose) continue;
+
+    const cogKey = cognitiveQuestionKey(candidate);
+    if (usedCognitive.has(cogKey)) continue;
 
     const titleKey = isPresentation
       ? normalizeDeckText(candidate.title)
@@ -107,6 +112,7 @@ export function dedupeLearnCandidates(
     }
 
     out.push(candidate);
+    usedCognitive.add(cogKey);
     corpus.push(text);
     usedDeckKeys.add(titleKey);
   }
