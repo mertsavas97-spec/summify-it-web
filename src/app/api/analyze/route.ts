@@ -24,7 +24,16 @@ import {
 import { canAccessMode, resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { getIntelligenceModeById } from "@/config/modes";
 import { USER_MESSAGES } from "@/lib/user-messages";
+import {
+  ANON_SESSION_COOKIE,
+  createAnonymousSessionId,
+  readAnonymousSessionId,
+} from "@/lib/analytics/anonymousSession";
 import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
+import {
+  trackAnalysisCompleted,
+  trackAnalysisFailed,
+} from "@/server/usage/trackUsageEvent";
 import { devError, devLog, logServerError } from "@/server/logging";
 
 const ANONYMOUS_USAGE_COOKIE = "summify_anon_usage";
@@ -62,6 +71,26 @@ function setAnonymousUsageCookie(
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: 60 * 60 * 48,
+  });
+  return response;
+}
+
+async function resolveAnonymousSessionId(): Promise<string> {
+  const cookieStore = await cookies();
+  const existing = readAnonymousSessionId(cookieStore.get(ANON_SESSION_COOKIE)?.value);
+  return existing ?? createAnonymousSessionId();
+}
+
+function attachAnonymousSessionCookie(
+  response: NextResponse,
+  sessionId: string,
+): NextResponse {
+  response.cookies.set(ANON_SESSION_COOKIE, sessionId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 90,
   });
   return response;
 }
@@ -271,10 +300,19 @@ export async function POST(request: Request) {
 
     const jsonResponse = NextResponse.json(response);
     if (!currentUser) {
+      const sessionId = await resolveAnonymousSessionId();
+      trackAnalysisCompleted({
+        sessionId,
+        sourceKind: sourceHint ?? null,
+        intelligenceMode: intelligenceModeId,
+        plan: planId,
+        trustedServer: true,
+      });
       const cookieStore = await cookies();
       const anonymousUsage = parseAnonymousUsage(
         cookieStore.get(ANONYMOUS_USAGE_COOKIE)?.value,
       );
+      attachAnonymousSessionCookie(jsonResponse, sessionId);
       return setAnonymousUsageCookie(jsonResponse, anonymousUsage.count + 1);
     }
 
@@ -296,6 +334,25 @@ export async function POST(request: Request) {
         pipelineType: intelligence?.adaptivePlan.pipelineType,
         estimatedPromptChars: intelligence?.compactedUserPrompt.length,
         tokenRisk: intelligence?.tokenBudget.riskLevel,
+      });
+
+      const failureUser = await getOptionalUser();
+      const failureProfile = failureUser
+        ? await getProfile(failureUser.id)
+        : null;
+      const failurePlan = resolveModeEntitlementPlanId(
+        failureProfile,
+        Boolean(failureUser),
+      );
+      const failureSessionId = failureUser ? null : await resolveAnonymousSessionId();
+
+      trackAnalysisFailed({
+        userId: failureUser?.id,
+        sessionId: failureSessionId,
+        intelligenceMode: modeForLog,
+        plan: failurePlan,
+        failureStage: error.failureReason,
+        trustedServer: !failureUser,
       });
 
       const payload: AnalyzeApiErrorResponse = {

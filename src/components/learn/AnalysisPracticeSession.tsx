@@ -34,6 +34,7 @@ import {
   estimatePracticeMinutes,
   sortPracticeSessionCards,
 } from "@/lib/learn/practiceSessionTypes";
+import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
 import {
   getPracticeCardAccessForPlan,
   type PracticeCardAccess,
@@ -156,6 +157,13 @@ export function AnalysisPracticeSession({
         setRetentionStates({});
         setRetentionSummary(null);
         setSessionId(null);
+        if (cardsToUse.length > 0) {
+          trackProductEventClient({
+            eventType: "learn_started",
+            sourceType: "practice",
+            metadata: { card_count: cardsToUse.length },
+          });
+        }
       }
       setError(null);
       setPhase(cardsToUse.length > 0 ? "active" : "pre");
@@ -172,6 +180,11 @@ export function AnalysisPracticeSession({
     });
     setRetentionSummary(summary);
     savePracticeRetentionSummary(summary);
+    trackProductEventClient({
+      eventType: "learn_completed",
+      sourceType: "practice",
+      metadata: { card_count: accessibleCards.length },
+    });
     if (process.env.NODE_ENV === "development") {
       console.debug("[learn.retention]", {
         sessionReviewedCount: summary.sessionReviewedCount,

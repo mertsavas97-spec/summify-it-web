@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { getOptionalUser } from "@/lib/auth";
+import { getOptionalUser, getProfile } from "@/lib/auth";
+import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
+import { trackProductEvent } from "@/server/usage/trackProductEvent";
 import { isEduEmail } from "@/lib/auth/edu-email";
 import { createPolarCheckout } from "@/lib/billing/polar/checkout";
 import {
@@ -91,6 +93,14 @@ export async function POST(request: Request) {
         interval,
       });
 
+      const profile = await getProfile(user.id);
+      await trackProductEvent({
+        eventType: "checkout_started",
+        userId: user.id,
+        plan: resolveEntitlementPlanIdFromProfile(profile),
+        metadata: { target_plan: planId, interval },
+      });
+
       return NextResponse.json({
         success: true,
         provider,
@@ -110,6 +120,14 @@ export async function POST(request: Request) {
         { status: 503 },
       );
     }
+
+    const profile = await getProfile(user.id);
+    await trackProductEvent({
+      eventType: "checkout_started",
+      userId: user.id,
+      plan: resolveEntitlementPlanIdFromProfile(profile),
+      metadata: { target_plan: planId, interval },
+    });
 
     return NextResponse.json({ success: true, provider: status.provider, url });
   } catch (error) {

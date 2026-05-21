@@ -54,11 +54,10 @@ export type AdminMetrics = {
     topIntelligenceModes: { mode: string; count: number }[];
   }>;
   learn: MetricSection<{
-    practiceSessionsStarted: number;
-    reviewSessionsCompleted: number;
-    totalLearnCardsInSavedAnalyses: number;
-    avgLearnCardsPerAnalysis: number | null;
-    savedAnalysesSampled: number;
+    learnStartedLast7Days: number;
+    learnStartedToday: number;
+    learnCompletedLast7Days: number;
+    learnCompletedToday: number;
   }>;
   failures: MetricSection<{
     analysisFailuresAvailable: boolean;
@@ -101,24 +100,61 @@ async function safeCount(
   }
 }
 
-function uniqueUserIds(rows: { user_id: string | null }[] | null): number {
+function uniqueActors(
+  rows: { user_id: string | null; session_id: string | null }[] | null,
+): number {
   const set = new Set<string>();
   for (const row of rows ?? []) {
-    if (row.user_id) set.add(row.user_id);
+    if (row.user_id) set.add(`u:${row.user_id}`);
+    else if (row.session_id) set.add(`s:${row.session_id}`);
   }
   return set.size;
 }
 
-function countByKey<T extends string>(
-  rows: Record<string, T | null | undefined>[] | null,
-  key: keyof Record<string, T | null | undefined>,
+function eventSourceType(row: {
+  source_type?: string | null;
+  source_kind?: string | null;
+}): string {
+  const value = row.source_type ?? row.source_kind;
+  return value?.trim() || "unknown";
+}
+
+function countBySourceType(
+  rows: { source_type?: string | null; source_kind?: string | null }[] | null,
 ): Map<string, number> {
   const map = new Map<string, number>();
   for (const row of rows ?? []) {
-    const value = String(row[key] ?? "unknown").trim() || "unknown";
+    const value = eventSourceType(row);
     map.set(value, (map.get(value) ?? 0) + 1);
   }
   return map;
+}
+
+function countByKey(
+  rows: { intelligence_mode?: string | null }[] | null,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const row of rows ?? []) {
+    const value = row.intelligence_mode?.trim() || "unknown";
+    map.set(value, (map.get(value) ?? 0) + 1);
+  }
+  return map;
+}
+
+async function countProductEvents(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  eventType: string,
+  since?: string,
+): Promise<{ count: number; error: string | null }> {
+  return safeCount(async () => {
+    let q = admin
+      .from("usage_events")
+      .select("*", { count: "exact", head: true })
+      .eq("event_type", eventType);
+    if (since) q = q.gte("created_at", since);
+    const { count, error } = await q;
+    return { count, error };
+  });
 }
 
 const SOURCE_KIND_LABELS: Record<string, string> = {
@@ -263,19 +299,19 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
 
   const { data: active24hRows, error: active24hError } = await admin
     .from("usage_events")
-    .select("user_id")
+    .select("user_id, session_id")
     .gte("created_at", last24h);
 
   const { data: active7dRows, error: active7dError } = await admin
     .from("usage_events")
-    .select("user_id")
+    .select("user_id, session_id")
     .gte("created_at", last7d);
 
   if (active24hError) errors.push(active24hError.message);
   if (active7dError) errors.push(active7dError.message);
 
-  const activeUsersLast24h = uniqueUserIds(active24hRows);
-  const activeUsersLast7Days = uniqueUserIds(active7dRows);
+  const activeUsersLast24h = uniqueActors(active24hRows);
+  const activeUsersLast7Days = uniqueActors(active7dRows);
 
   const usersSection: AdminMetrics["users"] =
     totalUsers.error && !planRows?.length
@@ -295,50 +331,32 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
           },
         };
 
-  const countAnalysisEvents = async (since?: string) =>
-    safeCount(async () => {
-      let q = admin
-        .from("usage_events")
-        .select("*", { count: "exact", head: true })
-        .eq("event_type", "analysis_completed");
-      if (since) q = q.gte("created_at", since);
-      const { count, error } = await q;
-      return { count, error };
-    });
-
-  const totalFromEvents = await countAnalysisEvents();
-  const totalFromSaved = await safeCount(async () => {
-    const { count, error } = await admin
-      .from("saved_analyses")
-      .select("*", { count: "exact", head: true });
-    return { count, error };
-  });
-
-  const analysesToday = await countAnalysisEvents(todayStart);
-  const analysesLast24h = await countAnalysisEvents(last24h);
-  const analysesLast7Days = await countAnalysisEvents(last7d);
+  const totalFromEvents = await countProductEvents(admin, "analysis_completed");
+  const analysesToday = await countProductEvents(admin, "analysis_completed", todayStart);
+  const analysesLast24h = await countProductEvents(admin, "analysis_completed", last24h);
+  const analysesLast7Days = await countProductEvents(admin, "analysis_completed", last7d);
 
   const { data: analyzers24h } = await admin
     .from("usage_events")
-    .select("user_id")
+    .select("user_id, session_id")
     .eq("event_type", "analysis_completed")
     .gte("created_at", last24h);
 
   const { data: analyzers7d } = await admin
     .from("usage_events")
-    .select("user_id")
+    .select("user_id, session_id")
     .eq("event_type", "analysis_completed")
     .gte("created_at", last7d);
 
-  const uniqueAnalyzersLast24h = uniqueUserIds(analyzers24h);
-  const uniqueAnalyzersLast7Days = uniqueUserIds(analyzers7d);
+  const uniqueAnalyzersLast24h = uniqueActors(analyzers24h);
+  const uniqueAnalyzersLast7Days = uniqueActors(analyzers7d);
   const analysisEvents7d = analysesLast7Days.count;
   const avgAnalysesPerActiveUser7d =
     uniqueAnalyzersLast7Days > 0
       ? Math.round((analysisEvents7d / uniqueAnalyzersLast7Days) * 10) / 10
       : null;
 
-  const totalAnalyses = Math.max(totalFromEvents.count, totalFromSaved.count);
+  const totalAnalyses = totalFromEvents.count;
 
   const usageSection: AdminMetrics["usage"] = {
     available: true,
@@ -418,7 +436,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
 
   const { data: sourceRows, error: sourceError } = await admin
     .from("usage_events")
-    .select("source_kind")
+    .select("source_type, source_kind")
     .eq("event_type", "analysis_completed")
     .gte("created_at", last7d);
 
@@ -435,7 +453,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
   };
 
   if (!sourceError && !modeError) {
-    const sourceCounts = countByKey(sourceRows, "source_kind");
+    const sourceCounts = countBySourceType(sourceRows);
     const bySourceKind = [...sourceCounts.entries()]
       .map(([kind, count]) => ({
         kind,
@@ -444,7 +462,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
       }))
       .sort((a, b) => b.count - a.count);
 
-    const modeCounts = countByKey(modeRows, "intelligence_mode");
+    const modeCounts = countByKey(modeRows);
     const topIntelligenceModes = [...modeCounts.entries()]
       .map(([mode, count]) => ({ mode, count }))
       .sort((a, b) => b.count - a.count)
@@ -456,69 +474,47 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
     };
   }
 
-  let learnSection: AdminMetrics["learn"] = {
-    available: false,
-    message: "Learn activity tracking not available yet",
+  const learnStartedToday = await countProductEvents(admin, "learn_started", todayStart);
+  const learnStarted7d = await countProductEvents(admin, "learn_started", last7d);
+  const learnCompletedToday = await countProductEvents(admin, "learn_completed", todayStart);
+  const learnCompleted7d = await countProductEvents(admin, "learn_completed", last7d);
+
+  const learnSection: AdminMetrics["learn"] = {
+    available: true,
+    data: {
+      learnStartedToday: learnStartedToday.count,
+      learnStartedLast7Days: learnStarted7d.count,
+      learnCompletedToday: learnCompletedToday.count,
+      learnCompletedLast7Days: learnCompleted7d.count,
+    },
   };
 
-  const sessionsStarted = await safeCount(async () => {
-    const { count, error } = await admin
-      .from("review_sessions")
-      .select("*", { count: "exact", head: true });
-    return { count, error };
-  });
+  const failedToday = await countProductEvents(admin, "analysis_failed", todayStart);
+  const failed7d = await countProductEvents(admin, "analysis_failed", last7d);
 
-  const sessionsCompleted = await safeCount(async () => {
-    const { count, error } = await admin
-      .from("review_sessions")
-      .select("*", { count: "exact", head: true })
-      .not("completed_at", "is", null);
-    return { count, error };
-  });
+  const { data: failureRows } = await admin
+    .from("usage_events")
+    .select("failure_stage")
+    .eq("event_type", "analysis_failed")
+    .gte("created_at", last7d)
+    .not("failure_stage", "is", null)
+    .limit(500);
 
-  const { data: learnRows, error: learnError } = await admin
-    .from("saved_analyses")
-    .select("learn_cards")
-    .order("created_at", { ascending: false })
-    .limit(2000);
-
-  if (!learnError && learnRows) {
-    let cardTotal = 0;
-    for (const row of learnRows) {
-      if (Array.isArray(row.learn_cards)) cardTotal += row.learn_cards.length;
-    }
-    const sampled = learnRows.length;
-    learnSection = {
-      available: true,
-      data: {
-        practiceSessionsStarted: sessionsStarted.count,
-        reviewSessionsCompleted: sessionsCompleted.count,
-        totalLearnCardsInSavedAnalyses: cardTotal,
-        avgLearnCardsPerAnalysis:
-          sampled > 0 ? Math.round((cardTotal / sampled) * 10) / 10 : null,
-        savedAnalysesSampled: sampled,
-      },
-    };
-  } else if (sessionsStarted.count > 0 || sessionsCompleted.count > 0) {
-    learnSection = {
-      available: true,
-      data: {
-        practiceSessionsStarted: sessionsStarted.count,
-        reviewSessionsCompleted: sessionsCompleted.count,
-        totalLearnCardsInSavedAnalyses: 0,
-        avgLearnCardsPerAnalysis: null,
-        savedAnalysesSampled: 0,
-      },
-    };
+  const failureCounts = new Map<string, number>();
+  for (const row of failureRows ?? []) {
+    const key = row.failure_stage?.trim() || "unknown";
+    failureCounts.set(key, (failureCounts.get(key) ?? 0) + 1);
   }
+  const topFailureReason =
+    [...failureCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
   let failuresSection: AdminMetrics["failures"] = {
     available: true,
     data: {
-      analysisFailuresAvailable: false,
-      failedAnalysesToday: null,
-      failedAnalysesLast7Days: null,
-      topFailureReason: null,
+      analysisFailuresAvailable: true,
+      failedAnalysesToday: failedToday.count,
+      failedAnalysesLast7Days: failed7d.count,
+      topFailureReason,
       webhookFailuresToday: null,
       webhookFailuresLast7Days: null,
       topWebhookError: null,
@@ -560,10 +556,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
     failuresSection = {
       available: true,
       data: {
-        analysisFailuresAvailable: false,
-        failedAnalysesToday: null,
-        failedAnalysesLast7Days: null,
-        topFailureReason: null,
+        ...failuresSection.data,
         webhookFailuresToday: webhookToday ?? 0,
         webhookFailuresLast7Days: webhook7d ?? 0,
         topWebhookError,

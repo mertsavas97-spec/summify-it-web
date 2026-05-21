@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { trackProductEventNonBlocking } from "@/server/usage/trackProductEvent";
 import {
   extractPolarPriceIds,
   extractPolarProductIds,
@@ -436,6 +437,17 @@ async function runPolarSync(
     });
 
     await syncProfileBilling(update);
+
+    trackProductEventNonBlocking({
+      eventType: "subscription_changed",
+      userId: update.userId,
+      plan: update.plan ?? null,
+      insertViaServiceRole: true,
+      metadata: {
+        status: update.subscriptionStatus ?? null,
+        interval: update.billingInterval ?? null,
+      },
+    });
 
     await finishPolarWebhookDebug(debugEventId ?? null, {
       syncStatus: "success",

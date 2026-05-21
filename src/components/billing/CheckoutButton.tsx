@@ -10,6 +10,7 @@ import {
 } from "@/lib/billing/checkout-intent";
 import { isPlanCheckoutEnabled } from "@/lib/billing/plan-availability";
 import { readCheckoutApiError } from "@/lib/billing/polar/api-error";
+import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
 import { Button } from "@/components/ui/Button";
 
 type CheckoutButtonProps = {
@@ -140,6 +141,11 @@ export function CheckoutButton({
 
   const startCheckout = useCallback(() => {
     if (!isCheckoutPlanAllowed(plan as CheckoutIntent["planId"], allowScholarCheckout)) return;
+
+    trackProductEventClient({
+      eventType: "upgrade_clicked",
+      metadata: { surface: "pricing_checkout", target_plan: plan, interval },
+    });
 
     const intent: CheckoutIntent = {
       planId: plan as CheckoutIntent["planId"],

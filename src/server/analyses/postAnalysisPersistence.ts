@@ -7,7 +7,7 @@ import type {
 import { getMaxSavedAnalysesForPlan } from "@/lib/plan-features";
 import { resolvePlanId } from "@/lib/plan-limits";
 import { devLog } from "@/server/logging";
-import { trackUsageEvent } from "@/server/usage/trackUsageEvent";
+import { trackProductEvent } from "@/server/usage/trackProductEvent";
 import { buildSavePayload } from "./buildSavePayload";
 import { saveAnalysis } from "./saveAnalysis";
 
@@ -52,12 +52,14 @@ export async function runPostAnalysisPersistence(
     providerUsed: input.providerUsed,
   });
 
-  await trackUsageEvent({
+  await trackProductEvent({
     userId: input.userId,
     eventType: "analysis_completed",
-    sourceKind: input.sourceHint ?? null,
+    sourceType: input.sourceHint ?? null,
     intelligenceMode: input.intelligenceModeId,
-    providerUsed: input.providerUsed,
+    plan: resolvePlanId(input.storedPlan),
+    success: true,
+    metadata: { saved: true },
   });
 
   devLog("[summify.analyze] saved_analysis_start", {

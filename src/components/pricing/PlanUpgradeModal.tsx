@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { trackEvent } from "@/lib/analytics/events";
+import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
 import { getPlanDefinition } from "@/data/pricingPlans";
 import { getModeAccessState } from "@/lib/mode-access";
 import { getUpgradeModalContent } from "@/lib/plan-upgrade-ui";
@@ -26,16 +27,26 @@ export function PlanUpgradeModal({
 }: PlanUpgradeModalProps) {
   useEffect(() => {
     if (!mode) return;
+    const requiredPlanId =
+      getModeAccessState(mode, entitlementPlanId).upgradePlanId ?? "pro";
     trackEvent("upgrade_modal_opened", {
       mode_id: mode.id,
       mode_label: mode.label,
+    });
+    trackProductEventClient({
+      eventType: "upgrade_clicked",
+      intelligenceMode: mode.id,
+      metadata: {
+        surface: "upgrade_modal",
+        target_plan: requiredPlanId,
+      },
     });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, onClose]);
+  }, [mode, entitlementPlanId, onClose]);
 
   const modalState = useMemo(() => {
     if (!mode) return null;

@@ -27,11 +27,34 @@ export type UserLimits = {
 
 /** Insert payload for `public.usage_events`. */
 export type UsageEventInsert = {
-  user_id: string;
+  user_id?: string | null;
+  session_id?: string | null;
   event_type: string;
+  source_type?: string | null;
   source_kind?: string | null;
   intelligence_mode?: string | null;
+  plan?: string | null;
+  success?: boolean | null;
+  failure_stage?: string | null;
+  metadata?: Record<string, string | number | boolean | null>;
   provider_used?: string | null;
+};
+
+/** Row shape for admin metrics queries on `usage_events`. */
+export type UsageEventRow = {
+  id: string;
+  user_id: string | null;
+  session_id: string | null;
+  event_type: string;
+  source_type: string | null;
+  source_kind: string | null;
+  intelligence_mode: string | null;
+  plan: string | null;
+  success: boolean | null;
+  failure_stage: string | null;
+  metadata: Record<string, unknown> | null;
+  provider_used: string | null;
+  created_at: string;
 };
 
 /** Row shape for `public.review_items` (private memory layer). */

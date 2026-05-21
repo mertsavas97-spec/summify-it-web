@@ -293,32 +293,29 @@ export function AdminDashboardView({ metrics }: AdminDashboardViewProps) {
         />
       </SectionShell>
 
-      <SectionShell title="Learn activity">
+      <SectionShell
+        title="Learn activity"
+        description="From learn_started and learn_completed product events only."
+      >
         <SectionContent
           section={metrics.learn}
           render={(data) => (
             <MetricGrid>
               <DashboardStatCard
-                label="Review sessions"
-                value={formatCount(data.practiceSessionsStarted)}
-                hint="Started"
+                label="Learn started (today)"
+                value={formatCount(data.learnStartedToday)}
               />
               <DashboardStatCard
-                label="Completed reviews"
-                value={formatCount(data.reviewSessionsCompleted)}
+                label="Learn started (7d)"
+                value={formatCount(data.learnStartedLast7Days)}
               />
               <DashboardStatCard
-                label="Learn cards (sample)"
-                value={formatCount(data.totalLearnCardsInSavedAnalyses)}
-                hint={`${formatCount(data.savedAnalysesSampled)} analyses`}
+                label="Learn completed (today)"
+                value={formatCount(data.learnCompletedToday)}
               />
               <DashboardStatCard
-                label="Avg cards / analysis"
-                value={
-                  data.avgLearnCardsPerAnalysis != null
-                    ? String(data.avgLearnCardsPerAnalysis)
-                    : "—"
-                }
+                label="Learn completed (7d)"
+                value={formatCount(data.learnCompletedLast7Days)}
               />
             </MetricGrid>
           )}
@@ -330,26 +327,19 @@ export function AdminDashboardView({ metrics }: AdminDashboardViewProps) {
           section={metrics.failures}
           render={(data) => (
             <div className="space-y-4">
-              {!data.analysisFailuresAvailable ? (
-                <UnavailableCard message="Failure tracking not available yet" />
-              ) : (
-                <MetricGrid>
-                  <DashboardStatCard
-                    label="Failed today"
-                    value={formatCount(data.failedAnalysesToday)}
-                  />
-                  <DashboardStatCard
-                    label="Failed (7d)"
-                    value={formatCount(data.failedAnalysesLast7Days)}
-                  />
-                  {data.topFailureReason ? (
-                    <DashboardStatCard
-                      label="Top reason"
-                      value={data.topFailureReason}
-                    />
-                  ) : null}
-                </MetricGrid>
-              )}
+              <MetricGrid>
+                <DashboardStatCard
+                  label="Failed analyses (today)"
+                  value={formatCount(data.failedAnalysesToday)}
+                />
+                <DashboardStatCard
+                  label="Failed analyses (7d)"
+                  value={formatCount(data.failedAnalysesLast7Days)}
+                />
+                {data.topFailureReason ? (
+                  <DashboardStatCard label="Top failure stage" value={data.topFailureReason} />
+                ) : null}
+              </MetricGrid>
               {data.webhookFailuresToday != null ? (
                 <div>
                   <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
