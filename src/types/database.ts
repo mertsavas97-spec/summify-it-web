@@ -10,6 +10,8 @@ export type Profile = {
   subscription_status: string | null;
   current_period_end: string | null;
   billing_interval: string | null;
+  /** Optional — `admin` unlocks /dashboard/admin when set (see docs/SUPABASE_MIGRATION_ADMIN_ROLE.sql). */
+  role?: string | null;
   created_at: string;
   updated_at: string;
 };
