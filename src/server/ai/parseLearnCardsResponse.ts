@@ -58,6 +58,11 @@ function isAnswerIdenticalToQuestion(question: string, answer: string): boolean 
   return normalizeCardText(question) === normalizeCardText(answer);
 }
 
+function isQuizGenerationType(type: string): boolean {
+  const key = type.trim().toLowerCase();
+  return key === "quiz" || key === "number";
+}
+
 /** Shared token (>5 chars) in Q and A — non-English names, technical terms, etc. */
 function hasSharedLongWordAnchor(question: string, answer: string): boolean {
   const longWords = (text: string) =>
@@ -88,7 +93,10 @@ function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: stri
     });
     return false;
   }
-  if (isAnswerIdenticalToQuestion(question, answer)) {
+  if (
+    isAnswerIdenticalToQuestion(question, answer) &&
+    !isQuizGenerationType(card.type)
+  ) {
     console.warn("[summify.parser] card_rejected", {
       question: card.question,
       answer: card.answer,
@@ -158,9 +166,73 @@ function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: stri
   return true;
 }
 
-function personNamesInCard(card: GeneratedLearnCard): string[] {
+/** Two-word capitalized phrases that are places/orgs/topics, not person names. */
+const NON_PERSON_NAME_STOP_LIST = new Set([
+  "new york",
+  "los angeles",
+  "san francisco",
+  "hong kong",
+  "united states",
+  "united kingdom",
+  "south korea",
+  "north korea",
+  "south africa",
+  "middle east",
+  "north america",
+  "south america",
+  "latin america",
+  "european union",
+  "silicon valley",
+  "wall street",
+  "white house",
+  "supreme court",
+  "west coast",
+  "east coast",
+  "world bank",
+  "prime minister",
+  "chief executive",
+  "public health",
+  "climate change",
+  "artificial intelligence",
+  "machine learning",
+  "social media",
+  "supply chain",
+  "cash flow",
+  "interest rate",
+  "stock market",
+  "real estate",
+]);
+
+function normalizePersonNameKey(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function isNameInDocumentTitle(name: string, documentTitle?: string): boolean {
+  if (!documentTitle || documentTitle.length < 4) return false;
+  const nameKey = normalizePersonNameKey(name);
+  if (nameKey.length < 3) return false;
+  return documentTitle.toLowerCase().includes(nameKey);
+}
+
+function isNonPersonProperNoun(name: string): boolean {
+  return NON_PERSON_NAME_STOP_LIST.has(normalizePersonNameKey(name));
+}
+
+function personNamesInCard(card: GeneratedLearnCard, documentTitle?: string): string[] {
   const text = `${card.question} ${card.answer}`;
-  return (text.match(/\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g) ?? []).map((n) => n.toLowerCase());
+  const seen = new Set<string>();
+  const names: string[] = [];
+
+  for (const match of text.matchAll(/\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g)) {
+    const name = normalizePersonNameKey(match[0]);
+    if (seen.has(name)) continue;
+    if (isNameInDocumentTitle(name, documentTitle)) continue;
+    if (isNonPersonProperNoun(name)) continue;
+    seen.add(name);
+    names.push(name);
+  }
+
+  return names;
 }
 
 function mapToProviderType(raw: string): LearnCardProviderType | null {
@@ -220,11 +292,25 @@ export function parseLearnCardsGenerationResponse(
 
     if (!passesClientQualityRules(generated, options?.documentTitle)) continue;
 
-    const names = personNamesInCard(generated);
+    if (
+      isQuizGenerationType(generated.type) &&
+      isAnswerIdenticalToQuestion(generated.question, generated.answer)
+    ) {
+      generated.type = "fact";
+    }
+
+    const names = personNamesInCard(generated, options?.documentTitle);
     let personOk = true;
     for (const name of names) {
       const count = (personCardCount.get(name) ?? 0) + 1;
       if (count > 2) {
+        console.warn("[summify.parser] card_rejected", {
+          question: generated.question,
+          answer: generated.answer,
+          rule: "person_name_limit",
+          name,
+          count,
+        });
         personOk = false;
         break;
       }
@@ -232,11 +318,26 @@ export function parseLearnCardsGenerationResponse(
     if (!personOk) continue;
 
     const qKey = generated.question.toLowerCase();
-    if (seenQuestions.has(qKey)) continue;
+    if (seenQuestions.has(qKey)) {
+      console.warn("[summify.parser] card_rejected", {
+        question: generated.question,
+        answer: generated.answer,
+        rule: "duplicate_question",
+      });
+      continue;
+    }
     seenQuestions.add(qKey);
 
     const providerType = mapToProviderType(generated.type);
-    if (!providerType) continue;
+    if (!providerType) {
+      console.warn("[summify.parser] card_rejected", {
+        question: generated.question,
+        answer: generated.answer,
+        rule: "unknown_type",
+        type: generated.type,
+      });
+      continue;
+    }
 
     const card: LearnCardOutput = {
       type: providerType,

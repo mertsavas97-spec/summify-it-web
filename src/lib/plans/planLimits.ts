@@ -12,7 +12,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
     maxUploadMb: 20,
     maxPages: 50,
-    maxCharacters: 80_000,
+    maxCharacters: 90_000,
     supportsChunkedAnalysis: false,
   },
   beta: {
@@ -24,7 +24,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   pro: {
     maxUploadMb: 20,
     maxPages: 150,
-    maxCharacters: 250_000,
+    maxCharacters: 270_000,
     supportsChunkedAnalysis: true,
   },
   scholar: {
@@ -36,7 +36,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   team: {
     maxUploadMb: 20,
     maxPages: 200,
-    maxCharacters: 300_000,
+    maxCharacters: 360_000,
     supportsChunkedAnalysis: true,
   },
 };

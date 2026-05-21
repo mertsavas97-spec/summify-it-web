@@ -25,6 +25,9 @@ Answer format:
 - Must not repeat the document title
 - Max 160 characters
 
+Quiz cards (type "quiz"):
+- For cards with type 'quiz', the answer must be the actual answer to the question — a specific fact, number, name, or date. Never use the question text as the answer.
+
 Deduplication:
 - No two cards may test the same fact
 - A person may appear in at most 2 cards, each testing a different fact
