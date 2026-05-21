@@ -13,6 +13,7 @@ import {
   enrichReviewItemsAsPracticeCards,
   sortPracticeSessionCards,
 } from "@/lib/learn/practiceSessionTypes";
+import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { getIntelligenceModeLabel, getSourceKindLabel } from "@/lib/saved-analysis-labels";
 import { Badge } from "@/components/ui/Badge";
 import {
@@ -115,8 +116,9 @@ export default async function LearnPage({ searchParams }: PageProps) {
     const displayTitle = saved.title ?? saved.summary?.title ?? "Untitled analysis";
     const hasLearnCards = (saved.learn_cards?.length ?? 0) > 0;
     const learnCards = saved.learn_cards ?? [];
+    const cardAccess = getPracticeCardAccessForPlan(planUsage.planId, learnCards);
     const practiceCards = sortPracticeSessionCards(
-      enrichReviewItemsAsPracticeCards(practiceItems, learnCards),
+      enrichReviewItemsAsPracticeCards(practiceItems, cardAccess.accessibleCards),
     );
 
     const multiFormatLearn =
@@ -144,6 +146,8 @@ export default async function LearnPage({ searchParams }: PageProps) {
             cards={practiceCards}
             hasLearnCards={hasLearnCards}
             autoStart={autoStartPractice && practiceCards.length > 0}
+            entitlementPlanId={planUsage.planId}
+            cardAccess={cardAccess}
           />
           {multiFormatLearn ? (
             <LearnMultiFormatPanel analysisId={analysisId} multiFormat={multiFormatLearn} />

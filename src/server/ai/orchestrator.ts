@@ -15,7 +15,7 @@ import {
 } from "@/server/intelligence";
 import type { ModeRoutingResult } from "@/server/intelligence/mode-routing";
 import { CHUNKED_ANALYSIS_SEGMENT_CHARS } from "@/lib/plans/planLimits";
-import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
+import { getLearnCardsGenerationCap } from "@/lib/plan-features";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import type { PlanId } from "@/types/plan";
 import { devLog, devWarn } from "@/server/logging";
@@ -183,8 +183,6 @@ function buildRunContext(
 }
 
 export type RunAnalysisOrchestratorOptions = {
-  /** Plan cap for learn cards (from `getUserPlanLimits` / `getMaxLearnCardsForPlan`). */
-  maxLearnCards?: number;
   planId?: PlanId;
 };
 
@@ -194,7 +192,6 @@ async function attemptProvider(
   mode: TextAnalysisMode,
   runContext: AnalyzeRunContext,
   attempts: ProviderAttemptRecord[],
-  maxLearnCards: number,
   modeRouting?: ModeRoutingResult,
 ): Promise<AnalysisResult | null> {
   let raw: string | undefined;
@@ -258,12 +255,13 @@ async function attemptProvider(
       isYoutube: isYoutubeTranscript,
     });
 
-    const cardCount = Math.min(range.target * 1.5, maxLearnCards);
+    const generationCap = getLearnCardsGenerationCap();
+    const cardCount = Math.min(range.target * 1.5, generationCap);
 
     devLog("[summify.learnCards] orchestrator learn generation", {
       provider,
       rangeTarget: range.target,
-      maxLearnCards,
+      generationCap,
       cardCount,
       clampedCardCount: Math.max(4, Math.min(20, Math.round(cardCount))),
     });
@@ -306,9 +304,6 @@ export async function runAnalysisOrchestrator(
   modeRouting?: ModeRoutingResult,
   options?: RunAnalysisOrchestratorOptions,
 ): Promise<OrchestratorSuccess> {
-  const maxLearnCards =
-    options?.maxLearnCards ??
-    getMaxLearnCardsForPlan(options?.planId ?? "free");
   const hasGroq = Boolean(process.env.GROQ_API_KEY);
   const hasGemini = Boolean(process.env.GEMINI_API_KEY);
 
@@ -347,7 +342,6 @@ export async function runAnalysisOrchestrator(
       mode,
       baseContext,
       attempts,
-      maxLearnCards,
       modeRouting,
     );
     if (result) {
@@ -368,7 +362,6 @@ export async function runAnalysisOrchestrator(
       mode,
       geminiContext,
       attempts,
-      maxLearnCards,
       modeRouting,
     );
     if (result) {

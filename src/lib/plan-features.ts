@@ -77,6 +77,11 @@ export function getMaxLearnCardsForPlan(planId: PlanId): number {
   return getPlanDefinition(planId).limits.maxLearnCards;
 }
 
+/** Upper bound for learn-card generation (independent of free practice access cap). */
+export function getLearnCardsGenerationCap(): number {
+  return getMaxLearnCardsForPlan("pro");
+}
+
 export function getMaxSavedAnalysesForPlan(planId: PlanId): number | null {
   return getPlanDefinition(planId).limits.maxSavedAnalyses;
 }

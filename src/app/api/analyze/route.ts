@@ -16,10 +16,12 @@ import type {
 import type { AnalysisIntelligenceContext } from "@/server/intelligence";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile, getUserLimits } from "@/lib/supabase/profile";
-import { canRunAnalysis, getUserPlanLimits } from "@/lib/plan-limits";
-import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
-import { canAccessMode } from "@/lib/mode-access";
-import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
+import { canRunAnalysis } from "@/lib/plan-limits";
+import {
+  getPracticeCardAccessForPlan,
+  toPracticeAccessMeta,
+} from "@/lib/learn/practiceCardAccess";
+import { canAccessMode, resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { getIntelligenceModeById } from "@/config/modes";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
@@ -69,6 +71,7 @@ function buildSuccessDebug(
   intelligence: AnalysisIntelligenceContext,
   providerUsed: "groq" | "gemini",
   fallbackUsed: boolean,
+  practiceAccess?: AnalyzeApiDebugMetadata["practiceAccess"],
 ): AnalyzeApiDebugMetadata {
   return {
     selectedMode: mode as AnalyzeApiDebugMetadata["selectedMode"],
@@ -80,6 +83,7 @@ function buildSuccessDebug(
     ...(intelligence.analysisLimits
       ? { analysisLimits: intelligence.analysisLimits }
       : {}),
+    ...(practiceAccess ? { practiceAccess } : {}),
     ...(intelligence.cognition
       ? {
           cognition: {
@@ -144,7 +148,7 @@ export async function POST(request: Request) {
       ? await Promise.all([getProfile(currentUser.id), getUserLimits(currentUser.id)])
       : [null, null] as const;
 
-    const planId = currentUser ? resolveEntitlementPlanIdFromProfile(profile) : "free";
+    const planId = resolveModeEntitlementPlanId(profile, Boolean(currentUser));
 
     const { rawText, mode, intelligenceModeId, modeRouting, sourceHint, sourceContext } =
       validateAnalysisInput(
@@ -194,33 +198,31 @@ export async function POST(request: Request) {
       return NextResponse.json(payload, { status: 403 });
     }
 
-    const planLimits = getUserPlanLimits(profile?.plan, limits);
-
     const orchestratorResult = await runAnalysisOrchestrator(
       rawText,
       mode,
       sourceHint,
       sourceContext,
       modeRouting,
-      {
-        maxLearnCards: planLimits.maxLearnCards,
-        planId: planLimits.planId,
-      },
+      { planId },
     );
     const { result, providerUsed, fallbackUsed, intelligence: ctx } =
       orchestratorResult;
     intelligence = ctx;
-    const maxLearnCards = getMaxLearnCardsForPlan(planId);
-    const limitedResult = {
+
+    const cardAccess = getPracticeCardAccessForPlan(planId, result.learnCards);
+    const clientResult = {
       ...result,
-      learnCards: result.learnCards.slice(0, maxLearnCards),
+      learnCards: [...cardAccess.accessibleCards, ...cardAccess.lockedCards],
     };
+    const practiceAccessMeta = toPracticeAccessMeta(planId, cardAccess);
 
     const response: AnalyzeApiSuccessResponse = {
       success: true,
       providerUsed,
       fallbackUsed,
-      result: limitedResult,
+      result: clientResult,
+      practiceAccess: practiceAccessMeta,
       profile: intelligence.profile,
       knowledgeLayerSummary: intelligence.knowledgeLayerSummary,
       tokenBudget: intelligence.tokenBudget,
@@ -230,7 +232,13 @@ export async function POST(request: Request) {
     };
 
     if (isDevelopment()) {
-      response.debug = buildSuccessDebug(mode, intelligence, providerUsed, fallbackUsed);
+      response.debug = buildSuccessDebug(
+        mode,
+        intelligence,
+        providerUsed,
+        fallbackUsed,
+        practiceAccessMeta,
+      );
       if (intelligence.cognition?.adaptationLabel) {
         response.adaptationLabel = intelligence.cognition.adaptationLabel;
       }
@@ -250,7 +258,7 @@ export async function POST(request: Request) {
         sourceContext,
         providerUsed,
         fallbackUsed,
-        result: limitedResult,
+        result,
         intelligence,
         storedPlan: profile?.plan,
       });

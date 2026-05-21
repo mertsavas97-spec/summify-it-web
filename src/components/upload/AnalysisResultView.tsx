@@ -4,6 +4,7 @@ import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import type { AnalysisResult } from "@/types/text-analysis";
 import type { IntelligenceModeId } from "@/types/modes";
+import type { PlanId } from "@/types/plan";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { AnalysisToolbar } from "./AnalysisToolbar";
 import { LearnSection } from "./LearnSection";
@@ -19,6 +20,7 @@ type AnalysisResultViewProps = {
   showHeader?: boolean;
   /** Phase 11C — adaptive headings from persona plan (optional). */
   uiSectionLabels?: PersonaUiSectionLabels;
+  entitlementPlanId?: PlanId;
 };
 
 export function AnalysisResultView({
@@ -31,6 +33,7 @@ export function AnalysisResultView({
   showToolbar = true,
   showHeader = true,
   uiSectionLabels,
+  entitlementPlanId = "free",
 }: AnalysisResultViewProps) {
   const showLearn = sections === "all" && result.learnCards.length > 0;
 
@@ -98,7 +101,11 @@ export function AnalysisResultView({
 
         {showLearn ? (
           <div className="py-4">
-            <LearnSection cards={result.learnCards} modeId={modeId} />
+            <LearnSection
+              cards={result.learnCards}
+              modeId={modeId}
+              entitlementPlanId={entitlementPlanId}
+            />
           </div>
         ) : null}
 

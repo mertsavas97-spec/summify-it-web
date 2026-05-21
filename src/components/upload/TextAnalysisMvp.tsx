@@ -404,6 +404,7 @@ export function TextAnalysisMvp({
             savedToWorkspace={displaySavedToWorkspace}
             savedAnalysisId={displaySavedAnalysisId}
             learnCards={displayResult.learnCards}
+            entitlementPlanId={entitlementPlanId}
             documentTitle={displayResult.title}
             modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}
             sourceKindLabel={
@@ -422,6 +423,7 @@ export function TextAnalysisMvp({
           <AnalysisResultView
             result={displayResult}
             modeId={mode}
+            entitlementPlanId={entitlementPlanId}
             providerUsed={displayMeta.providerUsed}
             fallbackUsed={displayMeta.fallbackUsed}
             uiSectionLabels={displayUiSectionLabels}

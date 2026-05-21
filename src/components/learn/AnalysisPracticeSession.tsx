@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -34,10 +34,16 @@ import {
   estimatePracticeMinutes,
   sortPracticeSessionCards,
 } from "@/lib/learn/practiceSessionTypes";
+import {
+  getPracticeCardAccessForPlan,
+  type PracticeCardAccess,
+} from "@/lib/learn/practiceCardAccess";
+import { PracticeProUpsell } from "@/components/learn/PracticeProUpsell";
+import type { PlanId } from "@/types/plan";
 import type { CardRetentionState, PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
 import { Button } from "@/components/ui/Button";
 
-type SessionPhase = "pre" | "active" | "complete" | "weak";
+type SessionPhase = "pre" | "active" | "complete" | "weak" | "locked_complete";
 
 type AnalysisPracticeSessionProps = {
   analysisId: string;
@@ -46,12 +52,13 @@ type AnalysisPracticeSessionProps = {
   modeLabel: string;
   sourceKindLabel: string;
   cards: PracticeSessionCard[];
+  /** When omitted, derived from cards length + plan. */
+  cardAccess?: PracticeCardAccess;
   hasLearnCards: boolean;
   autoStart?: boolean;
-  /** Increment from parent to start the session inline (same as "Start practice"). */
-  startSignal?: number;
   /** When false, practice runs from in-memory cards (live analysis) without workspace save. */
   practicePersisted?: boolean;
+  entitlementPlanId?: PlanId;
 };
 
 type OutcomeMap = Record<string, PracticeCardOutcome>;
@@ -63,18 +70,34 @@ export function AnalysisPracticeSession({
   modeLabel,
   sourceKindLabel,
   cards: initialCards,
+  cardAccess: cardAccessInput,
   hasLearnCards,
   autoStart = false,
-  startSignal = 0,
   practicePersisted = true,
+  entitlementPlanId = "free",
 }: AnalysisPracticeSessionProps) {
   const router = useRouter();
   const sortedCards = useMemo(() => sortPracticeSessionCards(initialCards), [initialCards]);
+  const access = useMemo(
+    () =>
+      cardAccessInput ??
+      getPracticeCardAccessForPlan(
+        entitlementPlanId,
+        sortedCards.map((c) => ({
+          type: "concept",
+          title: c.prompt,
+          content: c.answer,
+          cardId: c.id,
+        })),
+      ),
+    [cardAccessInput, entitlementPlanId, sortedCards],
+  );
+  const accessibleCards = sortedCards;
 
   const [phase, setPhase] = useState<SessionPhase>(
-    () => (autoStart && initialCards.length > 0 ? "active" : "pre"),
+    () => (autoStart && accessibleCards.length > 0 ? "active" : "pre"),
   );
-  const [deck, setDeck] = useState<PracticeSessionCard[]>(() => sortPracticeSessionCards(initialCards));
+  const [deck, setDeck] = useState<PracticeSessionCard[]>(() => [...accessibleCards]);
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [outcomes, setOutcomes] = useState<OutcomeMap>({});
@@ -83,10 +106,9 @@ export function AnalysisPracticeSession({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const active = deck[index] ?? null;
-  const cardCount = sortedCards.length;
-  const estimatedTime = estimatePracticeMinutes(cardCount);
+  const sessionCardCount = access.accessibleCount;
+  const estimatedTime = estimatePracticeMinutes(sessionCardCount);
 
   const passGotIt = useMemo(
     () => Object.values(outcomes).filter((o) => o === "got_it").length,
@@ -101,7 +123,8 @@ export function AnalysisPracticeSession({
     [outcomes],
   );
 
-  const progressPct = deck.length > 0 ? Math.round((index / deck.length) * 100) : 0;
+  const progressPct =
+    deck.length > 0 ? Math.round((index / deck.length) * 100) : 0;
 
   const syncReviewToServer = useCallback(
     async (cardId: string, outcome: PracticeCardOutcome) => {
@@ -124,7 +147,7 @@ export function AnalysisPracticeSession({
   );
 
   const startSession = useCallback(
-    (cardsToUse: PracticeSessionCard[] = sortedCards, resetOutcomes = true) => {
+    (cardsToUse: PracticeSessionCard[] = accessibleCards, resetOutcomes = true) => {
       setDeck(cardsToUse);
       setIndex(0);
       setRevealed(false);
@@ -137,18 +160,13 @@ export function AnalysisPracticeSession({
       setError(null);
       setPhase(cardsToUse.length > 0 ? "active" : "pre");
     },
-    [sortedCards],
+    [accessibleCards],
   );
-
-  useEffect(() => {
-    if (!startSignal || sortedCards.length === 0) return;
-    startSession(sortedCards, true);
-  }, [startSignal, sortedCards, startSession]);
 
   function finishSession(nextOutcomes: OutcomeMap, nextStates: Record<string, CardRetentionState>) {
     const summary = buildPracticeRetentionSummary({
       analysisId,
-      cards: sortedCards,
+      cards: accessibleCards,
       outcomes: nextOutcomes,
       states: Object.values(nextStates),
     });
@@ -183,13 +201,17 @@ export function AnalysisPracticeSession({
     const nextIndex = index + 1;
     setIndex(nextIndex);
     if (nextIndex >= deck.length) {
-      finishSession(nextOutcomes, nextStates);
+      if (access.isLimited) {
+        setPhase("locked_complete");
+      } else {
+        finishSession(nextOutcomes, nextStates);
+      }
     }
   }
 
   async function createPracticeSet(startAfter = false) {
     if (!practicePersisted) {
-      if (sortedCards.length > 0) startSession(sortedCards, true);
+      if (accessibleCards.length > 0) startSession(accessibleCards, true);
       return;
     }
     setPending(true);
@@ -219,7 +241,7 @@ export function AnalysisPracticeSession({
     }
   }
 
-  function restartSession(cardsToUse: PracticeSessionCard[] = sortedCards) {
+  function restartSession(cardsToUse: PracticeSessionCard[] = accessibleCards) {
     startSession(cardsToUse);
   }
 
@@ -228,15 +250,15 @@ export function AnalysisPracticeSession({
       retentionSummary?.cardStates
         .filter((s) => s.retentionStrength === "weak" || s.reviewAgainCount > 0)
         .map((s) => s.cardId) ??
-      sortedCards.filter((c) => outcomes[c.id] === "review_again").map((c) => c.id);
+      accessibleCards.filter((c) => outcomes[c.id] === "review_again").map((c) => c.id);
 
-    const weakDeck = orderWeakCardsForReview(sortedCards, retentionStates, weakIds);
+    const weakDeck = orderWeakCardsForReview(accessibleCards, retentionStates, weakIds);
     if (weakDeck.length === 0) return;
     setPhase("weak");
     startSession(weakDeck, true);
   }
 
-  if (cardCount === 0) {
+  if (access.totalCount === 0 || sessionCardCount === 0) {
     return (
       <section className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-8 text-center">
         <h2 className="text-sm font-semibold text-zinc-200">No practice cards yet</h2>
@@ -266,9 +288,21 @@ export function AnalysisPracticeSession({
     );
   }
 
+  if (phase === "locked_complete") {
+    return (
+      <PracticeProUpsell
+        lockedCount={access.lockedCount}
+        variant="continuation"
+        analysisId={analysisId}
+        onFinishSession={() => finishSession(outcomes, retentionStates)}
+      />
+    );
+  }
+
   if (phase === "pre") {
     return (
-      <section className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-950/25 via-zinc-950/80 to-zinc-950/95 p-5 sm:p-6">
+      <>
+        <section className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-950/25 via-zinc-950/80 to-zinc-950/95 p-5 sm:p-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
           Practice session
         </p>
@@ -280,10 +314,15 @@ export function AnalysisPracticeSession({
 
         <dl className="mt-5 flex flex-wrap gap-2 text-[11px] text-zinc-500">
           <MetaChip label="Mode" value={modeLabel} />
-          <MetaChip label="Cards" value={String(cardCount)} />
+          <MetaChip label="Cards" value={`${access.accessibleCount} available`} />
           <MetaChip label="Est. time" value={estimatedTime} />
           <MetaChip label="Source" value={sourceKindLabel} />
         </dl>
+        {access.isLimited ? (
+          <p className="mt-2 text-[11px] font-medium text-violet-300/65">
+            +{access.lockedCount} more with Pro
+          </p>
+        ) : null}
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Button type="button" size="sm" onClick={() => startSession()}>
@@ -310,6 +349,7 @@ export function AnalysisPracticeSession({
         </div>
         {error ? <p className="mt-3 text-xs text-rose-300">{error}</p> : null}
       </section>
+      </>
     );
   }
 
@@ -361,6 +401,7 @@ export function AnalysisPracticeSession({
   const isWeakPass = phase === "weak";
 
   return (
+    <>
     <section className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-4 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -371,6 +412,11 @@ export function AnalysisPracticeSession({
         </div>
         <p className="shrink-0 text-xs tabular-nums text-zinc-500">
           Card {index + 1} of {deck.length}
+          {access.isLimited ? (
+            <span className="block text-[10px] font-normal text-violet-300/55">
+              +{access.lockedCount} locked with Pro
+            </span>
+          ) : null}
         </p>
       </div>
 
@@ -471,6 +517,7 @@ export function AnalysisPracticeSession({
         </Link>
       </div>
     </section>
+    </>
   );
 }
 

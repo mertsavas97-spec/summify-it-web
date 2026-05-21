@@ -27,6 +27,8 @@ export type LearnCardOutput = {
   type: LearnCardOutputType;
   title: string;
   content: string;
+  /** Client-only: locked upsell preview (no answer content). */
+  isLockedPreview?: boolean;
 } & LearnCardEnrichment;
 
 export type AnalysisResult = {
@@ -54,6 +56,13 @@ export type AnalyzeApiDebugMetadata = {
   fallbackUsed?: boolean;
   failureReason?: string;
   attempts?: AnalyzeApiDebugAttempt[];
+  practiceAccess?: {
+    plan: string;
+    totalGeneratedCards: number;
+    accessibleCardCount: number;
+    lockedCardCount: number;
+    isLimited: boolean;
+  };
   cognition?: {
     debugSummary: string;
     adaptationLabel: string;
@@ -78,6 +87,13 @@ export type AnalyzeApiSuccessResponse = {
   savedAnalysisId?: string | null;
   adaptationLabel?: string;
   limitNotice?: string;
+  practiceAccess?: {
+    plan: string;
+    totalGeneratedCards: number;
+    accessibleCardCount: number;
+    lockedCardCount: number;
+    isLimited: boolean;
+  };
   debug?: AnalyzeApiDebugMetadata;
 } & AnalysisIntelligenceMetadata;
 

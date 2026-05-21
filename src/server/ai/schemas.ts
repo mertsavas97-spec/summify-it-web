@@ -95,6 +95,14 @@ export type AnalyzeApiDebugAttempt = {
   message: string;
 };
 
+export type AnalyzeApiPracticeAccessDebug = {
+  plan: string;
+  totalGeneratedCards: number;
+  accessibleCardCount: number;
+  lockedCardCount: number;
+  isLimited: boolean;
+};
+
 export type AnalyzeApiAnalysisLimitsDebug = {
   plan: string;
   uploadMb: number;
@@ -116,6 +124,7 @@ export type AnalyzeApiDebugMetadata = {
   failureReason?: string;
   attempts?: AnalyzeApiDebugAttempt[];
   analysisLimits?: AnalyzeApiAnalysisLimitsDebug;
+  practiceAccess?: AnalyzeApiPracticeAccessDebug;
   cognition?: {
     debugSummary: string;
     adaptationLabel: string;
@@ -149,6 +158,7 @@ export type AnalyzeApiSuccessResponse = {
   adaptationLabel?: string;
   /** When plan limits prioritized sections only */
   limitNotice?: string;
+  practiceAccess?: AnalyzeApiPracticeAccessDebug;
   debug?: AnalyzeApiDebugMetadata;
 };
 

@@ -11,6 +11,7 @@ const MindMapPanel = dynamic(
 import { AnalysisResultView } from "@/components/upload/AnalysisResultView";
 import { LearnSection } from "@/components/upload/LearnSection";
 import type { IntelligenceModeId } from "@/types/modes";
+import type { PlanId } from "@/types/plan";
 import type { AnalysisResult } from "@/types/text-analysis";
 
 type WorkspaceTab = "summary" | "learn" | "mindmap";
@@ -23,6 +24,7 @@ type SavedAnalysisWorkspaceProps = {
   documentTypeGuess?: string | null;
   sourceKind?: string | null;
   showProviderMeta?: boolean;
+  entitlementPlanId?: PlanId;
 };
 
 const TABS: { id: WorkspaceTab; label: string }[] = [
@@ -39,6 +41,7 @@ export function SavedAnalysisWorkspace({
   documentTypeGuess,
   sourceKind,
   showProviderMeta = true,
+  entitlementPlanId = "free",
 }: SavedAnalysisWorkspaceProps) {
   const [tab, setTab] = useState<WorkspaceTab>("summary");
 
@@ -84,7 +87,11 @@ export function SavedAnalysisWorkspace({
 
         {tab === "learn" && (
           result.learnCards.length > 0 ? (
-            <LearnSection cards={result.learnCards} modeId={modeId} />
+            <LearnSection
+              cards={result.learnCards}
+              modeId={modeId}
+              entitlementPlanId={entitlementPlanId}
+            />
           ) : (
             <p className="py-8 text-center text-sm text-zinc-600">
               No Learn cards for this session.

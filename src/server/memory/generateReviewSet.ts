@@ -1,6 +1,7 @@
 import { createClientIfConfigured } from "@/lib/supabase/server";
 import { generateReviewItemsFromAnalysis } from "@/lib/memory/generateReviewItems";
-import { getMemoryPlanLimits } from "@/lib/plan-limits";
+import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
+import { getMemoryPlanLimits, resolvePlanId } from "@/lib/plan-limits";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { PracticeRetentionHint } from "@/lib/learn/retentionTypes";
 import type { ReviewItemInsert } from "@/types/memory";
@@ -64,9 +65,12 @@ export async function generateReviewSetForAnalysis(input: {
     SavedAnalysisRow,
     "id" | "user_id" | "summary" | "learn_cards" | "intelligence_mode" | "document_type"
   >;
+  const planId = resolvePlanId(input.plan ?? DEFAULT_PAID_PREVIEW_PLAN);
+  const learnAccess = getPracticeCardAccessForPlan(planId, saved.learn_cards ?? []);
+
   const generated = generateReviewItemsFromAnalysis({
     summary: saved.summary,
-    learnCards: saved.learn_cards ?? [],
+    learnCards: learnAccess.accessibleCards,
     maxItems: Math.min(16, remaining),
     intelligenceModeId: saved.intelligence_mode,
     documentDomain: saved.document_type,
