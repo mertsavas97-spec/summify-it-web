@@ -1,7 +1,10 @@
 /**
- * @deprecated Use `trackProductEvent` from `./trackProductEvent`.
- * Kept for existing import paths.
+ * @deprecated Use `trackProductEvent` or `recordAnalysisAnalytics` instead.
  */
+import {
+  recordAnalysisCompleted,
+  recordAnalysisFailed,
+} from "./recordAnalysisAnalytics";
 import { trackProductEvent, trackProductEventNonBlocking } from "./trackProductEvent";
 
 export type TrackUsageEventInput = {
@@ -29,7 +32,7 @@ export async function trackUsageEvent(input: TrackUsageEventInput): Promise<void
     failureStage: input.failureStage,
     metadata: input.metadata,
     trustedServer: input.trustedServer,
-    insertViaServiceRole: input.insertViaServiceRole,
+    insertViaServiceRole: input.insertViaServiceRole ?? true,
   });
 }
 
@@ -44,7 +47,7 @@ export function trackUsageEventNonBlocking(input: TrackUsageEventInput): void {
     failureStage: input.failureStage,
     metadata: input.metadata,
     trustedServer: input.trustedServer,
-    insertViaServiceRole: input.insertViaServiceRole,
+    insertViaServiceRole: input.insertViaServiceRole ?? true,
   });
 }
 
@@ -54,17 +57,21 @@ export function trackAnalysisCompleted(input: {
   sourceKind?: string | null;
   intelligenceMode?: string | null;
   plan?: string | null;
-  trustedServer?: boolean;
+  fileType?: string | null;
+  analysisId?: string | null;
+  charsProcessed?: number;
+  pagesProcessed?: number;
 }): void {
-  trackProductEventNonBlocking({
-    eventType: "analysis_completed",
+  void recordAnalysisCompleted({
     userId: input.userId,
     sessionId: input.sessionId,
-    sourceType: input.sourceKind,
-    intelligenceMode: input.intelligenceMode,
-    plan: input.plan,
-    success: true,
-    trustedServer: input.trustedServer,
+    planId: input.plan ?? "free",
+    intelligenceMode: input.intelligenceMode ?? "unknown",
+    sourceHint: undefined,
+    fileType: input.fileType ?? input.sourceKind,
+    analysisId: input.analysisId,
+    charsProcessed: input.charsProcessed,
+    pagesProcessed: input.pagesProcessed,
   });
 }
 
@@ -75,17 +82,14 @@ export function trackAnalysisFailed(input: {
   intelligenceMode?: string | null;
   plan?: string | null;
   failureStage?: string | null;
-  trustedServer?: boolean;
+  reason?: string;
 }): void {
-  trackProductEventNonBlocking({
-    eventType: "analysis_failed",
+  void recordAnalysisFailed({
     userId: input.userId,
     sessionId: input.sessionId,
-    sourceType: input.sourceKind,
-    intelligenceMode: input.intelligenceMode,
-    plan: input.plan,
-    success: false,
-    failureStage: input.failureStage,
-    trustedServer: input.trustedServer,
+    planId: input.plan ?? "free",
+    intelligenceMode: input.intelligenceMode ?? "unknown",
+    reason: input.reason ?? input.failureStage ?? "unknown",
+    fileType: input.sourceKind,
   });
 }

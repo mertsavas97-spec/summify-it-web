@@ -310,8 +310,16 @@ export function TextAnalysisMvp({
               ? "presentation"
               : extractionMeta?.sourceKind === "url"
                 ? "url"
-                : undefined,
+                : extractionMeta?.sourceKind === "file"
+                  ? "file"
+                  : undefined,
         sourceContext,
+        fileType:
+          extractionMeta?.sourceKind === "file"
+            ? extractionMeta.fileType
+            : extractionMeta?.sourceKind === "presentation"
+              ? "pptx"
+              : null,
       });
 
       if (!analysis.success) {

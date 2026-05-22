@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     intelligenceMode: body?.intelligenceMode ?? null,
     plan,
     metadata: body?.metadata,
+    insertViaServiceRole: true,
   });
 
   return NextResponse.json({ success: true });

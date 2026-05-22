@@ -160,8 +160,13 @@ async function countProductEvents(
 const SOURCE_KIND_LABELS: Record<string, string> = {
   youtube: "YouTube",
   presentation: "PPTX",
+  pptx: "PPTX",
   url: "Web article",
+  web: "Web article",
   file: "Upload",
+  pdf: "PDF",
+  docx: "DOCX",
+  txt: "TXT / paste",
   text: "TXT / paste",
 };
 

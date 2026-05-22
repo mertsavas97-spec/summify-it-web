@@ -7,7 +7,6 @@ import type {
 import { getMaxSavedAnalysesForPlan } from "@/lib/plan-features";
 import { resolvePlanId } from "@/lib/plan-limits";
 import { devLog } from "@/server/logging";
-import { trackProductEvent } from "@/server/usage/trackProductEvent";
 import { buildSavePayload } from "./buildSavePayload";
 import { saveAnalysis } from "./saveAnalysis";
 
@@ -44,23 +43,6 @@ export async function runPostAnalysisPersistence(
     });
     return { savedToWorkspace: false, savedAnalysisId: null };
   }
-
-  devLog("[summify.analyze] usage_tracking_start", {
-    userId: input.userId,
-    sourceKind: input.sourceHint ?? null,
-    intelligenceMode: input.intelligenceModeId,
-    providerUsed: input.providerUsed,
-  });
-
-  await trackProductEvent({
-    userId: input.userId,
-    eventType: "analysis_completed",
-    sourceType: input.sourceHint ?? null,
-    intelligenceMode: input.intelligenceModeId,
-    plan: resolvePlanId(input.storedPlan),
-    success: true,
-    metadata: { saved: true },
-  });
 
   devLog("[summify.analyze] saved_analysis_start", {
     userId: input.userId,

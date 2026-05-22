@@ -99,6 +99,7 @@ export async function POST(request: Request) {
         userId: user.id,
         plan: resolveEntitlementPlanIdFromProfile(profile),
         metadata: { target_plan: planId, interval },
+        insertViaServiceRole: true,
       });
 
       return NextResponse.json({
@@ -127,6 +128,7 @@ export async function POST(request: Request) {
       userId: user.id,
       plan: resolveEntitlementPlanIdFromProfile(profile),
       metadata: { target_plan: planId, interval },
+      insertViaServiceRole: true,
     });
 
     return NextResponse.json({ success: true, provider: status.provider, url });

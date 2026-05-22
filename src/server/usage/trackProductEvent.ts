@@ -21,12 +21,33 @@ export type TrackProductEventInput = {
   metadata?: ProductEventMetadata;
   /** When true, allows session-only inserts via service role (analyze route for guests). */
   trustedServer?: boolean;
-  /** When true, inserts with service role (webhooks — no user session). */
+  /** When true, inserts with service role (recommended for all API route handlers). */
   insertViaServiceRole?: boolean;
 };
 
-const MAX_METADATA_KEYS = 8;
+const MAX_METADATA_KEYS = 12;
 const MAX_METADATA_STRING = 120;
+
+function isDevelopment(): boolean {
+  return process.env.NODE_ENV === "development";
+}
+
+function logAnalyticsDev(eventType: string, payload: UsageEventInsert): void {
+  if (!isDevelopment()) return;
+  console.info("[Analytics Event]", {
+    event_type: eventType,
+    payload: {
+      user_id: payload.user_id,
+      session_id: payload.session_id,
+      source_type: payload.source_type,
+      intelligence_mode: payload.intelligence_mode,
+      plan: payload.plan,
+      success: payload.success,
+      failure_stage: payload.failure_stage,
+      metadata: payload.metadata,
+    },
+  });
+}
 
 function utcToday(): string {
   return new Date().toISOString().slice(0, 10);
@@ -124,6 +145,51 @@ function buildInsertPayload(input: TrackProductEventInput): UsageEventInsert {
   };
 }
 
+/** Legacy columns only — used if extended schema migration is not applied yet. */
+function buildLegacyInsertPayload(input: TrackProductEventInput): UsageEventInsert {
+  return {
+    user_id: input.userId ?? null,
+    event_type: input.eventType,
+    source_kind: input.sourceType ?? null,
+    intelligence_mode: input.intelligenceMode ?? null,
+    provider_used: null,
+  };
+}
+
+async function insertViaAdmin(
+  payload: UsageEventInsert,
+  input: TrackProductEventInput,
+): Promise<boolean> {
+  if (!isServiceRoleConfigured()) return false;
+
+  const admin = getSupabaseAdmin();
+  let { error } = await admin.from("usage_events").insert(payload);
+
+  if (error && /column|schema cache/i.test(error.message)) {
+    const legacy = buildLegacyInsertPayload(input);
+    ({ error } = await admin.from("usage_events").insert(legacy));
+    if (!error) {
+      devWarn("[summify.product_event] insert_legacy_fallback", {
+        eventType: input.eventType,
+      });
+      logAnalyticsDev(input.eventType, legacy);
+      return true;
+    }
+  }
+
+  if (error) {
+    devWarn("[summify.product_event] insert_failed", {
+      message: error.message,
+      code: error.code,
+      eventType: input.eventType,
+    });
+    return false;
+  }
+
+  logAnalyticsDev(input.eventType, payload);
+  return true;
+}
+
 /**
  * Inserts a lightweight product event. Never throws.
  */
@@ -138,23 +204,29 @@ export async function trackProductEvent(input: TrackProductEventInput): Promise<
     }
 
     const payload = buildInsertPayload(input);
+    const useServiceRole =
+      Boolean(input.insertViaServiceRole || input.trustedServer) &&
+      isServiceRoleConfigured();
 
-    if (hasUser && input.insertViaServiceRole && isServiceRoleConfigured()) {
-      const admin = getSupabaseAdmin();
-      const { error } = await admin.from("usage_events").insert(payload);
-      if (error) {
-        devWarn("[summify.product_event] insert_failed", {
-          message: error.message,
-          code: error.code,
-          eventType: input.eventType,
-        });
-        return;
+    if (useServiceRole) {
+      const ok = await insertViaAdmin(payload, input);
+      if (ok && hasUser && input.eventType === "analysis_completed") {
+        const supabase = await createClientIfConfigured();
+        if (supabase) {
+          await incrementUserLimits(supabase, input.userId!);
+        } else if (isServiceRoleConfigured()) {
+          const admin = getSupabaseAdmin();
+          await incrementUserLimits(admin, input.userId!);
+        }
       }
-      devLog("[summify.product_event] inserted", {
-        eventType: input.eventType,
-        userId: input.userId,
-        via: "service_role",
-      });
+      if (ok) {
+        devLog("[summify.product_event] inserted", {
+          eventType: input.eventType,
+          via: "service_role",
+          userId: input.userId ?? null,
+          sessionId: input.sessionId ?? null,
+        });
+      }
       return;
     }
 
@@ -169,19 +241,21 @@ export async function trackProductEvent(input: TrackProductEventInput): Promise<
         data: { user },
       } = await supabase.auth.getUser();
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!user || user.id !== input.userId || !session?.access_token) {
+      if (!user || user.id !== input.userId) {
         devLog("[summify.product_event] skipped", {
-          reason: "session_mismatch",
+          reason: "user_mismatch",
           eventType: input.eventType,
         });
         return;
       }
 
-      const { error } = await supabase.from("usage_events").insert(payload);
+      let { error } = await supabase.from("usage_events").insert(payload);
+
+      if (error && /column|schema cache/i.test(error.message)) {
+        const legacy = buildLegacyInsertPayload(input);
+        ({ error } = await supabase.from("usage_events").insert(legacy));
+      }
+
       if (error) {
         devWarn("[summify.product_event] insert_failed", {
           message: error.message,
@@ -195,35 +269,18 @@ export async function trackProductEvent(input: TrackProductEventInput): Promise<
         await incrementUserLimits(supabase, user.id);
       }
 
+      logAnalyticsDev(input.eventType, payload);
       devLog("[summify.product_event] inserted", {
         eventType: input.eventType,
         userId: user.id,
+        via: "user_client",
       });
       return;
     }
 
-    if (!input.trustedServer || !isServiceRoleConfigured()) {
-      devLog("[summify.product_event] skipped", {
-        reason: "anonymous_requires_trusted_server",
-        eventType: input.eventType,
-      });
-      return;
-    }
-
-    const admin = getSupabaseAdmin();
-    const { error } = await admin.from("usage_events").insert(payload);
-    if (error) {
-      devWarn("[summify.product_event] insert_failed", {
-        message: error.message,
-        code: error.code,
-        eventType: input.eventType,
-      });
-      return;
-    }
-
-    devLog("[summify.product_event] inserted", {
+    devLog("[summify.product_event] skipped", {
+      reason: "anonymous_requires_service_role",
       eventType: input.eventType,
-      sessionId: input.sessionId,
     });
   } catch (err) {
     devWarn("[summify.product_event] insert_failed", {

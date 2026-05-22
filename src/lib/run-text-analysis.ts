@@ -8,8 +8,10 @@ export type RunTextAnalysisParams = {
   rawText: string;
   /** Intelligence mode id (e.g. `executive-brief`) or legacy family (`executive`). */
   mode: IntelligenceModeId | string;
-  sourceHint?: "youtube" | "presentation" | "url";
+  sourceHint?: "youtube" | "presentation" | "url" | "file";
   sourceContext?: AnalyzeSourceContext;
+  /** Upload file type for analytics (`pdf`, `docx`, `txt`, `pptx`). */
+  fileType?: string | null;
 };
 
 export type RunTextAnalysisSuccess = {
@@ -45,6 +47,7 @@ export async function runTextAnalysis(
       mode: params.mode,
       ...(params.sourceHint ? { sourceHint: params.sourceHint } : {}),
       ...(params.sourceContext ? { sourceContext: params.sourceContext } : {}),
+      ...(params.fileType ? { fileType: params.fileType } : {}),
     }),
   });
 

@@ -14,6 +14,10 @@ import type {
   AnalyzeApiSuccessResponse,
 } from "@/server/ai/schemas";
 import type { AnalysisIntelligenceContext } from "@/server/intelligence";
+import type {
+  AnalysisSourceHint,
+  AnalyzeSourceContext,
+} from "@/server/intelligence/types";
 import { getOptionalUser } from "@/lib/auth";
 import { getProfile, getUserLimits } from "@/lib/supabase/profile";
 import { canRunAnalysis } from "@/lib/plan-limits";
@@ -31,9 +35,9 @@ import {
 } from "@/lib/analytics/anonymousSession";
 import { runPostAnalysisPersistence } from "@/server/analyses/postAnalysisPersistence";
 import {
-  trackAnalysisCompleted,
-  trackAnalysisFailed,
-} from "@/server/usage/trackUsageEvent";
+  recordAnalysisCompleted,
+  recordAnalysisFailed,
+} from "@/server/usage/recordAnalysisAnalytics";
 import { devError, devLog, logServerError } from "@/server/logging";
 
 const ANONYMOUS_USAGE_COOKIE = "summify_anon_usage";
@@ -163,6 +167,10 @@ function buildFailureDebug(
 export async function POST(request: Request) {
   let modeForLog = "unknown";
   let intelligence: AnalysisIntelligenceContext | undefined;
+  let analyzeSourceHint: AnalysisSourceHint | undefined;
+  let analyzeSourceContext: AnalyzeSourceContext | undefined;
+  let analyzeFileType: string | null = null;
+  let analyzeRawTextLength = 0;
 
   try {
     const body = (await request.json()) as {
@@ -170,6 +178,7 @@ export async function POST(request: Request) {
       mode?: unknown;
       sourceHint?: unknown;
       sourceContext?: unknown;
+      fileType?: unknown;
     };
 
     const currentUser = await getOptionalUser();
@@ -187,6 +196,11 @@ export async function POST(request: Request) {
         body.sourceContext,
       );
     modeForLog = intelligenceModeId;
+    analyzeSourceHint = sourceHint;
+    analyzeSourceContext = sourceContext;
+    analyzeRawTextLength = rawText.length;
+    analyzeFileType =
+      typeof body.fileType === "string" ? body.fileType.trim().toLowerCase() : null;
 
     const quota = canRunAnalysis({
       storedPlan: profile?.plan,
@@ -279,6 +293,7 @@ export async function POST(request: Request) {
         email: currentUser?.email ?? null,
       });
     }
+    let savedAnalysisId: string | null = null;
     try {
       const persistence = await runPostAnalysisPersistence({
         userId: currentUser?.id ?? null,
@@ -293,21 +308,33 @@ export async function POST(request: Request) {
       });
       response.savedToWorkspace = persistence.savedToWorkspace;
       response.savedAnalysisId = persistence.savedAnalysisId;
+      savedAnalysisId = persistence.savedAnalysisId;
     } catch {
       response.savedToWorkspace = false;
       response.savedAnalysisId = null;
     }
 
+    const anonymousSessionId = currentUser
+      ? null
+      : await resolveAnonymousSessionId();
+
+    await recordAnalysisCompleted({
+      userId: currentUser?.id ?? null,
+      sessionId: anonymousSessionId,
+      planId,
+      intelligenceMode: intelligenceModeId,
+      sourceHint,
+      sourceContext,
+      fileType: analyzeFileType,
+      analysisId: savedAnalysisId,
+      charsProcessed:
+        intelligence.cleanedText?.length ?? intelligence.analysisLimits?.extractedCharacters ?? analyzeRawTextLength,
+      pagesProcessed: intelligence.analysisLimits?.extractedPages,
+    });
+
     const jsonResponse = NextResponse.json(response);
     if (!currentUser) {
-      const sessionId = await resolveAnonymousSessionId();
-      trackAnalysisCompleted({
-        sessionId,
-        sourceKind: sourceHint ?? null,
-        intelligenceMode: intelligenceModeId,
-        plan: planId,
-        trustedServer: true,
-      });
+      const sessionId = anonymousSessionId ?? (await resolveAnonymousSessionId());
       const cookieStore = await cookies();
       const anonymousUsage = parseAnonymousUsage(
         cookieStore.get(ANONYMOUS_USAGE_COOKIE)?.value,
@@ -346,13 +373,15 @@ export async function POST(request: Request) {
       );
       const failureSessionId = failureUser ? null : await resolveAnonymousSessionId();
 
-      trackAnalysisFailed({
+      await recordAnalysisFailed({
         userId: failureUser?.id,
         sessionId: failureSessionId,
+        planId: failurePlan,
         intelligenceMode: modeForLog,
-        plan: failurePlan,
-        failureStage: error.failureReason,
-        trustedServer: !failureUser,
+        sourceHint: analyzeSourceHint,
+        sourceContext: analyzeSourceContext,
+        fileType: analyzeFileType,
+        reason: error.failureReason,
       });
 
       const payload: AnalyzeApiErrorResponse = {
