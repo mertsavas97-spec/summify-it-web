@@ -6,6 +6,6 @@ import { buildSitemapEntries } from "@/lib/sitemap/build-sitemap";
  * intelligence modes, use cases, and core marketing routes.
  * Excludes dashboard, auth, API, and user-generated share URLs.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return buildSitemapEntries();
 }

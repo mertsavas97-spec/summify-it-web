@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { isAdminUser } from "@/lib/admin/isAdminUser";
+import { requireAdminPage } from "@/lib/admin/requireAdmin";
 import {
   ensureProfileForUser,
   formatPlanLabel,
-  getOptionalUser,
   getProfile,
   getUserLimits,
 } from "@/lib/auth";
@@ -26,11 +24,7 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default async function AdminDashboardPage() {
-  const user = await getOptionalUser();
-
-  if (!user || !(await isAdminUser(user))) {
-    notFound();
-  }
+  const user = await requireAdminPage();
 
   await ensureProfileForUser();
 
@@ -66,9 +60,14 @@ export default async function AdminDashboardPage() {
                   Live product usage, users, and subscription metrics.
                 </p>
               </div>
-              <Button href="/dashboard" size="sm" variant="secondary">
-                Back to workspace
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button href="/dashboard/admin/blog" size="sm" variant="secondary">
+                  Blog CMS
+                </Button>
+                <Button href="/dashboard" size="sm" variant="secondary">
+                  Back to workspace
+                </Button>
+              </div>
             </div>
           </header>
 

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
 import { BLOG_POSTS } from "@/data/blog-posts";
+import { listPublishedCmsBlogPosts } from "@/server/blog/cmsBlogRepository";
 import { getAllBlogCategorySlugs } from "@/data/blog-categories";
 import { COMPARISON_SLUGS } from "@/data/comparisons/registry";
 import { FORMAT_LANDINGS } from "@/data/format-landings";
@@ -128,7 +129,7 @@ function metaForPath(path: string, lastModified?: Date | string): SitemapEntryIn
  * Builds the full sitemap from local data modules (blog, formats, modes, segments).
  * Regenerates on each `next build` / deploy — no manual sitemap edits.
  */
-export function buildSitemapEntries(): MetadataRoute.Sitemap {
+export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
   const seen = new Set<string>();
 
@@ -146,6 +147,12 @@ export function buildSitemapEntries(): MetadataRoute.Sitemap {
     push(
       metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.date),
     );
+  }
+
+  const cmsPosts = await listPublishedCmsBlogPosts();
+  for (const post of cmsPosts) {
+    if (BLOG_POSTS.some((p) => p.slug === post.slug)) continue;
+    push(metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.publishedAt ?? undefined));
   }
 
   return entries.sort((a, b) => a.url.localeCompare(b.url));

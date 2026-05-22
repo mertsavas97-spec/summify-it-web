@@ -143,16 +143,22 @@ export function buildPageMetadata(input: SeoPageInput): Metadata {
   };
 }
 
-export function buildBlogPostMetadata(post: BlogPost): Metadata {
+export function buildBlogPostMetadata(
+  post: BlogPost & {
+    seoTitle?: string | null;
+    seoDescription?: string | null;
+    canonicalUrl?: string | null;
+  },
+): Metadata {
   const path = `/blog/${post.slug}`;
   return buildPageMetadata({
-    title: post.title,
-    description: post.description,
+    title: post.seoTitle?.trim() || post.title,
+    description: post.seoDescription?.trim() || post.description,
     path,
     ogType: "article",
     publishedTime: post.date,
     modifiedTime: post.updatedAt ?? post.date,
-    keywords: post.tags,
+    keywords: post.keywords?.length ? post.keywords : post.tags,
   });
 }
 
