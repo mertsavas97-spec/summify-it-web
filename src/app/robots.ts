@@ -1,12 +1,13 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl } from "@/lib/seo";
+import { getSitemapBaseUrl } from "@/lib/sitemap/build-sitemap";
 
 /**
- * Crawl policy for summify.app
- * - Allow all public marketing pages
- * - Block app, auth, API, and user-generated share URLs
+ * Crawl policy for public marketing site.
+ * Sitemap URL uses `siteConfig.url` (NEXT_PUBLIC_SITE_URL → https://summify.app in production).
  */
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = getSitemapBaseUrl();
+
   return {
     rules: {
       userAgent: "*",
@@ -22,6 +23,6 @@ export default function robots(): MetadataRoute.Robots {
         "/share/",
       ],
     },
-    sitemap: absoluteUrl("/sitemap.xml"),
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
