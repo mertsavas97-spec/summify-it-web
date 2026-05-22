@@ -1,7 +1,9 @@
 import { siteConfig } from "@/lib/site";
+import { SUMMIFY_SOCIAL_SAME_AS } from "@/lib/social-links";
 import { absoluteUrl, SEO_BRAND } from "@/lib/seo";
 import type { FaqItem } from "@/data/faqs";
 import type { BlogPost } from "@/data/blog-posts";
+import { getBlogCategory } from "@/data/blog-categories";
 import { PLAN_DEFINITIONS, PUBLIC_PRICING_PLAN_IDS } from "@/data/pricingPlans";
 import type { PlanId } from "@/types/plan";
 
@@ -32,6 +34,7 @@ export function organizationSchema(): JsonLdObject {
     url: absoluteUrl("/"),
     logo: absoluteUrl(ORGANIZATION_LOGO),
     description: siteConfig.description,
+    sameAs: [...SUMMIFY_SOCIAL_SAME_AS],
   };
 }
 
@@ -239,34 +242,77 @@ export function productPricingSchema(): JsonLdObject {
   };
 }
 
-export function blogPostingSchema(post: BlogPost): JsonLdObject {
-  const path = `/blog/${post.slug}`;
-  const publisher = {
-    "@type": "Organization" as const,
+function blogPublisher(): JsonLdObject {
+  return {
+    "@type": "Organization",
     name: SEO_BRAND,
     url: absoluteUrl("/"),
     logo: {
-      "@type": "ImageObject" as const,
+      "@type": "ImageObject",
       url: absoluteUrl(ORGANIZATION_LOGO),
     },
+    sameAs: [...SUMMIFY_SOCIAL_SAME_AS],
   };
+}
 
+/** Article schema for blog posts (preferred for editorial SEO). */
+export function blogArticleSchema(post: BlogPost): JsonLdObject {
+  const path = `/blog/${post.slug}`;
   return {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
+    "@type": "Article",
     headline: post.title,
     description: post.description,
     datePublished: post.date,
-    ...(post.updatedAt ? { dateModified: post.updatedAt } : {}),
+    dateModified: post.updatedAt,
     author: {
-      "@type": "Organization",
-      name: SEO_BRAND,
-      url: absoluteUrl("/"),
+      "@type": "Person",
+      name: post.author.name,
+      url: post.author.href ? absoluteUrl(post.author.href) : absoluteUrl("/about"),
     },
-    publisher,
+    publisher: blogPublisher(),
     url: absoluteUrl(path),
-    mainEntityOfPage: absoluteUrl(path),
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": absoluteUrl(path),
+    },
     image: absoluteUrl(siteConfig.ogImage),
-    keywords: post.tags.join(", "),
+    keywords: [...post.tags, ...post.keywords].join(", "),
+    articleSection: post.category,
+    inLanguage: "en-US",
   };
+}
+
+/** @deprecated Prefer `blogArticleSchema` — kept as alias. */
+export function blogPostingSchema(post: BlogPost): JsonLdObject {
+  return blogArticleSchema(post);
+}
+
+export function blogPostFaqSchema(
+  items: Array<{ q: string; a: string }>,
+): JsonLdObject | null {
+  if (items.length === 0) return null;
+  return faqPageSchema(items);
+}
+
+export function blogPostBreadcrumbSchema(post: BlogPost): JsonLdObject {
+  const category = getBlogCategory(post.categoryId);
+  return breadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Blog", path: "/blog" },
+    { name: category.name, path: `/blog/category/${category.slug}` },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ]);
+}
+
+/** Combined JSON-LD graphs for a blog article page. */
+export function blogPostJsonLdGraph(post: BlogPost): JsonLdObject[] {
+  const graphs: JsonLdObject[] = [
+    organizationSchema(),
+    blogArticleSchema(post),
+    blogPostBreadcrumbSchema(post),
+  ];
+  const faq = blogPostFaqSchema(post.faqs);
+  if (faq) graphs.push(faq);
+  return graphs;
 }

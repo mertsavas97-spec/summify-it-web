@@ -412,6 +412,7 @@ export function TextAnalysisMvp({
             savedToWorkspace={displaySavedToWorkspace}
             savedAnalysisId={displaySavedAnalysisId}
             learnCards={displayResult.learnCards}
+            analysisContent={displayResult}
             entitlementPlanId={entitlementPlanId}
             documentTitle={displayResult.title}
             modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}

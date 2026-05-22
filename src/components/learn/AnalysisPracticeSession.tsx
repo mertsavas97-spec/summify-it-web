@@ -60,6 +60,10 @@ type AnalysisPracticeSessionProps = {
   /** When false, practice runs from in-memory cards (live analysis) without workspace save. */
   practicePersisted?: boolean;
   entitlementPlanId?: PlanId;
+  onLearnComplete?: (summary: PracticeRetentionSummary) => void;
+  onStartQuiz?: () => void;
+  learnComplete?: boolean;
+  showQuizUnlockHint?: boolean;
 };
 
 type OutcomeMap = Record<string, PracticeCardOutcome>;
@@ -76,6 +80,10 @@ export function AnalysisPracticeSession({
   autoStart = false,
   practicePersisted = true,
   entitlementPlanId = "free",
+  onLearnComplete,
+  onStartQuiz,
+  learnComplete = false,
+  showQuizUnlockHint = false,
 }: AnalysisPracticeSessionProps) {
   const router = useRouter();
   const sortedCards = useMemo(() => sortPracticeSessionCards(initialCards), [initialCards]);
@@ -180,6 +188,7 @@ export function AnalysisPracticeSession({
     });
     setRetentionSummary(summary);
     savePracticeRetentionSummary(summary);
+    onLearnComplete?.(summary);
     trackProductEventClient({
       eventType: "learn_completed",
       sourceType: "practice",
@@ -361,6 +370,11 @@ export function AnalysisPracticeSession({
           </Button>
         </div>
         {error ? <p className="mt-3 text-xs text-rose-300">{error}</p> : null}
+        {showQuizUnlockHint && !learnComplete ? (
+          <p className="mt-3 text-[11px] text-zinc-500">
+            Quiz unlocks after completing your Learn cards.
+          </p>
+        ) : null}
       </section>
       </>
     );
@@ -390,6 +404,11 @@ export function AnalysisPracticeSession({
         <PracticeCompletionRetention summary={retentionSummary} />
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+          {onStartQuiz ? (
+            <Button type="button" size="sm" onClick={onStartQuiz}>
+              Start Quiz
+            </Button>
+          ) : null}
           {retentionSummary.suggestedReviewCount > 0 ? (
             <Button type="button" size="sm" onClick={startWeakReview}>
               Review weak cards

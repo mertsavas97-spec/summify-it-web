@@ -12,7 +12,7 @@ export function BestAiPdfSummarizersBody() {
         files, and judge outputs on structure and accuracy — not marketing copy.
       </p>
 
-      <h2>What “summarize PDF online” should actually deliver</h2>
+      <h2 id="what-to-deliver">What “summarize PDF online” should actually deliver</h2>
       <p>
         A strong online PDF summarizer does more than compress pages into bullets. It
         should preserve hierarchy: thesis, evidence, risks, and open questions. For
@@ -26,7 +26,7 @@ export function BestAiPdfSummarizersBody() {
         skim, for example.
       </p>
 
-      <h2>Criteria that matter (without fake rankings)</h2>
+      <h2 id="criteria">Criteria that matter (without fake rankings)</h2>
       <p>
         Instead of declaring a winner, use these criteria to compare any{" "}
         <strong>free AI summarizer</strong> or paid option:
@@ -66,7 +66,7 @@ export function BestAiPdfSummarizersBody() {
         source.
       </p>
 
-      <h2>How Summify fits this picture</h2>
+      <h2 id="study-outputs">How Summify fits this picture</h2>
       <p>
         <InternalTextLink href="/summarize-pdf">Summify’s PDF workflow</InternalTextLink>{" "}
         is built as a document intelligence workspace, not a one-click blurb generator. You
@@ -82,7 +82,7 @@ export function BestAiPdfSummarizersBody() {
         notes align with how you actually revise.
       </p>
 
-      <h2>Practical next steps</h2>
+      <h2 id="try-summify">Practical next steps</h2>
       <ol>
         <li>Pick one real PDF you already know well.</li>
         <li>Run it through two tools with the same goal (e.g. exam review).</li>

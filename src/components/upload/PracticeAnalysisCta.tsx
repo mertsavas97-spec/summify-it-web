@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { AnalysisPracticeSession } from "@/components/learn/AnalysisPracticeSession";
+import { AnalysisLearningPath } from "@/components/learn/AnalysisLearningPath";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { learnDashboardHref, learnPracticeStartHref } from "@/lib/learn/paths";
-import type { LearnCardOutput } from "@/types/text-analysis";
+import type { AnalysisResult, LearnCardOutput } from "@/types/text-analysis";
 import type { PlanId } from "@/types/plan";
 
 type PracticeAnalysisCtaProps = {
@@ -21,6 +21,10 @@ type PracticeAnalysisCtaProps = {
   modeLabel?: string;
   sourceKindLabel?: string;
   entitlementPlanId?: PlanId;
+  analysisContent?: Pick<
+    AnalysisResult,
+    "title" | "summary" | "keyInsights" | "risksOrWarnings" | "actionItems"
+  >;
 };
 
 const supabaseConfigured = isSupabaseConfigured();
@@ -33,6 +37,7 @@ export function PracticeAnalysisCta({
   modeLabel = "Analysis",
   sourceKindLabel = "Document",
   entitlementPlanId = "free",
+  analysisContent,
 }: PracticeAnalysisCtaProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -121,16 +126,24 @@ export function PracticeAnalysisCta({
           </p>
         ) : null}
 
-        <AnalysisPracticeSession
+        <AnalysisLearningPath
           analysisId={sessionId}
           documentTitle={documentTitle}
           modeLabel={modeLabel}
           sourceKindLabel={sourceKindLabel}
-          cards={practiceCards}
-          cardAccess={cardAccess}
+          learnCards={learnCards}
+          entitlementPlanId={entitlementPlanId}
           hasLearnCards
           practicePersisted={Boolean(savedAnalysisId)}
-          entitlementPlanId={entitlementPlanId}
+          analysisContent={
+            analysisContent ?? {
+              title: documentTitle,
+              summary: "",
+              keyInsights: [],
+              risksOrWarnings: [],
+              actionItems: [],
+            }
+          }
         />
       </div>
     );

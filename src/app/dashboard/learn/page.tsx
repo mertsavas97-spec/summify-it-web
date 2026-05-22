@@ -4,16 +4,11 @@ import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { LearnEntitlementNotice } from "@/components/learn/LearnEntitlementNotice";
 import { LearnOverviewPanel } from "@/components/learn/LearnOverviewPanel";
-import { AnalysisPracticeSession } from "@/components/learn/AnalysisPracticeSession";
+import { AnalysisLearningPath } from "@/components/learn/AnalysisLearningPath";
 import { LearnMultiFormatPanel } from "@/components/learn/LearnMultiFormatPanel";
 import { LearnRetentionNotice } from "@/components/learn/LearnRetentionNotice";
 import { buildMultiFormatLearnForSavedAnalysis } from "@/server/learn/multiFormatLearning";
 import { MemoryReviewClient } from "@/components/memory/MemoryReviewClient";
-import {
-  enrichReviewItemsAsPracticeCards,
-  sortPracticeSessionCards,
-} from "@/lib/learn/practiceSessionTypes";
-import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { getIntelligenceModeLabel, getSourceKindLabel } from "@/lib/saved-analysis-labels";
 import { Badge } from "@/components/ui/Badge";
 import {
@@ -31,7 +26,6 @@ import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getAnalysisById } from "@/server/analyses/getAnalysisById";
 import { getPracticeAnalysesSummary } from "@/server/learn/getPracticeAnalysesSummary";
 import { getDueReviewItems } from "@/server/memory/getDueReviewItems";
-import { getReviewItemsForAnalysis } from "@/server/memory/getReviewItemsForAnalysis";
 import { getMemoryStats } from "@/server/memory/getMemoryStats";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 
@@ -111,15 +105,9 @@ export default async function LearnPage({ searchParams }: PageProps) {
       );
     }
 
-    const practiceItems = await getReviewItemsForAnalysis(user.id, analysisId);
-
     const displayTitle = saved.title ?? saved.summary?.title ?? "Untitled analysis";
     const hasLearnCards = (saved.learn_cards?.length ?? 0) > 0;
     const learnCards = saved.learn_cards ?? [];
-    const cardAccess = getPracticeCardAccessForPlan(planUsage.planId, learnCards);
-    const practiceCards = sortPracticeSessionCards(
-      enrichReviewItemsAsPracticeCards(practiceItems, cardAccess.accessibleCards),
-    );
 
     const multiFormatLearn =
       saved.metadata?.multiFormatLearn ??
@@ -137,17 +125,23 @@ export default async function LearnPage({ searchParams }: PageProps) {
       <LearnShell savedCount={savedCount} dailyCount={limits?.daily_analysis_count ?? 0} planLabel={planLabel}>
         <div className="mt-5" id="practice">
           <LearnRetentionNotice analysisId={analysisId} />
-          <AnalysisPracticeSession
+          <AnalysisLearningPath
             analysisId={analysisId}
             documentTitle={displayTitle}
-            sourceLabel={saved.source_label}
             modeLabel={getIntelligenceModeLabel(saved.intelligence_mode)}
             sourceKindLabel={getSourceKindLabel(saved.source_kind)}
-            cards={practiceCards}
+            learnCards={learnCards}
             hasLearnCards={hasLearnCards}
-            autoStart={autoStartPractice && practiceCards.length > 0}
+            practicePersisted
+            autoStart={autoStartPractice && hasLearnCards}
             entitlementPlanId={planUsage.planId}
-            cardAccess={cardAccess}
+            analysisContent={{
+              title: displayTitle,
+              summary: saved.summary?.summary ?? "",
+              keyInsights: saved.summary?.keyInsights ?? [],
+              risksOrWarnings: saved.summary?.risksOrWarnings ?? [],
+              actionItems: saved.summary?.actionItems ?? [],
+            }}
           />
           {multiFormatLearn ? (
             <LearnMultiFormatPanel analysisId={analysisId} multiFormat={multiFormatLearn} />

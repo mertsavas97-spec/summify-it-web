@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { GuideTocItem } from "@/data/guides/types";
+export type TocItem = {
+  id: string;
+  label: string;
+};
 
 type TableOfContentsProps = {
-  items: GuideTocItem[];
+  items: TocItem[];
   title?: string;
 };
 

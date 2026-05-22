@@ -12,7 +12,7 @@ export function StudentsExamPrepBody() {
         already have permission to use.
       </p>
 
-      <h2>From raw sources to a review plan</h2>
+      <h2 id="workflow">From raw sources to a review plan</h2>
       <p>
         Start by listing what will be assessed: topics, not files. Then map each topic to
         sources — PDF week notes, a recorded lecture, a chapter scan. A document
@@ -27,7 +27,7 @@ export function StudentsExamPrepBody() {
         define.
       </p>
 
-      <h2>AI quiz from PDF: practice, not substitution</h2>
+      <h2 id="quiz">AI quiz from PDF: practice, not substitution</h2>
       <p>
         An <strong>AI quiz from PDF</strong> or lecture transcript works when questions
         target ideas you have already encountered — “explain trade-offs in…” rather than
@@ -47,7 +47,7 @@ export function StudentsExamPrepBody() {
         one you refined — not the first model output.
       </p>
 
-      <h2>Flashcards without the busywork</h2>
+      <h2 id="learn-cards">Flashcards without the busywork</h2>
       <p>
         An <strong>AI flashcard generator</strong> saves time creating cards; it does not
         remove the need to recall. Use cards for terms, formulas, and discrete facts. Use

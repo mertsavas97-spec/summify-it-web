@@ -1,5 +1,6 @@
 import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
 import { BLOG_POSTS } from "@/data/blog-posts";
+import { getAllBlogCategorySlugs } from "@/data/blog-categories";
 import { FORMAT_LANDINGS } from "@/data/format-landings";
 import { GUIDE_SLUGS } from "@/data/guides/registry";
 import { COMPARISON_SLUGS } from "@/data/comparisons/registry";
@@ -47,7 +48,13 @@ const COMPARISON_PATHS = COMPARISON_SLUGS.map((slug) => `/compare/${slug}`);
 
 const USE_CASE_PATHS = USE_CASE_SLUGS.map((slug) => `/use-cases/${slug}`);
 
-const BLOG_PATHS = BLOG_POSTS.map((post) => `/blog/${post.slug}`);
+const BLOG_CATEGORY_PATHS = getAllBlogCategorySlugs().map(
+  (slug) => `/blog/category/${slug}`,
+);
+const BLOG_PATHS = [
+  ...BLOG_CATEGORY_PATHS,
+  ...BLOG_POSTS.map((post) => `/blog/${post.slug}`),
+];
 
 /** All public indexable paths for sitemap and SEO audits. */
 export function getAllIndexablePaths(): string[] {

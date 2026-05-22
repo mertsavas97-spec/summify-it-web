@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { FeedbackTrigger } from "@/components/growth/FeedbackTrigger";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
+import { SUMMIFY_SOCIAL_LINKS } from "@/lib/social-links";
 import { SEO_BRAND } from "@/lib/seo";
 
 const footerSections = [
@@ -75,6 +76,24 @@ export function PublicFooter() {
               Structured intelligence from PDFs, decks, videos, and articles — with Learn cards
               built in.
             </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href={SUMMIFY_SOCIAL_LINKS.twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-zinc-500 transition-colors hover:text-violet-300"
+              >
+                X (Twitter)
+              </a>
+              <a
+                href={SUMMIFY_SOCIAL_LINKS.linkedIn}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-zinc-500 transition-colors hover:text-violet-300"
+              >
+                LinkedIn
+              </a>
+            </div>
           </div>
           {footerSections.map((section) => (
             <div key={section.title}>

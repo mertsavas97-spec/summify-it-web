@@ -17,4 +17,8 @@ export {
   webPageSchema,
   websiteSchema,
   blogPostingSchema,
+  blogArticleSchema,
+  blogPostJsonLdGraph,
+  blogPostBreadcrumbSchema,
+  blogPostFaqSchema,
 } from "../schema";

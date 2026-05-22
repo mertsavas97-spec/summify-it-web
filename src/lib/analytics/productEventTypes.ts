@@ -4,6 +4,8 @@ export const PRODUCT_EVENT_TYPES = [
   "analysis_failed",
   "learn_started",
   "learn_completed",
+  "quiz_started",
+  "quiz_completed",
   "upgrade_clicked",
   "checkout_started",
   "subscription_changed",

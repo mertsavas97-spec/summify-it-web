@@ -12,7 +12,7 @@ export function YoutubeStudyNotesBody() {
         you want <strong>YouTube video to study notes AI</strong> without losing nuance.
       </p>
 
-      <h2>Start with the transcript, not the thumbnail</h2>
+      <h2 id="transcript-first">Start with the transcript, not the thumbnail</h2>
       <p>
         To <strong>summarize YouTube video with AI</strong> reliably, you need clean text.
         Captions vary in quality: auto-generated tracks miss jargon; creator-uploaded
@@ -25,7 +25,7 @@ export function YoutubeStudyNotesBody() {
         video it used and organize output by theme or chapter — not only a flat paragraph.
       </p>
 
-      <h2>A study-notes workflow that scales</h2>
+      <h2 id="structure">A study-notes workflow that scales</h2>
       <ol>
         <li>
           <strong>Define the exam question.</strong> “Explain X” beats “summarize this
@@ -64,7 +64,7 @@ export function YoutubeStudyNotesBody() {
         would bring to a study group without embarrassment.
       </p>
 
-      <h2>Using Summify for YouTube study notes</h2>
+      <h2 id="learn-quiz">Using Summify for YouTube study notes</h2>
       <p>
         On{" "}
         <InternalTextLink href="/summarize-youtube-video">

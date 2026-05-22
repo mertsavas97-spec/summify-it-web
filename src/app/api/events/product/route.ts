@@ -8,6 +8,8 @@ import type { ProductEventMetadata } from "@/server/usage/trackProductEvent";
 const CLIENT_ALLOWED_EVENTS = new Set([
   "learn_started",
   "learn_completed",
+  "quiz_started",
+  "quiz_completed",
   "upgrade_clicked",
 ]);
 

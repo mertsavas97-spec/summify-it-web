@@ -156,11 +156,17 @@ export const pageSeo = {
   }),
 
   blog: buildPageMetadata({
-    title: "Blog — AI Summarization Guides",
+    title: "Blog — AI PDF, YouTube, Learn Cards & Quiz Guides",
     description:
-      "Editorial guides on AI PDF summarizers, YouTube study notes, and exam prep workflows. Practical workflows for students and knowledge workers using Summify.",
+      "Guides on AI PDF summarizers, YouTube study notes, Learn cards, and post-learn quizzes. Topical hubs for study, research, and document intelligence workflows.",
     path: "/blog",
-    keywords: ["AI summarizer guides", "PDF summarizer blog", "study notes AI"],
+    keywords: [
+      "AI PDF summarizer",
+      "YouTube summarizer",
+      "Learn cards",
+      "AI quiz from PDF",
+      "study notes AI",
+    ],
   }),
 
   login: buildPageMetadata({
