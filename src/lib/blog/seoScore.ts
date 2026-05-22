@@ -1,5 +1,9 @@
 import type { CmsBlogPostInput } from "@/types/cms-blog";
-import { analyzeMarkdownContent } from "@/lib/blog/contentMetrics";
+import { analyzeBlogContent } from "@/lib/blog/contentMetrics";
+import {
+  resolveCmsBlogBodyFormat,
+  stripCmsBlogHtml,
+} from "@/lib/blog/cmsBody";
 
 export type SeoCheckStatus = "pass" | "warn" | "fail";
 
@@ -41,8 +45,11 @@ export function computeBlogSeoScore(input: ScoreInput): SeoScoreResult {
   const slug = input.slug.trim();
   const keyword = (input.primaryKeyword || "").trim().toLowerCase();
   const body = input.markdownBody.trim();
-  const metrics = analyzeMarkdownContent(body);
-  const intro = body.slice(0, 600).toLowerCase();
+  const bodyFormat = resolveCmsBlogBodyFormat(body, input.bodyFormat);
+  const metrics = analyzeBlogContent(body, bodyFormat);
+  const intro = (bodyFormat === "html" ? stripCmsBlogHtml(body) : body)
+    .slice(0, 600)
+    .toLowerCase();
 
   const checks: SeoCheckItem[] = [];
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BlogArticleLayout } from "@/components/blog/BlogArticleLayout";
 import { BlogMarkdownContent } from "@/components/blog/BlogMarkdownContent";
+import { BlogHtmlContent } from "@/components/blog/BlogHtmlContent";
 import { BlogProse } from "@/components/blog/BlogProse";
 import { buildBlogPostMetadata } from "@/lib/seo";
 import { getAllPublicBlogSlugs, getPublicBlogPostBySlug } from "@/lib/blog/resolvePost";
@@ -37,7 +38,11 @@ export default async function BlogPostPage({
   const body =
     post.source === "cms" && post.markdownBody ? (
       <BlogProse>
-        <BlogMarkdownContent markdown={post.markdownBody} />
+        {post.bodyFormat === "html" ? (
+          <BlogHtmlContent html={post.markdownBody} />
+        ) : (
+          <BlogMarkdownContent markdown={post.markdownBody} />
+        )}
       </BlogProse>
     ) : (
       <CmsStaticBody post={post} />

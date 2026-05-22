@@ -11,6 +11,7 @@ create table if not exists public.cms_blog_posts (
   cover_image_url text,
   author text,
   body text not null,
+  body_format text default 'markdown',
   status text default 'draft',
   seo_title text,
   seo_description text,

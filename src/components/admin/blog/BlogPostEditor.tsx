@@ -4,8 +4,13 @@ import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BLOG_CATEGORIES, type BlogCategoryId } from "@/data/blog-categories";
-import { analyzeMarkdownContent } from "@/lib/blog/contentMetrics";
+import { analyzeBlogContent } from "@/lib/blog/contentMetrics";
 import { computeBlogSeoScore } from "@/lib/blog/seoScore";
+import {
+  detectCmsBlogBodyFormat,
+  resolveCmsBlogBodyFormat,
+  type CmsBlogBodyFormat,
+} from "@/lib/blog/cmsBody";
 import {
   adminArchiveBlogPost,
   adminDuplicateStaticBlogPost,
@@ -31,6 +36,12 @@ function slugifyTitle(title: string): string {
     .replace(/^-|-$/g, "");
 }
 
+function markdownLinkToHtml(markdown: string): string {
+  const link = markdown.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+  if (!link) return markdown;
+  return `<a href="${link[2]}">${link[1]}</a>`;
+}
+
 const EMPTY: CmsBlogPostInput = {
   slug: "",
   title: "",
@@ -38,6 +49,7 @@ const EMPTY: CmsBlogPostInput = {
   categoryId: "study-learning",
   tags: [],
   markdownBody: "",
+  bodyFormat: "markdown",
   status: "draft",
   seoTitle: "",
   seoDescription: "",
@@ -75,6 +87,7 @@ export function BlogPostEditor({
           tags: post.tags,
           coverImageUrl: post.coverImageUrl,
           markdownBody: post.markdownBody,
+          bodyFormat: post.bodyFormat,
           status: post.status,
           seoTitle: post.seoTitle ?? "",
           seoDescription: post.seoDescription ?? "",
@@ -96,9 +109,14 @@ export function BlogPostEditor({
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const resolvedBodyFormat = useMemo(
+    () => resolveCmsBlogBodyFormat(form.markdownBody, form.bodyFormat),
+    [form.bodyFormat, form.markdownBody],
+  );
+  const htmlDetected = detectCmsBlogBodyFormat(form.markdownBody) === "html";
   const metrics = useMemo(
-    () => analyzeMarkdownContent(form.markdownBody),
-    [form.markdownBody],
+    () => analyzeBlogContent(form.markdownBody, resolvedBodyFormat),
+    [form.markdownBody, resolvedBodyFormat],
   );
 
   const seoResult = useMemo(
@@ -128,6 +146,17 @@ export function BlogPostEditor({
       el.setSelectionRange(pos, pos);
     });
   }, [form.markdownBody]);
+
+  const setBody = (markdownBody: string) => {
+    setForm((current) => ({
+      ...current,
+      markdownBody,
+      bodyFormat:
+        detectCmsBlogBodyFormat(markdownBody) === "html"
+          ? "html"
+          : current.bodyFormat ?? "markdown",
+    }));
+  };
 
   const save = (status: CmsBlogStatus, force = false) => {
     if (post?.source === "static") {
@@ -253,6 +282,19 @@ export function BlogPostEditor({
                 className="mt-1 w-full rounded-lg border border-white/[0.08] bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
               />
             </label>
+            <label className="block text-xs text-zinc-500">
+              Content format
+              <select
+                value={resolvedBodyFormat}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, bodyFormat: e.target.value as CmsBlogBodyFormat }))
+                }
+                className="mt-1 w-full rounded-lg border border-white/[0.08] bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
+              >
+                <option value="markdown">Markdown</option>
+                <option value="html">HTML</option>
+              </select>
+            </label>
           </div>
 
           <label className="block text-xs text-zinc-500">
@@ -267,7 +309,9 @@ export function BlogPostEditor({
 
           <div>
             <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs text-zinc-500">Markdown body</span>
+              <span className="text-xs text-zinc-500">
+                {resolvedBodyFormat === "html" ? "HTML body" : "Markdown body"}
+              </span>
               <div className="flex gap-1">
                 <button
                   type="button"
@@ -287,7 +331,13 @@ export function BlogPostEditor({
                   type="button"
                   onClick={() => {
                     const url = window.prompt("Image URL");
-                    if (url) insertAtCursor(`\n![Alt text](${url})\n`);
+                    if (url) {
+                      insertAtCursor(
+                        resolvedBodyFormat === "html"
+                          ? `\n<img src="${url}" alt="" loading="lazy" />\n`
+                          : `\n![Alt text](${url})\n`,
+                      );
+                    }
                   }}
                   className="rounded-md px-2 py-1 text-[11px] text-violet-300 hover:bg-white/5"
                 >
@@ -295,15 +345,20 @@ export function BlogPostEditor({
                 </button>
               </div>
             </div>
-            <MarkdownToolbar onInsert={insertAtCursor} />
+            {resolvedBodyFormat === "markdown" ? <MarkdownToolbar onInsert={insertAtCursor} /> : null}
             <textarea
               ref={textareaRef}
               value={form.markdownBody}
-              onChange={(e) => setForm((f) => ({ ...f, markdownBody: e.target.value }))}
+              onChange={(e) => setBody(e.target.value)}
               rows={18}
-              className="w-full rounded-b-lg rounded-t-none border border-white/[0.08] bg-zinc-900/80 px-3 py-3 font-mono text-sm leading-relaxed text-zinc-200"
+              className={`w-full border border-white/[0.08] bg-zinc-900/80 px-3 py-3 font-mono text-sm leading-relaxed text-zinc-200 ${resolvedBodyFormat === "markdown" ? "rounded-b-lg rounded-t-none" : "rounded-lg"}`}
               spellCheck
             />
+            {htmlDetected ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                HTML detected. This post will be rendered as sanitized HTML.
+              </p>
+            ) : null}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -416,6 +471,7 @@ export function BlogPostEditor({
         </div>
         <MarkdownPreview
           markdown={form.markdownBody}
+          bodyFormat={resolvedBodyFormat}
           title={form.title}
           viewport={previewViewport}
         />
@@ -424,13 +480,17 @@ export function BlogPostEditor({
       <LinkInsertModal
         open={linkOpen}
         onClose={() => setLinkOpen(false)}
-        onConfirm={(md) => insertAtCursor(`\n${md}\n`)}
+        onConfirm={(md) =>
+          insertAtCursor(`\n${resolvedBodyFormat === "html" ? markdownLinkToHtml(md) : md}\n`)
+        }
       />
       <InternalLinkPicker
         open={internalOpen}
         extraBlogSlugs={extraBlogSlugs}
         onClose={() => setInternalOpen(false)}
-        onSelect={(md) => insertAtCursor(`\n${md}\n`)}
+        onSelect={(md) =>
+          insertAtCursor(`\n${resolvedBodyFormat === "html" ? markdownLinkToHtml(md) : md}\n`)
+        }
       />
     </div>
   );

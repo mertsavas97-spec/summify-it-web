@@ -1,5 +1,6 @@
 import type { BlogCategoryId } from "@/data/blog-categories";
 import type { BlogFaqItem } from "@/data/blog-post-types";
+import type { CmsBlogBodyFormat } from "@/lib/blog/cmsBody";
 
 export type CmsBlogStatus = "draft" | "published" | "archived";
 
@@ -12,6 +13,7 @@ export type CmsBlogPostRecord = {
   tags: string[];
   coverImageUrl: string | null;
   markdownBody: string;
+  bodyFormat: CmsBlogBodyFormat;
   authorName: string;
   authorRole: string;
   authorBio: string | null;
@@ -42,6 +44,7 @@ export type CmsBlogPostInput = {
   tags?: string[];
   coverImageUrl?: string | null;
   markdownBody: string;
+  bodyFormat?: CmsBlogBodyFormat;
   authorName?: string;
   authorRole?: string;
   authorBio?: string | null;

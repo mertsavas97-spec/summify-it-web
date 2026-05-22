@@ -13,6 +13,10 @@ import type {
   CmsBlogPostRecord,
   CmsBlogStatus,
 } from "@/types/cms-blog";
+import {
+  resolveCmsBlogBodyFormat,
+  type CmsBlogBodyFormat,
+} from "@/lib/blog/cmsBody";
 
 type DbRow = {
   id: string;
@@ -23,6 +27,7 @@ type DbRow = {
   tags: string[] | null;
   cover_image_url: string | null;
   body: string;
+  body_format?: string | null;
   author: string | null;
   status: string;
   seo_title: string | null;
@@ -47,6 +52,10 @@ function mapRow(row: DbRow): CmsBlogPostRecord {
     tags: row.tags ?? [],
     coverImageUrl: row.cover_image_url,
     markdownBody: row.body ?? "",
+    bodyFormat: resolveCmsBlogBodyFormat(
+      row.body ?? "",
+      row.body_format as CmsBlogBodyFormat | null | undefined,
+    ),
     authorName: row.author ?? "Summify Editorial",
     authorRole: "Product & learning workflows",
     authorBio: null,
@@ -81,6 +90,7 @@ function toDbPayload(input: CmsBlogPostInput, now: string) {
     tags: input.tags ?? [],
     cover_image_url: input.coverImageUrl?.trim() || null,
     body: input.markdownBody,
+    body_format: resolveCmsBlogBodyFormat(input.markdownBody, input.bodyFormat),
     author: input.authorName?.trim() || "Summify Editorial",
     status: input.status,
     seo_title: input.seoTitle?.trim() || null,
