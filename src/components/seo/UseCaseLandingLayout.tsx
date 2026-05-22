@@ -7,6 +7,8 @@ import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { CTASection } from "@/components/public/CTASection";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
 import Link from "next/link";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { useCasePageJsonLd } from "@/lib/schema";
 import { buildPageMetadata } from "@/lib/seo";
 import type { UseCaseLandingConfig } from "@/data/use-cases/types";
 
@@ -25,6 +27,7 @@ export function buildUseCaseMetadata(config: UseCaseLandingConfig) {
 export function UseCaseLandingLayout({ config }: UseCaseLandingLayoutProps) {
   return (
     <>
+      <JsonLd data={useCasePageJsonLd(config)} />
       <PublicHero
         badge={config.badge}
         title={config.title}

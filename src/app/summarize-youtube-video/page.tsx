@@ -1,5 +1,5 @@
 import { pageSeo } from "@/lib/page-metadata";
-import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { faqPageSchema, productPageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
@@ -20,7 +20,12 @@ export default function SummarizeYoutubePage() {
     <>
       <JsonLd
         data={[
-          formatPageBreadcrumbSchema("YouTube Summarizer", "/summarize-youtube-video"),
+          ...productPageJsonLd({
+            path: "/summarize-youtube-video",
+            pageTitle: "YouTube Summarizer",
+            description:
+              "Paste a YouTube URL for transcript-based summaries, study notes, Learn cards, and quizzes.",
+          }),
           faqPageSchema(YOUTUBE_FAQS),
         ]}
       />

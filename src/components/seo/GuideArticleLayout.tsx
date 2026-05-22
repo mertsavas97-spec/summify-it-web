@@ -3,7 +3,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { TableOfContents } from "@/components/seo/content/TableOfContents";
 import { CtaStrip } from "@/components/seo/content/CtaStrip";
 import { FAQSection } from "@/components/public/FAQSection";
-import { faqPageSchema } from "@/lib/schema";
+import { guidePageJsonLd } from "@/lib/schema";
 import { buildPageMetadata } from "@/lib/seo";
 import type { GuideArticle } from "@/data/guides/types";
 import { Button } from "@/components/ui/Button";
@@ -37,7 +37,7 @@ export function buildGuideMetadata(guide: GuideArticle) {
 export function GuideArticleLayout({ guide, children }: GuideArticleLayoutProps) {
   return (
     <article className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <JsonLd data={faqPageSchema(guide.faqs)} />
+      <JsonLd data={guidePageJsonLd(guide)} />
       <div className="mx-auto max-w-6xl lg:grid lg:grid-cols-[220px_1fr] lg:gap-10">
         <aside className="hidden lg:block">
           <div className="sticky top-24">

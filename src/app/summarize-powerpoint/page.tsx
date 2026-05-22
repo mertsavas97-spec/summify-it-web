@@ -1,5 +1,5 @@
 import { pageSeo } from "@/lib/page-metadata";
-import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { faqPageSchema, productPageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
@@ -20,7 +20,12 @@ export default function SummarizePowerpointPage() {
     <>
       <JsonLd
         data={[
-          formatPageBreadcrumbSchema("PowerPoint Summarizer", "/summarize-powerpoint"),
+          ...productPageJsonLd({
+            path: "/summarize-powerpoint",
+            pageTitle: "PowerPoint Summarizer",
+            description:
+              "Upload PPTX decks for slide narrative, themes, executive insights, and Learn cards.",
+          }),
           faqPageSchema(PPTX_FAQS),
         ]}
       />

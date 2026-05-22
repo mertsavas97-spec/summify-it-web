@@ -7,7 +7,7 @@ import { SiteShell } from "@/components/layout/SiteShell";
 import { JsonLd } from "@/components/seo/JsonLd";
 
 import { siteConfig } from "@/lib/site";
-import { organizationSchema } from "@/lib/schema";
+import { globalLayoutJsonLd } from "@/lib/schema";
 
 import {
   buildOpenGraph,
@@ -94,7 +94,7 @@ export default function RootLayout({
           strategy="afterInteractive"
         />
 
-        <JsonLd data={organizationSchema()} />
+        <JsonLd data={globalLayoutJsonLd()} />
 
         <SiteShell>{children}</SiteShell>
       </body>

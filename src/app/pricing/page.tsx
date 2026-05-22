@@ -7,7 +7,7 @@ import { isEduEmail } from "@/lib/auth/edu-email";
 import { getBillingStatusCopy } from "@/lib/billing/provider";
 import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
-import { productPricingSchema } from "@/lib/schema";
+import { pricingPageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata = pageSeo.pricing;
@@ -23,7 +23,7 @@ export default async function PricingPage() {
   return (
     <>
       <PricingPageTracker />
-      <JsonLd data={productPricingSchema()} />
+      <JsonLd data={pricingPageJsonLd()} />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <SectionHeading
         eyebrow="Pricing"

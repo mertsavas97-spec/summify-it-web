@@ -3,7 +3,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { ComparisonTable } from "@/components/seo/content/ComparisonTable";
 import { CtaStrip } from "@/components/seo/content/CtaStrip";
 import { FAQSection } from "@/components/public/FAQSection";
-import { faqPageSchema } from "@/lib/schema";
+import { comparisonPageJsonLd } from "@/lib/schema";
 import { buildPageMetadata } from "@/lib/seo";
 import type { ComparisonPageConfig } from "@/data/comparisons/types";
 
@@ -25,7 +25,7 @@ export function buildComparisonMetadata(config: ComparisonPageConfig) {
 export function ComparisonPageLayout({ config, children }: ComparisonPageLayoutProps) {
   return (
     <article className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <JsonLd data={faqPageSchema(config.faqs)} />
+      <JsonLd data={comparisonPageJsonLd(config)} />
       <div className="mx-auto max-w-3xl">
         <nav className="text-xs text-zinc-500" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-violet-300">

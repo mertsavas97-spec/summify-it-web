@@ -12,7 +12,7 @@ import { BLOG_CATEGORIES } from "@/data/blog-categories";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { PublicHero } from "@/components/public/PublicHero";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { organizationSchema, webPageSchema } from "@/lib/schema";
+import { webPageSchema } from "@/lib/schema";
 
 export const metadata = pageSeo.blog;
 
@@ -28,7 +28,6 @@ export default function BlogIndexPage() {
     <>
       <JsonLd
         data={[
-          organizationSchema(),
           webPageSchema({
             name: "Summify Blog — AI PDF, YouTube, Learn & Quiz Guides",
             description:

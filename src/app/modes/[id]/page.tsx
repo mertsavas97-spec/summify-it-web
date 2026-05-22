@@ -4,7 +4,7 @@ import {
   getIntelligenceModeById,
 } from "@/config/modes";
 import { buildPageMetadata } from "@/lib/seo";
-import { modeDetailBreadcrumbSchema } from "@/lib/schema";
+import { modePageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ModeDetailSections } from "@/components/public/ModeDetailSections";
 import type { IntelligenceModeId } from "@/types/modes";
@@ -46,7 +46,13 @@ export default async function ModeDetailPage({ params }: PageProps) {
 
   return (
     <>
-      <JsonLd data={modeDetailBreadcrumbSchema(mode.label, mode.id)} />
+      <JsonLd
+        data={modePageJsonLd(
+          mode.label,
+          mode.id,
+          `${mode.shortDescription} ${mode.intelligenceLens}`,
+        )}
+      />
       <ModeDetailSections modeId={mode.id} />
     </>
   );

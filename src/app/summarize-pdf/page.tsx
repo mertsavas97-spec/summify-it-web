@@ -1,5 +1,5 @@
 import { pageSeo } from "@/lib/page-metadata";
-import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { faqPageSchema, productPageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
@@ -20,7 +20,12 @@ export default function SummarizePdfPage() {
     <>
       <JsonLd
         data={[
-          formatPageBreadcrumbSchema("AI PDF Summarizer", "/summarize-pdf"),
+          ...productPageJsonLd({
+            path: "/summarize-pdf",
+            pageTitle: "AI PDF Summarizer",
+            description:
+              "Upload research papers, reports, and ebooks for structured AI PDF summaries, Learn cards, and quizzes.",
+          }),
           faqPageSchema(PDF_FAQS),
         ]}
       />

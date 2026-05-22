@@ -10,11 +10,7 @@ import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogBreadcrumbs } from "@/components/blog/BlogBreadcrumbs";
 import { BlogEndCta } from "@/components/blog/cta/BlogEndCta";
 import { JsonLd } from "@/components/seo/JsonLd";
-import {
-  breadcrumbSchema,
-  organizationSchema,
-  webPageSchema,
-} from "@/lib/schema";
+import { blogCategoryPageJsonLd } from "@/lib/schema";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -46,17 +42,7 @@ export default async function BlogCategoryPage({ params }: PageProps) {
 
   return (
     <div className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <JsonLd
-        data={[
-          organizationSchema(),
-          webPageSchema({
-            name: category.seoTitle,
-            description: category.seoDescription,
-            path: `/blog/category/${category.slug}`,
-          }),
-          breadcrumbSchema(breadcrumbs),
-        ]}
-      />
+      <JsonLd data={blogCategoryPageJsonLd(category)} />
       <div className="mx-auto max-w-5xl">
         <BlogBreadcrumbs items={breadcrumbs} />
         <header className="mt-6 border-b border-white/[0.06] pb-8">

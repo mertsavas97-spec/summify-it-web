@@ -1,6 +1,6 @@
 import { pageSeo } from "@/lib/page-metadata";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { webPageSchema } from "@/lib/schema";
+import { breadcrumbSchema, softwareApplicationSchema, webPageSchema } from "@/lib/schema";
 import { INTELLIGENCE_MODES } from "@/config/modes";
 import { MODE_CATEGORY_META, getModesByCategory, countModesByAvailability } from "@/lib/mode-groups";
 import { ModePreviewCard } from "@/components/public/ModePreviewCard";
@@ -17,12 +17,23 @@ export default function ModesHubPage() {
   return (
     <>
       <JsonLd
-        data={webPageSchema({
-          name: "Intelligence modes",
-          description:
-            "Browse executive, study, creator, document, and technical intelligence lenses for documents, video, and articles.",
-          path: "/modes",
-        })}
+        data={[
+          softwareApplicationSchema({
+            path: "/modes",
+            description:
+              "Browse intelligence modes for PDF, YouTube, PPTX, and article summarization with Learn cards and quizzes.",
+          }),
+          webPageSchema({
+            name: "Intelligence modes",
+            description:
+              "Browse executive, study, creator, document, and technical intelligence lenses for documents, video, and articles.",
+            path: "/modes",
+          }),
+          breadcrumbSchema([
+            { name: "Home", path: "/" },
+            { name: "Intelligence modes", path: "/modes" },
+          ]),
+        ]}
       />
       <PublicHero
         badge="Intelligence modes"

@@ -1,5 +1,5 @@
 import { pageSeo } from "@/lib/page-metadata";
-import { howToSummifySchema, summarifySoftwareApplicationSchema, websiteSchema } from "@/lib/schema";
+import { howToSummifySchema, softwareApplicationSchema } from "@/lib/schema";
 import { SUMMIFY_HOW_TO_STEPS } from "@/data/seo-howto";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { PublicHero } from "@/components/public/PublicHero";
@@ -28,8 +28,7 @@ export default function HomePage() {
     <>
       <JsonLd
         data={[
-          websiteSchema(),
-          summarifySoftwareApplicationSchema(),
+          softwareApplicationSchema({ path: "/" }),
           howToSummifySchema(SUMMIFY_HOW_TO_STEPS),
         ]}
       />

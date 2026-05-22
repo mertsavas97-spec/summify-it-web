@@ -8,7 +8,7 @@ import { FAQSection } from "@/components/public/FAQSection";
 import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { CTASection } from "@/components/public/CTASection";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
-import { faqPageSchema, formatPageBreadcrumbSchema } from "@/lib/schema";
+import { faqPageSchema, productPageJsonLd } from "@/lib/schema";
 import type { FormatLandingConfig } from "@/data/format-landings/types";
 
 type FormatLandingTemplateProps = {
@@ -22,7 +22,11 @@ export function FormatLandingTemplate({ config }: FormatLandingTemplateProps) {
     <>
       <JsonLd
         data={[
-          formatPageBreadcrumbSchema(config.breadcrumbLabel, config.path),
+          ...productPageJsonLd({
+            path: config.path,
+            pageTitle: config.breadcrumbLabel,
+            description: config.hero.description,
+          }),
           faqPageSchema(config.faqs),
         ]}
       />
