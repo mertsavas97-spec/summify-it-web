@@ -1,6 +1,8 @@
 import type { PersonaAdaptivePlan } from "@/types/adaptive-analysis";
 import type { AdaptiveLearnProfile } from "@/types/adaptive-learn";
 
+import { normalizeLearningLanguage } from "@/lib/learning/normalizeLearningLanguage";
+
 /**
  * Phase 11D — provider learnCards guidance from adaptive learn profile + plan.
  */
@@ -14,6 +16,8 @@ export function buildAdaptiveLearnPromptBlock(
   );
 
   return [
+    normalizeLearningLanguage(),
+    "",
     "ADAPTIVE LEARN INTELLIGENCE (Phase 11D — DOMINANT over generic flashcard habits):",
     `Profile: ${profile.profileId} | Goal: ${profile.learningGoal}`,
     `Cognitive style: ${profile.cognitiveStyle} | Memory: ${profile.memoryStrategy} | Sequencing: ${profile.sequencingStrategy}`,

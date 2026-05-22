@@ -7,7 +7,7 @@ export const pageSeo = {
   home: buildPageMetadata({
     title: "AI PDF & Document Summarizer with Study Notes",
     description:
-      "Summify is an AI document intelligence workspace: summarize PDFs, YouTube videos, and PowerPoint decks with 29 intelligence modes, Learn cards, and mind maps. Free during public beta.",
+      "Summify is an AI study companion: summarize PDFs, YouTube, and decks, then Learn, quiz, and listen with teacher-style audio lessons. 29 intelligence modes. Free during public beta.",
     path: "/",
     keywords: [
       "AI PDF summarizer",
@@ -20,7 +20,7 @@ export const pageSeo = {
   upload: buildPageMetadata({
     title: "AI Document Summarizer Workspace",
     description:
-      "Upload PDFs, decks, videos, web articles, DOCX, or TXT. Choose an intelligence mode and start summarizing instantly. Free during public beta.",
+      "Upload PDFs, decks, videos, web articles, DOCX, or TXT. Summarize, generate Learn cards, quiz, and audio study lessons in one workspace. Free during public beta.",
     path: "/upload",
   }),
 

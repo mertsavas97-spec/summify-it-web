@@ -11,6 +11,7 @@ import { FAQSection } from "@/components/public/FAQSection";
 import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { InternalTextLink } from "@/components/public/InternalTextLink";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
+import { VoiceStudyPromo } from "@/components/marketing/VoiceStudyPromo";
 import { HOME_FAQS, RELATED_LINKS } from "@/data/landing-seo";
 import Link from "next/link";
 
@@ -33,25 +34,26 @@ export default function HomePage() {
         ]}
       />
       <PublicHero
-        badge="Public beta · AI document intelligence"
-        title="AI document summarizer for PDFs, YouTube, and study workflows"
+        badge="Public beta · AI study companion"
+        title="Summaries, quizzes, and audio study lessons in one workspace"
         description={
           <>
             <span className="block font-medium text-zinc-300">
-              Turn PDFs, videos, and articles into structured intelligence — summaries, Learn
-              cards, and mind maps in one premium workspace.
+              Turn PDFs, videos, and articles into structured intelligence — then Learn, practice,
+              and listen with teacher-style voice lessons.
             </span>
             <span className="mt-3 block">
-              Use Summify as your{" "}
+              Still your{" "}
               <InternalTextLink href="/summarize-pdf">AI PDF summarizer</InternalTextLink>,{" "}
               <InternalTextLink href="/summarize-youtube-video">YouTube summarizer</InternalTextLink>
               , and{" "}
               <InternalTextLink href="/summarize-powerpoint">
                 PowerPoint summarizer
               </InternalTextLink>{" "}
-              with{" "}
-              <InternalTextLink href="/modes">29 intelligence modes</InternalTextLink> built for
-              study notes, executive briefs, and creator workflows.
+              — now with{" "}
+              <InternalTextLink href="/audio-study">voice study</InternalTextLink>,{" "}
+              <InternalTextLink href="/modes">29 intelligence modes</InternalTextLink>, and a full
+              Summary → Learn → Quiz → listen workflow.
             </span>
           </>
         }
@@ -84,7 +86,12 @@ export default function HomePage() {
           {
             title: "AI study notes & Learn cards",
             description:
-              "Generate concept, quiz, hook, and connection cards — ideal for exam prep and content repurposing without a second tool.",
+              "Generate concept, quiz, hook, and connection cards — ideal for exam prep. Educational outputs stay in fluent English from any source language.",
+          },
+          {
+            title: "Audio Study & voice lessons",
+            description:
+              "Teacher-style spoken lessons from your analysis — learn by listening on Pro with natural voice audio and playback controls.",
           },
           {
             title: "YouTube transcript summarizer",
@@ -152,8 +159,8 @@ export default function HomePage() {
             description: "Adaptive compaction and structured outputs from your source.",
           },
           {
-            title: "Learn & act",
-            description: "Review analysis and Learn cards in the workspace.",
+            title: "Learn, quiz & listen",
+            description: "Review analysis, drill Learn cards, take the quiz, then generate audio study.",
           },
         ]}
       />
@@ -164,11 +171,17 @@ export default function HomePage() {
         items={HOME_FAQS}
       />
 
+      <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <VoiceStudyPromo />
+        </div>
+      </section>
+
       <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
 
       <CTASection
         title="Start summarizing in the workspace"
-        description="Executive Brief, The Student, The Creator, and Contract Summary are live today. Try free during public beta."
+        description="Summarize, learn, quiz, and listen — Executive Brief, The Student, The Creator, and Contract Summary are live today. Try free during public beta."
         primaryLabel="Try Summify free"
         secondaryHref="/faq"
         secondaryLabel="Read the FAQ"

@@ -4,6 +4,7 @@
 
 import Groq from "groq-sdk";
 import { GoogleGenAI } from "@google/genai";
+import { getLearningOutputLanguageLabel } from "@/lib/learning/normalizeLearningLanguage";
 import { CHUNKED_ANALYSIS_SEGMENT_CHARS } from "@/lib/plans/planLimits";
 import { AI_CONFIG } from "./config";
 import {
@@ -197,7 +198,7 @@ export async function generateLearnCardsFromContent(
 ): Promise<LearnCardOutput[]> {
   const cardCount = Math.max(4, Math.min(20, Math.round(input.cardCount)));
   const content = input.content.slice(0, CHUNKED_ANALYSIS_SEGMENT_CHARS);
-  const language = input.language ?? "English";
+  const language = input.language ?? getLearningOutputLanguageLabel();
 
   const inventory = await extractFactInventory(input.provider, content);
   logPhase1Inventory(input.provider, inventory);

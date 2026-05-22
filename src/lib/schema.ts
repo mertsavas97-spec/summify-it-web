@@ -34,11 +34,14 @@ export const SUMMIFY_SOFTWARE_FEATURE_LIST = [
   "Learn cards",
   "Practice sessions",
   "Quiz workflows",
+  "Audio Study Mode",
+  "Voice study lessons",
+  "Teacher-style audio learning",
   "Source-first learning intelligence",
 ] as const;
 
 const DEFAULT_SOFTWARE_DESCRIPTION =
-  "AI document intelligence workspace and summarizer for PDFs, YouTube videos, PowerPoint decks, web articles, DOCX, and TXT — with study notes, Learn cards, and quizzes.";
+  "AI document intelligence workspace and study companion for PDFs, YouTube, PowerPoint, web articles, DOCX, and TXT — with Learn cards, quizzes, and teacher-style audio study lessons.";
 
 export type HowToStepInput = {
   name: string;

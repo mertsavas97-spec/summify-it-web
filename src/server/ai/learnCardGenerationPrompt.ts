@@ -2,10 +2,19 @@
  * Phase 2 — flashcards from fact inventory only (no source text).
  */
 
+import {
+  getLearningOutputLanguageLabel,
+  normalizeLearningLanguage,
+  sourceLanguageGroundingNote,
+} from "@/lib/learning/normalizeLearningLanguage";
 import type { FactInventory } from "./factInventory";
 
 export const PHASE2_FLASHCARD_SYSTEM = `You are a flashcard writer. Your only input is a fact inventory JSON.
 Your only output is a flashcard JSON object.
+
+${normalizeLearningLanguage()}
+
+${sourceLanguageGroundingNote()}
 
 RULES — all mandatory:
 
@@ -55,8 +64,9 @@ export type Phase2FlashcardUserInput = {
 };
 
 export function buildPhase2FlashcardUserPrompt(input: Phase2FlashcardUserInput): string {
+  const language = input.language || getLearningOutputLanguageLabel();
   return `Generate ${input.cardCount} flashcards.
-Language: ${input.language}
+Language: ${language} (required — all question and answer text)
 
 Use ONLY facts from this inventory — do not invent or infer:
 

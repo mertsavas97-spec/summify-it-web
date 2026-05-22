@@ -1,4 +1,9 @@
 import Groq from "groq-sdk";
+import {
+  LEARNING_OUTPUT_LANGUAGE,
+  normalizeLearningLanguage,
+  sourceLanguageGroundingNote,
+} from "@/lib/learning/normalizeLearningLanguage";
 import { AI_CONFIG } from "@/server/ai/config";
 import type { AudioStudyAnalysisInput, AudioStudyScript } from "@/types/audio-study";
 import type { AudioStudyScriptLimits } from "@/lib/audio-study/access";
@@ -22,6 +27,12 @@ function formatLearnCards(input: AudioStudyAnalysisInput): string {
 
 function buildPrompt(input: AudioStudyAnalysisInput, limits: AudioStudyScriptLimits): string {
   return `You are writing a spoken lesson script for Summify Audio Study Mode.
+
+${normalizeLearningLanguage()}
+
+${sourceLanguageGroundingNote()}
+
+- The full script and every section must be spoken ${LEARNING_OUTPUT_LANGUAGE} for the listener (natural teacher voice).
 
 STYLE:
 - Clear teacher voice: simple, structured, explanatory, concise
@@ -106,8 +117,7 @@ export async function generateAudioStudyScript(
       messages: [
         {
           role: "system",
-          content:
-            "You produce teacher-style audio lesson scripts as strict JSON. Never fabricate facts beyond the provided analysis.",
+          content: `You produce teacher-style audio lesson scripts as strict JSON. Never fabricate facts beyond the provided analysis. ${normalizeLearningLanguage()}`,
         },
         { role: "user", content: buildPrompt(input, limits) },
       ],

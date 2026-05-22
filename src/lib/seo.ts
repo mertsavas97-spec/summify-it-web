@@ -10,7 +10,7 @@ export const TWITTER_SITE = "@summifyapp";
 export const TWITTER_CREATOR = "@summifyapp";
 
 export const SEO_DEFAULT_POSITIONING =
-  "AI document intelligence for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT.";
+  "AI document intelligence and study companion for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT — learn, practice, and listen.";
 
 /** Open Graph / Twitter card image dimensions (public/og-default.png). */
 export const OG_IMAGE_WIDTH = 1200;

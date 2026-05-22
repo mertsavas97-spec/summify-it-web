@@ -8,7 +8,7 @@ export const siteConfig = {
   name: "Summify",
   tagline: "Turn complex sources into structured intelligence.",
   description:
-    "AI document intelligence for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT. Upload sources and get structured analysis with Learn cards.",
+    "AI document intelligence and study companion for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT — summaries, Learn cards, quizzes, and voice study lessons.",
   url: getAppOrigin(),
   ogImage: "/og-default.png",
 } as const;

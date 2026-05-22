@@ -15,6 +15,10 @@ export const HOME_FAQS: FaqItem[] = [
     a: "Yes. Modes like The Student emphasize concepts, quizzes, and recall-friendly Learn cards from PDFs, lectures, and videos.",
   },
   {
+    q: "Can I listen to my analysis as an audio lesson?",
+    a: "Pro plans include Audio Study Mode — teacher-style spoken lessons generated from your analysis, with natural voice audio and full playback controls.",
+  },
+  {
     q: "Is Summify free during public beta?",
     a: "Yes. The full workspace is free during public beta. Checkout and paid tiers are not enabled yet.",
   },
@@ -468,6 +472,16 @@ export const RELATED_LINKS = {
       href: "/modes",
       label: "Intelligence modes",
       description: "Browse all 29 lenses.",
+    },
+    {
+      href: "/audio-study",
+      label: "Audio Study Mode",
+      description: "Teacher-style voice lessons from analyses.",
+    },
+    {
+      href: "/learn-by-listening",
+      label: "Learn by listening",
+      description: "Passive study workflows with AI audio.",
     },
   ] satisfies RelatedLinkItem[],
 };

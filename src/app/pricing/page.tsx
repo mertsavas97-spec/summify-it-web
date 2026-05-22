@@ -9,6 +9,7 @@ import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
 import { pricingPageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { VoiceStudyPromo } from "@/components/marketing/VoiceStudyPromo";
 
 export const metadata = pageSeo.pricing;
 
@@ -39,6 +40,14 @@ export default async function PricingPage() {
       </p>
 
       <PricingSection billing={billing} scholarCheckoutEligible={scholarCheckoutEligible} />
+
+      <div className="mx-auto mt-10 max-w-3xl">
+        <VoiceStudyPromo />
+        <p className="mt-2 text-center text-[11px] text-zinc-600">
+          Audio Study Mode on Pro, Scholar, and Team — teacher-style lessons with natural voice audio.
+        </p>
+      </div>
+
       <ProductDisclaimer className="mx-auto mt-8 max-w-3xl text-center" />
 
       <div className="mt-12 grid gap-3 sm:grid-cols-3">

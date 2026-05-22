@@ -5,6 +5,7 @@ import { getAllBlogCategorySlugs } from "@/data/blog-categories";
 import { COMPARISON_SLUGS } from "@/data/comparisons/registry";
 import { FORMAT_LANDINGS } from "@/data/format-landings";
 import { GUIDE_SLUGS } from "@/data/guides/registry";
+import { AUDIO_STUDY_PATHS } from "@/data/audio-study-landings";
 import { USE_CASE_SLUGS } from "@/data/use-cases/registry";
 import { absoluteUrl } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
@@ -76,6 +77,7 @@ function collectStaticAndConfigPaths(): string[] {
   return [
     ...CORE_STATIC_PATHS,
     ...FORMAT_PATHS,
+    ...AUDIO_STUDY_PATHS,
     ...SEGMENT_PATHS,
     ...modePaths,
     ...blogCategoryPaths,

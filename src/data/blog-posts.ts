@@ -1,59 +1,20 @@
-import type { ComponentType } from "react";
 import type { BlogCategoryId } from "@/data/blog-categories";
 import { getBlogCategory } from "@/data/blog-categories";
-import type { BlogContentCluster } from "@/data/blog-clusters";
+import type { BlogAuthorInfo, BlogPost } from "@/data/blog-post-types";
+
+export type {
+  BlogAuthorInfo,
+  BlogFaqItem,
+  BlogPost,
+  BlogRelatedLink,
+  BlogTocItem,
+} from "@/data/blog-post-types";
 import { BestAiPdfSummarizersBody } from "@/components/blog/posts/best-ai-pdf-summarizers-2026";
 import { YoutubeStudyNotesBody } from "@/components/blog/posts/youtube-videos-study-notes";
 import { StudentsExamPrepBody } from "@/components/blog/posts/students-exam-prep-ai";
 import { AiStudyNotesBlogBody } from "@/components/blog/posts/ai-study-notes-guide";
 import { PdfToFlashcardsBlogBody } from "@/components/blog/posts/pdf-to-flashcards-workflow";
-
-export type BlogTocItem = {
-  id: string;
-  label: string;
-};
-
-export type BlogFaqItem = {
-  q: string;
-  a: string;
-};
-
-export type BlogRelatedLink = {
-  href: string;
-  label: string;
-  description?: string;
-};
-
-export type BlogAuthorInfo = {
-  name: string;
-  role: string;
-  bio: string;
-  href?: string;
-};
-
-export type BlogPost = {
-  slug: string;
-  title: string;
-  description: string;
-  date: string;
-  updatedAt: string;
-  categoryId: BlogCategoryId;
-  /** @deprecated Display name — derived from categoryId via getBlogCategory().name */
-  category: string;
-  tags: string[];
-  keywords: string[];
-  clusters: BlogContentCluster[];
-  readingTime: string;
-  featured?: boolean;
-  trending?: boolean;
-  author: BlogAuthorInfo;
-  faqs: BlogFaqItem[];
-  relatedLinks: BlogRelatedLink[];
-  keyTakeaways?: string[];
-  toc: BlogTocItem[];
-  workflowCluster?: BlogContentCluster;
-  Content: ComponentType;
-};
+import { AUDIO_STUDY_BLOG_POSTS } from "@/data/audio-study-blog-registry";
 
 const DEFAULT_AUTHOR: BlogAuthorInfo = {
   name: "Summify Editorial",
@@ -310,4 +271,5 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     Content: PdfToFlashcardsBlogBody,
   },
+  ...AUDIO_STUDY_BLOG_POSTS,
 ];
