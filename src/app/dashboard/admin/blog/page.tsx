@@ -16,7 +16,7 @@ export const metadata = createPageMetadata({
 export default async function AdminBlogListPage() {
   await requireAdminPage();
 
-  const { posts, error, usingStaticFallback } = await adminListBlogPosts({ sort: "updated_desc" });
+  const { posts, error } = await adminListBlogPosts({ sort: "updated_desc" });
   const cmsConfigured = isCmsBlogConfigured();
 
   const listPosts = posts.map((p) => ({
@@ -50,11 +50,7 @@ export default async function AdminBlogListPage() {
           <code className="text-amber-100">docs/SUPABASE_MIGRATION_CMS_BLOG_POSTS.sql</code>.
         </p>
       ) : null}
-      <BlogAdminList
-        initialPosts={listPosts}
-        initialError={error}
-        initialUsingStaticFallback={usingStaticFallback}
-      />
+      <BlogAdminList initialPosts={listPosts} initialError={error} />
     </AdminShell>
   );
 }

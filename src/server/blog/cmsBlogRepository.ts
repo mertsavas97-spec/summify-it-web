@@ -1,6 +1,11 @@
 import "server-only";
 
-import { getSupabaseAdmin, isServiceRoleConfigured } from "@/lib/supabase/admin";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import {
+  getServerSupabaseAdmin,
+  isServerSupabaseAdminConfigured,
+} from "@/server/supabase/admin";
 import type { BlogCategoryId } from "@/data/blog-categories";
 import type {
   CmsBlogListFilters,
@@ -29,6 +34,8 @@ type DbRow = {
   created_at: string;
   updated_at: string;
 };
+
+let publicCmsClient: SupabaseClient | null = null;
 
 function mapRow(row: DbRow): CmsBlogPostRecord {
   return {
@@ -87,7 +94,7 @@ function toDbPayload(input: CmsBlogPostInput, now: string) {
 }
 
 export function isCmsBlogConfigured(): boolean {
-  return isServiceRoleConfigured();
+  return isServerSupabaseAdminConfigured();
 }
 
 function isMissingCmsBlogTableError(error: { code?: string | null; message?: string | null }): boolean {
@@ -99,6 +106,29 @@ function isMissingCmsBlogTableError(error: { code?: string | null; message?: str
   );
 }
 
+function isCmsBlogPermissionError(error: { message?: string | null }): boolean {
+  const message = error.message?.toLowerCase() ?? "";
+  return message.includes("permission denied") && message.includes("cms_blog_posts");
+}
+
+async function getPublicCmsClient() {
+  if (!isSupabaseConfigured()) return null;
+
+  publicCmsClient ??= createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    },
+  );
+
+  return publicCmsClient;
+}
+
 export async function listCmsBlogPosts(
   filters: CmsBlogListFilters = {},
 ): Promise<{ posts: CmsBlogPostRecord[]; error?: string; tableMissing?: boolean }> {
@@ -107,7 +137,7 @@ export async function listCmsBlogPosts(
   }
 
   try {
-    const admin = getSupabaseAdmin();
+    const admin = getServerSupabaseAdmin();
     let query = admin.from("cms_blog_posts").select("*");
 
     if (filters.status && filters.status !== "all") {
@@ -129,7 +159,9 @@ export async function listCmsBlogPosts(
 
     const { data, error } = await query;
     if (error) {
-      if (isMissingCmsBlogTableError(error)) return { posts: [], tableMissing: true };
+      if (isMissingCmsBlogTableError(error) || isCmsBlogPermissionError(error)) {
+        return { posts: [], tableMissing: true };
+      }
       return { posts: [], error: error.message };
     }
 
@@ -149,14 +181,16 @@ export async function getCmsBlogPostById(
     return { post: null, error: "Supabase service role is not configured." };
   }
 
-  const { data, error } = await getSupabaseAdmin()
+  const { data, error } = await getServerSupabaseAdmin()
     .from("cms_blog_posts")
     .select("*")
     .eq("id", id)
     .maybeSingle();
 
   if (error) {
-    if (isMissingCmsBlogTableError(error)) return { post: null };
+    if (isMissingCmsBlogTableError(error) || isCmsBlogPermissionError(error)) {
+      return { post: null };
+    }
     return { post: null, error: error.message };
   }
   if (!data) return { post: null };
@@ -167,32 +201,42 @@ export async function getCmsBlogPostBySlug(
   slug: string,
   options?: { publishedOnly?: boolean },
 ): Promise<{ post: CmsBlogPostRecord | null; error?: string }> {
-  if (!isCmsBlogConfigured()) {
+  const publicClient = await getPublicCmsClient();
+  if (!publicClient) {
     return { post: null };
   }
 
-  let query = getSupabaseAdmin().from("cms_blog_posts").select("*").eq("slug", slug);
-  if (options?.publishedOnly) {
-    query = query.eq("status", "published");
-  }
+  let query = publicClient.from("cms_blog_posts").select("*").eq("slug", slug);
+  query = query.eq("status", "published");
+  if (!options?.publishedOnly) query = query.limit(1);
 
   const { data, error } = await query.maybeSingle();
   if (error) {
-    if (isMissingCmsBlogTableError(error)) return { post: null };
-    return { post: null, error: error.message };
+    if (isMissingCmsBlogTableError(error) || isCmsBlogPermissionError(error)) {
+      return { post: null };
+    }
+    return { post: null };
   }
   if (!data) return { post: null };
   return { post: mapRow(data as DbRow) };
 }
 
 export async function listPublishedCmsBlogPosts(): Promise<CmsBlogPostRecord[]> {
-  const { posts } = await listCmsBlogPosts({ status: "published", sort: "updated_desc" });
-  return posts;
+  const publicClient = await getPublicCmsClient();
+  if (!publicClient) return [];
+
+  const { data, error } = await publicClient
+    .from("cms_blog_posts")
+    .select("*")
+    .eq("status", "published")
+    .order("updated_at", { ascending: false });
+
+  if (error) return [];
+  return (data as DbRow[]).map(mapRow);
 }
 
 export async function listAllCmsSlugs(): Promise<string[]> {
-  const { posts } = await listCmsBlogPosts();
-  return posts.map((p) => p.slug);
+  return (await listPublishedCmsBlogPosts()).map((post) => post.slug);
 }
 
 export async function createCmsBlogPost(
@@ -203,7 +247,7 @@ export async function createCmsBlogPost(
   }
 
   const now = new Date().toISOString();
-  const { data, error } = await getSupabaseAdmin()
+  const { data, error } = await getServerSupabaseAdmin()
     .from("cms_blog_posts")
     .insert({ ...toDbPayload(input, now), created_at: now })
     .select("*")
@@ -212,6 +256,9 @@ export async function createCmsBlogPost(
   if (error) {
     if (isMissingCmsBlogTableError(error)) {
       return { post: null, error: "Create the CMS blog table before saving dashboard posts." };
+    }
+    if (isCmsBlogPermissionError(error)) {
+      return { post: null, error: "Run the CMS RLS migration to allow admin blog saves." };
     }
     return { post: null, error: error.message };
   }
@@ -227,7 +274,7 @@ export async function updateCmsBlogPost(
   }
 
   const now = new Date().toISOString();
-  const { data, error } = await getSupabaseAdmin()
+  const { data, error } = await getServerSupabaseAdmin()
     .from("cms_blog_posts")
     .update(toDbPayload(input, now))
     .eq("id", id)
@@ -237,6 +284,9 @@ export async function updateCmsBlogPost(
   if (error) {
     if (isMissingCmsBlogTableError(error)) {
       return { post: null, error: "Create the CMS blog table before saving dashboard posts." };
+    }
+    if (isCmsBlogPermissionError(error)) {
+      return { post: null, error: "Run the CMS RLS migration to allow admin blog saves." };
     }
     return { post: null, error: error.message };
   }
@@ -248,13 +298,16 @@ export async function archiveCmsBlogPost(id: string): Promise<{ error?: string }
     return { error: "Supabase service role is not configured." };
   }
 
-  const { error } = await getSupabaseAdmin()
+  const { error } = await getServerSupabaseAdmin()
     .from("cms_blog_posts")
     .update({ status: "archived", updated_at: new Date().toISOString() })
     .eq("id", id);
 
   if (error && isMissingCmsBlogTableError(error)) {
     return { error: "Create the CMS blog table before archiving dashboard posts." };
+  }
+  if (error && isCmsBlogPermissionError(error)) {
+    return { error: "Run the CMS RLS migration to allow admin blog archiving." };
   }
   return error ? { error: error.message } : {};
 }
@@ -264,9 +317,12 @@ export async function deleteCmsBlogPost(id: string): Promise<{ error?: string }>
     return { error: "Supabase service role is not configured." };
   }
 
-  const { error } = await getSupabaseAdmin().from("cms_blog_posts").delete().eq("id", id);
+  const { error } = await getServerSupabaseAdmin().from("cms_blog_posts").delete().eq("id", id);
   if (error && isMissingCmsBlogTableError(error)) {
     return { error: "Create the CMS blog table before deleting dashboard posts." };
+  }
+  if (error && isCmsBlogPermissionError(error)) {
+    return { error: "Run the CMS RLS migration to allow admin blog deletes." };
   }
   return error ? { error: error.message } : {};
 }

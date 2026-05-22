@@ -122,7 +122,7 @@ function sortAdminPosts(posts: AdminBlogPostRecord[], sort: CmsBlogListFilters["
 
 export async function adminListBlogPosts(filters: CmsBlogListFilters) {
   await requireAdminSession();
-  const { posts, error, tableMissing } = await listCmsBlogPosts(filters);
+  const { posts, error } = await listCmsBlogPosts(filters);
   const slugs = await allSlugsExcept();
   const merged = new Map<string, AdminBlogPostRecord>();
   for (const post of filterStaticPosts(filters)) merged.set(post.slug, post);
@@ -155,7 +155,6 @@ export async function adminListBlogPosts(filters: CmsBlogListFilters) {
   return {
     posts: enriched,
     error,
-    usingStaticFallback: Boolean(tableMissing && BLOG_POSTS.length > 0),
   };
 }
 

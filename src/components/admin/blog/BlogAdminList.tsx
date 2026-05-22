@@ -22,18 +22,15 @@ type ListPost = {
 type BlogAdminListProps = {
   initialPosts: ListPost[];
   initialError?: string;
-  initialUsingStaticFallback?: boolean;
 };
 
 export function BlogAdminList({
   initialPosts,
   initialError,
-  initialUsingStaticFallback,
 }: BlogAdminListProps) {
   const router = useRouter();
   const [posts, setPosts] = useState(initialPosts);
   const [error, setError] = useState(initialError);
-  const [usingStaticFallback, setUsingStaticFallback] = useState(initialUsingStaticFallback);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<BlogCategoryId | "all">("all");
   const [status, setStatus] = useState<CmsBlogStatus | "all">("all");
@@ -50,7 +47,6 @@ export function BlogAdminList({
       const result = await adminListBlogPosts(filters);
       setPosts(result.posts);
       setError(result.error);
-      setUsingStaticFallback(result.usingStaticFallback);
       router.refresh();
     });
   };
@@ -64,9 +60,9 @@ export function BlogAdminList({
           {error}
         </p>
       ) : null}
-      {!error && usingStaticFallback ? (
+      {!error && posts.some((post) => post.source === "static") ? (
         <p className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
-          Showing existing code-based posts. Create the CMS table to enable database editing.
+          Showing static posts + CMS posts.
         </p>
       ) : null}
 
