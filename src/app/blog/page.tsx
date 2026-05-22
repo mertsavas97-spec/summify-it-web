@@ -1,13 +1,8 @@
 import Link from "next/link";
 import { pageSeo } from "@/lib/page-metadata";
 import {
-  getAllBlogPosts,
-  getComparisonBlogPosts,
-  getFeaturedBlogPost,
-  getLatestBlogPosts,
-  getLearningWorkflowPosts,
-  getTrendingBlogPosts,
-} from "@/lib/blog";
+  getAllPublicBlogPosts,
+} from "@/lib/blog/resolvePost";
 import { BLOG_CATEGORIES } from "@/data/blog-categories";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { PublicHero } from "@/components/public/PublicHero";
@@ -16,13 +11,18 @@ import { webPageSchema } from "@/lib/schema";
 
 export const metadata = pageSeo.blog;
 
-export default function BlogIndexPage() {
-  const featured = getFeaturedBlogPost();
-  const trending = getTrendingBlogPosts(3).filter((p) => p.slug !== featured.slug);
-  const latest = getLatestBlogPosts(6).filter((p) => p.slug !== featured.slug);
-  const comparisons = getComparisonBlogPosts();
-  const learning = getLearningWorkflowPosts();
-  const all = getAllBlogPosts();
+export default async function BlogIndexPage() {
+  const all = await getAllPublicBlogPosts();
+  const featured = all.find((post) => post.featured) ?? all[0]!;
+  const trendingSource = all.filter((post) => post.trending);
+  const trending = (trendingSource.length > 0 ? trendingSource : all)
+    .slice(0, 3)
+    .filter((post) => post.slug !== featured.slug);
+  const latest = all.slice(0, 6).filter((post) => post.slug !== featured.slug);
+  const comparisons = all.filter((post) => post.categoryId === "comparisons");
+  const learning = all.filter((post) =>
+    ["study-learning", "pdf-workflows", "youtube-summaries"].includes(post.categoryId),
+  );
 
   return (
     <>

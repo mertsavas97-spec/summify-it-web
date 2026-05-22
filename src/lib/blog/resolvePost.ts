@@ -9,11 +9,11 @@ import {
 export async function getPublicBlogPostBySlug(
   slug: string,
 ): Promise<PublicBlogPost | undefined> {
-  const staticPost = BLOG_POSTS.find((p) => p.slug === slug);
-  if (staticPost) return staticToPublicPost(staticPost);
-
   const { post } = await getCmsBlogPostBySlug(slug, { publishedOnly: true });
   if (post) return cmsRecordToPublicPost(post);
+
+  const staticPost = BLOG_POSTS.find((p) => p.slug === slug);
+  if (staticPost) return staticToPublicPost(staticPost);
   return undefined;
 }
 
@@ -23,9 +23,7 @@ export async function getAllPublicBlogPosts(): Promise<PublicBlogPost[]> {
   const bySlug = new Map<string, PublicBlogPost>();
 
   for (const p of staticPosts) bySlug.set(p.slug, p);
-  for (const p of cmsPosts) {
-    if (!bySlug.has(p.slug)) bySlug.set(p.slug, p);
-  }
+  for (const p of cmsPosts) bySlug.set(p.slug, p);
 
   return [...bySlug.values()].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),

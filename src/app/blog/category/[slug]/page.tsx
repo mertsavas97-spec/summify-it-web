@@ -5,7 +5,8 @@ import {
   getAllBlogCategorySlugs,
   getBlogCategoryBySlug,
 } from "@/data/blog-categories";
-import { getPostsByCategory, buildBlogCategoryMetadata } from "@/lib/blog";
+import { buildBlogCategoryMetadata } from "@/lib/blog";
+import { getAllPublicBlogPosts } from "@/lib/blog/resolvePost";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogBreadcrumbs } from "@/components/blog/BlogBreadcrumbs";
 import { BlogEndCta } from "@/components/blog/cta/BlogEndCta";
@@ -32,7 +33,7 @@ export default async function BlogCategoryPage({ params }: PageProps) {
   const category = getBlogCategoryBySlug(slug);
   if (!category) notFound();
 
-  const posts = getPostsByCategory(category.id);
+  const posts = (await getAllPublicBlogPosts()).filter((post) => post.categoryId === category.id);
 
   const breadcrumbs = [
     { name: "Home", path: "/" },

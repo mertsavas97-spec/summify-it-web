@@ -16,17 +16,24 @@ type ListPost = {
   seoScore: number;
   updatedAt: string;
   publishedAt: string | null;
+  source: "cms" | "static";
 };
 
 type BlogAdminListProps = {
   initialPosts: ListPost[];
   initialError?: string;
+  initialUsingStaticFallback?: boolean;
 };
 
-export function BlogAdminList({ initialPosts, initialError }: BlogAdminListProps) {
+export function BlogAdminList({
+  initialPosts,
+  initialError,
+  initialUsingStaticFallback,
+}: BlogAdminListProps) {
   const router = useRouter();
   const [posts, setPosts] = useState(initialPosts);
   const [error, setError] = useState(initialError);
+  const [usingStaticFallback, setUsingStaticFallback] = useState(initialUsingStaticFallback);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<BlogCategoryId | "all">("all");
   const [status, setStatus] = useState<CmsBlogStatus | "all">("all");
@@ -43,6 +50,7 @@ export function BlogAdminList({ initialPosts, initialError }: BlogAdminListProps
       const result = await adminListBlogPosts(filters);
       setPosts(result.posts);
       setError(result.error);
+      setUsingStaticFallback(result.usingStaticFallback);
       router.refresh();
     });
   };
@@ -54,6 +62,11 @@ export function BlogAdminList({ initialPosts, initialError }: BlogAdminListProps
       {error ? (
         <p className="rounded-lg border border-amber-500/25 bg-amber-950/20 px-4 py-3 text-sm text-amber-200/90">
           {error}
+        </p>
+      ) : null}
+      {!error && usingStaticFallback ? (
+        <p className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
+          Showing existing code-based posts. Create the CMS table to enable database editing.
         </p>
       ) : null}
 
@@ -110,6 +123,7 @@ export function BlogAdminList({ initialPosts, initialError }: BlogAdminListProps
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Source</th>
               <th className="px-4 py-3">SEO</th>
               <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3">Actions</th>
@@ -118,7 +132,7 @@ export function BlogAdminList({ initialPosts, initialError }: BlogAdminListProps
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={7} className="px-4 py-8 text-center text-zinc-500">
                   No posts yet. Create your first CMS article.
                 </td>
               </tr>
@@ -131,6 +145,7 @@ export function BlogAdminList({ initialPosts, initialError }: BlogAdminListProps
                   </td>
                   <td className="px-4 py-3 text-zinc-400">{post.categoryId}</td>
                   <td className="px-4 py-3 capitalize text-zinc-400">{post.status}</td>
+                  <td className="px-4 py-3 text-zinc-400">{post.source}</td>
                   <td className="px-4 py-3 tabular-nums text-zinc-300">{post.seoScore}/100</td>
                   <td className="px-4 py-3 text-[11px] text-zinc-500">
                     {new Date(post.updatedAt).toLocaleDateString()}

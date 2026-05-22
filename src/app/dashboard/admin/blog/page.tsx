@@ -16,7 +16,7 @@ export const metadata = createPageMetadata({
 export default async function AdminBlogListPage() {
   await requireAdminPage();
 
-  const { posts, error } = await adminListBlogPosts({ sort: "updated_desc" });
+  const { posts, error, usingStaticFallback } = await adminListBlogPosts({ sort: "updated_desc" });
   const cmsConfigured = isCmsBlogConfigured();
 
   const listPosts = posts.map((p) => ({
@@ -28,6 +28,7 @@ export default async function AdminBlogListPage() {
     seoScore: p.seoScore,
     updatedAt: p.updatedAt,
     publishedAt: p.publishedAt,
+    source: p.source,
   }));
 
   return (
@@ -46,10 +47,14 @@ export default async function AdminBlogListPage() {
       {!cmsConfigured ? (
         <p className="mb-4 text-sm text-amber-200/90">
           CMS storage unavailable — configure Supabase service role and run{" "}
-          <code className="text-amber-100">docs/SUPABASE_MIGRATION_CMS_BLOG.sql</code>.
+          <code className="text-amber-100">docs/SUPABASE_MIGRATION_CMS_BLOG_POSTS.sql</code>.
         </p>
       ) : null}
-      <BlogAdminList initialPosts={listPosts} initialError={error} />
+      <BlogAdminList
+        initialPosts={listPosts}
+        initialError={error}
+        initialUsingStaticFallback={usingStaticFallback}
+      />
     </AdminShell>
   );
 }

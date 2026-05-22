@@ -29,6 +29,11 @@ export type CmsBlogPostRecord = {
   updatedAt: string;
 };
 
+export type AdminBlogPostRecord = CmsBlogPostRecord & {
+  source: "cms" | "static";
+  seoScore?: number;
+};
+
 export type CmsBlogPostInput = {
   slug: string;
   title: string;

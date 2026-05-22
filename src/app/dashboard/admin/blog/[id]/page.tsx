@@ -5,10 +5,10 @@ import { BLOG_POSTS } from "@/data/blog-posts";
 import { requireAdminPage } from "@/lib/admin/requireAdmin";
 import { createPageMetadata } from "@/lib/metadata";
 import {
-  getCmsBlogPostById,
   isCmsBlogConfigured,
   listCmsBlogPosts,
 } from "@/server/blog/cmsBlogRepository";
+import { adminGetBlogPost } from "@/server/admin/blog/actions";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function AdminBlogEditPage({ params }: PageProps) {
   await requireAdminPage();
   const { id } = await params;
-  const { post, error } = await getCmsBlogPostById(id);
+  const { post, error } = await adminGetBlogPost(id);
   if (!post && !error) notFound();
 
   const staticSlugs = BLOG_POSTS.map((p) => p.slug);

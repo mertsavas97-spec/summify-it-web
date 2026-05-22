@@ -143,15 +143,14 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     push(metaForPath(path));
   }
 
+  const cmsPosts = await listPublishedCmsBlogPosts();
+  const cmsSlugs = new Set(cmsPosts.map((post) => post.slug));
   for (const post of BLOG_POSTS) {
-    push(
-      metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.date),
-    );
+    if (cmsSlugs.has(post.slug)) continue;
+    push(metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.date));
   }
 
-  const cmsPosts = await listPublishedCmsBlogPosts();
   for (const post of cmsPosts) {
-    if (BLOG_POSTS.some((p) => p.slug === post.slug)) continue;
     push(metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.publishedAt ?? undefined));
   }
 

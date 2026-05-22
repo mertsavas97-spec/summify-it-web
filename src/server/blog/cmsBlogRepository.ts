@@ -2,7 +2,6 @@ import "server-only";
 
 import { getSupabaseAdmin, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import type { BlogCategoryId } from "@/data/blog-categories";
-import type { BlogFaqItem } from "@/data/blog-post-types";
 import type {
   CmsBlogListFilters,
   CmsBlogPostInput,
@@ -15,53 +14,44 @@ type DbRow = {
   slug: string;
   title: string;
   excerpt: string | null;
-  category_id: string;
+  category: string | null;
   tags: string[] | null;
   cover_image_url: string | null;
-  markdown_body: string;
-  author_name: string | null;
-  author_role: string | null;
-  author_bio: string | null;
-  author_href: string | null;
+  body: string;
+  author: string | null;
   status: string;
   seo_title: string | null;
   seo_description: string | null;
   og_title: string | null;
   og_description: string | null;
   canonical_url: string | null;
-  primary_keyword: string | null;
-  faqs: unknown;
   published_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
 function mapRow(row: DbRow): CmsBlogPostRecord {
-  const faqs = Array.isArray(row.faqs)
-    ? (row.faqs as BlogFaqItem[])
-    : [];
-
   return {
     id: row.id,
     slug: row.slug,
     title: row.title,
     excerpt: row.excerpt,
-    categoryId: row.category_id as BlogCategoryId,
+    categoryId: (row.category ?? "study-learning") as BlogCategoryId,
     tags: row.tags ?? [],
     coverImageUrl: row.cover_image_url,
-    markdownBody: row.markdown_body ?? "",
-    authorName: row.author_name ?? "Summify Editorial",
-    authorRole: row.author_role ?? "Product & learning workflows",
-    authorBio: row.author_bio,
-    authorHref: row.author_href,
+    markdownBody: row.body ?? "",
+    authorName: row.author ?? "Summify Editorial",
+    authorRole: "Product & learning workflows",
+    authorBio: null,
+    authorHref: "/about",
     status: row.status as CmsBlogStatus,
     seoTitle: row.seo_title,
     seoDescription: row.seo_description,
     ogTitle: row.og_title,
     ogDescription: row.og_description,
     canonicalUrl: row.canonical_url,
-    primaryKeyword: row.primary_keyword,
-    faqs,
+    primaryKeyword: null,
+    faqs: [],
     publishedAt: row.published_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -80,22 +70,17 @@ function toDbPayload(input: CmsBlogPostInput, now: string) {
     slug: input.slug.trim(),
     title: input.title.trim(),
     excerpt: input.excerpt?.trim() || null,
-    category_id: input.categoryId,
+    category: input.categoryId,
     tags: input.tags ?? [],
     cover_image_url: input.coverImageUrl?.trim() || null,
-    markdown_body: input.markdownBody,
-    author_name: input.authorName?.trim() || "Summify Editorial",
-    author_role: input.authorRole?.trim() || "Product & learning workflows",
-    author_bio: input.authorBio?.trim() || null,
-    author_href: input.authorHref?.trim() || "/about",
+    body: input.markdownBody,
+    author: input.authorName?.trim() || "Summify Editorial",
     status: input.status,
     seo_title: input.seoTitle?.trim() || null,
     seo_description: input.seoDescription?.trim() || null,
     og_title: input.ogTitle?.trim() || null,
     og_description: input.ogDescription?.trim() || null,
     canonical_url: input.canonicalUrl?.trim() || null,
-    primary_keyword: input.primaryKeyword?.trim() || null,
-    faqs: input.faqs ?? [],
     published_at: publishedAt,
     updated_at: now,
   };
@@ -105,11 +90,20 @@ export function isCmsBlogConfigured(): boolean {
   return isServiceRoleConfigured();
 }
 
+function isMissingCmsBlogTableError(error: { code?: string | null; message?: string | null }): boolean {
+  const message = error.message?.toLowerCase() ?? "";
+  return (
+    error.code === "PGRST205" ||
+    message.includes("cms_blog_posts") &&
+      (message.includes("schema cache") || message.includes("does not exist"))
+  );
+}
+
 export async function listCmsBlogPosts(
   filters: CmsBlogListFilters = {},
-): Promise<{ posts: CmsBlogPostRecord[]; error?: string }> {
+): Promise<{ posts: CmsBlogPostRecord[]; error?: string; tableMissing?: boolean }> {
   if (!isCmsBlogConfigured()) {
-    return { posts: [], error: "Supabase service role is not configured." };
+    return { posts: [], tableMissing: true };
   }
 
   try {
@@ -120,7 +114,7 @@ export async function listCmsBlogPosts(
       query = query.eq("status", filters.status);
     }
     if (filters.categoryId) {
-      query = query.eq("category_id", filters.categoryId);
+      query = query.eq("category", filters.categoryId);
     }
     if (filters.search?.trim()) {
       const term = filters.search.trim().replace(/[%_]/g, "");
@@ -135,6 +129,7 @@ export async function listCmsBlogPosts(
 
     const { data, error } = await query;
     if (error) {
+      if (isMissingCmsBlogTableError(error)) return { posts: [], tableMissing: true };
       return { posts: [], error: error.message };
     }
 
@@ -160,7 +155,10 @@ export async function getCmsBlogPostById(
     .eq("id", id)
     .maybeSingle();
 
-  if (error) return { post: null, error: error.message };
+  if (error) {
+    if (isMissingCmsBlogTableError(error)) return { post: null };
+    return { post: null, error: error.message };
+  }
   if (!data) return { post: null };
   return { post: mapRow(data as DbRow) };
 }
@@ -179,7 +177,10 @@ export async function getCmsBlogPostBySlug(
   }
 
   const { data, error } = await query.maybeSingle();
-  if (error) return { post: null, error: error.message };
+  if (error) {
+    if (isMissingCmsBlogTableError(error)) return { post: null };
+    return { post: null, error: error.message };
+  }
   if (!data) return { post: null };
   return { post: mapRow(data as DbRow) };
 }
@@ -208,7 +209,12 @@ export async function createCmsBlogPost(
     .select("*")
     .single();
 
-  if (error) return { post: null, error: error.message };
+  if (error) {
+    if (isMissingCmsBlogTableError(error)) {
+      return { post: null, error: "Create the CMS blog table before saving dashboard posts." };
+    }
+    return { post: null, error: error.message };
+  }
   return { post: mapRow(data as DbRow) };
 }
 
@@ -228,7 +234,12 @@ export async function updateCmsBlogPost(
     .select("*")
     .single();
 
-  if (error) return { post: null, error: error.message };
+  if (error) {
+    if (isMissingCmsBlogTableError(error)) {
+      return { post: null, error: "Create the CMS blog table before saving dashboard posts." };
+    }
+    return { post: null, error: error.message };
+  }
   return { post: mapRow(data as DbRow) };
 }
 
@@ -242,6 +253,9 @@ export async function archiveCmsBlogPost(id: string): Promise<{ error?: string }
     .update({ status: "archived", updated_at: new Date().toISOString() })
     .eq("id", id);
 
+  if (error && isMissingCmsBlogTableError(error)) {
+    return { error: "Create the CMS blog table before archiving dashboard posts." };
+  }
   return error ? { error: error.message } : {};
 }
 
@@ -251,5 +265,8 @@ export async function deleteCmsBlogPost(id: string): Promise<{ error?: string }>
   }
 
   const { error } = await getSupabaseAdmin().from("cms_blog_posts").delete().eq("id", id);
+  if (error && isMissingCmsBlogTableError(error)) {
+    return { error: "Create the CMS blog table before deleting dashboard posts." };
+  }
   return error ? { error: error.message } : {};
 }

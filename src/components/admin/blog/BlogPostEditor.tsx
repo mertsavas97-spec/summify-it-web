@@ -6,8 +6,16 @@ import Link from "next/link";
 import { BLOG_CATEGORIES, type BlogCategoryId } from "@/data/blog-categories";
 import { analyzeMarkdownContent } from "@/lib/blog/contentMetrics";
 import { computeBlogSeoScore } from "@/lib/blog/seoScore";
-import { adminArchiveBlogPost, adminSaveBlogPost } from "@/server/admin/blog/actions";
-import type { CmsBlogPostInput, CmsBlogPostRecord, CmsBlogStatus } from "@/types/cms-blog";
+import {
+  adminArchiveBlogPost,
+  adminDuplicateStaticBlogPost,
+  adminSaveBlogPost,
+} from "@/server/admin/blog/actions";
+import type {
+  AdminBlogPostRecord,
+  CmsBlogPostInput,
+  CmsBlogStatus,
+} from "@/types/cms-blog";
 import { MarkdownToolbar } from "@/components/admin/blog/MarkdownToolbar";
 import { LinkInsertModal } from "@/components/admin/blog/LinkInsertModal";
 import { InternalLinkPicker } from "@/components/admin/blog/InternalLinkPicker";
@@ -43,7 +51,7 @@ const EMPTY: CmsBlogPostInput = {
 };
 
 type BlogPostEditorProps = {
-  post: CmsBlogPostRecord | null;
+  post: AdminBlogPostRecord | null;
   cmsConfigured: boolean;
   existingSlugs: string[];
   extraBlogSlugs: { slug: string; title: string }[];
@@ -122,6 +130,10 @@ export function BlogPostEditor({
   }, [form.markdownBody]);
 
   const save = (status: CmsBlogStatus, force = false) => {
+    if (post?.source === "static") {
+      setMessage("This post is currently stored in code. Duplicate to CMS to edit from dashboard.");
+      return;
+    }
     setMessage(null);
     startTransition(async () => {
       const payload = { ...form, status };
@@ -146,7 +158,7 @@ export function BlogPostEditor({
   };
 
   const archive = () => {
-    if (!post) return;
+    if (!post || post.source === "static") return;
     startTransition(async () => {
       await adminArchiveBlogPost(post.id);
       router.push("/dashboard/admin/blog");
@@ -154,13 +166,40 @@ export function BlogPostEditor({
     });
   };
 
+  const duplicateStaticPost = () => {
+    if (!post || post.source !== "static") return;
+    setMessage(null);
+    startTransition(async () => {
+      const result = await adminDuplicateStaticBlogPost(post.slug);
+      if (result.ok) {
+        router.push(`/dashboard/admin/blog/${result.post.id}`);
+        router.refresh();
+        return;
+      }
+      setMessage(result.error);
+    });
+  };
+
   return (
     <div className="space-y-6">
       {!cmsConfigured ? (
         <p className="rounded-lg border border-amber-500/25 bg-amber-950/20 px-4 py-3 text-sm text-amber-200/90">
-          Run <code className="text-amber-100">docs/SUPABASE_MIGRATION_CMS_BLOG.sql</code> and
+          Run <code className="text-amber-100">docs/SUPABASE_MIGRATION_CMS_BLOG_POSTS.sql</code> and
           configure <code>SUPABASE_SERVICE_ROLE_KEY</code> to enable CMS storage.
         </p>
+      ) : null}
+      {post?.source === "static" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
+          <p>This post is currently stored in code. Duplicate to CMS to edit from dashboard.</p>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={duplicateStaticPost}
+            className="rounded-lg border border-violet-500/30 bg-violet-950/40 px-3 py-1.5 font-medium text-violet-200 hover:bg-violet-950/60 disabled:opacity-40"
+          >
+            Duplicate to CMS
+          </button>
+        </div>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -307,7 +346,7 @@ export function BlogPostEditor({
           <div className="flex flex-wrap gap-2 border-t border-white/[0.06] pt-4">
             <button
               type="button"
-              disabled={pending || !cmsConfigured}
+              disabled={pending || !cmsConfigured || post?.source === "static"}
               onClick={() => save("draft")}
               className="rounded-lg border border-white/[0.1] bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-700 disabled:opacity-40"
             >
@@ -315,7 +354,7 @@ export function BlogPostEditor({
             </button>
             <button
               type="button"
-              disabled={pending || !cmsConfigured}
+              disabled={pending || !cmsConfigured || post?.source === "static"}
               onClick={() => save("published")}
               className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-40"
             >
@@ -330,7 +369,7 @@ export function BlogPostEditor({
                 Preview live
               </Link>
             ) : null}
-            {post ? (
+            {post && post.source === "cms" ? (
               <button
                 type="button"
                 disabled={pending}
