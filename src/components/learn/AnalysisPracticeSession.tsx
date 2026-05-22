@@ -42,6 +42,8 @@ import {
 import { PracticeProUpsell } from "@/components/learn/PracticeProUpsell";
 import type { PlanId } from "@/types/plan";
 import type { CardRetentionState, PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
+import { AudioStudyCard } from "@/components/audio-study/AudioStudyCard";
+import type { AudioStudyAnalysisInput } from "@/types/audio-study";
 import { Button } from "@/components/ui/Button";
 
 type SessionPhase = "pre" | "active" | "complete" | "weak" | "locked_complete";
@@ -64,6 +66,8 @@ type AnalysisPracticeSessionProps = {
   onStartQuiz?: () => void;
   learnComplete?: boolean;
   showQuizUnlockHint?: boolean;
+  isPaidActive?: boolean;
+  audioStudyInput?: AudioStudyAnalysisInput;
 };
 
 type OutcomeMap = Record<string, PracticeCardOutcome>;
@@ -84,6 +88,8 @@ export function AnalysisPracticeSession({
   onStartQuiz,
   learnComplete = false,
   showQuizUnlockHint = false,
+  isPaidActive = false,
+  audioStudyInput,
 }: AnalysisPracticeSessionProps) {
   const router = useRouter();
   const sortedCards = useMemo(() => sortPracticeSessionCards(initialCards), [initialCards]);
@@ -422,6 +428,17 @@ export function AnalysisPracticeSession({
             Back to analysis
           </Button>
         </div>
+        {audioStudyInput ? (
+          <div className="mx-auto mt-6 max-w-lg text-left">
+            <AudioStudyCard
+              variant="compact"
+              analysisId={analysisId}
+              entitlementPlanId={entitlementPlanId}
+              isPaidActive={isPaidActive}
+              analysisInput={audioStudyInput}
+            />
+          </div>
+        ) : null}
       </section>
     );
   }

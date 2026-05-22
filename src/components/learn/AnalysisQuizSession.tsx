@@ -9,6 +9,9 @@ import {
 } from "@/lib/learn/buildQuizOutcomeSummary";
 import type { PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
 import type { QuizOptionKey, QuizQuestion, QuizResult } from "@/types/learn-quiz";
+import { AudioStudyCard } from "@/components/audio-study/AudioStudyCard";
+import type { AudioStudyAnalysisInput } from "@/types/audio-study";
+import type { PlanId } from "@/types/plan";
 import { Button } from "@/components/ui/Button";
 import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 
@@ -23,6 +26,8 @@ type AnalysisQuizSessionProps = {
   reviewAgainCount: number;
   lockedQuizCount?: number;
   entitlementPlanId: string;
+  isPaidActive?: boolean;
+  audioStudyInput?: AudioStudyAnalysisInput;
   onRestartLearn?: () => void;
 };
 
@@ -35,6 +40,8 @@ export function AnalysisQuizSession({
   reviewAgainCount,
   lockedQuizCount = 0,
   entitlementPlanId,
+  isPaidActive = false,
+  audioStudyInput,
   onRestartLearn,
 }: AnalysisQuizSessionProps) {
   const [phase, setPhase] = useState<QuizPhase>("intro");
@@ -211,6 +218,18 @@ export function AnalysisQuizSession({
           Summify helped you extract structured intelligence from the source. Revisit weak themes in
           Learn, then run the quiz again after a break.
         </p>
+
+        {audioStudyInput ? (
+          <div className="mx-auto mt-6 max-w-lg text-left">
+            <AudioStudyCard
+              variant="compact"
+              analysisId={analysisId}
+              entitlementPlanId={entitlementPlanId as PlanId}
+              isPaidActive={isPaidActive}
+              analysisInput={audioStudyInput}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
           <Button type="button" size="sm" variant="secondary" onClick={startQuiz}>

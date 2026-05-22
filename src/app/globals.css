@@ -69,6 +69,134 @@ body {
   animation: mode-card-shimmer 1.2s ease-in-out;
 }
 
+/* Workspace — Learn by listening banner */
+.listening-banner-card {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.06),
+    0 4px 20px -6px rgba(139, 92, 246, 0.14);
+}
+
+.listening-banner-card:hover {
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.2),
+    0 6px 28px -4px rgba(139, 92, 246, 0.22);
+}
+
+@keyframes listening-banner-sweep {
+  0%,
+  100% {
+    transform: translateX(-130%) skewX(-14deg);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.5;
+  }
+  55% {
+    transform: translateX(130%) skewX(-14deg);
+    opacity: 0.35;
+  }
+}
+
+.listening-banner-sweep::after {
+  content: "";
+  position: absolute;
+  inset: -20% -40%;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(139, 92, 246, 0.07) 48%,
+    rgba(167, 139, 250, 0.1) 52%,
+    transparent 65%
+  );
+  animation: listening-banner-sweep 9s ease-in-out infinite;
+}
+
+@keyframes listening-banner-wave {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 0.7;
+  }
+}
+
+.listening-banner-wave-bar {
+  transform-origin: center bottom;
+  animation: listening-banner-wave 2.8s ease-in-out infinite;
+}
+
+.listening-banner-wave-bar--2 {
+  animation-delay: 0.35s;
+}
+
+.listening-banner-wave-bar--3 {
+  animation-delay: 0.7s;
+}
+
+.listening-banner-wave-bar--4 {
+  animation-delay: 1.05s;
+}
+
+.listening-banner-wave-bar--5 {
+  animation-delay: 1.4s;
+}
+
+@keyframes listening-banner-icon-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes listening-banner-icon-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.05);
+  }
+}
+
+.listening-banner-icon-pulse {
+  animation: listening-banner-icon-pulse 3.5s ease-in-out infinite;
+}
+
+.listening-banner-icon-glow {
+  animation: listening-banner-icon-glow 3.5s ease-in-out infinite;
+}
+
+.listening-banner-cta-arrow {
+  transition: transform 0.25s ease;
+}
+
+.listening-banner-card:hover .listening-banner-cta-arrow {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .listening-banner-sweep::after,
+  .listening-banner-wave-bar,
+  .listening-banner-icon-pulse,
+  .listening-banner-icon-glow {
+    animation: none !important;
+  }
+
+  .listening-banner-card:hover .listening-banner-cta-arrow {
+    transform: none !important;
+  }
+}
+
 /* Phase 9A — print / Save as PDF */
 @media print {
   .print-hide {

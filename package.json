@@ -10,6 +10,7 @@
     "generate:og": "node scripts/generate-og-image.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-polly": "^3.1052.0",
     "@google/genai": "^2.4.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.0",

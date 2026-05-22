@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AnalysisLearningPath } from "@/components/learn/AnalysisLearningPath";
+import { AudioStudyCard } from "@/components/audio-study/AudioStudyCard";
+import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
@@ -21,6 +23,9 @@ type PracticeAnalysisCtaProps = {
   modeLabel?: string;
   sourceKindLabel?: string;
   entitlementPlanId?: PlanId;
+  isPaidActive?: boolean;
+  intelligenceModeId?: string;
+  sourceType?: string | null;
   analysisContent?: Pick<
     AnalysisResult,
     "title" | "summary" | "keyInsights" | "risksOrWarnings" | "actionItems"
@@ -37,6 +42,9 @@ export function PracticeAnalysisCta({
   modeLabel = "Analysis",
   sourceKindLabel = "Document",
   entitlementPlanId = "free",
+  isPaidActive = false,
+  intelligenceModeId = "general-summary",
+  sourceType = null,
   analysisContent,
 }: PracticeAnalysisCtaProps) {
   const router = useRouter();
@@ -133,6 +141,9 @@ export function PracticeAnalysisCta({
           sourceKindLabel={sourceKindLabel}
           learnCards={learnCards}
           entitlementPlanId={entitlementPlanId}
+          isPaidActive={isPaidActive}
+          intelligenceModeId={intelligenceModeId}
+          sourceType={sourceType}
           hasLearnCards
           practicePersisted={Boolean(savedAnalysisId)}
           analysisContent={
@@ -145,6 +156,23 @@ export function PracticeAnalysisCta({
             }
           }
         />
+
+        {analysisContent?.summary ? (
+          <AudioStudyCard
+            className="mt-4"
+            analysisId={sessionId}
+            entitlementPlanId={entitlementPlanId}
+            isPaidActive={isPaidActive}
+            analysisInput={buildAudioStudyInputFromResult(
+              { ...analysisContent, learnCards },
+              {
+                sourceType,
+                intelligenceMode: intelligenceModeId,
+                sourceLabel: sourceKindLabel,
+              },
+            )}
+          />
+        ) : null}
       </div>
     );
   }

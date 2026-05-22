@@ -35,6 +35,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { TrustSignals } from "@/components/growth/TrustSignals";
 import { DemoWorkflowBlock } from "@/components/growth/DemoWorkflowBlock";
+import { LearnByListeningBanner } from "@/components/audio-study/AudioStudyCard";
 
 function resolvePipelineStage(
   extractStatus: UploadExtractStatus,
@@ -467,9 +468,15 @@ export function UploadWorkspace() {
             )}
           </section>
 
+          <LearnByListeningBanner
+            isPaidActive={workspaceEntitlement.isPaidActive}
+            entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+          />
+
           <TextAnalysisMvp
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
             isAuthenticated={workspaceEntitlement.isAuthenticated}
+            isPaidActive={workspaceEntitlement.isPaidActive}
             inputMode={inputMode}
             rawText={rawText}
             onRawTextChange={(text) => {

@@ -1,4 +1,5 @@
 import type { MultiFormatLearnOutput } from "@/lib/learn/multiFormatTypes";
+import type { AudioStudyMetadata } from "@/types/audio-study";
 import type { LearnCardOutput } from "@/types/text-analysis";
 
 /** Structured summary stored in `saved_analyses.summary` (no raw transcript). */
@@ -20,6 +21,8 @@ export type SavedAnalysisMetadata = {
   structureFamily?: string;
   /** Phase Learn 6.5 — optional multi-format learning outputs. */
   multiFormatLearn?: MultiFormatLearnOutput;
+  /** Cached teacher-style audio lesson script (audio bytes cached client-side). */
+  audioStudy?: AudioStudyMetadata;
 };
 
 export type SavedAnalysisRow = {

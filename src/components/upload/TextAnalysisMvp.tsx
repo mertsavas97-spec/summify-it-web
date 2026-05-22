@@ -62,6 +62,7 @@ type TextAnalysisMvpProps = {
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
   entitlementPlanId: PlanId;
   isAuthenticated: boolean;
+  isPaidActive?: boolean;
   limitNotice?: string | null;
 };
 
@@ -215,6 +216,7 @@ export function TextAnalysisMvp({
   onIntelligenceReady,
   entitlementPlanId,
   isAuthenticated,
+  isPaidActive = false,
   limitNotice,
 }: TextAnalysisMvpProps) {
   const inputLimits = getClientAnalysisInputLimits(entitlementPlanId);
@@ -414,6 +416,9 @@ export function TextAnalysisMvp({
             learnCards={displayResult.learnCards}
             analysisContent={displayResult}
             entitlementPlanId={entitlementPlanId}
+            isPaidActive={isPaidActive}
+            intelligenceModeId={mode}
+            sourceType={extractionMeta?.sourceKind ?? null}
             documentTitle={displayResult.title}
             modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}
             sourceKindLabel={

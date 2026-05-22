@@ -10,6 +10,9 @@ const CLIENT_ALLOWED_EVENTS = new Set([
   "learn_completed",
   "quiz_started",
   "quiz_completed",
+  "audio_study_script_generated",
+  "audio_study_played",
+  "audio_study_completed",
   "upgrade_clicked",
 ]);
 

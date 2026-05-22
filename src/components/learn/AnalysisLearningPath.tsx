@@ -8,6 +8,7 @@ import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
 import type { PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
+import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
 import type { AnalysisResult, LearnCardOutput } from "@/types/text-analysis";
 import type { PlanId } from "@/types/plan";
 
@@ -18,6 +19,9 @@ type AnalysisLearningPathProps = {
   sourceKindLabel: string;
   learnCards: LearnCardOutput[];
   entitlementPlanId?: PlanId;
+  isPaidActive?: boolean;
+  intelligenceModeId?: string;
+  sourceType?: string | null;
   practicePersisted?: boolean;
   hasLearnCards?: boolean;
   autoStart?: boolean;
@@ -34,6 +38,9 @@ export function AnalysisLearningPath({
   sourceKindLabel,
   learnCards,
   entitlementPlanId = "free",
+  isPaidActive = false,
+  intelligenceModeId = "general-summary",
+  sourceType = null,
   practicePersisted = true,
   hasLearnCards = true,
   autoStart = false,
@@ -83,6 +90,27 @@ export function AnalysisLearningPath({
     [analysisContent, cardAccess.accessibleCards, cardAccess.isLimited],
   );
 
+  const audioInput = useMemo(
+    () =>
+      buildAudioStudyInputFromResult(
+        { ...analysisContent, learnCards },
+        {
+          sourceType,
+          intelligenceMode: intelligenceModeId,
+          sourceLabel: sourceKindLabel,
+          quizThemes: quizQuestions.map((q) => q.theme).filter(Boolean) as string[],
+        },
+      ),
+    [
+      analysisContent,
+      learnCards,
+      sourceType,
+      intelligenceModeId,
+      sourceKindLabel,
+      quizQuestions,
+    ],
+  );
+
   const handleLearnComplete = useCallback((summary: PracticeRetentionSummary) => {
     setRetentionSummary(summary);
     setGotItCount(summary.cardStates.reduce((n, s) => n + s.gotItCount, 0));
@@ -112,6 +140,8 @@ export function AnalysisLearningPath({
           reviewAgainCount={reviewAgainCount}
           lockedQuizCount={cardAccess.lockedCount}
           entitlementPlanId={entitlementPlanId}
+          isPaidActive={isPaidActive}
+          audioStudyInput={audioInput}
           onRestartLearn={restartLearn}
         />
       </div>
@@ -137,6 +167,8 @@ export function AnalysisLearningPath({
         learnComplete={learnComplete}
         autoStart={autoStart}
         showQuizUnlockHint
+        isPaidActive={isPaidActive}
+        audioStudyInput={audioInput}
       />
     </div>
   );
