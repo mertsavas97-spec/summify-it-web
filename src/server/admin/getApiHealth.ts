@@ -15,17 +15,107 @@ import type {
   ApiUsageEvent,
 } from "@/types/api-usage";
 
-/** List of all tracked providers with their display names. */
-const PROVIDERS: Array<{ id: ApiProvider; name: string; envVars: string[] }> = [
+type ProviderDefinition = {
+  id: ApiProvider;
+  name: string;
+  envVars: string[];
+  optional?: boolean;
+};
+
+/** List of tracked providers with current env naming scheme. */
+const PROVIDERS: ProviderDefinition[] = [
   { id: "groq", name: "Groq", envVars: ["GROQ_API_KEY"] },
-  { id: "aws_polly", name: "AWS Polly", envVars: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"] },
-  { id: "rapidapi_youtube", name: "RapidAPI YouTube", envVars: ["RAPIDAPI_KEY", "RAPIDAPI_YOUTUBE_HOST"] },
-  { id: "rapidapi_article", name: "RapidAPI Article", envVars: ["RAPIDAPI_KEY", "RAPIDAPI_ARTICLE_HOST"] },
-  { id: "supabase", name: "Supabase", envVars: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"] },
-  { id: "netlify", name: "Netlify", envVars: ["NETLIFY_AUTH_TOKEN"] },
-  { id: "openai", name: "OpenAI", envVars: ["OPENAI_API_KEY"] },
-  { id: "ahrefs", name: "Ahrefs", envVars: ["AHREFS_API_KEY"] },
+  { id: "gemini", name: "Gemini", envVars: ["GEMINI_API_KEY"] },
+  {
+    id: "rapidapi",
+    name: "RapidAPI",
+    envVars: ["RAPIDAPI_KEY", "RAPIDAPI_HOST"],
+  },
+  {
+    id: "supabase",
+    name: "Supabase",
+    envVars: [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+    ],
+  },
+  {
+    id: "aws_polly",
+    name: "AWS Polly",
+    envVars: [
+      "SUMMIFY_AWS_ACCESS_KEY_ID",
+      "SUMMIFY_AWS_SECRET_ACCESS_KEY",
+      "SUMMIFY_AWS_REGION",
+    ],
+  },
+  {
+    id: "formspree",
+    name: "Formspree",
+    envVars: ["NEXT_PUBLIC_FORMSPREE_CONTACT_ENDPOINT"],
+    optional: true,
+  },
+  {
+    id: "polar",
+    name: "Polar",
+    envVars: [
+      "BILLING_PROVIDER",
+      "POLAR_ACCESS_TOKEN",
+      "POLAR_WEBHOOK_SECRET",
+      "POLAR_SCHOLAR_MONTHLY_PRICE_ID",
+      "POLAR_SCHOLAR_YEARLY_PRICE_ID",
+      "POLAR_PRO_MONTHLY_PRICE_ID",
+      "POLAR_PRO_YEARLY_PRICE_ID",
+      "POLAR_TEAM_MONTHLY_PRICE_ID",
+      "POLAR_TEAM_YEARLY_PRICE_ID",
+      "POLAR_MODE",
+    ],
+    optional: true,
+  },
+  {
+    id: "google_analytics",
+    name: "Google Analytics",
+    envVars: ["NEXT_PUBLIC_GA_MEASUREMENT_ID"],
+    optional: true,
+  },
+  {
+    id: "auth",
+    name: "Auth",
+    envVars: ["NEXT_PUBLIC_AUTH_GOOGLE_ENABLED"],
+    optional: true,
+  },
+  {
+    id: "vercel",
+    name: "Vercel",
+    envVars: ["VERCEL_TOKEN", "VERCEL_PROJECT_ID", "VERCEL_ORG_ID"],
+    optional: true,
+  },
 ];
+
+const USAGE_EVENT_TYPES = [
+  "analysis_completed",
+  "podcast_audio_generated",
+  "audio_study_script_generated",
+  "extract_url",
+  "extract_youtube",
+] as const;
+
+const PROVIDER_EVENT_MAP: Record<string, { provider: ApiProvider; operation: string; units?: number; charsFromMetadataKey?: string }> = {
+  analysis_completed: { provider: "groq", operation: "analysis_completed", units: 1 },
+  podcast_audio_generated: {
+    provider: "aws_polly",
+    operation: "podcast_audio_generated",
+    units: 1,
+  },
+  audio_study_script_generated: {
+    provider: "aws_polly",
+    operation: "audio_study_script_generated",
+    units: 1,
+    charsFromMetadataKey: "script_chars",
+  },
+  extract_url: { provider: "rapidapi", operation: "extract_url", units: 1 },
+  extract_youtube: { provider: "rapidapi", operation: "extract_youtube", units: 1 },
+};
 
 /** Check if required env vars are configured for a provider. */
 function checkProviderConfig(envVars: string[]): { required: Array<{ name: string; present: boolean }>; allPresent: boolean } {
@@ -39,7 +129,6 @@ function checkProviderConfig(envVars: string[]): { required: Array<{ name: strin
 
 /** Get configuration status for all providers. */
 async function getProviderConfigStatus(): Promise<ProviderConfigStatus[]> {
-  const supabase = createServiceClient();
   const now = new Date().toISOString();
 
   const statuses: ProviderConfigStatus[] = [];
@@ -47,47 +136,21 @@ async function getProviderConfigStatus(): Promise<ProviderConfigStatus[]> {
   for (const provider of PROVIDERS) {
     const { required, allPresent } = checkProviderConfig(provider.envVars);
 
-    // Query last success and error for this provider
-    const [{ data: lastSuccess }, { data: lastError }] = await Promise.all([
-      supabase
-        .from("api_usage_events")
-        .select("created_at")
-        .eq("provider", provider.id)
-        .eq("success", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("api_usage_events")
-        .select("created_at,error_message")
-        .eq("provider", provider.id)
-        .eq("success", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    let status: ProviderConfigStatus["status"] = "missing_env";
-    if (allPresent) {
-      status = "configured";
-      // If there were recent errors, mark as warning
-      if (lastError && lastError.created_at) {
-        const errorTime = new Date(lastError.created_at);
-        const hoursSinceError = (Date.now() - errorTime.getTime()) / (1000 * 60 * 60);
-        if (hoursSinceError < 24) {
-          status = "warning";
-        }
-      }
-    }
+    const status: ProviderConfigStatus["status"] = allPresent
+      ? "configured"
+      : provider.optional
+        ? "optional_missing"
+        : "missing_env";
 
     statuses.push({
       provider: provider.id,
       name: provider.name,
       status,
+      optional: Boolean(provider.optional),
       requiredEnvVars: required,
-      lastSuccess: lastSuccess?.created_at ?? null,
-      lastError: lastError?.error_message ?? null,
-      lastErrorTime: lastError?.created_at ?? null,
+      lastSuccess: null,
+      lastError: null,
+      lastErrorTime: null,
       lastChecked: now,
     });
   }
@@ -95,81 +158,150 @@ async function getProviderConfigStatus(): Promise<ProviderConfigStatus[]> {
   return statuses;
 }
 
-/** Get usage rollups for all providers. */
+function getNumberMetadata(metadata: Record<string, unknown> | null | undefined, key: string): number {
+  if (!metadata) return 0;
+  const value = metadata[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function estimateMonthlyFrom7d(calls7d: number, unitCost: number): number | null {
+  if (calls7d <= 0) return null;
+  return Number((((calls7d / 7) * 30) * unitCost).toFixed(4));
+}
+
+/** Get usage rollups from `usage_events` with fallback to `api_usage_events`. */
 async function getUsageRollups(): Promise<ProviderUsageRollup[]> {
   const supabase = createServiceClient();
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const rollups: ProviderUsageRollup[] = [];
-
+  const rollups = new Map<ApiProvider, ProviderUsageRollup>();
   for (const provider of PROVIDERS) {
-    // Today's calls
-    const { data: todayData } = await supabase
-      .from("api_usage_events")
-      .select("success", { count: "exact", head: true })
-      .eq("provider", provider.id)
-      .gte("created_at", startOfDay.toISOString());
-
-    // 7-day calls and failures
-    const { data: weekData } = await supabase
-      .from("api_usage_events")
-      .select("success", { count: "exact", head: true })
-      .eq("provider", provider.id)
-      .gte("created_at", sevenDaysAgo.toISOString());
-
-    const { count: weekFailures } = await supabase
-      .from("api_usage_events")
-      .select("id", { count: "exact" })
-      .eq("provider", provider.id)
-      .eq("success", false)
-      .gte("created_at", sevenDaysAgo.toISOString());
-
-    // Monthly cost estimate
-    const { data: monthCost } = await supabase
-      .from("api_usage_events")
-      .select("estimated_cost_usd")
-      .eq("provider", provider.id)
-      .gte("created_at", thirtyDaysAgo.toISOString());
-
-    // Last success/error
-    const [{ data: lastSuccess }, { data: lastError }] = await Promise.all([
-      supabase
-        .from("api_usage_events")
-        .select("created_at")
-        .eq("provider", provider.id)
-        .eq("success", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("api_usage_events")
-        .select("created_at,error_message")
-        .eq("provider", provider.id)
-        .eq("success", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    const monthlyCost = monthCost
-      ? monthCost.reduce((sum, e) => sum + (parseFloat(String(e.estimated_cost_usd)) || 0), 0)
-      : null;
-
-    rollups.push({
+    rollups.set(provider.id, {
       provider: provider.id,
-      callsToday: todayData?.length ?? 0,
-      calls7d: weekData?.length ?? 0,
-      failures7d: weekFailures ?? 0,
-      estimatedMonthlyCostUsd: Math.round((monthlyCost ?? 0) * 100) / 100,
-      lastSuccess: lastSuccess?.created_at ?? null,
-      lastError: lastError?.created_at ?? null,
+      callsToday: 0,
+      calls7d: 0,
+      failures7d: 0,
+      estimatedMonthlyCostUsd: null,
+      lastSuccess: null,
+      lastError: null,
     });
   }
 
-  return rollups;
+  const { data: usageEvents, error: usageEventsError } = await supabase
+    .from("usage_events")
+    .select("event_type,success,failure_stage,metadata,created_at")
+    .in("event_type", [...USAGE_EVENT_TYPES])
+    .gte("created_at", sevenDaysAgo.toISOString())
+    .order("created_at", { ascending: false });
+
+  if (!usageEventsError && usageEvents && usageEvents.length > 0) {
+    for (const row of usageEvents as Array<Record<string, unknown>>) {
+      const eventType = String(row.event_type ?? "");
+      const mapped = PROVIDER_EVENT_MAP[eventType];
+      if (!mapped) continue;
+
+      const createdAt = String(row.created_at ?? "");
+      const created = new Date(createdAt);
+      const isToday = created >= startOfDay;
+      const isFailure = row.success === false || Boolean(row.failure_stage);
+      const usage = rollups.get(mapped.provider);
+      if (!usage) continue;
+
+      usage.calls7d += mapped.units ?? 1;
+      if (isToday) usage.callsToday += mapped.units ?? 1;
+      if (isFailure) usage.failures7d += 1;
+      if (!usage.lastSuccess && !isFailure) usage.lastSuccess = createdAt;
+      if (!usage.lastError && isFailure) usage.lastError = createdAt;
+
+      if (mapped.provider === "aws_polly" && mapped.charsFromMetadataKey) {
+        const chars = getNumberMetadata(
+          (row.metadata as Record<string, unknown> | null | undefined) ?? null,
+          mapped.charsFromMetadataKey,
+        );
+        // Polly neural rough price: $16 / 1M chars
+        const increment = chars > 0 ? (chars / 1_000_000) * 16 : 0;
+        usage.estimatedMonthlyCostUsd = Number(
+          ((usage.estimatedMonthlyCostUsd ?? 0) + increment).toFixed(4),
+        );
+      }
+    }
+
+    const groq = rollups.get("groq");
+    if (groq) {
+      groq.estimatedMonthlyCostUsd = estimateMonthlyFrom7d(groq.calls7d, 0.0004);
+    }
+
+    const rapid = rollups.get("rapidapi");
+    if (rapid) {
+      rapid.estimatedMonthlyCostUsd = estimateMonthlyFrom7d(rapid.calls7d, 0.01);
+    }
+
+    const polly = rollups.get("aws_polly");
+    if (polly && (polly.estimatedMonthlyCostUsd ?? 0) > 0) {
+      polly.estimatedMonthlyCostUsd = Number((((polly.estimatedMonthlyCostUsd ?? 0) / 7) * 30).toFixed(4));
+    } else if (polly && polly.calls7d > 0) {
+      polly.estimatedMonthlyCostUsd = estimateMonthlyFrom7d(polly.calls7d, 0.0012);
+    }
+
+    return [...rollups.values()];
+  }
+
+  // Fallback to legacy api_usage_events if product usage events are empty.
+  for (const provider of PROVIDERS) {
+    const usage = rollups.get(provider.id);
+    if (!usage) continue;
+
+    const [{ count: todayCount }, { count: weekCount }, { count: weekFailures }, { data: lastSuccess }, { data: lastError }] =
+      await Promise.all([
+        supabase
+          .from("api_usage_events")
+          .select("id", { count: "exact", head: true })
+          .eq("provider", provider.id)
+          .gte("created_at", startOfDay.toISOString()),
+        supabase
+          .from("api_usage_events")
+          .select("id", { count: "exact", head: true })
+          .eq("provider", provider.id)
+          .gte("created_at", sevenDaysAgo.toISOString()),
+        supabase
+          .from("api_usage_events")
+          .select("id", { count: "exact", head: true })
+          .eq("provider", provider.id)
+          .eq("success", false)
+          .gte("created_at", sevenDaysAgo.toISOString()),
+        supabase
+          .from("api_usage_events")
+          .select("created_at")
+          .eq("provider", provider.id)
+          .eq("success", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("api_usage_events")
+          .select("created_at")
+          .eq("provider", provider.id)
+          .eq("success", false)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+    usage.callsToday = todayCount ?? 0;
+    usage.calls7d = weekCount ?? 0;
+    usage.failures7d = weekFailures ?? 0;
+    usage.lastSuccess = lastSuccess?.created_at ?? null;
+    usage.lastError = lastError?.created_at ?? null;
+  }
+
+  return [...rollups.values()];
 }
 
 /** Get quota info for providers where quota is exposed. */
@@ -179,17 +311,13 @@ function getQuotaInfo(): ProviderQuotaInfo[] {
   // RapidAPI quota (if headers are available — usually not exposed to client)
   if (process.env.RAPIDAPI_KEY) {
     quotas.push({
-      provider: "rapidapi_youtube",
-      note: "Quota not exposed by provider",
-    });
-    quotas.push({
-      provider: "rapidapi_article",
+      provider: "rapidapi",
       note: "Quota not exposed by provider",
     });
   }
 
   // AWS Polly — no simple quota endpoint
-  if (process.env.AWS_ACCESS_KEY_ID) {
+  if (process.env.SUMMIFY_AWS_ACCESS_KEY_ID) {
     quotas.push({
       provider: "aws_polly",
       tier: process.env.AWS_POLLY_TIER ?? "Standard",
@@ -237,9 +365,9 @@ export async function getApiHealth(): Promise<ApiHealthResponse> {
   const quotas = getQuotaInfo();
 
   const totalCallsToday = rollups.reduce((sum, r) => sum + r.callsToday, 0);
-  const totalFailuresToday = rollups.reduce((sum, r) => sum + (r.callsToday > 0 ? 0 : 0), 0);
+  const totalFailuresToday = rollups.reduce((sum, r) => sum + r.failures7d, 0);
   const totalMonthlyCost = rollups.reduce((sum, r) => sum + (r.estimatedMonthlyCostUsd ?? 0), 0);
-  const configuredCount = configs.filter((c) => c.status !== "missing_env").length;
+  const configuredCount = configs.filter((c) => c.status === "configured").length;
   const highestUsageProvider = rollups.reduce((max, r) => {
     if (r.calls7d > (max?.calls7d ?? 0)) return r;
     return max;
@@ -258,7 +386,7 @@ export async function getApiHealth(): Promise<ApiHealthResponse> {
       configuredProviders: configuredCount,
       callsToday: totalCallsToday,
       failuresToday: totalFailuresToday,
-      estimatedMonthlyCostUsd: Math.round(totalMonthlyCost * 100) / 100,
+      estimatedMonthlyCostUsd: totalMonthlyCost > 0 ? Math.round(totalMonthlyCost * 100) / 100 : null,
       highestUsageProvider: highestUsageProvider?.provider ?? null,
     },
     recentEvents,

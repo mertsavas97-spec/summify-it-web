@@ -44,6 +44,11 @@ export async function POST(_request: Request, context: RouteContext) {
       documentTypeGuess: existing.metadata?.documentTypeGuess,
       knowledgeTitleGuess: existing.metadata?.knowledgeTitleGuess,
       structureFamily: existing.metadata?.structureFamily,
+      estimatedPages: existing.metadata?.estimatedPages,
+      extractedCharacterCount: existing.metadata?.extractedCharacterCount,
+      youtubeDurationMinutes: existing.metadata?.youtubeDurationMinutes,
+      sourceType: existing.metadata?.sourceType ?? existing.source_kind ?? undefined,
+      sourceLabel: existing.metadata?.sourceLabel ?? existing.source_label,
     };
 
     const payload: SaveAnalysisInsertPayload = {

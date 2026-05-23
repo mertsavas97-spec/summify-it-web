@@ -1,13 +1,15 @@
 /** Provider names for API usage tracking. */
 export type ApiProvider =
   | "groq"
+  | "gemini"
   | "aws_polly"
-  | "rapidapi_youtube"
-  | "rapidapi_article"
+  | "rapidapi"
   | "supabase"
-  | "netlify"
-  | "openai"
-  | "ahrefs"
+  | "formspree"
+  | "polar"
+  | "google_analytics"
+  | "auth"
+  | "vercel"
   | "other";
 
 /** API usage event for tracking provider calls. */
@@ -33,7 +35,8 @@ export interface ApiUsageEvent {
 export interface ProviderConfigStatus {
   provider: ApiProvider;
   name: string;
-  status: "configured" | "missing_env" | "warning" | "error";
+  status: "configured" | "missing_env" | "warning" | "error" | "optional_missing";
+  optional: boolean;
   requiredEnvVars: Array<{ name: string; present: boolean }>;
   lastSuccess?: string | null;
   lastError?: string | null;
@@ -121,6 +124,11 @@ export const PROVIDER_PRICING: Record<string, ProviderPricing> = {
     perRequest: 0.01,
     currency: "USD",
     note: "Approximate RapidAPI article extraction",
+  },
+  rapidapi: {
+    perRequest: 0.01,
+    currency: "USD",
+    note: "Approximate RapidAPI extraction request",
   },
 };
 

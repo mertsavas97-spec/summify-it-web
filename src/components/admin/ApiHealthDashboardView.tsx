@@ -29,6 +29,13 @@ function getStatusBadge(status: ProviderConfigStatus["status"]) {
           Error
         </span>
       );
+    case "optional_missing":
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-200">
+          <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+          Optional / Not configured
+        </span>
+      );
     default:
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-500/30 bg-zinc-500/10 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
@@ -56,7 +63,8 @@ function formatDate(dateStr: string | null | undefined): string {
 }
 
 function formatCurrency(value: number | null): string {
-  if (value == null || value === 0) return "$0.00";
+  if (value == null) return "No usage yet";
+  if (value === 0) return "$0.00";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -133,8 +141,12 @@ function ProviderCard({
         {config.requiredEnvVars.map((env) => (
           <div key={env.name} className="flex items-center justify-between">
             <span className="text-[10px] font-mono text-zinc-500">{env.name}</span>
-            <span className={`text-[10px] ${env.present ? "text-emerald-400" : "text-rose-400"}`}>
-              {env.present ? "Present" : "Missing"}
+            <span
+              className={`text-[10px] ${
+                env.present ? "text-emerald-400" : config.optional ? "text-zinc-500" : "text-rose-400"
+              }`}
+            >
+              {env.present ? "Present" : config.optional ? "Optional" : "Missing"}
             </span>
           </div>
         ))}
@@ -167,6 +179,13 @@ function ProviderCard({
           <p className="text-sm font-medium text-zinc-200">
             {formatCurrency(usage.estimatedMonthlyCostUsd)}
           </p>
+        </div>
+      )}
+
+      {usage && usage.calls7d === 0 && (
+        <div className="mt-2 border-t border-white/[0.06] pt-2">
+          <p className="text-[10px] text-zinc-500">Usage</p>
+          <p className="text-sm font-medium text-zinc-400">No usage yet</p>
         </div>
       )}
 

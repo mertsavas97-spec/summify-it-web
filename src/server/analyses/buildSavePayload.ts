@@ -36,6 +36,7 @@ export type SaveAnalysisInsertPayload = {
 };
 
 export function buildSavePayload(input: BuildSavePayloadInput): SaveAnalysisInsertPayload {
+  const sourceLabel = resolveSourceLabel(input.sourceHint, input.sourceContext);
   const summary: SavedAnalysisSummaryPayload = {
     title: input.result.title,
     summary: input.result.summary,
@@ -68,6 +69,17 @@ export function buildSavePayload(input: BuildSavePayloadInput): SaveAnalysisInse
     documentTypeGuess: input.intelligence.profile.documentTypeGuess,
     knowledgeTitleGuess: input.intelligence.knowledgeLayerSummary.titleGuess,
     ...(structureFamily ? { structureFamily } : {}),
+    ...(typeof input.intelligence.analysisLimits?.extractedPages === "number"
+      ? { estimatedPages: input.intelligence.analysisLimits.extractedPages }
+      : {}),
+    ...(typeof input.intelligence.analysisLimits?.extractedCharacters === "number"
+      ? { extractedCharacterCount: input.intelligence.analysisLimits.extractedCharacters }
+      : {}),
+    ...(input.sourceContext?.sourceKind === "youtube" && typeof input.sourceContext.estimatedDurationMinutes === "number"
+      ? { youtubeDurationMinutes: input.sourceContext.estimatedDurationMinutes }
+      : {}),
+    ...(input.sourceHint ? { sourceType: input.sourceHint } : {}),
+    ...(sourceLabel ? { sourceLabel } : {}),
     multiFormatLearn,
   };
 
@@ -78,7 +90,7 @@ export function buildSavePayload(input: BuildSavePayloadInput): SaveAnalysisInse
     intelligence_mode: input.intelligenceModeId,
     provider_used: input.providerUsed,
     document_type: input.intelligence.profile.documentTypeGuess,
-    source_label: resolveSourceLabel(input.sourceHint, input.sourceContext),
+    source_label: sourceLabel,
     summary,
     learn_cards: input.result.learnCards,
     metadata,

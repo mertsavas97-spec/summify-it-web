@@ -20,6 +20,12 @@ export type SavedAnalysisMetadata = {
   documentTypeGuess?: string;
   knowledgeTitleGuess?: string;
   structureFamily?: string;
+  /** Compact source sizing metadata used by downstream generators (no raw source text). */
+  estimatedPages?: number;
+  extractedCharacterCount?: number;
+  youtubeDurationMinutes?: number;
+  sourceType?: string;
+  sourceLabel?: string | null;
   /** Phase Learn 6.5 — optional multi-format learning outputs. */
   multiFormatLearn?: MultiFormatLearnOutput;
   /** Cached teacher-style audio lesson script (audio bytes cached client-side). */

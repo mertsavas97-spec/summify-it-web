@@ -176,6 +176,14 @@ export async function generatePodcastDiscussionAudio(
     const audioBase64 = merged.toString("base64");
     const audioMime = "audio/mpeg";
 
+    // Calculate actual audio duration from bytes (approx. 1 second per 22,000 bytes for MP3 at 22kHz)
+    const actualAudioDurationSeconds = Math.round(merged.byteLength / 22000);
+    console.info("[podcast] actual_audio_duration_seconds", {
+      analysisId: podcast.analysisId ?? null, // Assuming analysisId is available in podcast object
+      actualAudioDurationSeconds,
+      byteLength: merged.byteLength,
+    });
+
     return {
       audioBase64,
       audioMime,

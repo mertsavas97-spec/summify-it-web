@@ -47,19 +47,41 @@ function buildInputFromRow(
   row: Awaited<ReturnType<typeof getAnalysisById>>,
 ): PodcastDiscussionAnalysisInput | null {
   if (!row?.summary?.summary) return null;
+  const inferredCharacterCount = inferAnalysisCharacterCount(row);
   return {
     title: row.summary.title ?? row.title ?? "Analysis",
     summary: row.summary.summary,
     keyInsights: row.summary.keyInsights ?? [],
     learnCards: row.learn_cards ?? [],
     quizQuestions: oralQuizQuestions(row),
-    sourceType: row.source_kind,
+    sourceType: row.metadata?.sourceType ?? row.source_kind,
     intelligenceMode: row.intelligence_mode,
     sourceMetadata: {
       documentType: row.document_type ?? row.metadata?.documentTypeGuess,
-      sourceLabel: row.source_label,
+      sourceLabel: row.metadata?.sourceLabel ?? row.source_label,
+      estimatedPages: row.metadata?.estimatedPages,
+      extractedCharacterCount: row.metadata?.extractedCharacterCount ?? inferredCharacterCount,
+      youtubeDurationMinutes: row.metadata?.youtubeDurationMinutes,
     },
   };
+}
+
+function inferAnalysisCharacterCount(
+  row: NonNullable<Awaited<ReturnType<typeof getAnalysisById>>>,
+): number | undefined {
+  const text = [
+    row.title,
+    row.summary?.title,
+    row.summary?.summary,
+    ...(row.summary?.keyInsights ?? []),
+    ...(row.summary?.risksOrWarnings ?? []),
+    ...(row.summary?.actionItems ?? []),
+    ...(row.learn_cards ?? []).flatMap((card) => [card.title, card.content]),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" ");
+
+  return text.length > 0 ? text.length : undefined;
 }
 
 function buildInputFromPayload(
@@ -101,7 +123,13 @@ function resolveRouteEligibility(
   sourceProfile?: PodcastSourceProfile,
 ) {
   return resolvePodcastEligibility({
-    ...sourceProfile,
+    estimatedPages: sourceProfile?.estimatedPages ?? input.sourceMetadata?.estimatedPages,
+    extractedCharacterCount:
+      sourceProfile?.extractedCharacterCount ?? input.sourceMetadata?.extractedCharacterCount,
+    youtubeDurationMinutes:
+      sourceProfile?.youtubeDurationMinutes ?? input.sourceMetadata?.youtubeDurationMinutes,
+    transcriptCharacterCount:
+      sourceProfile?.transcriptCharacterCount ?? input.sourceMetadata?.transcriptCharacterCount,
     sourceKind:
       sourceProfile?.sourceKind ??
       (input.sourceType === "youtube"

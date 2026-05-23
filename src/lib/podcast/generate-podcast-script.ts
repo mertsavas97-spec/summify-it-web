@@ -32,7 +32,7 @@ function inputDensity(input: PodcastDiscussionAnalysisInput): number {
 }
 
 /** Words per minute for spoken English podcast dialogue. */
-const WORDS_PER_MINUTE = 145;
+const WORDS_PER_MINUTE = 175;
 
 /**
  * Estimate duration in minutes from word count.
@@ -358,7 +358,7 @@ async function callGroqJson(system: string, user: string): Promise<string> {
 }
 
 /**
- * Generate podcast script in two calls for deep-dive and critical modes.
+ * Generate podcast script in multiple calls for longer-density modes.
  * This bypasses Groq's tendency to produce short outputs in a single call.
  */
 async function generatePodcastScriptTwoPhase(
@@ -426,8 +426,70 @@ Do NOT repeat the intro or early sections. Focus on depth and substance.`;
   // Merge: Use phase 1's title/outline, combine scripts
   const phase1Script = parseTurns(phase1Result.script ?? phase1Result.turns, lengthPlan.maxWords);
   const phase2Script = parseTurns(phase2Result.script ?? phase2Result.turns, lengthPlan.maxWords);
-  const mergedScript = [...phase1Script, ...phase2Script];
-  const totalWordCount = mergedScript.reduce((total, turn) => total + countWords(turn.text), 0);
+  let mergedScript = [...phase1Script, ...phase2Script];
+  let totalWordCount = mergedScript.reduce((total, turn) => total + countWords(turn.text), 0);
+
+  const targetWordCount = lengthPlan.maxWords;
+  const minimumAcceptableWordCount = Math.round(targetWordCount * 0.7);
+
+  // Phase 3 fallback: if the two-phase output is still materially under target,
+  // ask for an additional source-grounded expansion instead of accepting an over-compressed script.
+  let phase3Iterations = 0;
+  while (totalWordCount < minimumAcceptableWordCount && phase3Iterations < 2) {
+    const remainingWordBudget = Math.max(
+      0,
+      Math.min(lengthPlan.maxWords, MAX_DIALOGUE_WORDS) - totalWordCount,
+    );
+    const recentTurns = mergedScript
+      .slice(-3)
+      .map((turn) => `${turn.speaker}: ${turn.text}`.slice(0, 240))
+      .join("\n");
+
+    phase3Iterations++;
+    console.warn(`[podcast] phase3_fallback_triggered_iteration_${phase3Iterations}`, {
+      densityMode: lengthPlan.densityMode,
+      totalWordCount,
+      targetWordCount,
+      minimumAcceptableWordCount,
+      remainingWordBudget,
+    });
+
+    if (remainingWordBudget >= 150) {
+      const phase3Prompt = `${buildPodcastDiscussionPrompt(analysis, lengthPlan)}
+
+PHASE 3 FALLBACK INSTRUCTION: The previous script is too short.
+Current dialogue word count: ${totalWordCount}.
+Target dialogue word count: ${targetWordCount}.
+Minimum acceptable dialogue word count: ${minimumAcceptableWordCount}.
+
+Generate ONLY additional dialogue turns that extend the existing episode with deeper source-grounded explanation.
+Do NOT repeat the intro, early beats, or already-covered setup.
+Add missing nuance, examples, counterpoints, implications, and a stronger closing recap/reflection if needed.
+Keep the continuation under approximately ${remainingWordBudget} words.
+
+RECENT TURNS TO CONTINUE FROM:
+${recentTurns}`;
+
+      const phase3Raw = await callGroqJson(baseSystemPrompt, phase3Prompt);
+      const phase3Result = extractJson(phase3Raw);
+      const phase3Script = parseTurns(phase3Result.script ?? phase3Result.turns, remainingWordBudget);
+
+      mergedScript = [...mergedScript, ...phase3Script];
+      totalWordCount = mergedScript.reduce((total, turn) => total + countWords(turn.text), 0);
+
+      console.info(`[podcast] phase3_fallback_complete_iteration_${phase3Iterations}`, {
+        addedTurns: phase3Script.length,
+        totalTurns: mergedScript.length,
+        totalWordCount,
+      });
+    } else {
+      console.info(`[podcast] phase3_fallback_skipped_iteration_${phase3Iterations}`, {
+        reason: "remaining_word_budget_too_low",
+        remainingWordBudget,
+      });
+      break; // Exit loop if budget is too low
+    }
+  }
 
   const title = cleanText(phase1Result.title) || cleanText(analysis.title);
   const outline = parseOutline(phase1Result.outline);
@@ -501,8 +563,12 @@ export async function generatePodcastDiscussionScript(
     toneProfile: analysisInput.toneProfile ?? "casual",
   });
 
-  // Use two-phase generation for deep-dive and critical modes to achieve longer outputs
-  const useTwoPhase = resolvedDensityMode === "deep-dive" || resolvedDensityMode === "critical";
+  // Use multi-phase generation for standard, deep-dive, and critical modes to achieve longer outputs.
+  // Quick and debate intentionally stay single-call because their targets are lower / more concise.
+  const useTwoPhase =
+    resolvedDensityMode === "standard" ||
+    resolvedDensityMode === "deep-dive" ||
+    resolvedDensityMode === "critical";
 
   if (useTwoPhase && process.env.GROQ_API_KEY) {
     return generatePodcastScriptTwoPhase(analysisInput, lengthPlan, PODCAST_DISCUSSION_SYSTEM);

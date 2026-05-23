@@ -6,7 +6,11 @@ import {
 } from "@/lib/billing/entitlements";
 import { canUsePodcastDiscussionMode } from "@/lib/podcast/access";
 import { resolvePodcastEligibility, type PodcastSourceProfile } from "@/lib/podcast/eligibility";
-import { generatePodcastDiscussionScript } from "@/lib/podcast/generate-podcast-script";
+import {
+  generatePodcastDiscussionScript,
+  resolvePodcastLengthPlan,
+  resolveSourceSizeTier,
+} from "@/lib/podcast/generate-podcast-script";
 import { resolvePodcastTone } from "@/lib/podcast/resolvePodcastTone";
 import type {
   PodcastToneProfile,
@@ -123,6 +127,7 @@ function buildInputFromRow(
   const oralQuiz = row.metadata?.multiFormatLearn?.formats.find(
     (format) => format.type === "oral_quiz",
   );
+  const inferredCharacterCount = inferAnalysisCharacterCount(row);
   return {
     title: row.summary.title ?? row.title ?? "Analysis",
     summary: row.summary.summary,
@@ -132,13 +137,34 @@ function buildInputFromRow(
       question: item.label,
       theme: item.detail ?? null,
     })),
-    sourceType: row.source_kind,
+    sourceType: row.metadata?.sourceType ?? row.source_kind,
     intelligenceMode: row.intelligence_mode,
     sourceMetadata: {
       documentType: row.document_type ?? row.metadata?.documentTypeGuess,
-      sourceLabel: row.source_label,
+      sourceLabel: row.metadata?.sourceLabel ?? row.source_label,
+      estimatedPages: row.metadata?.estimatedPages,
+      extractedCharacterCount: row.metadata?.extractedCharacterCount ?? inferredCharacterCount,
+      youtubeDurationMinutes: row.metadata?.youtubeDurationMinutes,
     },
   };
+}
+
+function inferAnalysisCharacterCount(
+  row: NonNullable<Awaited<ReturnType<typeof getAnalysisById>>>,
+): number | undefined {
+  const text = [
+    row.title,
+    row.summary?.title,
+    row.summary?.summary,
+    ...(row.summary?.keyInsights ?? []),
+    ...(row.summary?.risksOrWarnings ?? []),
+    ...(row.summary?.actionItems ?? []),
+    ...(row.learn_cards ?? []).flatMap((card) => [card.title, card.content]),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" ");
+
+  return text.length > 0 ? text.length : undefined;
 }
 
 function buildInputFromPayload(
@@ -178,7 +204,13 @@ function routeEligibility(
     ).length;
 
   return resolvePodcastEligibility({
-    ...sourceProfile,
+    estimatedPages: sourceProfile?.estimatedPages ?? input.sourceMetadata?.estimatedPages,
+    extractedCharacterCount:
+      sourceProfile?.extractedCharacterCount ?? input.sourceMetadata?.extractedCharacterCount,
+    youtubeDurationMinutes:
+      sourceProfile?.youtubeDurationMinutes ?? input.sourceMetadata?.youtubeDurationMinutes,
+    transcriptCharacterCount:
+      sourceProfile?.transcriptCharacterCount ?? input.sourceMetadata?.transcriptCharacterCount,
     sourceKind:
       sourceProfile?.sourceKind ??
       (input.sourceType === "youtube"
@@ -256,6 +288,23 @@ export async function POST(request: Request) {
   const effectiveDensityMode = body?.densityMode;
   const effectiveToneProfile: PodcastToneProfile =
     body?.toneProfile ?? resolvePodcastTone(analysisInput.sourceMetadata?.documentType);
+  const resolvedSourceTier = resolveSourceSizeTier(analysisInput);
+  const sizingDensityMode =
+    effectiveDensityMode ?? (resolvedSourceTier === "large" ? "deep-dive" : resolvedSourceTier === "medium" ? "standard" : "quick");
+  const lengthPlan = resolvePodcastLengthPlan(analysisInput, sizingDensityMode);
+
+  console.info("[podcast] sizing_input", {
+    analysisId: body?.analysisId ?? null,
+    selectedMode: effectiveDensityMode ?? "auto",
+    resolvedDensityMode: sizingDensityMode,
+    podcastPersona: effectiveToneProfile,
+    estimatedPages: analysisInput.sourceMetadata?.estimatedPages ?? null,
+    extractedCharacterCount: analysisInput.sourceMetadata?.extractedCharacterCount ?? null,
+    youtubeDurationMinutes: analysisInput.sourceMetadata?.youtubeDurationMinutes ?? null,
+    resolvedSourceTier,
+    targetWordCount: lengthPlan.maxWords,
+    targetWordRange: lengthPlan.targetWordRange,
+  });
 
   // Check if cached podcast matches the requested density mode
   const cacheMatchesDensity = cachedPodcast && (
@@ -277,6 +326,19 @@ export async function POST(request: Request) {
           ...(await generatePodcastDiscussionScript(analysisInput, effectiveDensityMode, effectiveToneProfile)),
           generatedAt: new Date().toISOString(),
         };
+        console.info("[podcast] sizing_output", {
+          analysisId: body?.analysisId ?? null,
+          selectedMode: effectiveDensityMode ?? "auto",
+          podcastPersona: effectiveToneProfile,
+          estimatedPages: analysisInput.sourceMetadata?.estimatedPages ?? null,
+          extractedCharacterCount: analysisInput.sourceMetadata?.extractedCharacterCount ?? null,
+          youtubeDurationMinutes: analysisInput.sourceMetadata?.youtubeDurationMinutes ?? null,
+          resolvedSourceTier,
+          targetWordCount: lengthPlan.maxWords,
+          targetWordRange: lengthPlan.targetWordRange,
+          actualScriptWordCount: podcast.totalWordCount,
+          estimatedDurationMinutes: podcast.estimatedDurationMinutes,
+        });
       } catch (scriptError) {
         console.error("[podcast] script_generation_failed", {
           error: scriptError instanceof Error ? scriptError.message : String(scriptError),

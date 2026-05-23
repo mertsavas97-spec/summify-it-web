@@ -57,6 +57,8 @@ export type PodcastDiscussionScript = {
   suitability?: PodcastSuitabilityTier;
   /** Tone profile used for speaker style */
   toneProfile?: PodcastToneProfile;
+  /** The ID of the analysis this podcast was generated from, if any. */
+  analysisId?: string | null;
 };
 
 export type PodcastDiscussionMetadata = PodcastDiscussionScript & {
