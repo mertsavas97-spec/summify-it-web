@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -12,9 +13,11 @@ import { globalLayoutJsonLd } from "@/lib/schema";
 import {
   buildOpenGraph,
   buildPageTitle,
+  buildCanonicalUrl,
   buildTwitterCard,
   SEO_BRAND,
 } from "@/lib/seo";
+import { isIndexableHost, resolveRequestHost } from "@/lib/seo-host";
 
 import "./globals.css";
 
@@ -30,50 +33,72 @@ const geistMono = Geist_Mono({
 
 const defaultTitle = "AI PDF & YouTube Summarizer";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
+export async function generateMetadata(): Promise<Metadata> {
+  const h = await headers();
+  const hostname = resolveRequestHost({
+    host: h.get("host"),
+    forwardedHost: h.get("x-forwarded-host"),
+  });
+  const indexable = isIndexableHost(hostname);
 
-  title: {
-    default: buildPageTitle(defaultTitle),
-    template: `%s | ${SEO_BRAND}`,
-  },
+  return {
+    metadataBase: new URL(siteConfig.url),
 
-  description: siteConfig.description,
-
-  keywords: [
-    "document intelligence",
-    "PDF summarizer",
-    "YouTube transcript AI",
-    "PowerPoint summarizer",
-    "AI study notes",
-  ],
-
-  authors: [{ name: SEO_BRAND }],
-  creator: SEO_BRAND,
-
-  openGraph: buildOpenGraph({
-    title: defaultTitle,
-    description: siteConfig.description,
-    path: "/",
-  }),
-
-  twitter: buildTwitterCard({
-    title: defaultTitle,
-    description: siteConfig.description,
-  }),
-
-  robots: {
-    index: true,
-    follow: true,
-
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+    title: {
+      default: buildPageTitle(defaultTitle),
+      template: `%s | ${SEO_BRAND}`,
     },
-  },
-};
+
+    description: siteConfig.description,
+
+    keywords: [
+      "document intelligence",
+      "PDF summarizer",
+      "YouTube transcript AI",
+      "PowerPoint summarizer",
+      "AI study notes",
+    ],
+
+    authors: [{ name: SEO_BRAND }],
+    creator: SEO_BRAND,
+    alternates: {
+      canonical: buildCanonicalUrl("/"),
+    },
+
+    openGraph: buildOpenGraph({
+      title: defaultTitle,
+      description: siteConfig.description,
+      path: "/",
+    }),
+
+    twitter: buildTwitterCard({
+      title: defaultTitle,
+      description: siteConfig.description,
+    }),
+
+    robots: indexable
+      ? {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+          },
+        }
+      : {
+          index: false,
+          follow: false,
+          googleBot: {
+            index: false,
+            follow: false,
+            "max-image-preview": "none",
+            "max-snippet": 0,
+          },
+        },
+  };
+}
 
 export default function RootLayout({
   children,
