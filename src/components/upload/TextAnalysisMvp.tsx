@@ -59,11 +59,15 @@ type TextAnalysisMvpProps = {
   injectedAnalysis?: InjectedAnalysisPayload | null;
   onAnalyzingChange?: (analyzing: boolean) => void;
   onAnalysisComplete?: (completed: boolean) => void;
+  onAnalysisResultChange?: (result: AnalysisResult | null) => void;
+  onSavedAnalysisIdChange?: (analysisId: string | null) => void;
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
   entitlementPlanId: PlanId;
   isAuthenticated: boolean;
   isPaidActive?: boolean;
   limitNotice?: string | null;
+  /** When true, the PracticeAnalysisCta is not rendered (caller will render it separately). */
+  hidePracticeCta?: boolean;
 };
 
 function ExtractedTextEditor({
@@ -206,6 +210,7 @@ export function TextAnalysisMvp({
   extractionMeta,
   analyzeDisabled = false,
   hidePrimaryAnalyze = false,
+  hidePracticeCta = false,
   youtubeAnalysisFailed = false,
   urlAnalysisFailed = false,
   onRetryYoutubeAnalysis,
@@ -213,6 +218,8 @@ export function TextAnalysisMvp({
   injectedAnalysis,
   onAnalyzingChange,
   onAnalysisComplete,
+  onAnalysisResultChange,
+  onSavedAnalysisIdChange,
   onIntelligenceReady,
   entitlementPlanId,
   isAuthenticated,
@@ -283,6 +290,8 @@ export function TextAnalysisMvp({
     setError(null);
     setFailureDebug(null);
     setResult(null);
+    onAnalysisResultChange?.(null);
+    onSavedAnalysisIdChange?.(null);
     setMeta(null);
     setSavedToWorkspace(undefined);
     setSavedAnalysisId(undefined);
@@ -336,6 +345,7 @@ export function TextAnalysisMvp({
       });
 
       setResult(analysis.result);
+      onAnalysisResultChange?.(analysis.result);
       setMeta({
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
@@ -343,6 +353,7 @@ export function TextAnalysisMvp({
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
       setSavedAnalysisId(analysis.savedAnalysisId);
+      onSavedAnalysisIdChange?.(analysis.savedAnalysisId ?? null);
       setAnalysisLimitNotice(analysis.limitNotice ?? null);
       onIntelligenceReady?.(analysis.intelligence);
       onAnalysisComplete?.(true);
@@ -410,27 +421,29 @@ export function TextAnalysisMvp({
             </div>
           </header>
 
-          <PracticeAnalysisCta
-            savedToWorkspace={displaySavedToWorkspace}
-            savedAnalysisId={displaySavedAnalysisId}
-            learnCards={displayResult.learnCards}
-            analysisContent={displayResult}
-            entitlementPlanId={entitlementPlanId}
-            isPaidActive={isPaidActive}
-            intelligenceModeId={mode}
-            sourceType={extractionMeta?.sourceKind ?? null}
-            documentTitle={displayResult.title}
-            modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}
-            sourceKindLabel={
-              extractionMeta?.sourceKind === "youtube"
-                ? "YouTube"
-                : extractionMeta?.sourceKind === "presentation"
-                  ? "Presentation"
-                  : extractionMeta?.sourceKind === "url"
-                    ? "Article"
-                    : "Document"
-            }
-          />
+          {!hidePracticeCta && (
+            <PracticeAnalysisCta
+              savedToWorkspace={displaySavedToWorkspace}
+              savedAnalysisId={displaySavedAnalysisId}
+              learnCards={displayResult.learnCards}
+              analysisContent={displayResult}
+              entitlementPlanId={entitlementPlanId}
+              isPaidActive={isPaidActive}
+              intelligenceModeId={mode}
+              sourceType={extractionMeta?.sourceKind ?? null}
+              documentTitle={displayResult.title}
+              modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}
+              sourceKindLabel={
+                extractionMeta?.sourceKind === "youtube"
+                  ? "YouTube"
+                  : extractionMeta?.sourceKind === "presentation"
+                    ? "Presentation"
+                    : extractionMeta?.sourceKind === "url"
+                      ? "Article"
+                      : "Document"
+              }
+            />
+          )}
 
           <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
 

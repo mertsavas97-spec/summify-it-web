@@ -90,6 +90,80 @@ type PollyAudioPayload = {
   fallback: false;
 };
 
+/** Maximum characters per Polly chunk (safe limit below AWS 3000 limit). */
+const AUDIO_STUDY_CHUNK_CHAR_LIMIT = 2400;
+
+/**
+ * Split text into chunks that are safe for AWS Polly.
+ * Splits at paragraph/sentence boundaries when possible.
+ */
+function chunkTextForPolly(text: string): string[] {
+  if (text.length <= AUDIO_STUDY_CHUNK_CHAR_LIMIT) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let current = "";
+
+  // Split by paragraphs first
+  const paragraphs = text.split(/\n\n+/);
+
+  for (const paragraph of paragraphs) {
+    const trimmed = paragraph.trim();
+    if (!trimmed) continue;
+
+    // If adding this paragraph keeps us under limit, append it
+    const joined = current ? `${current}\n\n${trimmed}` : trimmed;
+    if (joined.length <= AUDIO_STUDY_CHUNK_CHAR_LIMIT) {
+      current = joined;
+      continue;
+    }
+
+    // If current has content, save it and start new
+    if (current) {
+      chunks.push(current);
+      current = "";
+    }
+
+    // If single paragraph is too long, split by sentences
+    if (trimmed.length > AUDIO_STUDY_CHUNK_CHAR_LIMIT) {
+      const sentences = trimmed.split(/(?<=[.!?])\s+/);
+      for (const sentence of sentences) {
+        if (!sentence) continue;
+
+        // If sentence itself is too long, hard-split it
+        if (sentence.length > AUDIO_STUDY_CHUNK_CHAR_LIMIT) {
+          if (current) {
+            chunks.push(current);
+            current = "";
+          }
+          for (let offset = 0; offset < sentence.length; offset += AUDIO_STUDY_CHUNK_CHAR_LIMIT) {
+            chunks.push(sentence.slice(offset, offset + AUDIO_STUDY_CHUNK_CHAR_LIMIT));
+          }
+          continue;
+        }
+
+        const nextJoined = current ? `${current} ${sentence}` : sentence;
+        if (nextJoined.length <= AUDIO_STUDY_CHUNK_CHAR_LIMIT) {
+          current = nextJoined;
+        } else {
+          chunks.push(current);
+          current = sentence;
+        }
+      }
+    } else {
+      current = trimmed;
+    }
+  }
+
+  if (current) {
+    chunks.push(current);
+  }
+
+  // Clean up whitespace in chunks
+  return chunks.map((c) => c.replace(/\s+/g, " ").trim()).filter((c) => c.length > 0);
+}
+
 async function synthesizeWithPolly(
   scriptText: string,
   voiceId: string,
@@ -100,10 +174,63 @@ async function synthesizeWithPolly(
     return null;
   }
 
+  // Chunk the text for safe Polly synthesis
+  const chunks = chunkTextForPolly(scriptText);
+
+  if (chunks.length === 0) {
+    console.warn("[audio-study] polly_skipped", { reason: "no_chunks" });
+    return null;
+  }
+
+  console.log("[audio-study] polly_chunking", {
+    originalLength: scriptText.length,
+    chunkCount: chunks.length,
+    maxChunkLength: Math.max(...chunks.map((c) => c.length)),
+    voiceId,
+  });
+
   try {
-    const result = await generatePollySpeech({ text: scriptText, voiceId });
-    const audioBase64 = result.audio.toString("base64");
-    const audioMime = result.contentType;
+    const audioBuffers: Buffer[] = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < chunks.length; i++) {
+      try {
+        const result = await generatePollySpeech({ text: chunks[i], voiceId });
+        audioBuffers.push(result.audio);
+        successCount++;
+      } catch (chunkError) {
+        errorCount++;
+        console.warn("[audio-study] chunk_synthesis_failed", {
+          chunkIndex: i,
+          textLength: chunks[i].length,
+          error: chunkError instanceof Error ? chunkError.message : String(chunkError),
+        });
+      }
+    }
+
+    if (audioBuffers.length === 0) {
+      console.warn("[audio-study] polly_all_chunks_failed", {
+        chunkCount: chunks.length,
+        voiceId,
+      });
+      return null;
+    }
+
+    // Log partial failures
+    if (errorCount > 0) {
+      console.warn("[audio-study] polly_partial_failure", {
+        successCount,
+        errorCount,
+        totalChunks: chunks.length,
+      });
+    }
+
+    // Concatenate all audio buffers
+    const merged = Buffer.concat(audioBuffers);
+    const audioBase64 = merged.toString("base64");
+    const audioMime = "audio/mpeg";
+
     return {
       audioBase64,
       audioMime,
@@ -112,7 +239,7 @@ async function synthesizeWithPolly(
       fallback: false,
     };
   } catch (err) {
-    logPollyErrorFull(err, { voiceId, scriptChars: scriptText.length });
+    logPollyErrorFull(err, { voiceId, scriptChars: scriptText.length, chunkCount: chunks.length });
     return null;
   }
 }

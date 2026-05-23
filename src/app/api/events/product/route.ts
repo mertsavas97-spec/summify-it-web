@@ -13,6 +13,7 @@ const CLIENT_ALLOWED_EVENTS = new Set([
   "audio_study_script_generated",
   "audio_study_played",
   "audio_study_completed",
+  "podcast_preview_opened",
   "upgrade_clicked",
 ]);
 

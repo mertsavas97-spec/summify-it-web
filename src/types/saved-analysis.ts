@@ -1,5 +1,6 @@
 import type { MultiFormatLearnOutput } from "@/lib/learn/multiFormatTypes";
 import type { AudioStudyMetadata } from "@/types/audio-study";
+import type { PodcastDiscussionMetadata } from "@/lib/podcast/podcast-types";
 import type { LearnCardOutput } from "@/types/text-analysis";
 
 /** Structured summary stored in `saved_analyses.summary` (no raw transcript). */
@@ -23,6 +24,8 @@ export type SavedAnalysisMetadata = {
   multiFormatLearn?: MultiFormatLearnOutput;
   /** Cached teacher-style audio lesson script (audio bytes cached client-side). */
   audioStudy?: AudioStudyMetadata;
+  /** Cached two-speaker Podcast Mode discussion script. */
+  podcastDiscussion?: PodcastDiscussionMetadata;
 };
 
 export type SavedAnalysisRow = {

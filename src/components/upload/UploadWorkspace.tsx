@@ -27,6 +27,7 @@ import {
 } from "@/types/extraction";
 import type { AnalysisResult } from "@/types/text-analysis";
 import type { IntelligenceModeId } from "@/types/modes";
+import { getIntelligenceModeById } from "@/config/modes";
 import { useWorkspaceEntitlement } from "@/hooks/useWorkspaceEntitlement";
 import { getDefaultIntelligenceModeId } from "@/lib/mode-resolver";
 import type { AnalysisIntelligenceMetadata } from "@/types/intelligence";
@@ -35,7 +36,12 @@ import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { TrustSignals } from "@/components/growth/TrustSignals";
 import { DemoWorkflowBlock } from "@/components/growth/DemoWorkflowBlock";
-import { LearnByListeningBanner } from "@/components/audio-study/AudioStudyCard";
+import {
+  countPodcastAnalysisCandidates,
+  PodcastWorkspaceCtas,
+} from "@/components/podcast/PodcastWorkspaceCtas";
+import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
+import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 
 function resolvePipelineStage(
   extractStatus: UploadExtractStatus,
@@ -88,11 +94,18 @@ export function UploadWorkspace() {
   const [urlAnalysisError, setUrlAnalysisError] = useState<string | null>(null);
   const [injectedAnalysis, setInjectedAnalysis] =
     useState<InjectedAnalysisPayload | null>(null);
+  const [latestAnalysisResult, setLatestAnalysisResult] =
+    useState<AnalysisResult | null>(null);
+  const [latestSavedAnalysisId, setLatestSavedAnalysisId] = useState<string | null>(
+    null,
+  );
 
   const resetAnalysisState = useCallback(() => {
     setHasAnalysisResult(false);
     setAnalysisIntelligence(null);
     setInjectedAnalysis(null);
+    setLatestAnalysisResult(null);
+    setLatestSavedAnalysisId(null);
     setYoutubeAnalysisError(null);
     setUrlAnalysisError(null);
   }, []);
@@ -124,6 +137,8 @@ export function UploadWorkspace() {
         savedToWorkspace: analysis.savedToWorkspace,
         savedAnalysisId: analysis.savedAnalysisId,
       });
+      setLatestAnalysisResult(analysis.result);
+      setLatestSavedAnalysisId(analysis.savedAnalysisId ?? null);
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
       return true;
@@ -157,6 +172,8 @@ export function UploadWorkspace() {
         savedToWorkspace: analysis.savedToWorkspace,
         savedAnalysisId: analysis.savedAnalysisId,
       });
+      setLatestAnalysisResult(analysis.result);
+      setLatestSavedAnalysisId(analysis.savedAnalysisId ?? null);
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
       return true;
@@ -373,6 +390,33 @@ export function UploadWorkspace() {
     youtubePipelineActive || (inputMode === "youtube" && isAnalyzing);
   const urlPipelineBusy = urlPipelineActive || (inputMode === "url" && isAnalyzing);
   const singleActionPipelineBusy = youtubePipelineBusy || urlPipelineBusy;
+  const hasPodcastSource = rawText.trim().length >= 100;
+  const podcastSourceProfile = useMemo<PodcastSourceProfile>(() => {
+    const extractedCharacterCount =
+      extractionMeta?.extractedCharacters ?? rawText.trim().length;
+    const analysisCandidateCount = latestAnalysisResult
+      ? countPodcastAnalysisCandidates(latestAnalysisResult)
+      : null;
+
+    return {
+      sourceKind:
+        inputMode === "text"
+          ? "pasted-text"
+          : extractionMeta?.sourceKind ?? null,
+      estimatedPages:
+        extractionMeta?.sourceKind === "file" ? extractionMeta.estimatedPages : null,
+      extractedCharacterCount,
+      youtubeDurationMinutes:
+        extractionMeta?.sourceKind === "youtube"
+          ? extractionMeta.estimatedDurationMinutes
+          : null,
+      transcriptCharacterCount:
+        extractionMeta?.sourceKind === "youtube"
+          ? extractedCharacterCount
+          : null,
+      meaningfulAnalysisCandidateCount: analysisCandidateCount,
+    };
+  }, [extractionMeta, inputMode, latestAnalysisResult, rawText]);
 
   return (
     <div
@@ -468,10 +512,46 @@ export function UploadWorkspace() {
             )}
           </section>
 
-          <LearnByListeningBanner
+          <PodcastWorkspaceCtas
             isPaidActive={workspaceEntitlement.isPaidActive}
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+            hasSource={hasPodcastSource}
+            hasAnalysis={hasAnalysisResult && latestAnalysisResult != null}
+            sourceProfile={podcastSourceProfile}
+            analysisId={latestSavedAnalysisId}
+            analysisResult={latestAnalysisResult}
+            sourceType={extractionMeta?.sourceKind ?? inputMode}
+            sourceLabel={sourceLabel}
+            intelligenceMode={analysisMode}
+            documentType={analysisIntelligence?.profile.documentTypeGuess}
           />
+
+          {latestAnalysisResult && (
+            <PracticeAnalysisCta
+              savedToWorkspace={undefined}
+              savedAnalysisId={latestSavedAnalysisId}
+              learnCards={latestAnalysisResult.learnCards}
+              analysisContent={latestAnalysisResult}
+              entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+              isPaidActive={workspaceEntitlement.isPaidActive}
+              intelligenceModeId={analysisMode}
+              sourceType={extractionMeta?.sourceKind ?? null}
+              documentTitle={latestAnalysisResult.title}
+              modeLabel={
+                getIntelligenceModeById(analysisMode as IntelligenceModeId)?.label ??
+                analysisMode
+              }
+              sourceKindLabel={
+                extractionMeta?.sourceKind === "youtube"
+                  ? "YouTube"
+                  : extractionMeta?.sourceKind === "presentation"
+                    ? "Presentation"
+                    : extractionMeta?.sourceKind === "url"
+                      ? "Article"
+                      : "Document"
+              }
+            />
+          )}
 
           <TextAnalysisMvp
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
@@ -482,6 +562,7 @@ export function UploadWorkspace() {
             onRawTextChange={(text) => {
               setRawText(text);
               if (inputMode === "text") {
+                resetAnalysisState();
                 setExtractStatus(text.trim().length >= 100 ? "ready" : "idle");
                 setExtractionMeta(null);
                 setFileName(null);
@@ -494,6 +575,7 @@ export function UploadWorkspace() {
             extractionMeta={extractionMeta}
             analyzeDisabled={isExtracting || singleActionPipelineBusy}
             hidePrimaryAnalyze={inputMode === "youtube" || inputMode === "url"}
+            hidePracticeCta
             youtubeAnalysisFailed={Boolean(youtubeAnalysisError)}
             urlAnalysisFailed={Boolean(urlAnalysisError)}
             onRetryYoutubeAnalysis={handleYoutubeRetryAnalysis}
@@ -501,6 +583,8 @@ export function UploadWorkspace() {
             injectedAnalysis={injectedAnalysis}
             onAnalyzingChange={handleAnalyzingChange}
             onAnalysisComplete={setHasAnalysisResult}
+            onAnalysisResultChange={setLatestAnalysisResult}
+            onSavedAnalysisIdChange={setLatestSavedAnalysisId}
             onIntelligenceReady={setAnalysisIntelligence}
             limitNotice={limitNotice}
           />

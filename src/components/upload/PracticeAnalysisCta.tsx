@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { AnalysisLearningPath } from "@/components/learn/AnalysisLearningPath";
-import { AudioStudyCard } from "@/components/audio-study/AudioStudyCard";
-import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
@@ -156,23 +154,6 @@ export function PracticeAnalysisCta({
             }
           }
         />
-
-        {analysisContent?.summary ? (
-          <AudioStudyCard
-            className="mt-4"
-            analysisId={sessionId}
-            entitlementPlanId={entitlementPlanId}
-            isPaidActive={isPaidActive}
-            analysisInput={buildAudioStudyInputFromResult(
-              { ...analysisContent, learnCards },
-              {
-                sourceType,
-                intelligenceMode: intelligenceModeId,
-                sourceLabel: sourceKindLabel,
-              },
-            )}
-          />
-        ) : null}
       </div>
     );
   }
@@ -196,29 +177,33 @@ export function PracticeAnalysisCta({
 
   return (
     <div
-      className="rounded-xl border border-white/[0.08] bg-zinc-950/60 px-4 py-4"
+      className="rounded-xl border border-white/[0.08] bg-zinc-950/60 px-3 py-3"
       data-workspace-practice-cta
     >
-      <p className="text-sm font-medium text-zinc-200">Practice from this saved analysis</p>
-      <p className="mt-1 text-xs text-zinc-500">
-        Create a practice set from your Learn cards to start reviewing.
-      </p>
-      {message ? <p className="mt-2 text-xs text-amber-200/90">{message}</p> : null}
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void handlePractice()}
-          className="inline-flex items-center justify-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-violet-500/15 transition-colors hover:bg-violet-500 disabled:opacity-60"
-        >
-          {loading ? "Preparing session…" : "Create practice set"}
-        </button>
-        <Link
-          href={learnDashboardHref(savedAnalysisId)}
-          className="text-[11px] text-zinc-500 transition-colors hover:text-violet-300/90"
-        >
-          Open Learn →
-        </Link>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-zinc-200">Ready to practice</p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Create a practice set to start reviewing.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          {message ? <p className="text-xs text-amber-200/90">{message}</p> : null}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void handlePractice()}
+            className="inline-flex items-center justify-center rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white shadow-md shadow-violet-500/15 transition-colors hover:bg-violet-500 disabled:opacity-60"
+          >
+            {loading ? "Preparing…" : "Start practice"}
+          </button>
+          <Link
+            href={learnDashboardHref(savedAnalysisId)}
+            className="text-[11px] text-zinc-500 transition-colors hover:text-violet-300/90"
+          >
+            Open Learn →
+          </Link>
+        </div>
       </div>
     </div>
   );

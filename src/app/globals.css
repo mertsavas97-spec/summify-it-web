@@ -97,6 +97,23 @@ body {
   }
 }
 
+/* Podcast waveform animation */
+@keyframes waveform-pulse {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.animate-waveform {
+  animation-name: waveform-pulse;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  transform-origin: bottom;
+}
+
 .listening-banner-sweep::after {
   content: "";
   position: absolute;

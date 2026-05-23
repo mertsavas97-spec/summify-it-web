@@ -13,6 +13,10 @@ export const ANALYTICS_EVENTS = {
   pricing_opened: "pricing_opened",
   upgrade_modal_opened: "upgrade_modal_opened",
   guide_cta_clicked: "guide_cta_clicked",
+  podcast_cta_viewed: "podcast_cta_viewed",
+  podcast_cta_clicked: "podcast_cta_clicked",
+  podcast_ineligible_shown: "podcast_ineligible_shown",
+  podcast_audio_played: "podcast_audio_played",
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;
@@ -58,6 +62,22 @@ export type AnalyticsEventParams = {
     surface?: string;
     href?: string;
     label?: string;
+  };
+  podcast_cta_viewed?: {
+    state?: "no_source" | "pending" | "eligible" | "ineligible";
+    plan?: string;
+  };
+  podcast_cta_clicked?: {
+    state?: "no-source" | "pending" | "eligible" | "ineligible";
+    plan?: string;
+    locked?: boolean;
+  };
+  podcast_ineligible_shown?: {
+    plan?: string;
+    recommended_mode?: "audio-study" | "podcast";
+  };
+  podcast_audio_played?: {
+    state?: "eligible";
   };
 };
 
