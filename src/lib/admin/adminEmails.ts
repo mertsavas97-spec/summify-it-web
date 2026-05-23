@@ -1,5 +1,9 @@
 /** Central admin email allowlist — single source of truth for admin access. */
-export const ADMIN_EMAILS = ["mertsavas97@gmail.com"] as const;
+export const ADMIN_EMAILS = [
+  "mertsavas96@gmail.com",
+  "mertsavas97@gmail.com",
+  "mert@075collective.com",
+] as const;
 
 const ADMIN_EMAIL_SET = new Set(
   ADMIN_EMAILS.map((e) => e.trim().toLowerCase()),

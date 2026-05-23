@@ -5,23 +5,26 @@ import { buildPageMetadata } from "@/lib/seo";
 
 export const pageSeo = {
   home: buildPageMetadata({
-    title: "AI PDF & Document Summarizer with Study Notes",
+    title: "AI Study Companion — Summaries, Quizzes & Audio Learning",
     description:
-      "Summify is an AI study companion: summarize PDFs, YouTube, and decks, then Learn, quiz, and listen with teacher-style audio lessons. 29 intelligence modes. Free during public beta.",
+      "Summify turns PDFs, videos, and articles into AI-powered summaries, podcast-style learning experiences, and teacher-style audio lessons. Learn by listening with 29 intelligence modes. Free in beta.",
     path: "/",
     keywords: [
-      "AI PDF summarizer",
+      "AI study companion",
+      "audio learning",
+      "learn by listening",
+      "AI podcast study",
+      "PDF summarizer",
       "YouTube summarizer",
-      "document intelligence",
-      "AI study notes",
     ],
   }),
 
   upload: buildPageMetadata({
-    title: "AI Document Summarizer Workspace",
+    title: "AI Document Workspace — Summarize, Learn & Listen",
     description:
-      "Upload PDFs, decks, videos, web articles, DOCX, or TXT. Summarize, generate Learn cards, quiz, and audio study lessons in one workspace. Free during public beta.",
+      "Upload PDFs, decks, videos, articles, or text. Get structured summaries, Learn cards, quizzes, and teacher-style audio lessons. Turn any document into a podcast-style learning experience. Free in beta.",
     path: "/upload",
+    keywords: ["document workspace", "audio study mode", "AI learning platform"],
   }),
 
   summarizePdf: buildPageMetadata({

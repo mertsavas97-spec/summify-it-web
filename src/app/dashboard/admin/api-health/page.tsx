@@ -1,38 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { requireAdminPage } from "@/lib/admin/requireAdmin";
-import {
-  ensureProfileForUser,
-  formatPlanLabel,
-  getProfile,
-  getUserLimits,
-} from "@/lib/auth";
+import { ensureProfileForUser, formatPlanLabel, getProfile, getUserLimits } from "@/lib/auth";
 import { createPageMetadata } from "@/lib/metadata";
-import { getAdminMetrics } from "@/server/admin/getAdminMetrics";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
+import { ApiHealthDashboardView } from "@/components/admin/ApiHealthDashboardView";
+import { getApiHealth } from "@/server/admin/getApiHealth";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Admin Dashboard",
-  description: "Internal product metrics for Summify.",
-  path: "/dashboard/admin",
+  title: "API Health & Usage",
+  description: "Monitor external API configuration, usage, and health.",
+  path: "/dashboard/admin/api-health",
   noIndex: true,
 });
 
-export default async function AdminDashboardPage() {
+export default async function ApiHealthPage() {
   const user = await requireAdminPage();
-
   await ensureProfileForUser();
 
-  const [profile, limits, savedCount, metrics] = await Promise.all([
+  const [profile, limits, savedCount, health] = await Promise.all([
     getProfile(user.id),
     getUserLimits(user.id),
     countUserAnalyses(user.id),
-    getAdminMetrics(),
+    getApiHealth(),
   ]);
 
   const planLabel = formatPlanLabel(profile?.plan ?? DEFAULT_PAID_PREVIEW_PLAN, profile);
@@ -46,7 +40,7 @@ export default async function AdminDashboardPage() {
         planLabel={planLabel}
       />
       <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           <header className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-violet-950/30 via-zinc-900/50 to-zinc-950/80 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -54,33 +48,30 @@ export default async function AdminDashboardPage() {
                   Internal
                 </Badge>
                 <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                  Admin Dashboard
+                  API Health & Usage
                 </h1>
                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
-                  Live product usage, users, and subscription metrics.
+                  Monitor external API configuration, usage metrics, estimated costs, and quota status.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button href="/dashboard/admin/api-health" size="sm" variant="secondary">
-                  API Health
-                </Button>
-                <Button href="/dashboard/admin/blog" size="sm" variant="secondary">
-                  Blog CMS
+                <Button href="/dashboard/admin" size="sm" variant="secondary">
+                  Back to Admin
                 </Button>
                 <Button href="/dashboard" size="sm" variant="secondary">
-                  Back to workspace
+                  Workspace
                 </Button>
               </div>
             </div>
           </header>
 
           <div className="mt-8">
-            <AdminDashboardView metrics={metrics} />
+            <ApiHealthDashboardView health={health} />
           </div>
 
           <p className="mt-8 text-center text-[11px] text-zinc-600">
-            <Link href="/dashboard" className="hover:text-zinc-400">
-              Return to dashboard
+            <Link href="/dashboard/admin" className="hover:text-zinc-400">
+              Return to admin dashboard
             </Link>
           </p>
         </div>
