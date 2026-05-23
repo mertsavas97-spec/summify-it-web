@@ -2,16 +2,25 @@
 
 import Link from "next/link";
 import {
+  Briefcase,
   BrainCircuit,
+  Coffee,
+  GraduationCap,
   Headphones,
   Layers,
   Loader2,
   Lock,
+  MessagesSquare,
   Mic,
+  Sparkles,
   Users,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { getAuthCallbackUrl } from "@/lib/auth-callback";
+import { setAuthNextCookie } from "@/lib/auth/next-path";
+import { isGoogleAuthEnabled } from "@/lib/supabase/env";
 import {
   AUDIO_STUDY_UPGRADE_HREF,
   canUseAudioStudyMode,
@@ -34,7 +43,9 @@ import type {
   PodcastDensityMode,
   PodcastDiscussionAudio,
   PodcastDiscussionScript,
+  PodcastToneProfile,
 } from "@/lib/podcast/podcast-types";
+import { resolvePodcastTone } from "@/lib/podcast/resolvePodcastTone";
 import type { PlanId } from "@/types/plan";
 import type { AnalysisResult } from "@/types/text-analysis";
 import { CinematicPodcastPlayer } from "./CinematicPodcastPlayer";
@@ -48,10 +59,62 @@ type DensityOption = {
   duration: string;
 };
 
+type ToneOption = {
+  tone: PodcastToneProfile;
+  label: string;
+  subtitle: string;
+  accentClass: string;
+  selectedClass: string;
+  icon: ComponentType<{ className?: string }>;
+};
+
 const DENSITY_OPTIONS: DensityOption[] = [
   { mode: "quick", label: "Quick", duration: "~5-8 min" },
   { mode: "standard", label: "Standard", duration: "~10-15 min" },
   { mode: "deep-dive", label: "Deep Dive", duration: "~15-20 min" },
+];
+
+const TONE_OPTIONS: ToneOption[] = [
+  {
+    tone: "academic",
+    label: "Academic",
+    subtitle: "Research-driven",
+    accentClass: "text-blue-300",
+    selectedClass: "border-blue-400/60 bg-blue-500/15 shadow-blue-500/25",
+    icon: GraduationCap,
+  },
+  {
+    tone: "casual",
+    label: "Casual",
+    subtitle: "Relaxed & clear",
+    accentClass: "text-emerald-300",
+    selectedClass: "border-emerald-400/60 bg-emerald-500/15 shadow-emerald-500/25",
+    icon: Coffee,
+  },
+  {
+    tone: "storytelling",
+    label: "Storytelling",
+    subtitle: "Narrative flow",
+    accentClass: "text-fuchsia-300",
+    selectedClass: "border-fuchsia-400/60 bg-fuchsia-500/15 shadow-fuchsia-500/25",
+    icon: Sparkles,
+  },
+  {
+    tone: "executive",
+    label: "Executive",
+    subtitle: "Strategic takeaways",
+    accentClass: "text-amber-300",
+    selectedClass: "border-amber-400/60 bg-amber-500/15 shadow-amber-500/25",
+    icon: Briefcase,
+  },
+  {
+    tone: "debate",
+    label: "Debate",
+    subtitle: "Contrasting views",
+    accentClass: "text-cyan-300",
+    selectedClass: "border-cyan-400/60 bg-cyan-500/15 shadow-cyan-500/25",
+    icon: MessagesSquare,
+  },
 ];
 
 /** Icon component for each density mode. */
@@ -69,12 +132,15 @@ function getDensityModeIcon(mode: PodcastDensityMode, isSelected: boolean) {
   }
 }
 
-/** Generation step labels for multi-step progress. */
-const GENERATION_STEPS = [
-  "Analyzing source structure",
-  "Building podcast outline",
-  "Generating host discussion",
-  "Rendering audio conversation",
+/** Rotating progress subtitles shown while podcast generation is running. */
+const GENERATION_PROGRESS_MESSAGES = [
+  "Writing the discussion script...",
+  "Structuring the conversation...",
+  "Preparing speaker voices...",
+  "Rendering Host voice...",
+  "Rendering Expert voice...",
+  "Mixing audio segments...",
+  "Almost ready...",
 ];
 
 /**
@@ -152,6 +218,7 @@ export function PodcastWorkspaceCtas({
     analysis: AnalysisResult;
   } | null>(null);
   const [selectedDensityMode, setSelectedDensityMode] = useState<PodcastDensityMode | null>(null);
+  const [selectedToneProfile, setSelectedToneProfile] = useState<PodcastToneProfile | null>(null);
   const viewed = useRef(false);
   const ineligibleShown = useRef(false);
 
@@ -166,9 +233,63 @@ export function PodcastWorkspaceCtas({
     audioBase64?: string;
     audioMime?: string;
   } | null>(null);
+  const [generationMessageIndex, setGenerationMessageIndex] = useState(0);
+  const loadingRef = useRef(loading);
+
+  // Keep ref in sync with loading state
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    if (loading <= 0) return;
+
+    const interval = window.setInterval(() => {
+      // Only update if still loading
+      if (loadingRef.current > 0) {
+        setGenerationMessageIndex((prev) =>
+          Math.min(prev + 1, GENERATION_PROGRESS_MESSAGES.length - 1),
+        );
+      }
+    }, 2500);
+
+    return () => {
+      window.clearInterval(interval);
+      // Reset index when cleanup happens (loading stopped)
+      setGenerationMessageIndex(0);
+    };
+  }, [loading]);
   const [audioStudyError, setAudioStudyError] = useState<string | null>(null);
+  const [audioUsage, setAudioUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [podcastUsage, setPodcastUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
   const audioStudyPaidAccess = canUseAudioStudyMode(entitlementPlanId, isPaidActive);
   const podcastPaidAccess = canUsePodcastDiscussionMode(entitlementPlanId, isPaidActive);
+  const showUsageIndicators = entitlementPlanId === "free" || entitlementPlanId === "scholar";
+  const dailyAudioLimit = entitlementPlanId === "free" ? 3 : entitlementPlanId === "scholar" ? 10 : 999;
+  const dailyPodcastLimit = entitlementPlanId === "free" ? 1 : entitlementPlanId === "scholar" ? 5 : 999;
+  const audioLimitReached = showUsageIndicators && (audioUsage?.used ?? 0) >= dailyAudioLimit;
+  const podcastLimitReached = showUsageIndicators && (podcastUsage?.used ?? 0) >= dailyPodcastLimit;
+
+  async function startGoogleSignInBackToCurrentPage() {
+    if (!isGoogleAuthEnabled()) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    setAuthNextCookie(currentPath);
+    const supabase = createClient();
+    const redirectTo = getAuthCallbackUrl(currentPath, window.location.origin);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo },
+    });
+
+    if (error) {
+      window.location.href = `/login?next=${encodeURIComponent(currentPath)}`;
+    }
+  }
   const eligibility = useMemo(
     () => resolvePodcastEligibility(sourceProfile),
     [sourceProfile],
@@ -182,6 +303,11 @@ export function PodcastWorkspaceCtas({
 
   // Use selected mode if user picked one, otherwise use auto-selected
   const effectiveDensityMode = selectedDensityMode ?? autoDensityMode;
+  const autoToneProfile = useMemo(
+    () => resolvePodcastTone(documentType ?? null),
+    [documentType],
+  );
+  const effectiveToneProfile = selectedToneProfile ?? autoToneProfile;
 
   useEffect(() => {
     if (viewed.current) return;
@@ -201,6 +327,47 @@ export function PodcastWorkspaceCtas({
     });
   }, [eligibility.eligible, eligibility.recommendedMode, entitlementPlanId, hasAnalysis]);
 
+  useEffect(() => {
+    if (!showUsageIndicators || !hasAnalysis) return;
+
+    const supabase = createClient();
+    async function loadUsage() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setIsSignedIn(Boolean(user));
+      if (!user) return;
+
+      const { data: limits } = await supabase
+        .from("user_limits")
+        .select("daily_audio_lesson_count, daily_podcast_count, last_reset_date")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const today = new Date().toISOString().slice(0, 10);
+      const last = typeof limits?.last_reset_date === "string" ? limits.last_reset_date.slice(0, 10) : today;
+      const reset = last !== today;
+      setAudioUsage({
+        used: reset ? 0 : (limits?.daily_audio_lesson_count ?? 0),
+        limit: dailyAudioLimit,
+      });
+      setPodcastUsage({
+        used: reset ? 0 : (limits?.daily_podcast_count ?? 0),
+        limit: dailyPodcastLimit,
+      });
+    }
+
+    void loadUsage();
+  }, [showUsageIndicators, hasAnalysis, dailyAudioLimit, dailyPodcastLimit]);
+
+  useEffect(() => {
+    if (showUsageIndicators) return;
+    const supabase = createClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      setIsSignedIn(Boolean(data.user));
+    });
+  }, [showUsageIndicators]);
+
   const podcastState = !hasSource
     ? "no-source"
     : !hasAnalysis
@@ -210,13 +377,11 @@ export function PodcastWorkspaceCtas({
         : "ineligible";
 
   const podcastStatus =
-    podcastState === "no-source"
-      ? "Analyze a longer source first"
-      : podcastState === "pending"
-        ? "Run analysis to check podcast readiness"
-        : podcastState === "eligible"
-          ? "Podcast-ready"
-          : "Better as quick audio lesson";
+    podcastState === "pending"
+      ? "Run analysis to check podcast readiness"
+      : podcastState === "eligible"
+        ? "Podcast-ready"
+        : "Better as quick audio lesson";
 
   function trackPodcastClick() {
     trackEvent("podcast_cta_clicked", {
@@ -268,6 +433,7 @@ export function PodcastWorkspaceCtas({
             documentType,
             quizQuestions,
           },
+          toneProfile: effectiveToneProfile,
         }),
       });
       const data = (await res.json()) as {
@@ -275,11 +441,24 @@ export function PodcastWorkspaceCtas({
         cached?: boolean;
         podcast?: PodcastDiscussionScript;
         audio?: PodcastDiscussionAudio;
+        usage?: { used: number; limit: number };
         error?: string;
+        used?: number;
+        limit?: number;
       };
 
       if (!res.ok || !data.success || !data.podcast || !data.audio) {
+        if (res.status === 429 && data.error === "daily_limit_reached") {
+          if (typeof data.used === "number" && typeof data.limit === "number") {
+            setPodcastUsage({ used: data.used, limit: data.limit });
+          }
+          throw new Error("Daily limit reached — resets tomorrow");
+        }
         throw new Error(data.error ?? "Podcast discussion could not be generated right now.");
+      }
+
+      if (data.usage) {
+        setPodcastUsage(data.usage);
       }
 
       setGeneratedDiscussion({
@@ -349,10 +528,11 @@ export function PodcastWorkspaceCtas({
                   </div>
                 ) : null}
                 {audioStudyPaidAccess ? (
-                  <button
-                    type="button"
-                    disabled={!hasAnalysis || audioStudyState === "generating"}
-                    onClick={async () => {
+                  <>
+                    <button
+                      type="button"
+                      disabled={!hasAnalysis || audioStudyState === "generating" || audioLimitReached}
+                      onClick={async () => {
                       if (!analysisResult || !hasAnalysis) return;
                       setAudioStudyState("generating");
                       setAudioStudyError(null);
@@ -385,12 +565,21 @@ export function PodcastWorkspaceCtas({
                           audioUrl?: string;
                           audioBase64?: string;
                           audioMime?: string;
+                          usage?: { used: number; limit: number };
                           error?: string;
+                          used?: number;
+                          limit?: number;
                         };
 
                         // API returns 200 on success without a 'success' field
                         // Check for error field or missing audio data
                         if (!res.ok) {
+                          if (res.status === 429 && data.error === "daily_limit_reached") {
+                            if (typeof data.used === "number" && typeof data.limit === "number") {
+                              setAudioUsage({ used: data.used, limit: data.limit });
+                            }
+                            throw new Error("Daily limit reached — resets tomorrow");
+                          }
                           throw new Error(data.error ?? "Audio lesson could not be generated.");
                         }
 
@@ -412,24 +601,52 @@ export function PodcastWorkspaceCtas({
                           audioBase64: data.audioBase64,
                           audioMime: data.audioMime,
                         });
+                        if (data.usage) {
+                          setAudioUsage(data.usage);
+                        }
                         setAudioStudyState("ready");
                       } catch (err) {
                         setAudioStudyError(err instanceof Error ? err.message : "Audio lesson could not be generated right now.");
                         setAudioStudyState("error");
                       }
                     }}
-                    className="w-full rounded-lg bg-gradient-to-r from-violet-500/20 to-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-200 transition-all hover:from-violet-500/30 hover:to-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {audioStudyState === "generating" ? "Generating audio lesson..." : hasAnalysis ? "Generate audio lesson" : "Analyze source first"}
-                  </button>
+                      className="w-full rounded-lg bg-gradient-to-r from-violet-500/20 to-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-200 transition-all hover:from-violet-500/30 hover:to-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {audioLimitReached
+                        ? "Daily limit reached — resets tomorrow"
+                        : audioStudyState === "generating"
+                          ? "Generating audio lesson..."
+                          : hasAnalysis
+                            ? "Generate audio lesson"
+                            : "Analyze source first"}
+                    </button>
+                    {showUsageIndicators ? (
+                      <p className="text-[11px] text-zinc-500">
+                        {(audioUsage?.used ?? 0)} of {dailyAudioLimit} audio lessons used today
+                      </p>
+                    ) : null}
+                  </>
                 ) : (
-                  <Link
-                    href={AUDIO_STUDY_UPGRADE_HREF}
-                    className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
-                  >
-                    <Lock className="h-3 w-3" aria-hidden />
-                    Unlock audio lessons <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
-                  </Link>
+                  isSignedIn && audioLimitReached ? (
+                    <Link
+                      href={AUDIO_STUDY_UPGRADE_HREF}
+                      className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
+                    >
+                      <Lock className="h-3 w-3" aria-hidden />
+                      Upgrade for more <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void startGoogleSignInBackToCurrentPage();
+                      }}
+                      className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
+                    >
+                      <Lock className="h-3 w-3" aria-hidden />
+                      Unlock audio lessons <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
+                    </button>
+                  )
                 )}
               </>
             ) : audioStudyState === "ready" && audioStudyResult ? (
@@ -515,59 +732,148 @@ export function PodcastWorkspaceCtas({
                         role="radio"
                         aria-checked={isSelected}
                         onClick={() => setSelectedDensityMode(option.mode)}
-                        className={`flex items-center gap-2 flex-1 rounded-lg border px-2.5 py-2 text-xs font-medium transition-all ${
+                        className={`flex-1 rounded-xl px-6 py-3 text-sm font-semibold transition-all ${
                           isSelected
-                            ? "border-violet-400/50 bg-violet-500/25 text-violet-50 shadow-sm shadow-violet-500/10"
-                            : "border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:border-violet-400/25 hover:text-zinc-200"
+                            ? "bg-violet-600 text-white shadow-lg shadow-violet-500/25"
+                            : "border border-white/20 text-white/60 hover:border-violet-400/40 hover:text-white/80"
                         }`}
                       >
-                        {getDensityModeIcon(option.mode, isSelected)}
-                        <div className="text-left">
-                          <span className="block text-[10px] font-semibold">{option.label}</span>
-                          <span className="block text-[9px] opacity-70">{option.duration}</span>
+                        <div className="flex flex-col items-center gap-1">
+                          {getDensityModeIcon(option.mode, isSelected)}
+                          <span>{option.label}</span>
+                          <span className={`text-[10px] font-medium ${isSelected ? "text-violet-200" : "text-white/40"}`}>
+                            {option.duration}
+                          </span>
                         </div>
                       </button>
                     );
                   })}
                 </div>
+                <div className="space-y-2">
+                  <p className="text-[11px] font-medium text-zinc-400">Conversation tone</p>
+                  <div role="radiogroup" aria-label="Conversation tone" className="space-y-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      {TONE_OPTIONS.slice(0, 3).map((option) => {
+                        const isSelected = effectiveToneProfile === option.tone;
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.tone}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            onClick={() => setSelectedToneProfile(option.tone)}
+                            className={`rounded-lg border px-2.5 py-2 text-left transition-all ${
+                              isSelected
+                                ? `${option.selectedClass} shadow-md`
+                                : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className={`rounded-md p-1 ${isSelected ? "bg-white/10" : "bg-white/5"}`}>
+                                <Icon className={`h-3.5 w-3.5 ${option.accentClass}`} aria-hidden />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-[11px] font-semibold text-zinc-100">{option.label}</span>
+                                <span className="block text-[10px] text-zinc-400">{option.subtitle}</span>
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:px-8">
+                      {TONE_OPTIONS.slice(3).map((option) => {
+                        const isSelected = effectiveToneProfile === option.tone;
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.tone}
+                            type="button"
+                            role="radio"
+                            aria-checked={isSelected}
+                            onClick={() => setSelectedToneProfile(option.tone)}
+                            className={`rounded-lg border px-2.5 py-2 text-left transition-all ${
+                              isSelected
+                                ? `${option.selectedClass} shadow-md`
+                                : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className={`rounded-md p-1 ${isSelected ? "bg-white/10" : "bg-white/5"}`}>
+                                <Icon className={`h-3.5 w-3.5 ${option.accentClass}`} aria-hidden />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-[11px] font-semibold text-zinc-100">{option.label}</span>
+                                <span className="block text-[10px] text-zinc-400">{option.subtitle}</span>
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
                 <button
                   type="button"
-                  disabled={loading > 0 || !analysisResult}
+                  disabled={loading > 0 || !analysisResult || podcastLimitReached}
                   onClick={() => {
                     trackPodcastClick();
                     void generatePodcast();
                   }}
-                  className="listening-banner-cta inline-flex items-center gap-2 text-left text-xs font-semibold text-violet-200 transition-colors duration-200 hover:text-violet-50 disabled:opacity-60"
+                  className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:from-violet-500 hover:to-indigo-500 hover:shadow-violet-500/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:from-violet-600 disabled:hover:to-indigo-600"
                 >
                   {loading > 0 ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      <span className="flex flex-col gap-1">
-                        <span className="text-sm">Generating your podcast...</span>
-                        <span className="text-[10px] text-zinc-400">
-                          {GENERATION_STEPS[Math.min(Math.floor(loading * 4), GENERATION_STEPS.length - 1)] || "Processing..."}
+                    <span className="flex items-center justify-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                      <span className="flex flex-col gap-1 text-left">
+                        <span>Generating your podcast lesson...</span>
+                        <span className="text-xs text-violet-200">
+                          {GENERATION_PROGRESS_MESSAGES[generationMessageIndex]}
                         </span>
                       </span>
-                    </>
+                    </span>
                   ) : (
-                    <>
-                      <Mic className="h-4 w-4" aria-hidden />
-                      <span>Generate podcast discussion</span>
-                      <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
-                    </>
+                    <span className="flex items-center justify-center gap-2">
+                      <Mic className="h-5 w-5" aria-hidden />
+                      <span>
+                        {podcastLimitReached
+                          ? "Daily limit reached — resets tomorrow"
+                          : "Generate podcast lesson"}
+                      </span>
+                    </span>
                   )}
                 </button>
+                {showUsageIndicators ? (
+                  <p className="text-[11px] text-zinc-500">
+                    {(podcastUsage?.used ?? 0)} of {dailyPodcastLimit} podcasts used today
+                  </p>
+                ) : null}
               </>
             ) :
              podcastState === "eligible" ? (
-              <Link
-                href={AUDIO_STUDY_UPGRADE_HREF}
-                onClick={trackPodcastClick}
-                className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
-              >
-                <Lock className="h-3 w-3" aria-hidden />
-                Unlock podcast discussion <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
-              </Link>
+              isSignedIn && podcastLimitReached ? (
+                <Link
+                  href={AUDIO_STUDY_UPGRADE_HREF}
+                  onClick={trackPodcastClick}
+                  className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
+                >
+                  <Lock className="h-3 w-3" aria-hidden />
+                  Upgrade for more <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    trackPodcastClick();
+                    void startGoogleSignInBackToCurrentPage();
+                  }}
+                  className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
+                >
+                  <Lock className="h-3 w-3" aria-hidden />
+                  {isSignedIn ? "Unlock podcast discussion" : "Sign in to create podcast"} <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
+                </button>
+              )
             ) : (
               <button
                 type="button"
@@ -600,6 +906,135 @@ export function PodcastWorkspaceCtas({
             onRegenerate={() => void generatePodcast(true)}
             analysisId={analysisId}
           />
+
+          {/* Action Buttons */}
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={async () => {
+                trackEvent("podcast_saved_to_workspace", {
+                  analysisId: analysisId ?? "live-analysis",
+                });
+
+                // Save functionality - call API to persist analysis
+                if (!analysisId) {
+                  alert("Sign in to save to your workspace");
+                  return;
+                }
+
+                try {
+                  const res = await fetch(`/api/analyses/${analysisId}/save`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                  });
+
+                  const data = await res.json();
+
+                  if (res.ok && data.success) {
+                    alert("Podcast saved to your workspace!");
+                  } else {
+                    alert(data.error ?? "Failed to save. Please try again.");
+                  }
+                } catch (err) {
+                  console.error("[podcast-save] error", err);
+                  alert("Failed to save. Please try again.");
+                }
+              }}
+              className="flex-1 min-w-[140px] rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:bg-violet-500 hover:shadow-violet-500/40"
+            >
+              Save to workspace
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                trackEvent("podcast_download_mp3", {
+                  analysisId: analysisId ?? "live-analysis",
+                });
+                // Download functionality - fetch audio and create blob download
+                try {
+                  const audio = generatedDiscussion.audio;
+                  let blob: Blob | null = null;
+
+                  // Try fetching from audioUrl first (if it's a real URL)
+                  if (audio.audioUrl && audio.audioUrl.startsWith("http")) {
+                    const response = await fetch(audio.audioUrl);
+                    if (response.ok) {
+                      blob = await response.blob();
+                    }
+                  }
+
+                  // Fallback: decode base64 audio
+                  if (!blob && audio.audioBase64) {
+                    const base64Data = audio.audioBase64.split(",").pop() ?? audio.audioBase64;
+                    const binaryStr = atob(base64Data);
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) {
+                      bytes[i] = binaryStr.charCodeAt(i);
+                    }
+                    blob = new Blob([bytes], { type: audio.audioMime || "audio/mpeg" });
+                  }
+
+                  if (blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = `${generatedDiscussion.podcast.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.mp3`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                  }
+                } catch (err) {
+                  console.error("[podcast-download] error", err);
+                  alert("Could not download MP3. Please try again.");
+                }
+              }}
+              className="flex-1 min-w-[140px] rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 transition-all hover:border-violet-400/40 hover:text-white"
+            >
+              Download MP3
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                trackEvent("podcast_share", {
+                  analysisId: analysisId ?? "live-analysis",
+                });
+                // Share functionality - Web Share API with AbortError handling
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      title: generatedDiscussion.podcast.title,
+                      text: `Check out this AI-generated podcast lesson from Summify`,
+                      url: window.location.href,
+                    });
+                  } catch (err) {
+                    // Silently ignore user abort
+                    if (err instanceof Error && err.name === "AbortError") {
+                      return;
+                    }
+                    // Fallback to clipboard for other errors
+                    try {
+                      await navigator.clipboard.writeText(window.location.href);
+                    } catch {
+                      // Final fallback - do nothing
+                    }
+                  }
+                } else {
+                  // Fallback for browsers without Web Share API
+                  try {
+                    await navigator.clipboard.writeText(window.location.href);
+                  } catch {
+                    // If clipboard fails, select the URL in address bar
+                    window.location.hash = "";
+                  }
+                }
+              }}
+              className="flex-1 min-w-[140px] rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 transition-all hover:border-violet-400/40 hover:text-white"
+            >
+              Share
+            </button>
+          </div>
+
           <PodcastDiscussionPreview
             podcast={generatedDiscussion.podcast}
             cached={generatedDiscussion.cached}

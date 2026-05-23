@@ -39,6 +39,7 @@ import {
   recordAnalysisFailed,
 } from "@/server/usage/recordAnalysisAnalytics";
 import { devError, devLog, logServerError } from "@/server/logging";
+import { analyzeLimiter } from "@/lib/rateLimit";
 
 const ANONYMOUS_USAGE_COOKIE = "summify_anon_usage";
 const ANONYMOUS_DAILY_ANALYSIS_LIMIT = 3;
@@ -165,6 +166,18 @@ function buildFailureDebug(
  * Intelligence prepass + Groq (primary) + Gemini (fallback).
  */
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")
+    ?? request.headers.get("x-real-ip")
+    ?? "anonymous";
+
+  const { allowed } = analyzeLimiter(ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429 },
+    );
+  }
+
   let modeForLog = "unknown";
   let intelligence: AnalysisIntelligenceContext | undefined;
   let analyzeSourceHint: AnalysisSourceHint | undefined;

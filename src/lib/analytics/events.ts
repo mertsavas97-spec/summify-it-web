@@ -17,6 +17,9 @@ export const ANALYTICS_EVENTS = {
   podcast_cta_clicked: "podcast_cta_clicked",
   podcast_ineligible_shown: "podcast_ineligible_shown",
   podcast_audio_played: "podcast_audio_played",
+  podcast_saved_to_workspace: "podcast_saved_to_workspace",
+  podcast_download_mp3: "podcast_download_mp3",
+  podcast_share: "podcast_share",
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;
@@ -78,6 +81,15 @@ export type AnalyticsEventParams = {
   };
   podcast_audio_played?: {
     state?: "eligible";
+  };
+  podcast_saved_to_workspace?: {
+    analysisId?: string;
+  };
+  podcast_download_mp3?: {
+    analysisId?: string;
+  };
+  podcast_share?: {
+    analysisId?: string;
   };
 };
 

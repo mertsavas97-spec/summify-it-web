@@ -20,6 +20,8 @@ export type Profile = {
 export type UserLimits = {
   user_id: string;
   daily_analysis_count: number;
+  daily_audio_lesson_count: number;
+  daily_podcast_count: number;
   last_reset_date: string;
   monthly_analysis_count: number;
   updated_at: string;

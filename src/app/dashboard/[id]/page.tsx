@@ -146,6 +146,7 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
 
           <div className="mt-8 print-analysis-content" data-saved-analysis-detail>
             <SavedAnalysisWorkspace
+              analysisId={saved.id}
               result={result}
               modeId={modeId}
               entitlementPlanId={planUsage.planId}
@@ -153,6 +154,7 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
               fallbackUsed={saved.metadata?.fallbackUsed ?? false}
               documentTypeGuess={saved.document_type ?? saved.metadata?.documentTypeGuess}
               sourceKind={saved.source_kind}
+              podcastDiscussion={saved.metadata?.podcastDiscussion}
             />
           </div>
         </article>

@@ -29,6 +29,8 @@ async function ensureUserLimitsRow(
   const { error } = await supabase.from("user_limits").insert({
     user_id: userId,
     daily_analysis_count: 0,
+    daily_audio_lesson_count: 0,
+    daily_podcast_count: 0,
     monthly_analysis_count: 0,
     last_reset_date: today,
     updated_at: now,

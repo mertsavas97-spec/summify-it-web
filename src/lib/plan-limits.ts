@@ -15,6 +15,8 @@ export type UserPlanLimits = {
   planName: string;
   enforceLimits: boolean;
   analysesPerDay: number | null;
+  maxDailyAudioLessons: number;
+  maxDailyPodcasts: number;
   dailyAnalysisCount: number;
   remainingToday: number | null;
   maxFileSizeMb: number;
@@ -80,6 +82,10 @@ export function getUserPlanLimits(
     planName: plan.name,
     enforceLimits: plan.enforceLimits,
     analysesPerDay: cap,
+    maxDailyAudioLessons:
+      planId === "free" ? 3 : planId === "scholar" ? 10 : 999,
+    maxDailyPodcasts:
+      planId === "free" ? 1 : planId === "scholar" ? 5 : 999,
     dailyAnalysisCount: usedToday,
     remainingToday,
     maxFileSizeMb: getPlanLimits(planId).maxUploadMb,

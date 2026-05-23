@@ -11,6 +11,7 @@ import type {
   PodcastDiscussionAnalysisInput,
   PodcastDiscussionOutlineItem,
   PodcastDiscussionScript,
+  PodcastToneProfile,
   PodcastDiscussionTurn,
 } from "./podcast-types";
 
@@ -449,6 +450,7 @@ Do NOT repeat the intro or early sections. Focus on depth and substance.`;
     script: mergedScript,
     totalWordCount,
     densityMode: lengthPlan.densityMode,
+    toneProfile: analysis.toneProfile,
   };
 }
 
@@ -470,16 +472,22 @@ async function callGeminiJson(system: string, user: string): Promise<string> {
 export async function generatePodcastDiscussionScript(
   analysis: PodcastDiscussionAnalysisInput,
   densityMode?: PodcastDensityMode,
+  toneProfile?: PodcastToneProfile,
 ): Promise<PodcastDiscussionScript> {
+  const analysisInput: PodcastDiscussionAnalysisInput = {
+    ...analysis,
+    toneProfile: toneProfile ?? analysis.toneProfile,
+  };
+
   // Use provided density mode or auto-detect based on source size
   const resolvedDensityMode: PodcastDensityMode =
     densityMode ??
     (() => {
-      const sourceTier = resolveSourceSizeTier(analysis);
+      const sourceTier = resolveSourceSizeTier(analysisInput);
       return sourceTier === "large" ? "deep-dive" : sourceTier === "medium" ? "standard" : "quick";
     })();
 
-  const lengthPlan = resolvePodcastLengthPlan(analysis, resolvedDensityMode);
+  const lengthPlan = resolvePodcastLengthPlan(analysisInput, resolvedDensityMode);
 
   // Debug log for podcast pipeline verification
   console.info("[podcast] length_plan_resolved", {
@@ -488,19 +496,20 @@ export async function generatePodcastDiscussionScript(
     maxWords: lengthPlan.maxWords,
     targetWordRange: lengthPlan.targetWordRange,
     durationRange: lengthPlan.durationRange,
-    sourceTitle: analysis.title,
+    sourceTitle: analysisInput.title,
     userSelected: Boolean(densityMode),
+    toneProfile: analysisInput.toneProfile ?? "casual",
   });
 
   // Use two-phase generation for deep-dive and critical modes to achieve longer outputs
   const useTwoPhase = resolvedDensityMode === "deep-dive" || resolvedDensityMode === "critical";
 
   if (useTwoPhase && process.env.GROQ_API_KEY) {
-    return generatePodcastScriptTwoPhase(analysis, lengthPlan, PODCAST_DISCUSSION_SYSTEM);
+    return generatePodcastScriptTwoPhase(analysisInput, lengthPlan, PODCAST_DISCUSSION_SYSTEM);
   }
 
   // Single-call generation for other modes
-  const userPrompt = buildPodcastDiscussionPrompt(analysis, lengthPlan);
+  const userPrompt = buildPodcastDiscussionPrompt(analysisInput, lengthPlan);
 
   // Use Groq as the primary provider (same as main analysis pipeline)
   if (process.env.GROQ_API_KEY) {

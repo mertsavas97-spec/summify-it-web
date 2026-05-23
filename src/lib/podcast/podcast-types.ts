@@ -18,6 +18,13 @@ export type PodcastDensityMode =
   | "critical"
   | "debate";
 
+export type PodcastToneProfile =
+  | "academic"
+  | "casual"
+  | "storytelling"
+  | "executive"
+  | "debate";
+
 export type PodcastDiscussionTurn = {
   speaker: PodcastSpeakerId;
   text: string;
@@ -48,6 +55,8 @@ export type PodcastDiscussionScript = {
   densityMode?: PodcastDensityMode;
   /** Suitability tier of the source */
   suitability?: PodcastSuitabilityTier;
+  /** Tone profile used for speaker style */
+  toneProfile?: PodcastToneProfile;
 };
 
 export type PodcastDiscussionMetadata = PodcastDiscussionScript & {
@@ -90,4 +99,5 @@ export type PodcastDiscussionAnalysisInput = {
   sourceMetadata?: PodcastSourceMetadataInput;
   sourceType?: string | null;
   intelligenceMode?: string | null;
+  toneProfile?: PodcastToneProfile;
 };

@@ -23,8 +23,92 @@ import {
 import { getAnalysisById } from "@/server/analyses/getAnalysisById";
 import { mergeAnalysisAudioStudy } from "@/server/analyses/mergeAnalysisAudioStudy";
 import { generateAudioStudyScript } from "@/server/audio-study/generateAudioStudyScript";
+import { createClientIfConfigured } from "@/lib/supabase/server";
 import type { AudioStudyAnalysisInput, AudioStudyMetadata } from "@/types/audio-study";
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { UserLimits } from "@/types/database";
+
+type FeatureUsageCheck = {
+  allowed: boolean;
+  used: number;
+  limit: number;
+  resetDaily: boolean;
+};
+
+function utcToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDailyAudioLessonLimit(planId: string): number {
+  if (planId === "free") return 3;
+  if (planId === "scholar") return 10;
+  return 999;
+}
+
+async function checkAndPrepareAudioUsage(userId: string, limit: number): Promise<FeatureUsageCheck | null> {
+  const supabase = await createClientIfConfigured();
+  if (!supabase) return null;
+
+  const today = utcToday();
+  const { data: row } = await supabase
+    .from("user_limits")
+    .select("daily_audio_lesson_count, daily_analysis_count, daily_podcast_count, monthly_analysis_count, last_reset_date")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const last = typeof row?.last_reset_date === "string" ? row.last_reset_date.slice(0, 10) : today;
+  const resetDaily = last !== today;
+  const used = resetDaily ? 0 : (row?.daily_audio_lesson_count ?? 0);
+
+  return {
+    allowed: limit === 999 ? true : used < limit,
+    used,
+    limit,
+    resetDaily,
+  };
+}
+
+async function incrementAudioUsage(userId: string): Promise<void> {
+  const supabase = await createClientIfConfigured();
+  if (!supabase) return;
+
+  const today = utcToday();
+  const now = new Date().toISOString();
+  const { data: row } = await supabase
+    .from("user_limits")
+    .select("daily_analysis_count, daily_audio_lesson_count, daily_podcast_count, monthly_analysis_count, last_reset_date")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!row) {
+    await supabase.from("user_limits").upsert({
+      user_id: userId,
+      daily_analysis_count: 0,
+      daily_audio_lesson_count: 1,
+      daily_podcast_count: 0,
+      monthly_analysis_count: 0,
+      last_reset_date: today,
+      updated_at: now,
+    });
+    return;
+  }
+
+  const last = typeof row.last_reset_date === "string" ? row.last_reset_date.slice(0, 10) : today;
+  const resetDaily = last !== today;
+  const nextAudioCount = resetDaily ? 1 : (row.daily_audio_lesson_count ?? 0) + 1;
+
+  await supabase
+    .from("user_limits")
+    .update({
+      daily_audio_lesson_count: nextAudioCount,
+      daily_analysis_count: resetDaily ? 0 : (row.daily_analysis_count ?? 0),
+      daily_podcast_count: resetDaily ? 0 : (row.daily_podcast_count ?? 0),
+      monthly_analysis_count: row.monthly_analysis_count ?? 0,
+      last_reset_date: today,
+      updated_at: now,
+    } satisfies Partial<UserLimits>)
+    .eq("user_id", userId);
+}
 
 type GenerateBody = {
   analysisId?: string;
@@ -260,6 +344,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const dailyLimit = getDailyAudioLessonLimit(planId);
+  const usageCheck = await checkAndPrepareAudioUsage(user.id, dailyLimit);
+  if (usageCheck && !usageCheck.allowed) {
+    return NextResponse.json(
+      {
+        error: "daily_limit_reached",
+        limit: usageCheck.limit,
+        used: usageCheck.used,
+      },
+      { status: 429 },
+    );
+  }
+
   const body = (await request.json().catch(() => null)) as GenerateBody | null;
   const regenerate = Boolean(body?.regenerate);
   const synthesizeOnly = Boolean(body?.synthesizeOnly);
@@ -344,6 +441,10 @@ export async function POST(request: Request) {
       insertViaServiceRole: true,
     });
 
+    await incrementAudioUsage(user.id);
+
+    const usedAfter = usageCheck ? usageCheck.used + 1 : null;
+
     return NextResponse.json({
       title: scriptBundle.title,
       durationEstimate: scriptBundle.durationEstimate,
@@ -361,6 +462,13 @@ export async function POST(request: Request) {
             audioMime: pollyAudio.audioMime,
           }
         : {}),
+      usage:
+        usageCheck
+          ? {
+              used: usedAfter,
+              limit: usageCheck.limit,
+            }
+          : undefined,
     });
   } catch (err) {
     const message =

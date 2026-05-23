@@ -17,6 +17,7 @@ import { getProfile } from "@/lib/supabase/profile";
 import { resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import { devError, logServerError } from "@/server/logging";
+import { extractLimiter } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -48,6 +49,18 @@ function buildSlideOutline(
  * Multipart form-data with field `file` (PDF, DOCX, TXT, or PPTX).
  */
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")
+    ?? request.headers.get("x-real-ip")
+    ?? "anonymous";
+
+  const { allowed } = extractLimiter(ip);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429 },
+    );
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");

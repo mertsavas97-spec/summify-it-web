@@ -7,7 +7,9 @@ import {
 import { canUsePodcastDiscussionMode } from "@/lib/podcast/access";
 import { resolvePodcastEligibility, type PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { generatePodcastDiscussionScript } from "@/lib/podcast/generate-podcast-script";
+import { resolvePodcastTone } from "@/lib/podcast/resolvePodcastTone";
 import type {
+  PodcastToneProfile,
   PodcastDiscussionAnalysisInput,
   PodcastDiscussionMetadata,
   PodcastQuizQuestionInput,
@@ -16,12 +18,94 @@ import { getAnalysisById } from "@/server/analyses/getAnalysisById";
 import { mergeAnalysisPodcastDiscussion } from "@/server/analyses/mergeAnalysisPodcastDiscussion";
 import { generatePodcastDiscussionAudio } from "@/server/podcast/generatePodcastDiscussionAudio";
 import { trackProductEvent } from "@/server/usage/trackProductEvent";
+import { createClientIfConfigured } from "@/lib/supabase/server";
+import type { UserLimits } from "@/types/database";
 import type { AnalysisResult } from "@/types/text-analysis";
+
+type FeatureUsageCheck = {
+  allowed: boolean;
+  used: number;
+  limit: number;
+};
+
+function utcToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDailyPodcastLimit(planId: string): number {
+  if (planId === "free") return 1;
+  if (planId === "scholar") return 5;
+  return 999;
+}
+
+async function checkAndPreparePodcastUsage(userId: string, limit: number): Promise<FeatureUsageCheck | null> {
+  const supabase = await createClientIfConfigured();
+  if (!supabase) return null;
+
+  const today = utcToday();
+  const { data: row } = await supabase
+    .from("user_limits")
+    .select("daily_podcast_count, last_reset_date")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const last = typeof row?.last_reset_date === "string" ? row.last_reset_date.slice(0, 10) : today;
+  const used = last !== today ? 0 : (row?.daily_podcast_count ?? 0);
+
+  return {
+    allowed: limit === 999 ? true : used < limit,
+    used,
+    limit,
+  };
+}
+
+async function incrementPodcastUsage(userId: string): Promise<void> {
+  const supabase = await createClientIfConfigured();
+  if (!supabase) return;
+
+  const today = utcToday();
+  const now = new Date().toISOString();
+  const { data: row } = await supabase
+    .from("user_limits")
+    .select("daily_analysis_count, daily_audio_lesson_count, daily_podcast_count, monthly_analysis_count, last_reset_date")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!row) {
+    await supabase.from("user_limits").upsert({
+      user_id: userId,
+      daily_analysis_count: 0,
+      daily_audio_lesson_count: 0,
+      daily_podcast_count: 1,
+      monthly_analysis_count: 0,
+      last_reset_date: today,
+      updated_at: now,
+    });
+    return;
+  }
+
+  const last = typeof row.last_reset_date === "string" ? row.last_reset_date.slice(0, 10) : today;
+  const resetDaily = last !== today;
+  const nextPodcastCount = resetDaily ? 1 : (row.daily_podcast_count ?? 0) + 1;
+
+  await supabase
+    .from("user_limits")
+    .update({
+      daily_podcast_count: nextPodcastCount,
+      daily_analysis_count: resetDaily ? 0 : (row.daily_analysis_count ?? 0),
+      daily_audio_lesson_count: resetDaily ? 0 : (row.daily_audio_lesson_count ?? 0),
+      monthly_analysis_count: row.monthly_analysis_count ?? 0,
+      last_reset_date: today,
+      updated_at: now,
+    } satisfies Partial<UserLimits>)
+    .eq("user_id", userId);
+}
 
 type PodcastGenerateBody = {
   analysisId?: string;
   regenerate?: boolean;
   densityMode?: "quick" | "standard" | "deep-dive" | "critical" | "debate";
+  toneProfile?: PodcastToneProfile;
   sourceProfile?: PodcastSourceProfile;
   analysisPayload?: Partial<AnalysisResult> & {
     sourceType?: string | null;
@@ -128,6 +212,15 @@ export async function POST(request: Request) {
     );
   }
 
+  const dailyLimit = getDailyPodcastLimit(planId);
+  const usageCheck = await checkAndPreparePodcastUsage(user.id, dailyLimit);
+  if (usageCheck && !usageCheck.allowed) {
+    return NextResponse.json(
+      { error: "daily_limit_reached", limit: usageCheck.limit, used: usageCheck.used },
+      { status: 429 },
+    );
+  }
+
   const body = (await request.json().catch(() => null)) as PodcastGenerateBody | null;
   const regenerate = Boolean(body?.regenerate);
   let analysisInput: PodcastDiscussionAnalysisInput | null = null;
@@ -161,20 +254,27 @@ export async function POST(request: Request) {
 
   // Determine effective density mode (user selection or auto-detect)
   const effectiveDensityMode = body?.densityMode;
+  const effectiveToneProfile: PodcastToneProfile =
+    body?.toneProfile ?? resolvePodcastTone(analysisInput.sourceMetadata?.documentType);
 
   // Check if cached podcast matches the requested density mode
   const cacheMatchesDensity = cachedPodcast && (
     !effectiveDensityMode ||
     cachedPodcast.densityMode === effectiveDensityMode
   );
+  const cacheMatchesTone = cachedPodcast && (
+    !effectiveToneProfile ||
+    (cachedPodcast.toneProfile ?? "casual") === effectiveToneProfile
+  );
+  const cacheMatchesVariant = Boolean(cacheMatchesDensity && cacheMatchesTone);
 
   try {
-    let scriptCached = Boolean(cacheMatchesDensity && !regenerate);
-    let podcast = cacheMatchesDensity ? cachedPodcast : undefined;
+    let scriptCached = Boolean(cacheMatchesVariant && !regenerate);
+    let podcast = cacheMatchesVariant ? cachedPodcast : undefined;
     if (!podcast || regenerate) {
       try {
         podcast = {
-          ...(await generatePodcastDiscussionScript(analysisInput, effectiveDensityMode)),
+          ...(await generatePodcastDiscussionScript(analysisInput, effectiveDensityMode, effectiveToneProfile)),
           generatedAt: new Date().toISOString(),
         };
       } catch (scriptError) {
@@ -230,11 +330,18 @@ export async function POST(request: Request) {
         },
         insertViaServiceRole: true,
       });
+      await incrementPodcastUsage(user.id);
       return NextResponse.json({
         success: true,
         podcast,
         audio,
         cached: scriptCached,
+        usage: usageCheck
+          ? {
+              used: usageCheck.used + 1,
+              limit: usageCheck.limit,
+            }
+          : undefined,
       });
     } catch (audioError) {
       console.error("[podcast] audio_generation_failed", {

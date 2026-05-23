@@ -3,6 +3,8 @@ import { createDocumentInput } from "@/core/documents";
 import { trackUsageMock } from "@/core/usage";
 import { trackTelemetryMock } from "@/core/telemetry";
 import { API_MOCK_META, type UploadApiResponse } from "@/core/api/responses";
+import { getOptionalUser } from "@/lib/auth";
+import { uploadLimiter } from "@/lib/rateLimit";
 
 /**
  * POST /api/upload
@@ -13,6 +15,22 @@ import { API_MOCK_META, type UploadApiResponse } from "@/core/api/responses";
  * TODO: Return signed URL + document record from database.
  */
 export async function POST(request: Request) {
+  const user = await getOptionalUser();
+  const identifier = user?.id
+    ?? request.headers.get("x-forwarded-for")
+    ?? "anonymous";
+
+  // Log for monitoring (no PII)
+  console.log("[upload] request from", user ? "authenticated" : "anonymous");
+
+  const { allowed } = uploadLimiter(identifier);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment." },
+      { status: 429 },
+    );
+  }
+
   try {
     const body = (await request.json()) as {
       fileName?: string;

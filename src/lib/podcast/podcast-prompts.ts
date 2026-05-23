@@ -3,7 +3,11 @@ import {
   normalizeLearningLanguage,
   sourceLanguageGroundingNote,
 } from "@/lib/learning/normalizeLearningLanguage";
-import type { PodcastDensityMode, PodcastDiscussionAnalysisInput } from "./podcast-types";
+import type {
+  PodcastDensityMode,
+  PodcastDiscussionAnalysisInput,
+  PodcastToneProfile,
+} from "./podcast-types";
 
 export type PodcastLengthPlan = {
   durationRange: string;
@@ -60,6 +64,32 @@ function modeFraming(mode: string | null | undefined): string {
     return "Mode framing: prioritize methodological rigor, evidence quality, and alternative interpretations. Engage critically with claims and data.";
   }
   return "Mode framing: follow the selected analysis lens while preserving a clear educational discussion.";
+}
+
+function tonePersonaFraming(tone: PodcastToneProfile): string {
+  switch (tone) {
+    case "academic":
+      return `HOST: methodical and structured; asks precise clarifying questions and tracks argument quality.
+EXPERT: formal, evidence-oriented, and exact; distinguishes claims/evidence/limits and references methodological rigor.
+STYLE: precise wording, minimal fluff, citation-aware phrasing (without inventing citations).`;
+    case "storytelling":
+      return `HOST: warm and scene-setting; introduces emotional stakes and narrative transitions.
+EXPERT: interpretive and reflective; weaves events into clear arcs, themes, and turning points.
+STYLE: immersive but grounded; vivid, human, and emotionally resonant without fabrication.`;
+    case "executive":
+      return `HOST: direct and outcome-focused; prioritizes decisions, risks, and implications.
+EXPERT: concise strategist; delivers actionable insight, tradeoffs, and next-step clarity.
+STYLE: high signal, low verbosity, business-ready language.`;
+    case "debate":
+      return `HOST: skeptical challenger; pressure-tests assumptions and raises credible counterarguments.
+EXPERT: disciplined defender; responds with evidence, constraints, and nuanced rebuttals.
+STYLE: adversarial but respectful; disagreement is substantive, not performative.`;
+    case "casual":
+    default:
+      return `HOST: curious, friendly, and accessible; asks practical listener-first questions.
+EXPERT: approachable teacher; explains with everyday analogies and concrete examples.
+STYLE: conversational, warm, and clear without oversimplifying.`;
+  }
 }
 
 /**
@@ -167,6 +197,7 @@ export function buildPodcastDiscussionPrompt(
   lengthPlan: PodcastLengthPlan,
 ): string {
   const density = lengthPlan.densityMode ?? "standard";
+  const toneProfile = input.toneProfile ?? "casual";
 
   return `Write a two-speaker podcast discussion for Summify Podcast Mode.
 
@@ -178,8 +209,8 @@ All title, outline, and dialogue fields must be written in natural ${LEARNING_OU
 TONE:
 - Thoughtful educational podcast: conversational, intelligent, structured, reflective, and slightly narrative
 - Sound human without banter, hype, repetition, fake jokes, or overexplaining
-- Host asks questions, reframes ideas, transitions naturally, and keeps pacing moving
-- Expert explains clearly, adds nuance, clarifies examples, and summarizes concepts
+- Conversation tone profile: ${toneProfile}
+- ${tonePersonaFraming(toneProfile).split("\n").join("\n- ")}
 - Never fabricate source details beyond the analysis below
 
 ${sourceFraming(input)}
