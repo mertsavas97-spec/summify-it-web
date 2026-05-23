@@ -75,6 +75,46 @@ export const pageSeo = {
     keywords: ["podcast summarizer AI", "audio transcript summary", "MP3 notes"],
   }),
 
+  pdfSummarizer: buildPageMetadata({
+    title: "PDF Summarizer for Study Workflows & Audio Learning",
+    description:
+      "Turn long PDFs into structured study systems with summaries, Learn cards, audio lessons, and podcast-style discussion in one workspace.",
+    path: "/pdf-summarizer",
+    keywords: ["pdf summarizer", "study workflow", "research paper summary", "ai study system"],
+  }),
+
+  bestAiForStudying: buildPageMetadata({
+    title: "Best AI for Studying — Structured Notes, Recall & Audio",
+    description:
+      "A focused AI study workspace for active recall, ADHD-friendly workflows, and learn-while-walking audio lessons from your PDFs, notes, and videos.",
+    path: "/best-ai-for-studying",
+    keywords: ["best ai for studying", "ai study workspace", "active recall ai", "audio-first studying"],
+  }),
+
+  pdfToPodcast: buildPageMetadata({
+    title: "PDF to Podcast — Turn Reading into Audio Study Lessons",
+    description:
+      "Convert dense PDFs into podcast-style lessons so you can study while commuting, walking, or between classes without losing structure.",
+    path: "/pdf-to-podcast",
+    keywords: ["pdf to podcast", "audio learning", "study while commuting", "podcast study tool"],
+  }),
+
+  youtubeVideoSummarizer: buildPageMetadata({
+    title: "YouTube Video Summarizer for Lectures & Educational Content",
+    description:
+      "Summarize long YouTube lectures into clear notes, insights, and revision-ready structure, then continue learning with audio and workspace tools.",
+    path: "/youtube-video-summarizer",
+    keywords: ["youtube video summarizer", "lecture summarizer", "educational video notes"],
+  }),
+
+  aiNoteTool: buildPageMetadata({
+    title: "AI Note Tool for Structured Study & Revision Workflows",
+    description:
+      "Organize ideas into structured notes, review loops, and audio study outputs in a calm AI knowledge workspace built for real learning.",
+    path: "/ai-note-tool",
+    keywords: ["ai note tool", "structured notes", "revision workflow", "knowledge workspace"],
+  }),
+
   forStudents: buildPageMetadata({
     title: "AI Study Notes & Exam Prep",
     description:

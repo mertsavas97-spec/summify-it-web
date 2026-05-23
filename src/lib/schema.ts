@@ -385,6 +385,36 @@ export function productPageJsonLd(input: {
   ];
 }
 
+/** SEO landing-page graph: SoftwareApplication + Breadcrumb + optional FAQ + optional HowTo. */
+export function seoLandingPageJsonLd(input: {
+  path: string;
+  pageTitle: string;
+  description: string;
+  faqs?: FaqItem[];
+  howToSteps?: HowToStepInput[];
+}): JsonLdObject[] {
+  const graphs: JsonLdObject[] = [
+    softwareApplicationSchema({
+      path: input.path,
+      description: input.description,
+    }),
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: input.pageTitle, path: input.path },
+    ]),
+  ];
+
+  if (input.faqs && input.faqs.length > 0) {
+    graphs.push(faqPageSchema(input.faqs));
+  }
+
+  if (input.howToSteps && input.howToSteps.length > 0) {
+    graphs.push(howToSummifySchema(input.howToSteps));
+  }
+
+  return graphs;
+}
+
 /** Pricing page: SoftwareApplication with plan offers, Product, breadcrumbs. */
 export function pricingPageJsonLd(): JsonLdObject[] {
   return [
