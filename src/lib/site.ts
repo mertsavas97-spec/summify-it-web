@@ -10,5 +10,5 @@ export const siteConfig = {
   description:
     "AI document intelligence and study companion for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT — summaries, Learn cards, quizzes, and voice study lessons.",
   url: getAppOrigin(),
-  ogImage: "/og-default.png",
+  ogImage: "/og/summify-og-v1.png",
 } as const;

@@ -45,7 +45,7 @@ export function createPageMetadata({
           url: absoluteUrl(siteConfig.ogImage),
           width: OG_IMAGE_WIDTH,
           height: OG_IMAGE_HEIGHT,
-          alt: `${siteConfig.name} — ${siteConfig.description}`,
+          alt: "Summify AI Summary and Learn social preview",
         },
       ],
     },

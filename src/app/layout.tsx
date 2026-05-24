@@ -31,7 +31,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const defaultTitle = "AI PDF & YouTube Summarizer";
+const defaultTitle = "Summify — AI Summary & Learn";
+const defaultDescription =
+  "Turn PDFs, YouTube videos, audio, and web articles into AI summaries, learn cards, audio lessons, and study podcasts.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
@@ -67,13 +69,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
     openGraph: buildOpenGraph({
       title: defaultTitle,
-      description: siteConfig.description,
+      description: defaultDescription,
       path: "/",
     }),
 
     twitter: buildTwitterCard({
       title: defaultTitle,
-      description: siteConfig.description,
+      description: defaultDescription,
     }),
 
     robots: indexable

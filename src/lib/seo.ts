@@ -82,7 +82,7 @@ export function buildOpenGraph(input: OpenGraphInput): Metadata["openGraph"] {
         url: absoluteUrl(siteConfig.ogImage),
         width: OG_IMAGE_WIDTH,
         height: OG_IMAGE_HEIGHT,
-        alt: `${SEO_BRAND} — AI Document Intelligence Workspace`,
+        alt: "Summify AI Summary and Learn social preview",
       },
     ],
     ...articleTimes,
