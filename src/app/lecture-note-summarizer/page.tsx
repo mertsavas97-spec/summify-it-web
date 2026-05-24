@@ -41,8 +41,8 @@ export default function LectureNoteSummarizerPage() {
                 examples, and side comments. That makes review expensive: students first decode their own
                 notes, then figure out what matters, then design recall practice manually. Traditional
                 summarizers reduce text length, but they rarely create a system you can reuse across a
-                semester. Summify is designed to solve that second problem: not just "what does this say," but
-                "how do I learn this efficiently over time?"
+                semester. Summify is designed to solve that second problem: not just &quot;what does this say,&quot; but
+                &quot;how do I learn this efficiently over time?&quot;
               </>
             ),
           },

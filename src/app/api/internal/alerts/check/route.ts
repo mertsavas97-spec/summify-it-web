@@ -20,17 +20,14 @@ async function getRecentAnalysisTime(): Promise<string | null> {
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
+  const querySecret = request.nextUrl.searchParams.get("secret");
+  const authorization = request.headers.get("authorization") ?? null;
+  const bearerToken = typeof authorization === "string" && authorization.startsWith("Bearer ")
+    ? authorization.slice(7)
+    : authorization;
+  const providedSecret = querySecret ?? bearerToken;
 
-  if (cronSecret) {
-    const authorization = request.headers.get("authorization") ?? null;
-    const bearerToken = typeof authorization === "string" && authorization.startsWith("Bearer ")
-      ? authorization.slice(7)
-      : authorization;
-
-    if (bearerToken !== cronSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  } else {
+  if (!cronSecret || providedSecret !== cronSecret) {
     try {
       await requireAdminSession();
     } catch {

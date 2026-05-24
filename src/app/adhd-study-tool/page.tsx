@@ -47,7 +47,7 @@ export default function AdhdStudyToolPage() {
           {
             body: (
               <>
-                Many students with ADHD are told to "just review your notes," but that advice
+                Many students with ADHD are told to just review your notes, but that advice
                 usually means rereading long pages and hoping memory improves. In practice,
                 passive rereading creates fatigue faster than recall. Walls of text blur together,
                 sessions run too long, and important ideas get buried. The result is not laziness;
@@ -146,7 +146,7 @@ export default function AdhdStudyToolPage() {
               <>
                 A practical ADHD study plan usually works best when each session has a narrow objective and a
                 visible finish line. Instead of scheduling a vague two-hour block, define micro-sessions such as
-                “review ten Learn cards,” “listen to one audio lesson while walking,” or “revisit one weak concept
+                &ldquo;review ten Learn cards,&rdquo; &ldquo;listen to one audio lesson while walking,&rdquo; or &ldquo;revisit one weak concept
                 and summarize it in your own words.” This prevents perfection loops where students spend most of
                 their time organizing notes and very little time retrieving information. Summify supports this by
                 preserving one source of truth across text and audio outputs, so you can pause, switch modalities,

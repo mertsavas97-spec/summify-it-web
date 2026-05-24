@@ -106,7 +106,7 @@ export default function LearnByListeningPage() {
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
           Study while walking, learn during workouts, and turn passive study time into active
-          retention. Summify doesn't give you a summary. It becomes your study companion.
+          retention. Summify doesn&apos;t give you a summary. It becomes your study companion.
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <Button href="/upload" size="lg">
