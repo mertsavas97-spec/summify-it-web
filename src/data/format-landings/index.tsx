@@ -13,6 +13,12 @@ export const WEB_ARTICLES_LANDING: FormatLandingConfig = {
     primaryCta: { href: "/upload", label: "Try Summify free" },
     secondaryCta: { href: "/for-researchers", label: "For researchers" },
   },
+  iosCta: {
+    title: "Prefer studying on your phone?",
+    description:
+      "Try the Summify iOS app for mobile summaries, learn cards, and audio-friendly study workflows.",
+    label: "Explore the iOS app",
+  },
   seoContent: {
     eyebrow: "Why Summify for articles",
     title: "An article summarizer built for depth and citation-aware reading",
@@ -104,6 +110,12 @@ export const DOCX_LANDING: FormatLandingConfig = {
     primaryCta: { href: "/upload", label: "Try Summify free" },
     secondaryCta: { href: "/for-freelancers", label: "For freelancers" },
   },
+  iosCta: {
+    title: "Working from iPhone?",
+    description:
+      "The Summify iOS app helps turn PDFs into summaries and study-ready outputs on the go.",
+    label: "Explore the iOS app",
+  },
   seoContent: {
     eyebrow: "Why Summify for DOCX",
     title: "A Word document summarizer that respects structure",
@@ -193,6 +205,12 @@ export const MP3_LANDING: FormatLandingConfig = {
     primaryCta: { href: "/upload", label: "Try Summify free" },
     secondaryCta: { href: "/for-creators", label: "For creators" },
     mockVariant: "learn",
+  },
+  iosCta: {
+    title: "Prefer studying on your phone?",
+    description:
+      "Try the Summify iOS app for mobile summaries, learn cards, and audio-friendly study workflows.",
+    label: "Explore the iOS app",
   },
   seoContent: {
     eyebrow: "Why Summify for audio",

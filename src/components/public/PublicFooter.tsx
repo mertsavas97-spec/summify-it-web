@@ -50,6 +50,7 @@ const footerSections = [
     title: "Product",
     links: [
       { href: "/upload", label: "Workspace" },
+      { href: "/ios-app", label: "iOS App" },
       { href: "/pricing", label: "Pricing" },
       { href: "/status", label: "Status" },
     ],

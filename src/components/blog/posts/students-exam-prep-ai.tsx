@@ -26,6 +26,16 @@ export function StudentsExamPrepBody() {
         for missed lectures. Both feed the same review habit if outputs share headings you
         define.
       </p>
+      <p>
+        If you want to keep reviewing between classes, the{" "}
+        <InternalTextLink href="/ios-app">PDF summarizer app for iPhone</InternalTextLink> can
+        support a mobile study workflow without changing your course structure.
+      </p>
+      <p>
+        If you want to keep reviewing between classes, the{" "}
+        <InternalTextLink href="/ios-app">PDF summarizer app for iPhone</InternalTextLink> can
+        support a mobile study workflow without changing your course structure.
+      </p>
 
       <h2 id="quiz">AI quiz from PDF: practice, not substitution</h2>
       <p>

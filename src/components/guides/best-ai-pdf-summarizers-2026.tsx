@@ -115,6 +115,11 @@ export function BestAiPdfSummarizersGuideBody() {
         reports.
       </p>
       <p>
+        If you prefer reviewing on the move, the <InternalTextLink href="/ios-app">Summify iOS
+        app</InternalTextLink> gives you a mobile way to study on iPhone without losing the same
+        structured workflow.
+      </p>
+      <p>
         Compare Summify with chat-first PDF tools in our{" "}
         <InternalTextLink href="/compare/chatpdf">ChatPDF comparison</InternalTextLink>. For
         shorter editorial coverage, see the{" "}

@@ -25,6 +25,7 @@ const CORE_STATIC_PATHS = [
   "/",
   "/pricing",
   "/upload",
+  "/ios-app",
   "/adhd-study-tool",
   "/study-while-walking",
   "/lecture-note-summarizer",
@@ -107,6 +108,10 @@ function metaForPath(path: string, lastModified?: Date | string): SitemapEntryIn
 
   if (path === "/pricing" || path === "/upload") {
     return { path, lastModified, changeFrequency: "weekly", priority: 0.9 };
+  }
+
+  if (path === "/ios-app") {
+    return { path, lastModified, changeFrequency: "weekly", priority: 0.8 };
   }
 
   if (path === "/blog") {

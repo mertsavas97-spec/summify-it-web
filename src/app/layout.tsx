@@ -111,6 +111,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#0e1016] text-zinc-100">
+        <meta name="apple-itunes-app" content="app-id=6770321706" />
         <GoogleAnalytics />
 
         <Script

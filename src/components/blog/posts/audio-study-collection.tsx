@@ -96,7 +96,9 @@ export function PdfToAudioLessonsBody() {
       <p>
         Pick tonight’s reading, run it through{" "}
         <InternalTextLink href="/upload">Summify</InternalTextLink>, and export an audio study
-        session before tomorrow’s lecture.
+        session before tomorrow’s lecture. If you prefer studying from your phone, the{" "}
+        <InternalTextLink href="/ios-app">Summify iOS app</InternalTextLink> keeps the same
+        workflow on mobile.
       </p>
     </BlogProse>
   );
@@ -131,7 +133,8 @@ export function LearnWhileWalkingBody() {
       <h2 id="cta">Walk tomorrow’s recap</h2>
       <p>
         Generate today’s analysis, complete Learn cards, and queue audio for tomorrow morning’s
-        route to campus.
+        route to campus. For a lighter mobile workflow, use the{" "}
+        <InternalTextLink href="/ios-app">Summify iOS app</InternalTextLink> on iPhone.
       </p>
     </BlogProse>
   );
@@ -328,6 +331,9 @@ export function StudyWhileCommutingBody() {
       <p>
         Sunday night: queue three Summify audio sessions for the week in{" "}
         <InternalTextLink href="/upload">your workspace</InternalTextLink>.
+        If you want to study on iPhone between stops, the{" "}
+        <InternalTextLink href="/ios-app">AI summary app for iPhone</InternalTextLink> is a
+        natural backup.
       </p>
     </BlogProse>
   );

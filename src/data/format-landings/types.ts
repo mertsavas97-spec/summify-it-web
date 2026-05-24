@@ -34,6 +34,11 @@ export type SeoContentBlock = {
 export type FormatLandingConfig = {
   path: string;
   breadcrumbLabel: string;
+  iosCta?: {
+    title: string;
+    description: string;
+    label?: string;
+  };
   hero: FormatLandingHero;
   seoContent: {
     eyebrow: string;

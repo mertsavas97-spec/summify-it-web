@@ -77,6 +77,11 @@ export function YoutubeStudyNotesBody() {
         same source, so you are not maintaining separate “summary” and “flashcard” files.
       </p>
       <p>
+        If you want to review those notes on the move, the{" "}
+        <InternalTextLink href="/ios-app">AI study app for iPhone</InternalTextLink> keeps the
+        same mobile study workflow in your pocket.
+      </p>
+      <p>
         Pair video notes with PDF readings via{" "}
         <InternalTextLink href="/for-students">student-focused workflows</InternalTextLink>{" "}
         when a course mixes lectures and handouts.

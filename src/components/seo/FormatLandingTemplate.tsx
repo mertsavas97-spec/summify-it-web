@@ -7,6 +7,7 @@ import { UseCaseSection } from "@/components/public/UseCaseSection";
 import { FAQSection } from "@/components/public/FAQSection";
 import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { CTASection } from "@/components/public/CTASection";
+import { InternalTextLink } from "@/components/public/InternalTextLink";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
 import { faqPageSchema, productPageJsonLd } from "@/lib/schema";
 import type { FormatLandingConfig } from "@/data/format-landings/types";
@@ -57,6 +58,20 @@ export function FormatLandingTemplate({ config }: FormatLandingTemplateProps) {
       />
 
       <FAQSection items={config.faqs} />
+
+      {config.iosCta && (
+        <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl rounded-2xl border border-violet-500/20 bg-violet-950/20 px-5 py-5 text-sm leading-relaxed text-zinc-300 sm:px-6">
+            <p className="font-medium text-white">{config.iosCta.title}</p>
+            <p className="mt-2 text-zinc-400">
+              {config.iosCta.description}{" "}
+              <InternalTextLink href="/ios-app">
+                {config.iosCta.label ?? "Explore the Summify iOS app"}
+              </InternalTextLink>
+            </p>
+          </div>
+        </section>
+      )}
 
       <RelatedLinksSection links={config.relatedLinks} />
 
