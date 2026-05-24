@@ -21,6 +21,7 @@ type LoginFormProps = {
 };
 
 type FormStatus = "idle" | "loading" | "sent" | "error";
+type AuthTab = "signIn" | "createAccount";
 
 const inputClassName =
   "mt-1.5 w-full rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50";
@@ -32,6 +33,7 @@ export function LoginForm({
   envMismatch = false,
 }: LoginFormProps) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<AuthTab>("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<FormStatus>("idle");
@@ -207,8 +209,18 @@ export function LoginForm({
 
   const googleEnabled = isGoogleAuthEnabled();
 
+  const tabButtonClass = (active: boolean) =>
+    `flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+      active
+        ? "bg-violet-500/15 text-violet-200 ring-1 ring-inset ring-violet-500/30"
+        : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+    }`;
+
   const emailPasswordForm = (
-    <form onSubmit={handleSignInWithPassword} className="space-y-4">
+    <form
+      onSubmit={activeTab === "signIn" ? handleSignInWithPassword : handleCreateAccount}
+      className="space-y-4"
+    >
         <label className="block">
           <span className="text-xs font-medium text-zinc-400">Email</span>
           <input
@@ -248,20 +260,16 @@ export function LoginForm({
           <Button
             type="submit"
             size="md"
-            className="w-full sm:flex-1"
+            className="w-full"
             disabled={isBusy || magicSent || !email.trim() || !password}
           >
-            {loadingAction === "signIn" ? "Signing in…" : "Sign in with password"}
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            className="w-full sm:flex-1"
-            disabled={isBusy || magicSent || !email.trim() || !password}
-            onClick={handleCreateAccount}
-          >
-            {loadingAction === "signUp" ? "Creating account…" : "Create account"}
+            {activeTab === "signIn"
+              ? loadingAction === "signIn"
+                ? "Signing in…"
+                : "Sign in"
+              : loadingAction === "signUp"
+                ? "Creating account…"
+                : "Create account"}
           </Button>
         </div>
     </form>
@@ -331,6 +339,14 @@ export function LoginForm({
           <p className="text-xs font-medium text-violet-300/90">
             Recommended for local checkout testing
           </p>
+          <div className="inline-flex w-full rounded-full border border-white/[0.08] bg-zinc-950/60 p-1">
+            <button type="button" className={tabButtonClass(activeTab === "signIn")} onClick={() => setActiveTab("signIn")}>
+              Sign in
+            </button>
+            <button type="button" className={tabButtonClass(activeTab === "createAccount")} onClick={() => setActiveTab("createAccount")}>
+              Create account
+            </button>
+          </div>
           {emailPasswordForm}
           {divider}
           {googleBlock}
@@ -338,10 +354,20 @@ export function LoginForm({
         </>
       ) : (
         <>
+          <div className="inline-flex w-full rounded-full border border-white/[0.08] bg-zinc-950/60 p-1">
+            <button type="button" className={tabButtonClass(activeTab === "signIn")} onClick={() => setActiveTab("signIn")}>
+              Sign in
+            </button>
+            <button type="button" className={tabButtonClass(activeTab === "createAccount")} onClick={() => setActiveTab("createAccount")}>
+              Create account
+            </button>
+          </div>
           {googleBlock}
           <div className="flex items-center gap-3">
             <span className="h-px flex-1 bg-white/[0.06]" />
-            <span className="text-[11px] text-zinc-600">or sign in with email</span>
+            <span className="text-[11px] text-zinc-600">
+              {activeTab === "signIn" ? "or sign in with email" : "or create with email"}
+            </span>
             <span className="h-px flex-1 bg-white/[0.06]" />
           </div>
           {emailPasswordForm}

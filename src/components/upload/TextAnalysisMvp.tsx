@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IntelligenceModeDefinition } from "@/types/modes";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -62,6 +62,7 @@ type TextAnalysisMvpProps = {
   onAnalysisResultChange?: (result: AnalysisResult | null) => void;
   onSavedAnalysisIdChange?: (analysisId: string | null) => void;
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
+  onAnalyzeReady?: (handler: () => void) => void;
   entitlementPlanId: PlanId;
   isAuthenticated: boolean;
   isPaidActive?: boolean;
@@ -221,6 +222,7 @@ export function TextAnalysisMvp({
   onAnalysisResultChange,
   onSavedAnalysisIdChange,
   onIntelligenceReady,
+  onAnalyzeReady,
   entitlementPlanId,
   isAuthenticated,
   isPaidActive = false,
@@ -285,7 +287,7 @@ export function TextAnalysisMvp({
     extractStatus !== "uploading" &&
     extractStatus !== "extracting";
 
-  async function handleAnalyze() {
+  const handleAnalyze = async () => {
     if (!canRunAnalysis(mode, entitlementPlanId)) return;
     setError(null);
     setFailureDebug(null);
@@ -363,7 +365,11 @@ export function TextAnalysisMvp({
       setLoading(false);
       onAnalyzingChange?.(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    onAnalyzeReady?.(handleAnalyze);
+  }, [onAnalyzeReady, handleAnalyze]);
 
   const sourceSubtitle = extractionMeta
     ? extractionMeta.sourceKind === "url"
@@ -420,30 +426,6 @@ export function TextAnalysisMvp({
               <AnalysisToolbar result={displayResult} />
             </div>
           </header>
-
-          {!hidePracticeCta && (
-            <PracticeAnalysisCta
-              savedToWorkspace={displaySavedToWorkspace}
-              savedAnalysisId={displaySavedAnalysisId}
-              learnCards={displayResult.learnCards}
-              analysisContent={displayResult}
-              entitlementPlanId={entitlementPlanId}
-              isPaidActive={isPaidActive}
-              intelligenceModeId={mode}
-              sourceType={extractionMeta?.sourceKind ?? null}
-              documentTitle={displayResult.title}
-              modeLabel={getIntelligenceModeById(mode as IntelligenceModeId)?.label ?? mode}
-              sourceKindLabel={
-                extractionMeta?.sourceKind === "youtube"
-                  ? "YouTube"
-                  : extractionMeta?.sourceKind === "presentation"
-                    ? "Presentation"
-                    : extractionMeta?.sourceKind === "url"
-                      ? "Article"
-                      : "Document"
-              }
-            />
-          )}
 
           <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
 
@@ -514,53 +496,6 @@ export function TextAnalysisMvp({
       </div>
 
       <WorkspaceUsageWarning />
-
-      {showRunButton && (
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <Button
-            type="button"
-            size="sm"
-            disabled={!canAnalyze}
-            onClick={() => {
-              if (isYoutubeMode && youtubeAnalysisFailed && onRetryYoutubeAnalysis) {
-                void onRetryYoutubeAnalysis();
-              } else if (isUrlMode && urlAnalysisFailed && onRetryUrlAnalysis) {
-                void onRetryUrlAnalysis();
-              } else {
-                void handleAnalyze();
-              }
-            }}
-          >
-            {loading
-              ? "Analyzing…"
-              : pipelineAnalysisFailed
-                ? "Retry analysis"
-                : displayResult
-                  ? "Re-run analysis"
-                  : "Run analysis"}
-          </Button>
-          {!canAnalyze && !loading && !modeUnavailableMessage && (
-            <span className="text-xs text-zinc-400">
-              {extractStatus === "uploading" || extractStatus === "extracting"
-                ? "Wait for extraction to finish…"
-                : charCount < inputLimits.minChars
-                  ? "Add a source to start analysis."
-                  : analyzeDisabled
-                    ? "Complete the step above to enable analysis."
-                    : null}
-            </span>
-          )}
-        </div>
-      )}
-
-      {loading && !hidePrimaryAnalyze && (
-        <IntelligenceLoadingStages
-          key="analyze-loading"
-          active
-          group="analyze"
-          className="mt-4"
-        />
-      )}
 
       {error && !pipelineAnalysisFailed && (
         <div className="mt-4 space-y-2">

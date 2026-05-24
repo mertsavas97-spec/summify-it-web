@@ -31,24 +31,22 @@ const statusStyles: Record<PipelineStageStatus, string> = {
 
 export function PipelineStages({ activeStage }: PipelineStagesProps) {
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-medium text-zinc-400">Intelligence pipeline</p>
-      <ol className="flex flex-wrap gap-1.5">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-medium text-zinc-400">Intelligence pipeline</p>
+        <p className="text-[11px] text-zinc-500 sm:hidden">Extract → Clean → Profile → Analyze → Learn</p>
+      </div>
+      <ol className="grid grid-cols-3 gap-2 md:grid-cols-6 md:gap-2">
         {pipelineStages.map((def, index) => {
           const status = stageStatus(def.stage, activeStage);
           return (
-            <li key={def.stage} className="flex items-center gap-1.5">
+            <li key={def.stage} className="min-w-0">
               <span
                 title={def.description}
-                className={`rounded-md border px-2 py-1 text-[10px] font-medium transition-colors ${statusStyles[status]}`}
+                className={`flex h-8 w-full min-w-0 items-center justify-center rounded-md border px-2 text-[10px] font-medium leading-none transition-colors ${statusStyles[status]}`}
               >
                 {def.label}
               </span>
-              {index < pipelineStages.length - 1 && (
-                <span className="text-[10px] text-zinc-700" aria-hidden>
-                  →
-                </span>
-              )}
             </li>
           );
         })}

@@ -35,11 +35,12 @@ export default async function PricingPage() {
       <p className="mx-auto mt-4 max-w-2xl text-center text-xs leading-relaxed text-zinc-500">
         {PRICING_BETA_NOTE}
       </p>
-      <p className="mx-auto mt-3 max-w-xl rounded-lg border border-violet-500/15 bg-violet-950/15 px-3 py-2 text-center text-xs text-violet-200/90">
-        {billing.badge}: <span className="text-violet-100/70">{billing.description}</span>
-      </p>
 
       <PricingSection billing={billing} scholarCheckoutEligible={scholarCheckoutEligible} />
+
+      <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-violet-500/15 bg-violet-950/15 px-4 py-3 text-center text-xs leading-relaxed text-violet-200/85 shadow-sm shadow-violet-950/10">
+        Polar checkout: Secure checkout powered by Polar. Subscriptions sync to your account automatically.
+      </div>
 
       <div className="mx-auto mt-10 max-w-3xl">
         <VoiceStudyPromo />

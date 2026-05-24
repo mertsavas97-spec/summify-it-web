@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/Button";
 import { UploadZone } from "./UploadZone";
 import { UploadPreviewPanel } from "./UploadPreviewPanel";
 import { WorkspaceEntitlementBanner } from "./WorkspaceEntitlementBanner";
@@ -99,6 +100,7 @@ export function UploadWorkspace() {
   const [latestSavedAnalysisId, setLatestSavedAnalysisId] = useState<string | null>(
     null,
   );
+  const runAnalysisRef = useRef<null | (() => void)>(null);
 
   const resetAnalysisState = useCallback(() => {
     setHasAnalysisResult(false);
@@ -391,6 +393,38 @@ export function UploadWorkspace() {
   const urlPipelineBusy = urlPipelineActive || (inputMode === "url" && isAnalyzing);
   const singleActionPipelineBusy = youtubePipelineBusy || urlPipelineBusy;
   const hasPodcastSource = rawText.trim().length >= 100;
+  const hasSource = Boolean(extractionMeta || rawText.trim().length >= 100 || fileName || sourceUrl);
+  const isFileSourceReady = inputMode === "file" && extractStatus === "ready";
+  const isTextSourceReady = inputMode === "text" && rawText.trim().length >= 100;
+  const showSourceActionArea = inputMode === "file" || inputMode === "text";
+  const canRunAnalysis =
+    showSourceActionArea &&
+    (inputMode === "file" ? isFileSourceReady : isTextSourceReady) &&
+    !isAnalyzing &&
+    !isExtracting &&
+    !singleActionPipelineBusy;
+  const runAnalysisLabel = isAnalyzing
+    ? "Analyzing…"
+    : isExtracting
+      ? "Preparing source…"
+      : canRunAnalysis
+        ? "Run analysis"
+        : "Run analysis";
+  const runAnalysisHelper = isAnalyzing
+    ? "Generating your analysis."
+    : isExtracting
+      ? "Extracting text from your source."
+      : inputMode === "file"
+        ? isFileSourceReady
+          ? "Source ready for analysis."
+          : "Add a source to start analysis."
+        : inputMode === "text"
+          ? isTextSourceReady
+            ? "Text ready for analysis."
+            : "Enter at least 100 characters to start analysis."
+          : canRunAnalysis
+        ? "Source ready for analysis."
+        : "Add a source to start analysis.";
   const podcastSourceProfile = useMemo<PodcastSourceProfile>(() => {
     const extractedCharacterCount =
       extractionMeta?.extractedCharacters ?? rawText.trim().length;
@@ -504,54 +538,102 @@ export function UploadWorkspace() {
               />
             )}
 
-            {inputMode === "text" && (
-              <p className="text-xs leading-relaxed text-zinc-500">
-                Paste or type your document in the analysis workspace below (min
-                100 characters), then run analysis.
-              </p>
-            )}
-          </section>
+          {showSourceActionArea && (
+            <div className={`${isAnalyzing ? "mb-4" : "mb-6"} rounded-xl border border-violet-500/20 bg-violet-950/15 p-4`}>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!canRunAnalysis}
+                  onClick={() => runAnalysisRef.current?.()}
+                >
+                  {runAnalysisLabel}
+                </Button>
+                <span className="text-xs text-zinc-400">{runAnalysisHelper}</span>
+              </div>
+            </div>
+          )}
+
+          {isAnalyzing && (
+            <div className="mb-6 rounded-xl border border-violet-500/20 bg-zinc-950/50 p-4 text-sm text-zinc-200">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <p className="font-medium text-violet-200">Generating analysis</p>
+                <p className="text-xs text-zinc-400">Creating learn cards</p>
+              </div>
+              <div className="mt-3 flex gap-2" aria-label="Analysis progress">
+                {['Extract', 'Clean', 'Profile', 'Analyze', 'Learn'].map((label, index) => {
+                  const completed = index < 3;
+                  const active = index === 3;
+                  return (
+                    <div
+                      key={label}
+                      className={`relative h-2 flex-1 overflow-hidden rounded-full border ${
+                        completed
+                          ? 'border-violet-500/35 bg-violet-500/80'
+                          : active
+                            ? 'border-violet-400/45 bg-violet-950/35'
+                            : 'border-white/[0.06] bg-white/[0.06]'
+                      }`}
+                    >
+                      {active && (
+                        <div className="absolute inset-y-0 left-0 w-1/2 animate-pulse rounded-full bg-violet-400/70 shadow-[0_0_14px_rgba(167,139,250,0.45)]" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <PodcastWorkspaceCtas
-            isPaidActive={workspaceEntitlement.isPaidActive}
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
-            hasSource={hasPodcastSource}
-            hasAnalysis={hasAnalysisResult && latestAnalysisResult != null}
+            isPaidActive={workspaceEntitlement.isPaidActive}
+            hasSource={hasSource}
+            hasAnalysis={hasAnalysisResult}
             sourceProfile={podcastSourceProfile}
             analysisId={latestSavedAnalysisId}
             analysisResult={latestAnalysisResult}
-            sourceType={extractionMeta?.sourceKind ?? inputMode}
+            sourceType={extractionMeta?.sourceKind ?? null}
             sourceLabel={sourceLabel}
             intelligenceMode={analysisMode}
-            documentType={analysisIntelligence?.profile.documentTypeGuess}
           />
 
-          {latestAnalysisResult && (
-            <PracticeAnalysisCta
-              savedToWorkspace={undefined}
-              savedAnalysisId={latestSavedAnalysisId}
-              learnCards={latestAnalysisResult.learnCards}
-              analysisContent={latestAnalysisResult}
-              entitlementPlanId={workspaceEntitlement.entitlementPlanId}
-              isPaidActive={workspaceEntitlement.isPaidActive}
-              intelligenceModeId={analysisMode}
-              sourceType={extractionMeta?.sourceKind ?? null}
-              documentTitle={latestAnalysisResult.title}
-              modeLabel={
-                getIntelligenceModeById(analysisMode as IntelligenceModeId)?.label ??
-                analysisMode
-              }
-              sourceKindLabel={
-                extractionMeta?.sourceKind === "youtube"
-                  ? "YouTube"
-                  : extractionMeta?.sourceKind === "presentation"
-                    ? "Presentation"
-                    : extractionMeta?.sourceKind === "url"
-                      ? "Article"
-                      : "Document"
-              }
-            />
+          <PracticeAnalysisCta
+            savedToWorkspace={injectedAnalysis?.savedToWorkspace ?? false}
+            savedAnalysisId={injectedAnalysis?.savedAnalysisId ?? latestSavedAnalysisId}
+            learnCards={latestAnalysisResult?.learnCards}
+            analysisContent={latestAnalysisResult ? {
+              title: latestAnalysisResult.title,
+              summary: latestAnalysisResult.summary,
+              keyInsights: latestAnalysisResult.keyInsights,
+              risksOrWarnings: latestAnalysisResult.risksOrWarnings,
+              actionItems: latestAnalysisResult.actionItems,
+            } : undefined}
+            entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+            isPaidActive={workspaceEntitlement.isPaidActive}
+            intelligenceModeId={analysisMode}
+            sourceType={extractionMeta?.sourceKind ?? null}
+            documentTitle={latestAnalysisResult?.title}
+            modeLabel={getIntelligenceModeById(analysisMode)?.label ?? analysisMode}
+            sourceKindLabel={
+              extractionMeta?.sourceKind === "youtube"
+                ? "YouTube"
+                : extractionMeta?.sourceKind === "presentation"
+                  ? "Presentation"
+                  : extractionMeta?.sourceKind === "url"
+                    ? "Article"
+                    : "Document"
+            }
+          />
+
+          {inputMode === "text" && (
+            <p className="text-xs leading-relaxed text-zinc-500">
+              Paste or type your document in the analysis workspace below (min
+              100 characters), then run analysis.
+            </p>
           )}
+
+        </section>
 
           <TextAnalysisMvp
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
@@ -574,8 +656,7 @@ export function UploadWorkspace() {
             extractStatus={extractStatus}
             extractionMeta={extractionMeta}
             analyzeDisabled={isExtracting || singleActionPipelineBusy}
-            hidePrimaryAnalyze={inputMode === "youtube" || inputMode === "url"}
-            hidePracticeCta
+            hidePrimaryAnalyze
             youtubeAnalysisFailed={Boolean(youtubeAnalysisError)}
             urlAnalysisFailed={Boolean(urlAnalysisError)}
             onRetryYoutubeAnalysis={handleYoutubeRetryAnalysis}
@@ -586,6 +667,9 @@ export function UploadWorkspace() {
             onAnalysisResultChange={setLatestAnalysisResult}
             onSavedAnalysisIdChange={setLatestSavedAnalysisId}
             onIntelligenceReady={setAnalysisIntelligence}
+            onAnalyzeReady={(handler) => {
+              runAnalysisRef.current = handler;
+            }}
             limitNotice={limitNotice}
           />
 

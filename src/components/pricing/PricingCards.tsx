@@ -21,6 +21,70 @@ type PricingCardsProps = {
   scholarCheckoutEligible: boolean;
 };
 
+function isHighlightedPricingFeature(feature: string) {
+  const normalized = feature.toLowerCase();
+
+  return [
+    "analyses per day",
+    "audio lessons per day",
+    "podcasts per day",
+    "podcast per day",
+    "learn cards per run",
+    "audio study mode",
+    "teacher-style audio lessons",
+    "unlimited audio lessons",
+    "unlimited podcasts",
+  ].some((keyword) => normalized.includes(keyword));
+}
+
+function getHighlightedFeatureParts(feature: string) {
+  const normalized = feature.toLowerCase();
+
+  if (normalized.includes("audio study mode")) {
+    return { highlighted: "Audio Study Mode", trailing: feature.replace(/audio study mode/i, "") };
+  }
+
+  if (normalized.includes("teacher-style audio lessons")) {
+    return { highlighted: "Teacher-style audio lessons", trailing: "" };
+  }
+
+  if (normalized.includes("unlimited audio lessons")) {
+    return { highlighted: "Unlimited audio lessons", trailing: "" };
+  }
+
+  if (normalized.includes("unlimited podcasts")) {
+    return { highlighted: "Unlimited podcasts", trailing: "" };
+  }
+
+  const match = feature.match(/^(\d+|Unlimited)\s+(.*)$/i);
+  if (match && isHighlightedPricingFeature(feature)) {
+    return { highlighted: `${match[1]} ${match[2]}`, trailing: "" };
+  }
+
+  return { highlighted: feature, trailing: "" };
+}
+
+function renderFeatureWithHighlight(feature: string) {
+  const normalized = feature.toLowerCase();
+  const { highlighted, trailing } = getHighlightedFeatureParts(feature);
+  const isUnlimited = normalized.includes("unlimited");
+
+  return (
+    <>
+      <span
+        className={`inline-flex max-w-full items-center rounded-md border px-2 py-0.5 text-sm leading-tight shadow-sm whitespace-normal break-words ${
+          isUnlimited
+            ? "border-violet-300/30 bg-violet-500/15 text-violet-100"
+            : "border-violet-400/25 bg-violet-500/10 text-violet-100"
+        } font-semibold`}
+      >
+        {highlighted}
+      </span>
+      {trailing ? <span className="text-zinc-300">{trailing}</span> : null}
+    </>
+  );
+}
+
 function PlanFootnote({ text }: { text: string }) {
   return (
     <p className="mt-2 text-center text-[11px] leading-relaxed text-zinc-500">{text}</p>
@@ -93,7 +157,13 @@ export function PricingCards({
                   >
                     ✓
                   </span>
-                  {feature}
+                  <span className="min-w-0 flex-1 leading-relaxed text-zinc-300">
+                    {isHighlightedPricingFeature(feature) ? (
+                      renderFeatureWithHighlight(feature)
+                    ) : (
+                      <span>{feature}</span>
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>
