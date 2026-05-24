@@ -36,6 +36,11 @@ export function BestAiAudioStudyTools2026Body() {
         for research papers and lecture PDFs via{" "}
         <InternalTextLink href="/pdf-to-audio-study">PDF to audio study</InternalTextLink>.
       </p>
+      <p>
+        If you are comparing transcript-first tools for longer recordings, the{" "}
+        <InternalTextLink href="/compare/notta">Notta comparison</InternalTextLink> breaks down
+        where a study workflow needs more structure than a simple transcription app.
+      </p>
       <h2 id="english">English learn outputs from any source</h2>
       <p>
         If you study in Turkish, French, or Spanish sources, learning outputs should still land in
@@ -80,6 +85,11 @@ export function PdfToAudioLessonsBody() {
         Active recall primes attention. When you hear a concept you missed in the quiz, it sticks.
         Summify’s Summary → Learn → Quiz → Audio Study path is intentional: listening reinforces
         what you already struggled to retrieve.
+      </p>
+      <p>
+        For creators repurposing interviews or shows, see the{" "}
+        <InternalTextLink href="/compare/notta">Summify vs Notta</InternalTextLink> angle on
+        audio summaries and transcript-driven review.
       </p>
       <h2 id="listen">Listen with intent</h2>
       <p>

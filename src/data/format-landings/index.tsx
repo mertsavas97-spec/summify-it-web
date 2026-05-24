@@ -221,7 +221,8 @@ export const MP3_LANDING: FormatLandingConfig = {
           <>
             Summify analyzes transcript text — from pasted show notes, caption exports, or{" "}
             <InternalTextLink href="/summarize-youtube-video">YouTube with captions</InternalTextLink>.
-            The Creator mode emphasizes hooks and repurposing angles for social content planning.
+            The Creator mode emphasizes hooks and repurposing angles for social content planning,
+            and it pairs naturally with <InternalTextLink href="/use-cases/podcasts-creators">podcast workflows for creators</InternalTextLink> when you want to turn episodes into reusable study or promo assets.
           </>
         ),
       },
