@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   ...createPageMetadata({
     title: "Learn by Listening — AI Audio Study & Podcast Learning",
     description:
-      "Turn any document into a teacher-style audio lesson. Summify's Audio Study Mode generates podcast-style discussions and voice lessons you can listen to while commuting, walking, or relaxing. Learn by listening, not just reading.",
+      "Study while walking, learn during workouts, and convert passive time into progress. Summify doesn't give you a summary. It becomes your study companion with audio-first learning.",
     path: "/learn-by-listening",
   }),
   keywords: [
@@ -31,7 +31,7 @@ const benefits = [
   {
     title: "Passive learning that sticks",
     description:
-      "Audio reinforcement helps concepts stick. Listen to your study materials repeatedly while doing other activities.",
+      "Convert passive study time into consistent reinforcement with audio sessions you can replay anywhere.",
   },
   {
     title: "Teacher-style explanations",
@@ -105,8 +105,8 @@ export default function LearnByListeningPage() {
           Learn by Listening
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
-          Turn any document into a teacher-style audio lesson. Study while commuting,
-          walking, or relaxing — with AI-generated podcast-style learning experiences.
+          Study while walking, learn during workouts, and turn passive study time into active
+          retention. Summify doesn't give you a summary. It becomes your study companion.
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <Button href="/upload" size="lg">

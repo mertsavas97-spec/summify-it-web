@@ -17,13 +17,60 @@ export default function ForStudentsPage() {
     <>
       <PublicHero
         badge="AI study notes"
-        title="AI study notes from PDFs, lectures, and YouTube"
-        description="Turn readings and recorded lectures into structured notes, concept cards, and exam prep material. The Student intelligence mode emphasizes quiz-ready Learn outputs."
+        title="Your AI Study Companion for Lectures, PDFs & Research Papers"
+        description="Create structured notes, Learn cards, audio lessons, and podcast-style study sessions from your class materials in one workflow."
         primaryCta={{ href: "/upload", label: "Try Summify free" }}
         secondaryCta={{ href: "/modes/the-student", label: "The Student mode" }}
       >
         <ProductMockCard variant="learn" />
       </PublicHero>
+
+      <section className="mx-auto mt-14 w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <h2 className="text-center text-2xl font-semibold text-zinc-100">
+          ChatGPT vs NotebookLM vs Summify
+        </h2>
+        <p className="mt-3 text-center text-sm text-zinc-400">
+          Compare core study outputs across common tools.
+        </p>
+        <div className="mt-6 overflow-x-auto rounded-xl border border-white/[0.08] bg-zinc-900/40">
+          <table className="min-w-full text-left text-sm text-zinc-300">
+            <thead className="border-b border-white/[0.08] bg-zinc-950/50 text-zinc-100">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Feature</th>
+                <th className="px-4 py-3 font-semibold">ChatGPT</th>
+                <th className="px-4 py-3 font-semibold">NotebookLM</th>
+                <th className="px-4 py-3 font-semibold">Summify</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-white/[0.06]">
+                <td className="px-4 py-3 font-medium text-zinc-100">PDF Summary</td>
+                <td className="px-4 py-3">Yes</td>
+                <td className="px-4 py-3">Yes</td>
+                <td className="px-4 py-3">Yes</td>
+              </tr>
+              <tr className="border-b border-white/[0.06]">
+                <td className="px-4 py-3 font-medium text-zinc-100">Learn Cards</td>
+                <td className="px-4 py-3">Limited / manual prompting</td>
+                <td className="px-4 py-3">Limited</td>
+                <td className="px-4 py-3">Built-in structured cards</td>
+              </tr>
+              <tr className="border-b border-white/[0.06]">
+                <td className="px-4 py-3 font-medium text-zinc-100">Audio Lessons</td>
+                <td className="px-4 py-3">Not workflow-native</td>
+                <td className="px-4 py-3">Limited</td>
+                <td className="px-4 py-3">Teacher-style lessons</td>
+              </tr>
+              <tr>
+                <td className="px-4 py-3 font-medium text-zinc-100">Podcast Study</td>
+                <td className="px-4 py-3">No</td>
+                <td className="px-4 py-3">Audio overviews</td>
+                <td className="px-4 py-3">Two-speaker podcast study</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <SeoContentSection
         eyebrow="For students"

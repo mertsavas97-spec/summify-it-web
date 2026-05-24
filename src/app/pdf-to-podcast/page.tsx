@@ -25,9 +25,9 @@ export default function PdfToPodcastPage() {
       <JsonLd
         data={seoLandingPageJsonLd({
           path: "/pdf-to-podcast",
-          pageTitle: "PDF to Podcast",
+          pageTitle: "Turn Any PDF Into a Podcast Study Session — Summify",
           description:
-            "Convert dense PDFs into podcast-style lessons for commute-friendly, structured audio learning.",
+            "Upload your lecture notes or research paper. Two AI speakers discuss the key ideas in a natural conversation you can listen to anywhere.",
           faqs: FAQS,
           howToSteps: [
             { name: "Upload reading", text: "Add your PDF chapter, report, or paper." },
@@ -41,7 +41,7 @@ export default function PdfToPodcastPage() {
       <PublicHero
         badge="Audio-first study"
         title="Turn PDFs into podcast-style learning sessions"
-        description="Study while commuting, walking, or resetting between tasks. Convert reading load into clear listening flow without losing important structure."
+        description="Upload your lecture notes or research paper. Two AI speakers discuss the key ideas in a natural conversation you can listen to anywhere."
         primaryCta={{ href: "/upload", label: "Convert a PDF" }}
         secondaryCta={{ href: "/best-ai-for-studying", label: "See study workflows" }}
       />
@@ -89,4 +89,3 @@ export default function PdfToPodcastPage() {
     </>
   );
 }
-

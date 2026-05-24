@@ -24,9 +24,9 @@ export default function BestAiForStudyingPage() {
       <JsonLd
         data={seoLandingPageJsonLd({
           path: "/best-ai-for-studying",
-          pageTitle: "Best AI for Studying",
+          pageTitle: "Best AI for Studying in 2026 — Turn Notes, PDFs & Videos into Study Systems",
           description:
-            "A focused AI study workspace for active recall, ADHD-friendly workflows, and learn-while-walking audio lessons.",
+            "Summify turns your lecture notes, PDFs, and YouTube videos into structured study workflows: learn cards, audio lessons, and podcast-style discussions. Built for students.",
           faqs: FAQS,
         })}
       />
@@ -38,8 +38,8 @@ export default function BestAiForStudyingPage() {
       />
       <PublicHero
         badge="AI study workspace"
-        title="The best AI for studying is a system, not a chatbot"
-        description="Build a repeatable learning loop: summarize, structure, practice, and listen. Summify is designed for sustained focus and revision rhythm."
+        title="Turn Any Study Material Into a Complete Learning System"
+        description="Upload lecture notes, research papers, or YouTube lectures. Get AI-generated learn cards, audio lessons you can walk with, and podcast-style breakdowns."
         primaryCta={{ href: "/upload", label: "Start your study workspace" }}
         secondaryCta={{ href: "/ai-note-tool", label: "Explore AI note workflow" }}
       />
@@ -52,12 +52,13 @@ export default function BestAiForStudyingPage() {
         ]}
       />
       <FormatWorkflow
-        title="ADHD-friendly workflow example"
+        title="Upload → Analyze → Learn Cards → Audio Lesson → Podcast"
         steps={[
-          { title: "Capture source", description: "Upload PDF notes or paste a lecture URL." },
-          { title: "Extract structure", description: "Generate concise, organized understanding." },
-          { title: "Active recall", description: "Review Learn cards with short sessions." },
-          { title: "Walk-and-listen", description: "Use audio outputs while commuting or walking." },
+          { title: "Upload", description: "Add lecture notes, research papers, or YouTube lectures." },
+          { title: "Analyze", description: "Generate structured understanding from complex source material." },
+          { title: "Learn Cards", description: "Practice active recall with AI-generated learn cards." },
+          { title: "Audio Lesson", description: "Turn key ideas into teacher-style lessons for walk-and-study sessions." },
+          { title: "Podcast", description: "Reinforce memory with podcast-style discussions anywhere." },
         ]}
       />
       <FeatureGrid
@@ -69,11 +70,14 @@ export default function BestAiForStudyingPage() {
         ]}
       />
       <FeatureGrid
-        title="Study workflow examples"
+        title="Student use cases"
         features={[
-          { title: "Exam prep week", description: "One source per day → summary + cards + evening audio recap." },
-          { title: "Lecture consolidation", description: "YouTube lecture + handout PDF merged into one revision structure." },
-          { title: "Concept reinforcement", description: "Revisit weak concepts through shorter audio lessons." },
+          { title: "Medical students", description: "Convert dense lecture packs into repeatable revision loops." },
+          { title: "Law students", description: "Break long case readings into structured concepts and recall cards." },
+          { title: "ADHD studying", description: "Switch between text, cards, and audio to keep momentum." },
+          { title: "Finals week", description: "Compress multiple sources into one daily study workflow." },
+          { title: "Commuting study", description: "Use travel time for audio lessons and podcast-style recaps." },
+          { title: "Research papers", description: "Translate technical papers into learn cards and clear audio explanations." },
         ]}
       />
       <FAQSection items={FAQS} />
@@ -88,4 +92,3 @@ export default function BestAiForStudyingPage() {
     </>
   );
 }
-

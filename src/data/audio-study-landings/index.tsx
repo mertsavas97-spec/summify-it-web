@@ -12,9 +12,9 @@ export const AUDIO_STUDY_HUB: FormatLandingConfig = {
   breadcrumbLabel: "Audio Study Mode",
   hero: {
     badge: "Voice Study · Pro",
-    title: "Turn analyses into teacher-style audio lessons",
+    title: "Audio-first studying for walking, workouts, and passive study time",
     description:
-      "Audio Study Mode converts your Summify analysis into a spoken lesson — context, key concepts, why it matters, and reflection questions. Learn by listening instead of rereading.",
+      "Summify doesn't give you a summary. It becomes your study companion with structured audio lessons you can use while walking, training, commuting, or recovering between deep work blocks.",
     primaryCta: { href: "/upload", label: "Try in workspace" },
     secondaryCta: { href: "/pricing", label: "See Pro plans" },
     mockVariant: "learn",

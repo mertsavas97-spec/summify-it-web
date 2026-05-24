@@ -84,15 +84,15 @@ export const pageSeo = {
   }),
 
   bestAiForStudying: buildPageMetadata({
-    title: "Best AI for Studying — Structured Notes, Recall & Audio",
+    title: "Best AI for Studying in 2026 — Turn Notes, PDFs & Videos into Study Systems",
     description:
-      "A focused AI study workspace for active recall, ADHD-friendly workflows, and learn-while-walking audio lessons from your PDFs, notes, and videos.",
+      "Summify turns your lecture notes, PDFs, and YouTube videos into structured study workflows: learn cards, audio lessons, and podcast-style discussions. Built for students.",
     path: "/best-ai-for-studying",
     keywords: ["best ai for studying", "ai study workspace", "active recall ai", "audio-first studying"],
   }),
 
   pdfToPodcast: buildPageMetadata({
-    title: "PDF to Podcast — Turn Reading into Audio Study Lessons",
+    title: "Turn Any PDF Into a Podcast Study Session — Summify",
     description:
       "Convert dense PDFs into podcast-style lessons so you can study while commuting, walking, or between classes without losing structure.",
     path: "/pdf-to-podcast",
@@ -116,7 +116,7 @@ export const pageSeo = {
   }),
 
   forStudents: buildPageMetadata({
-    title: "AI Study Notes & Exam Prep",
+    title: "AI Study Tool for Students — Audio Lessons, Learn Cards & Podcast Study",
     description:
       "Generate AI study notes, concepts, and quizzes from lectures, PDFs, and videos. Built for students — upload sources and start summarizing instantly. Free in beta.",
     path: "/for-students",
