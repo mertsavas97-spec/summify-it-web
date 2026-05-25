@@ -146,7 +146,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       "More daily analyses, deeper modes, and full analysis history. Checkout opens when student access launches.",
     enforceLimits: true,
     comingSoon: true,
-    badge: "Coming soon",
+    badge: "Active for students",
     limits: {
       analysesPerDay: 10,
       maxFileSizeMb: 20,
@@ -176,7 +176,7 @@ export const PLAN_DEFINITIONS: Record<PlanId, PlanDefinition> = {
       "12 Learn cards per run",
       "Full analysis history",
       "Longer audio lessons",
-      "Student verification (coming soon)",
+      "Student verification required",
     ],
     cta: "Coming soon",
     billing: {

@@ -14,6 +14,7 @@ const SCHOLAR_EDU_UNAVAILABLE =
   "Only available for .edu email addresses.";
 const SCHOLAR_EDU_FOOTNOTE =
   "Available for verified students — sign up with a .edu email address to unlock.";
+const SCHOLAR_VERIFICATION_TITLE = "Student verification required";
 
 type PricingCardsProps = {
   interval: BillingInterval;
@@ -91,6 +92,22 @@ function PlanFootnote({ text }: { text: string }) {
   );
 }
 
+function ScholarVerificationNote() {
+  return (
+    <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/[0.08] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <p className="text-xs font-semibold leading-relaxed text-violet-100">
+        {SCHOLAR_VERIFICATION_TITLE}
+      </p>
+      <p className="mt-1 text-[11px] leading-relaxed text-zinc-300">
+        {SCHOLAR_EDU_FOOTNOTE}
+      </p>
+      <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+        {SCHOLAR_EDU_UNAVAILABLE}
+      </p>
+    </div>
+  );
+}
+
 export function PricingCards({
   interval,
   billing,
@@ -103,7 +120,7 @@ export function PricingCards({
       {plans.map((plan) => {
         const isPro = plan.highlighted;
         const isScholar = plan.id === "scholar";
-        const footnote = isScholar ? SCHOLAR_EDU_FOOTNOTE : getPricingPlanFootnote(plan.id);
+        const footnote = isScholar ? null : getPricingPlanFootnote(plan.id);
         const checkoutEnabled =
           (plan.id === "pro" || plan.id === "team") && isPlanCheckoutEnabled(plan.id);
         const showScholarCheckout =
@@ -126,7 +143,9 @@ export function PricingCards({
 
             <div className="flex flex-wrap items-center gap-2">
               {plan.badge && (
-                <Badge variant={plan.comingSoon ? "muted" : "accent"}>{plan.badge}</Badge>
+                <Badge variant={isScholar ? "accent" : plan.comingSoon ? "muted" : "accent"}>
+                  {plan.badge}
+                </Badge>
               )}
               {plan.savings && (
                 <span className="text-[11px] font-medium text-emerald-400">{plan.savings}</span>
@@ -189,9 +208,7 @@ export function PricingCards({
                     allowScholarCheckout
                   />
                 ) : (
-                  <p className="text-center text-xs leading-relaxed text-zinc-400">
-                    {SCHOLAR_EDU_UNAVAILABLE}
-                  </p>
+                  <ScholarVerificationNote />
                 )
               ) : checkoutEnabled ? (
                 <CheckoutButton
@@ -207,6 +224,7 @@ export function PricingCards({
                 </Button>
               )}
               {footnote ? <PlanFootnote text={footnote} /> : null}
+              {isScholar && showScholarCheckout ? <ScholarVerificationNote /> : null}
             </div>
           </article>
         );
