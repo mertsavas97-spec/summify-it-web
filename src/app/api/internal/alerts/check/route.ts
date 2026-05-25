@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin/requireAdmin";
 import { getApiHealth } from "@/server/admin/getApiHealth";
 import { evaluateAndDispatchAlerts } from "@/server/alerts/evaluate";
+import { sendPushoverAlert, sendSlackAlert } from "@/server/alerts/notifiers";
 import { createServiceClient } from "@/lib/supabase/serviceClient";
 import { getPushoverConfig, getAlertWebhookUrl } from "@/server/alerts/config";
+import type { AlertCandidate } from "@/server/alerts/types";
 
 async function getRecentAnalysisTime(): Promise<string | null> {
   const supabase = createServiceClient();
@@ -16,6 +18,71 @@ async function getRecentAnalysisTime(): Promise<string | null> {
     .maybeSingle();
 
   return data?.created_at ?? null;
+}
+
+function createTestAlert(
+  severity: AlertCandidate["severity"],
+  title: string,
+  summary: string,
+  key: AlertCandidate["key"],
+): AlertCandidate {
+  return {
+    key,
+    title: `[Summify Alert Test] ${title}`,
+    summary: `[Summify Alert Test] ${summary}`,
+    severity,
+    slackEmoji: severity === "critical" ? "🚨" : "🧪",
+    pushoverTitle: `[Summify Alert Test] ${title}`,
+    context: {
+      details: "Manual delivery verification only. This alert is not persisted or treated as a real incident.",
+    },
+  };
+}
+
+async function runManualTestMode(testMode: string) {
+  const results = { slack: false, pushover: false };
+  const errors: string[] = [];
+
+  const slackAlert = createTestAlert(
+    testMode === "critical" ? "critical" : "warning",
+    testMode === "warning" ? "Warning delivery check" : testMode === "critical" ? "Critical delivery check" : "Slack delivery check",
+    testMode === "slack"
+      ? "Slack webhook test message."
+      : testMode === "warning"
+        ? "Warning-style Slack delivery test message."
+        : "Critical-style Slack delivery test message.",
+    "deployment_health_failure",
+  );
+
+  const pushoverAlert = createTestAlert(
+    "critical",
+    testMode === "pushover" ? "Pushover delivery check" : "Critical delivery check",
+    testMode === "pushover"
+      ? "Pushover delivery test message."
+      : "Critical-style Pushover delivery test message.",
+    "deployment_health_failure",
+  );
+
+  try {
+    if (testMode === "slack" || testMode === "warning" || testMode === "critical") {
+      results.slack = await sendSlackAlert(slackAlert);
+      if (!results.slack) errors.push("Slack test delivery failed.");
+    }
+
+    if (testMode === "pushover" || testMode === "critical") {
+      results.pushover = await sendPushoverAlert(pushoverAlert);
+      if (!results.pushover) errors.push("Pushover test delivery failed.");
+    }
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : "Unknown test delivery error.");
+  }
+
+  return {
+    ok: errors.length === 0,
+    test: testMode,
+    sent: results,
+    ...(errors.length > 0 ? { errors } : {}),
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -33,6 +100,12 @@ export async function GET(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+  }
+
+  const testMode = request.nextUrl.searchParams.get("test");
+  if (testMode === "slack" || testMode === "pushover" || testMode === "warning" || testMode === "critical") {
+    const result = await runManualTestMode(testMode);
+    return NextResponse.json(result, { status: result.ok ? 200 : 500 });
   }
 
   const health = await getApiHealth();
