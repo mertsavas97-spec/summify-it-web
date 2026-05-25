@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSession } from "@/lib/admin/requireAdmin";
 import { getApiHealth } from "@/server/admin/getApiHealth";
 import { evaluateAndDispatchAlerts } from "@/server/alerts/evaluate";
-import { sendPushoverAlert, sendSlackAlert } from "@/server/alerts/notifiers";
+import { sendPushoverAlertWithDebug, sendSlackAlertWithDebug } from "@/server/alerts/notifiers";
 import { createServiceClient } from "@/lib/supabase/serviceClient";
 import { getPushoverConfig, getAlertWebhookUrl } from "@/server/alerts/config";
 import type { AlertCandidate } from "@/server/alerts/types";
@@ -40,38 +40,58 @@ function createTestAlert(
 }
 
 async function runManualTestMode(testMode: string) {
-  const results = { slack: false, pushover: false };
   const errors: string[] = [];
+  const sent = { slack: false, pushover: false };
+  const debug: Record<string, unknown> = {};
 
-  const slackAlert = createTestAlert(
-    testMode === "critical" ? "critical" : "warning",
-    testMode === "warning" ? "Warning delivery check" : testMode === "critical" ? "Critical delivery check" : "Slack delivery check",
-    testMode === "slack"
-      ? "Slack webhook test message."
-      : testMode === "warning"
-        ? "Warning-style Slack delivery test message."
-        : "Critical-style Slack delivery test message.",
-    "deployment_health_failure",
-  );
+  const slackEnvPresent = Boolean(getAlertWebhookUrl());
+  const pushoverAppTokenPresent = Boolean(process.env.PUSHOVER_APP_TOKEN);
+  const pushoverUserKeyPresent = Boolean(process.env.PUSHOVER_USER_KEY);
 
-  const pushoverAlert = createTestAlert(
-    "critical",
-    testMode === "pushover" ? "Pushover delivery check" : "Critical delivery check",
-    testMode === "pushover"
-      ? "Pushover delivery test message."
-      : "Critical-style Pushover delivery test message.",
-    "deployment_health_failure",
-  );
+  const slackAlert = createTestAlert("warning", "Slack delivery check", "Slack webhook test message.", "deployment_health_failure");
+  const pushoverAlert = createTestAlert("critical", "Pushover delivery check", "Pushover delivery test message.", "deployment_health_failure");
 
   try {
-    if (testMode === "slack" || testMode === "warning" || testMode === "critical") {
-      results.slack = await sendSlackAlert(slackAlert);
-      if (!results.slack) errors.push("Slack test delivery failed.");
+    if (testMode === "slack") {
+      const slackResult = await sendSlackAlertWithDebug(slackAlert);
+      sent.slack = slackResult.ok;
+      debug.slackEnvPresent = slackEnvPresent;
+      debug.slackStatus = slackResult.status;
+      debug.slackResponse = slackResult.responseText;
+      if (!slackResult.ok) {
+        errors.push(slackResult.missingWebhookUrl ? slackResult.responseText : "Slack test delivery failed.");
+      }
     }
 
-    if (testMode === "pushover" || testMode === "critical") {
-      results.pushover = await sendPushoverAlert(pushoverAlert);
-      if (!results.pushover) errors.push("Pushover test delivery failed.");
+    if (testMode === "pushover") {
+      const pushoverResult = await sendPushoverAlertWithDebug();
+      sent.pushover = pushoverResult.ok;
+      debug.pushoverAppTokenPresent = pushoverResult.tokenPresent;
+      debug.pushoverUserKeyPresent = pushoverResult.userPresent;
+      debug.pushoverStatus = pushoverResult.status;
+      debug.pushoverResponse = pushoverResult.responseText;
+      if (!pushoverResult.ok) {
+        errors.push(pushoverResult.responseText || "Pushover test delivery failed.");
+      }
+    }
+
+    if (testMode === "critical") {
+      const slackResult = await sendSlackAlertWithDebug(slackAlert);
+      const pushoverResult = await sendPushoverAlertWithDebug();
+
+      sent.slack = slackResult.ok;
+      sent.pushover = pushoverResult.ok;
+
+      debug.slackEnvPresent = slackEnvPresent;
+      debug.slackStatus = slackResult.status;
+      debug.slackResponse = slackResult.responseText;
+      debug.pushoverAppTokenPresent = pushoverResult.tokenPresent;
+      debug.pushoverUserKeyPresent = pushoverResult.userPresent;
+      debug.pushoverStatus = pushoverResult.status;
+      debug.pushoverResponse = pushoverResult.responseText;
+
+      if (!slackResult.ok) errors.push(slackResult.missingWebhookUrl ? slackResult.responseText : "Slack test delivery failed.");
+      if (!pushoverResult.ok) errors.push(pushoverResult.responseText || "Pushover test delivery failed.");
     }
   } catch (error) {
     errors.push(error instanceof Error ? error.message : "Unknown test delivery error.");
@@ -80,8 +100,9 @@ async function runManualTestMode(testMode: string) {
   return {
     ok: errors.length === 0,
     test: testMode,
-    sent: results,
-    ...(errors.length > 0 ? { errors } : {}),
+    sent,
+    debug,
+    errors,
   };
 }
 
