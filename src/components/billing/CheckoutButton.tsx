@@ -11,6 +11,7 @@ import {
 import { isPlanCheckoutEnabled } from "@/lib/billing/plan-availability";
 import { readCheckoutApiError } from "@/lib/billing/polar/api-error";
 import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { Button } from "@/components/ui/Button";
 
 type CheckoutButtonProps = {
@@ -145,6 +146,10 @@ export function CheckoutButton({
     trackProductEventClient({
       eventType: "upgrade_clicked",
       metadata: { surface: "pricing_checkout", target_plan: plan, interval },
+    });
+    trackMetaEvent("InitiateCheckout", {
+      content_name: plan,
+      currency: "USD",
     });
 
     const intent: CheckoutIntent = {

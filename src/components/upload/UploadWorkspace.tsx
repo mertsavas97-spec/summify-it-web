@@ -35,6 +35,7 @@ import type { AnalysisIntelligenceMetadata } from "@/types/intelligence";
 import { buildYoutubeSourceContext } from "@/types/analyze-source";
 import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
+import { trackMetaCustomEvent } from "@/lib/metaPixel";
 import { TrustSignals } from "@/components/growth/TrustSignals";
 import { DemoWorkflowBlock } from "@/components/growth/DemoWorkflowBlock";
 import {
@@ -101,6 +102,35 @@ export function UploadWorkspace() {
     null,
   );
   const runAnalysisRef = useRef<null | (() => void)>(null);
+  const uploadStartedRef = useRef<Set<string>>(new Set());
+
+  const getSourceType = useCallback((mode: WorkspaceInputMode, meta: ExtractionMetadata | null) => {
+    if (mode === "file") return "file";
+    if (mode === "text") return "text";
+    if (meta?.sourceKind === "youtube") return "youtube";
+    if (meta?.sourceKind === "url") return "url";
+    if (meta?.sourceKind === "presentation") return "file";
+    return "unknown";
+  }, []);
+
+  const fireUploadStarted = useCallback(
+    (mode: WorkspaceInputMode, meta: ExtractionMetadata | null, sessionKey: string) => {
+      if (uploadStartedRef.current.has(sessionKey)) return;
+      uploadStartedRef.current.add(sessionKey);
+      trackMetaCustomEvent("UploadStarted", { source_type: getSourceType(mode, meta) });
+    },
+    [getSourceType],
+  );
+
+  const fireAnalysisStarted = useCallback(
+    (meta: ExtractionMetadata | null) => {
+      trackMetaCustomEvent("AnalysisStarted", {
+        source_type: getSourceType(inputMode, meta),
+        mode: analysisMode,
+      });
+    },
+    [analysisMode, getSourceType, inputMode],
+  );
 
   const resetAnalysisState = useCallback(() => {
     setHasAnalysisResult(false);
@@ -209,6 +239,7 @@ export function UploadWorkspace() {
     }
 
     setExtractStatus("uploading");
+    fireUploadStarted("file", null, `file:${file.name}:${file.size}:${file.lastModified}`);
     trackEvent("upload_started", { trigger: "file", source_type: file.type || "file" });
 
     const formData = new FormData();
@@ -238,7 +269,7 @@ export function UploadWorkspace() {
       setExtractError(USER_MESSAGES.network);
       setExtractStatus("failed");
     }
-  }, [planLimits.maxUploadMb, resetAnalysisState]);
+  }, [fireUploadStarted, planLimits.maxUploadMb, resetAnalysisState]);
 
   const handleUrlAnalyzeArticle = useCallback(
     async (url: string, options?: { analyzeOnly?: boolean }) => {
@@ -249,6 +280,7 @@ export function UploadWorkspace() {
       setUrlAnalysisError(null);
       resetAnalysisState();
       setUrlPipelineActive(true);
+      fireUploadStarted("url", extractionMeta, `url:${url}`);
 
       let text = rawText;
 
@@ -293,7 +325,7 @@ export function UploadWorkspace() {
       await runUrlAnalysis(text);
       setUrlPipelineActive(false);
     },
-    [rawText, resetAnalysisState, runUrlAnalysis],
+    [extractionMeta, fireUploadStarted, rawText, resetAnalysisState, runUrlAnalysis],
   );
 
   const handleUrlRetryAnalysis = useCallback(async () => {
@@ -310,6 +342,7 @@ export function UploadWorkspace() {
       setYoutubeAnalysisError(null);
       resetAnalysisState();
       setYoutubePipelineActive(true);
+      fireUploadStarted("youtube", extractionMeta, `youtube:${url}`);
 
       let meta = extractionMeta?.sourceKind === "youtube" ? extractionMeta : null;
       let text = rawText;
@@ -356,7 +389,7 @@ export function UploadWorkspace() {
       await runYoutubeAnalysis(text, meta);
       setYoutubePipelineActive(false);
     },
-    [extractionMeta, rawText, resetAnalysisState, runYoutubeAnalysis],
+    [extractionMeta, fireUploadStarted, rawText, resetAnalysisState, runYoutubeAnalysis],
   );
 
   const handleYoutubeRetryAnalysis = useCallback(async () => {
@@ -384,6 +417,11 @@ export function UploadWorkspace() {
     setIsAnalyzing(analyzing);
     if (analyzing) setHasAnalysisResult(false);
   }, []);
+
+  const handleRunAnalysis = useCallback(() => {
+    fireAnalysisStarted(extractionMeta);
+    runAnalysisRef.current?.();
+  }, [extractionMeta, fireAnalysisStarted]);
 
   const sourceLabel = getExtractionSourceLabel(extractionMeta) || fileName;
   const isExtracting =
@@ -545,7 +583,7 @@ export function UploadWorkspace() {
                   type="button"
                   size="sm"
                   disabled={!canRunAnalysis}
-                  onClick={() => runAnalysisRef.current?.()}
+                  onClick={handleRunAnalysis}
                 >
                   {runAnalysisLabel}
                 </Button>

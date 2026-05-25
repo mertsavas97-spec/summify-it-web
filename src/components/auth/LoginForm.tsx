@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
 import { clearAuthNextCookie, setAuthNextCookie } from "@/lib/auth/next-path";
 import { trackEvent } from "@/lib/analytics/events";
+import { trackMetaEvent } from "@/lib/metaPixel";
 import { mapAuthError } from "@/lib/auth-errors";
 import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -103,6 +104,7 @@ export function LoginForm({
 
     setStatus("idle");
     trackEvent("signup_completed", { method: "password" });
+    trackMetaEvent("CompleteRegistration");
     await completeSessionRedirect();
   }
 
@@ -151,6 +153,7 @@ export function LoginForm({
     if (data.session) {
       setStatus("idle");
       trackEvent("signup_completed", { method: "password" });
+      trackMetaEvent("CompleteRegistration");
       await completeSessionRedirect();
       return;
     }

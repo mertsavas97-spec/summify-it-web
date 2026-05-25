@@ -21,6 +21,7 @@ import {
   buildYoutubeSourceContext,
 } from "@/types/analyze-source";
 import { trackEvent } from "@/lib/analytics/events";
+import { trackMetaCustomEvent } from "@/lib/metaPixel";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { getModeAccessState } from "@/lib/mode-access";
 import { canRunAnalysis } from "@/lib/mode-resolver";
@@ -300,6 +301,10 @@ export function TextAnalysisMvp({
     onIntelligenceReady?.(null);
     setLoading(true);
     onAnalyzingChange?.(true);
+    trackMetaCustomEvent("AnalysisStarted", {
+      source_type: extractionMeta?.sourceKind ?? (isManualTextMode ? "text" : "unknown"),
+      mode,
+    });
     trackEvent("upload_started", {
       trigger: "analyze",
       source_type: extractionMeta?.sourceKind ?? "text",
