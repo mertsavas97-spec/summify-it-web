@@ -145,7 +145,6 @@ export function getSupabaseAdmin(): SupabaseClient {
       global: {
         headers: buildServiceRoleHeaders(serviceRoleKey),
       },
-      accessToken: async () => serviceRoleKey,
     });
   }
 
