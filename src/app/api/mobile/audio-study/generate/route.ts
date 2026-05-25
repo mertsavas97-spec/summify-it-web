@@ -22,6 +22,8 @@ export const runtime = "nodejs";
 const AUDIO_STUDY_BUCKET = "audio-study";
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7;
 const AUDIO_STUDY_CHUNK_CHAR_LIMIT = 2400;
+const FREE_AUDIO_STUDY_LIMIT = 3;
+const AUDIO_STUDY_USAGE_FEATURE = "audio_study";
 const SUPPORTED_LANGUAGES = ["en", "tr", "es", "fr", "de", "ar"] as const;
 
 type MobileAudioStudyLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -55,6 +57,13 @@ type FeatureUsageCheck = {
   limit: number;
 };
 
+type AudioStudyQuotaUsage = {
+  freeUsed: number;
+  freeLimit: number;
+  freeRemaining: number;
+  isPremium: boolean;
+};
+
 type MobileVoiceResolution = {
   voiceId: string;
   voiceFallback: boolean;
@@ -63,6 +72,11 @@ type MobileVoiceResolution = {
 type StoredAudioResult = {
   audioUrl: string;
   expiresAt?: string;
+};
+
+type RecordedAudioStudyGeneration = {
+  storagePath: string;
+  createdAt?: string;
 };
 
 function jsonError(body: Record<string, unknown>, status: number) {
@@ -173,6 +187,34 @@ function sanitizeStorageSegment(value: string): string {
 
 function buildStoragePath(userId: string, outputLanguage: MobileAudioStudyLanguage, key: string): string {
   return `audio-study/${userId}/${outputLanguage}/${sanitizeStorageSegment(key)}.mp3`;
+}
+
+function buildQuotaUsage(freeUsed: number, isPremium: boolean): AudioStudyQuotaUsage {
+  return {
+    freeUsed,
+    freeLimit: FREE_AUDIO_STUDY_LIMIT,
+    freeRemaining: Math.max(FREE_AUDIO_STUDY_LIMIT - freeUsed, 0),
+    isPremium,
+  };
+}
+
+function isMissingAudioStudyUsageTableError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    /audio_study_generations|relation .* does not exist|schema cache/i.test(error.message ?? "")
+  );
+}
+
+function assertAudioStudyUsageTable(error: { code?: string; message?: string } | null): asserts error is null {
+  if (!error) return;
+  if (isMissingAudioStudyUsageTableError(error)) {
+    throw new Error(
+      "Audio Study quota table is not configured. Run the public.audio_study_generations migration.",
+    );
+  }
+  throw new Error(error.message || "Audio Study quota query failed.");
 }
 
 function chunkTextForPolly(text: string): string[] {
@@ -293,6 +335,66 @@ async function incrementAudioUsage(admin: SupabaseClient, userId: string): Promi
     .eq("user_id", userId);
 }
 
+async function getFreeAudioStudyUsage(
+  admin: SupabaseClient,
+  userId: string,
+  isPremium: boolean,
+): Promise<AudioStudyQuotaUsage> {
+  if (isPremium) return buildQuotaUsage(0, true);
+
+  const { count, error } = await admin
+    .from("audio_study_generations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("feature", AUDIO_STUDY_USAGE_FEATURE);
+
+  assertAudioStudyUsageTable(error);
+  return buildQuotaUsage(count ?? 0, false);
+}
+
+async function getRecordedAudioStudyGeneration(
+  admin: SupabaseClient,
+  userId: string,
+  idempotencyKey: string,
+): Promise<RecordedAudioStudyGeneration | null> {
+  const { data, error } = await admin
+    .from("audio_study_generations")
+    .select("storage_path, created_at")
+    .eq("user_id", userId)
+    .eq("feature", AUDIO_STUDY_USAGE_FEATURE)
+    .eq("idempotency_key", idempotencyKey)
+    .maybeSingle();
+
+  assertAudioStudyUsageTable(error);
+
+  const storagePath = typeof data?.storage_path === "string" ? data.storage_path : null;
+  if (!storagePath) return null;
+  return {
+    storagePath,
+    createdAt: typeof data?.created_at === "string" ? data.created_at : undefined,
+  };
+}
+
+async function recordAudioStudyGeneration(
+  admin: SupabaseClient,
+  userId: string,
+  idempotencyKey: string,
+  storagePath: string,
+): Promise<boolean> {
+  const { error } = await admin.from("audio_study_generations").insert({
+    user_id: userId,
+    feature: AUDIO_STUDY_USAGE_FEATURE,
+    idempotency_key: idempotencyKey,
+    storage_path: storagePath,
+  });
+
+  if (!error) return true;
+
+  if (error.code === "23505") return false;
+  assertAudioStudyUsageTable(error);
+  return false;
+}
+
 async function createSignedAudioUrl(admin: SupabaseClient, path: string): Promise<StoredAudioResult> {
   const { data, error } = await admin.storage
     .from(AUDIO_STUDY_BUCKET)
@@ -389,22 +491,49 @@ export async function POST(request: Request) {
     const admin = getServerSupabaseAdmin();
     const profile = await getProfileByUserId(admin, auth.user.id);
     const planId = resolveEntitlementPlanIdFromProfile(profile);
+    const isPremium = canUseAudioStudyMode(planId, hasActivePaidEntitlement(profile));
+    const quotaUsage = await getFreeAudioStudyUsage(admin, auth.user.id, isPremium);
 
-    if (!canUseAudioStudyMode(planId, hasActivePaidEntitlement(profile))) {
-      return jsonError({ error: "audio_study_requires_paid_plan" }, 403);
-    }
-
-    const dailyLimit = getDailyAudioLessonLimit(planId);
-    const usageCheck = await checkAndPrepareAudioUsage(admin, auth.user.id, dailyLimit);
-    if (!usageCheck.allowed) {
-      return jsonError({ error: "daily_limit_reached", used: usageCheck.used, limit: usageCheck.limit }, 429);
-    }
+    devLog("[mobile-audio-study] mobile_audio_free_quota_checked", {
+      userId: auth.user.id,
+      freeUsed: quotaUsage.freeUsed,
+      freeLimit: quotaUsage.freeLimit,
+      freeRemaining: quotaUsage.freeRemaining,
+      isPremium,
+    });
 
     if (idempotencyKey) {
-      // TODO: persist richer script/audio metadata keyed by user + language + idempotencyKey.
-      const existing = await getExistingStoredAudio(admin, storagePath);
+      const recorded = isPremium ? null : await getRecordedAudioStudyGeneration(admin, auth.user.id, idempotencyKey);
+      const existing = recorded
+        ? await createSignedAudioUrl(admin, recorded.storagePath)
+        : await getExistingStoredAudio(admin, storagePath);
+
       if (existing) {
-        devLog("[mobile-audio-study] idempotent_audio_hit", { userId: auth.user.id, outputLanguage });
+        if (!isPremium && !recorded && quotaUsage.freeUsed < FREE_AUDIO_STUDY_LIMIT) {
+          const recordedMissingUsage = await recordAudioStudyGeneration(
+            admin,
+            auth.user.id,
+            idempotencyKey,
+            storagePath,
+          );
+          if (recordedMissingUsage) {
+            devLog("[mobile-audio-study] mobile_audio_usage_recorded", {
+              userId: auth.user.id,
+              recoveredIdempotentUsage: true,
+            });
+          }
+        }
+
+        const currentUsage = isPremium
+          ? quotaUsage
+          : await getFreeAudioStudyUsage(admin, auth.user.id, false);
+
+        devLog("[mobile-audio-study] mobile_audio_idempotent_hit", {
+          userId: auth.user.id,
+          outputLanguage,
+          recorded: Boolean(recorded),
+        });
+
         return NextResponse.json({
           ok: true,
           audioStudy: responseAudioStudy(
@@ -417,11 +546,42 @@ export async function POST(request: Request) {
             existing,
             voice,
             outputLanguage,
-            createdAt,
+            recorded?.createdAt ?? createdAt,
           ),
-          usage: { used: usageCheck.used, limit: usageCheck.limit },
+          usage: currentUsage,
         });
       }
+    }
+
+    if (!isPremium && quotaUsage.freeUsed >= FREE_AUDIO_STUDY_LIMIT) {
+      devLog("[mobile-audio-study] mobile_audio_free_quota_exhausted", {
+        userId: auth.user.id,
+        freeUsed: quotaUsage.freeUsed,
+        freeLimit: quotaUsage.freeLimit,
+      });
+      return jsonError(
+        {
+          error: "audio_study_free_limit_reached",
+          code: "audio_study_free_limit_reached",
+          usage: buildQuotaUsage(FREE_AUDIO_STUDY_LIMIT, false),
+        },
+        403,
+      );
+    }
+
+    if (!isPremium) {
+      devLog("[mobile-audio-study] mobile_audio_free_quota_allowed", {
+        userId: auth.user.id,
+        freeUsed: quotaUsage.freeUsed,
+        freeLimit: quotaUsage.freeLimit,
+        freeRemaining: quotaUsage.freeRemaining,
+      });
+    }
+
+    const dailyLimit = getDailyAudioLessonLimit(planId);
+    const usageCheck = await checkAndPrepareAudioUsage(admin, auth.user.id, dailyLimit);
+    if (!usageCheck.allowed) {
+      return jsonError({ error: "daily_limit_reached", used: usageCheck.used, limit: usageCheck.limit }, 429);
     }
 
     const script = await generateAudioStudyScript(
@@ -430,6 +590,18 @@ export async function POST(request: Request) {
     );
     const audio = await synthesizePollyMp3(script.script, voice.voiceId);
     const stored = await storeAudio(admin, storagePath, audio);
+    let responseUsage = quotaUsage;
+
+    if (!isPremium) {
+      const recorded = await recordAudioStudyGeneration(admin, auth.user.id, storageKey, storagePath);
+      if (recorded) {
+        devLog("[mobile-audio-study] mobile_audio_usage_recorded", {
+          userId: auth.user.id,
+        });
+      }
+      responseUsage = await getFreeAudioStudyUsage(admin, auth.user.id, false);
+    }
+
     await incrementAudioUsage(admin, auth.user.id);
 
     await trackProductEvent({
@@ -452,7 +624,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       audioStudy: responseAudioStudy(script, stored, voice, outputLanguage, createdAt),
-      usage: { used: usageCheck.used + 1, limit: usageCheck.limit },
+      usage: responseUsage,
     });
   } catch (error) {
     devWarn("[mobile-audio-study] generation_failed", {
