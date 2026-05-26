@@ -8,5 +8,5 @@ import { sanitizeReturnTo } from "@/lib/auth/return-to";
 export function getAuthCallbackUrl(nextPath = "/account", browserOrigin?: string): string {
   const siteUrl = getAppOrigin(browserOrigin);
   const next = sanitizeReturnTo(nextPath, "/account");
-  return `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`;
+  return `${siteUrl}/auth/callback?returnTo=${encodeURIComponent(next)}`;
 }

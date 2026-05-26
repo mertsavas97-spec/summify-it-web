@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
-import { saveAuthReturnTo } from "@/lib/auth/return-to";
+import { readAuthReturnTo, resolveAuthReturnTo, saveAuthReturnTo } from "@/lib/auth/return-to";
 import { trackEvent } from "@/lib/analytics/events";
 import { mapOAuthSignInError } from "@/lib/auth-errors";
 import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 
 type GoogleSignInButtonProps = {
   nextPath?: string;
+  returnTo?: string;
   onError?: (message: string) => void;
   disabled?: boolean;
 };
@@ -40,6 +41,7 @@ function GoogleIcon() {
 
 export function GoogleSignInButton({
   nextPath = "/account",
+  returnTo,
   onError,
   disabled = false,
 }: GoogleSignInButtonProps) {
@@ -60,13 +62,22 @@ export function GoogleSignInButton({
     }
 
     setLoading(true);
-    saveAuthReturnTo(nextPath);
+    const resolvedReturnTo = resolveAuthReturnTo({
+      query: returnTo ?? nextPath,
+      sessionStorageValue: readAuthReturnTo(),
+      fallback: "/",
+    }).returnTo;
+    saveAuthReturnTo(resolvedReturnTo);
     trackEvent("signup_started", { method: "google", intent: "sign_in" });
+    trackEvent("auth_google_signin_started", {
+      returnTo: resolvedReturnTo,
+      hasReturnTo: resolvedReturnTo !== "/",
+    });
 
     const supabase = createClient();
     const browserOrigin =
       typeof window !== "undefined" ? window.location.origin : undefined;
-    const redirectTo = getAuthCallbackUrl(nextPath, browserOrigin);
+    const redirectTo = getAuthCallbackUrl(resolvedReturnTo, browserOrigin);
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

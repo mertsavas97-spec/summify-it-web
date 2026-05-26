@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 
 type LoginFormProps = {
   nextPath?: string;
+  returnTo?: string;
   errorMessage?: string | null;
   /** Set on the server from the request host for localhost checkout testing layout. */
   isLocalDev?: boolean;
@@ -35,6 +36,7 @@ const inputClassName =
 
 export function LoginForm({
   nextPath = "/account",
+  returnTo,
   errorMessage,
   isLocalDev = false,
   envMismatch = false,
@@ -69,7 +71,7 @@ export function LoginForm({
   async function completeSessionRedirect() {
     const pendingAnalysis = readPendingAnalysis();
     const resolved = resolveAuthReturnTo({
-      query: nextPath,
+      query: returnTo ?? nextPath,
       sessionStorageValue: readAuthReturnTo(),
       fallback: pendingAnalysis?.returnTo ?? "/account",
     });
@@ -101,7 +103,7 @@ export function LoginForm({
 
     setLoadingAction("signIn");
     setStatus("loading");
-    saveAuthReturnTo(nextPath);
+    saveAuthReturnTo(returnTo ?? nextPath);
     trackEvent("signup_started", { method: "password", intent: "sign_in" });
 
     const supabase = createClient();
@@ -149,7 +151,7 @@ export function LoginForm({
 
     setLoadingAction("signUp");
     setStatus("loading");
-    saveAuthReturnTo(nextPath);
+    saveAuthReturnTo(returnTo ?? nextPath);
     trackEvent("signup_started", { method: "password", intent: "sign_up" });
 
     const supabase = createClient();
@@ -158,7 +160,7 @@ export function LoginForm({
       password,
       options: {
         emailRedirectTo: getAuthCallbackUrl(
-          nextPath,
+          returnTo ?? nextPath,
           typeof window !== "undefined" ? window.location.origin : undefined,
         ),
       },
@@ -199,13 +201,13 @@ export function LoginForm({
 
     setLoadingAction("magic");
     setStatus("loading");
-    saveAuthReturnTo(nextPath);
+    saveAuthReturnTo(returnTo ?? nextPath);
     trackEvent("signup_started", { method: "magic_link", intent: "sign_in" });
 
     const supabase = createClient();
     const browserOrigin =
       typeof window !== "undefined" ? window.location.origin : undefined;
-    const redirectTo = getAuthCallbackUrl(nextPath, browserOrigin);
+    const redirectTo = getAuthCallbackUrl(returnTo ?? nextPath, browserOrigin);
 
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmedEmail,
@@ -304,6 +306,7 @@ export function LoginForm({
     <>
       <GoogleSignInButton
         nextPath={nextPath}
+        returnTo={returnTo}
         onError={handleGoogleError}
         disabled={isBusy || magicSent}
       />

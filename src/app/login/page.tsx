@@ -43,7 +43,8 @@ function isLocalDevHost(host: string | null): boolean {
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const nextPath = sanitizeNextPath(params.returnTo ?? params.next, "/account");
+  const returnTo = sanitizeNextPath(params.returnTo ?? params.next, "/");
+  const nextPath = returnTo === "/" ? "/account" : returnTo;
   const user = await getOptionalUser();
   const headerStore = await headers();
   const requestHost = headerStore.get("host");
@@ -74,6 +75,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       <div className="mt-8">
         <LoginForm
           nextPath={nextPath}
+          returnTo={returnTo}
           errorMessage={errorCopy(params.error)}
           isLocalDev={isLocalDev}
           envMismatch={envMismatch}

@@ -274,23 +274,38 @@ export function PodcastWorkspaceCtas({
   const podcastLimitReached = showUsageIndicators && (podcastUsage?.used ?? 0) >= dailyPodcastLimit;
 
   async function startGoogleSignInBackToCurrentPage(feature: "audio" | "podcast") {
+    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const safeReturnTo = saveAuthReturnTo(currentPath);
+    const viewport = window.innerWidth < 768 ? "mobile" : "desktop";
+    trackEvent("auth_gated_feature_signin_clicked", {
+      feature,
+      returnTo: safeReturnTo,
+      viewport,
+      source: "analysis_workspace_cta",
+    });
+    trackEvent("auth_return_to_saved", {
+      returnTo: safeReturnTo,
+      source: "gated_cta",
+    });
     if (!isGoogleAuthEnabled()) {
-      window.location.href = "/login";
+      window.location.href = `/login?returnTo=${encodeURIComponent(safeReturnTo)}`;
       return;
     }
 
-    const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    saveAuthReturnTo(currentPath);
-    onAuthRequired?.(feature, currentPath);
+    onAuthRequired?.(feature, safeReturnTo);
     const supabase = createClient();
-    const redirectTo = getAuthCallbackUrl(currentPath, window.location.origin);
+    trackEvent("auth_google_signin_started", {
+      returnTo: safeReturnTo,
+      hasReturnTo: true,
+    });
+    const redirectTo = getAuthCallbackUrl(safeReturnTo, window.location.origin);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },
     });
 
     if (error) {
-      window.location.href = `/login?next=${encodeURIComponent(currentPath)}`;
+      window.location.href = `/login?returnTo=${encodeURIComponent(safeReturnTo)}`;
     }
   }
   const eligibility = useMemo(

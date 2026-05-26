@@ -8,12 +8,18 @@ import { createClientIfConfigured } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const cookieHeader = request.headers.get("cookie");
-  const nextFromQuery = searchParams.get("next");
+  const nextFromQuery = searchParams.get("returnTo") ?? searchParams.get("next");
   const nextFromCookie = getAuthNextFromRequestCookies(cookieHeader);
-  const { returnTo: safeNext } = resolveAuthReturnTo({
+  const resolved = resolveAuthReturnTo({
     query: nextFromQuery,
     cookie: nextFromCookie,
-    fallback: "/account",
+    fallback: "/",
+  });
+  const safeNext = resolved.returnTo;
+  console.info("auth_callback_return_to_resolved", {
+    returnTo: safeNext,
+    source: resolved.source,
+    fallbackUsed: resolved.source === "fallback",
   });
   const nextQuery = `next=${encodeURIComponent(safeNext)}`;
 
@@ -55,6 +61,9 @@ export async function GET(request: Request) {
 
   await ensureProfileForUser();
 
+  console.info("auth_callback_redirecting", {
+    destination: safeNext,
+  });
   const response = NextResponse.redirect(`${origin}${safeNext}`);
   response.cookies.set("summify_auth_next", "", { path: "/", maxAge: 0 });
   return response;

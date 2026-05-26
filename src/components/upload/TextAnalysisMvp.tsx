@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import type { IntelligenceModeDefinition } from "@/types/modes";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -67,6 +67,7 @@ type TextAnalysisMvpProps = {
   isAuthenticated: boolean;
   isPaidActive?: boolean;
   limitNotice?: string | null;
+  actionModules?: ReactNode;
   /** When true, the PracticeAnalysisCta is not rendered (caller will render it separately). */
   hidePracticeCta?: boolean;
 };
@@ -227,6 +228,7 @@ export function TextAnalysisMvp({
   isAuthenticated,
   isPaidActive = false,
   limitNotice,
+  actionModules,
 }: TextAnalysisMvpProps) {
   const inputLimits = getClientAnalysisInputLimits(entitlementPlanId);
   const [loading, setLoading] = useState(false);
@@ -408,44 +410,6 @@ export function TextAnalysisMvp({
         <Badge variant="accent">Live</Badge>
       </div>
 
-      {displayMeta && displayResult && (
-        <div className="mt-5 space-y-4" data-workspace-analysis-result>
-          <header
-            className="rounded-xl border border-white/[0.08] bg-zinc-950/50 px-4 py-3.5 sm:px-5 sm:py-4"
-            data-workspace-analysis-hero
-          >
-            <div className="min-w-0 max-w-prose">
-              <h3 className="text-base font-semibold leading-snug tracking-tight text-white sm:text-lg">
-                {displayResult.title}
-              </h3>
-              <p className="mt-1.5 text-[11px] text-zinc-500">
-                Provider:{" "}
-                <span className="font-mono text-zinc-400">{displayMeta.providerUsed}</span>
-                {displayMeta.fallbackUsed ? (
-                  <span className="text-amber-400/90"> · fallback</span>
-                ) : null}
-              </p>
-            </div>
-            <div className="mt-3 border-t border-white/[0.06] pt-3">
-              <AnalysisToolbar result={displayResult} />
-            </div>
-          </header>
-
-          <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
-
-          <AnalysisResultView
-            result={displayResult}
-            modeId={mode}
-            entitlementPlanId={entitlementPlanId}
-            providerUsed={displayMeta.providerUsed}
-            fallbackUsed={displayMeta.fallbackUsed}
-            uiSectionLabels={displayUiSectionLabels}
-            showHeader={false}
-            showToolbar={false}
-          />
-        </div>
-      )}
-
       {(limitNotice || analysisLimitNotice) && (
         <p className="mt-4 rounded-lg border border-amber-500/20 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
           {analysisLimitNotice ?? limitNotice}
@@ -498,6 +462,46 @@ export function TextAnalysisMvp({
           </p>
         )}
       </div>
+
+      {actionModules && <div className="mt-4 space-y-4">{actionModules}</div>}
+
+      {displayMeta && displayResult && (
+        <div className="mt-5 space-y-4" data-workspace-analysis-result>
+          <header
+            className="rounded-xl border border-white/[0.08] bg-zinc-950/50 px-4 py-3.5 sm:px-5 sm:py-4"
+            data-workspace-analysis-hero
+          >
+            <div className="min-w-0 max-w-prose">
+              <h3 className="text-base font-semibold leading-snug tracking-tight text-white sm:text-lg">
+                {displayResult.title}
+              </h3>
+              <p className="mt-1.5 text-[11px] text-zinc-500">
+                Provider:{" "}
+                <span className="font-mono text-zinc-400">{displayMeta.providerUsed}</span>
+                {displayMeta.fallbackUsed ? (
+                  <span className="text-amber-400/90"> · fallback</span>
+                ) : null}
+              </p>
+            </div>
+            <div className="mt-3 border-t border-white/[0.06] pt-3">
+              <AnalysisToolbar result={displayResult} />
+            </div>
+          </header>
+
+          <WorkspaceSaveBanner savedToWorkspace={displaySavedToWorkspace} />
+
+          <AnalysisResultView
+            result={displayResult}
+            modeId={mode}
+            entitlementPlanId={entitlementPlanId}
+            providerUsed={displayMeta.providerUsed}
+            fallbackUsed={displayMeta.fallbackUsed}
+            uiSectionLabels={displayUiSectionLabels}
+            showHeader={false}
+            showToolbar={false}
+          />
+        </div>
+      )}
 
       {error && !pipelineAnalysisFailed && (
         <div className="mt-4 space-y-2">

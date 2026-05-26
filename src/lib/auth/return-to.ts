@@ -20,9 +20,21 @@ export type PendingAnalysisSnapshot = {
   analysisIntelligence: unknown | null;
 };
 
+export const AUTH_RETURN_TO_STORAGE_KEY = RETURN_TO_STORAGE_KEY;
+
+function isUnsafeExternalReturnTo(next: string): boolean {
+  const lowered = next.toLowerCase();
+  return (
+    lowered.includes("http://") ||
+    lowered.includes("https://") ||
+    !lowered.startsWith("/") ||
+    lowered.startsWith("//")
+  );
+}
+
 /** Safe internal redirect path (blocks open redirects). */
 export function sanitizeReturnTo(next: string | null | undefined, fallback = "/account"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  if (!next || isUnsafeExternalReturnTo(next)) return fallback;
   try {
     const parsed = new URL(next, "http://summify.local");
     if (parsed.origin !== "http://summify.local") return fallback;
@@ -108,10 +120,23 @@ export function resolveAuthReturnTo(options: {
   fallback?: string;
 }): { returnTo: string; source: AuthReturnToSource } {
   const fallback = options.fallback ?? "/account";
-  if (options.query) return { returnTo: sanitizeReturnTo(options.query, fallback), source: "query" };
-  if (options.cookie) return { returnTo: sanitizeReturnTo(options.cookie, fallback), source: "cookie" };
+  if (options.query) {
+    const safe = sanitizeReturnTo(options.query, fallback);
+    if (safe !== fallback || options.query === fallback) {
+      return { returnTo: safe, source: "query" };
+    }
+  }
+  if (options.cookie) {
+    const safe = sanitizeReturnTo(options.cookie, fallback);
+    if (safe !== fallback || options.cookie === fallback) {
+      return { returnTo: safe, source: "cookie" };
+    }
+  }
   if (options.sessionStorageValue) {
-    return { returnTo: sanitizeReturnTo(options.sessionStorageValue, fallback), source: "sessionStorage" };
+    const safe = sanitizeReturnTo(options.sessionStorageValue, fallback);
+    if (safe !== fallback || options.sessionStorageValue === fallback) {
+      return { returnTo: safe, source: "sessionStorage" };
+    }
   }
   return { returnTo: fallback, source: "fallback" };
 }

@@ -21,9 +21,13 @@ export const ANALYTICS_EVENTS = {
   podcast_download_mp3: "podcast_download_mp3",
   podcast_share: "podcast_share",
   auth_gated_feature_signin_required: "auth_gated_feature_signin_required",
+  auth_gated_feature_signin_clicked: "auth_gated_feature_signin_clicked",
   auth_return_to_saved: "auth_return_to_saved",
+  auth_google_signin_started: "auth_google_signin_started",
   auth_signin_success_redirect: "auth_signin_success_redirect",
   auth_return_to_restored_analysis: "auth_return_to_restored_analysis",
+  auth_callback_return_to_resolved: "auth_callback_return_to_resolved",
+  auth_callback_redirecting: "auth_callback_redirecting",
   mobile_header_workspace_visible: "mobile_header_workspace_visible",
   auth_refresh_token_invalid_cleared: "auth_refresh_token_invalid_cleared",
   auth_session_recovered_as_signed_out: "auth_session_recovered_as_signed_out",
@@ -104,9 +108,19 @@ export type AnalyticsEventParams = {
     hasAnalysisId?: boolean;
     hasPendingDocument?: boolean;
   };
+  auth_gated_feature_signin_clicked?: {
+    feature?: "audio" | "podcast";
+    returnTo?: string;
+    viewport?: "desktop" | "mobile";
+    source?: string;
+  };
   auth_return_to_saved?: {
     returnTo?: string;
     source?: string;
+  };
+  auth_google_signin_started?: {
+    returnTo?: string;
+    hasReturnTo?: boolean;
   };
   auth_signin_success_redirect?: {
     returnTo?: string;
@@ -115,6 +129,14 @@ export type AnalyticsEventParams = {
   auth_return_to_restored_analysis?: {
     analysisId?: string;
     route?: string;
+  };
+  auth_callback_return_to_resolved?: {
+    returnTo?: string;
+    source?: string;
+    fallbackUsed?: boolean;
+  };
+  auth_callback_redirecting?: {
+    destination?: string;
   };
   mobile_header_workspace_visible?: {
     workspaceName?: string;

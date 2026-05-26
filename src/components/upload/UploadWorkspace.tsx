@@ -598,8 +598,12 @@ export function UploadWorkspace() {
         className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_288px] lg:items-start xl:grid-cols-[minmax(0,1fr)_336px]"
         data-workspace-layout
       >
-        <div className="min-w-0 space-y-5">
-          <section className="rounded-xl border border-white/[0.08] bg-zinc-900/40 p-4 transition-colors hover:border-white/[0.1] sm:p-5">
+        <div className="min-w-0 space-y-4 sm:space-y-5">
+          <section
+            className={`rounded-xl border border-white/[0.08] bg-zinc-900/40 px-4 pt-4 transition-colors hover:border-white/[0.1] sm:px-5 sm:pt-5 ${
+              showSourceActionArea ? "pb-0 sm:pb-0" : "pb-4 sm:pb-5"
+            }`}
+          >
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs font-medium text-zinc-400">Input source</p>
               <InputSourceTabs
@@ -649,105 +653,56 @@ export function UploadWorkspace() {
               />
             )}
 
-          {showSourceActionArea && (
-            <div className={`${isAnalyzing ? "mb-4" : "mb-6"} rounded-xl border border-violet-500/20 bg-violet-950/15 p-4`}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={!canRunAnalysis}
-                  onClick={handleRunAnalysis}
-                >
-                  {runAnalysisLabel}
-                </Button>
-                <span className="text-xs text-zinc-400">{runAnalysisHelper}</span>
+            {showSourceActionArea && (
+              <div className={`${isAnalyzing ? "mb-4" : ""} rounded-xl border border-violet-500/20 bg-violet-950/15 p-4`}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!canRunAnalysis}
+                    onClick={handleRunAnalysis}
+                  >
+                    {runAnalysisLabel}
+                  </Button>
+                  <span className="text-xs text-zinc-400">{runAnalysisHelper}</span>
+                </div>
+
+                <WorkspaceUsageWarning className="mt-3" />
               </div>
+            )}
 
-              <WorkspaceUsageWarning className="mt-3" />
-            </div>
-          )}
-
-          {isAnalyzing && (
-            <div className="mb-6 rounded-xl border border-violet-500/20 bg-zinc-950/50 p-4 text-sm text-zinc-200">
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <p className="font-medium text-violet-200">Generating analysis</p>
-                <p className="text-xs text-zinc-400">Creating learn cards</p>
+            {isAnalyzing && (
+              <div className="rounded-xl border border-violet-500/20 bg-zinc-950/50 p-4 text-sm text-zinc-200">
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <p className="font-medium text-violet-200">Generating analysis</p>
+                  <p className="text-xs text-zinc-400">Creating learn cards</p>
+                </div>
+                <div className="mt-3 flex gap-2" aria-label="Analysis progress">
+                  {['Extract', 'Clean', 'Profile', 'Analyze', 'Learn'].map((label, index) => {
+                    const completed = index < 3;
+                    const active = index === 3;
+                    return (
+                      <div
+                        key={label}
+                        className={`relative h-2 flex-1 overflow-hidden rounded-full border ${
+                          completed
+                            ? 'border-violet-500/35 bg-violet-500/80'
+                            : active
+                              ? 'border-violet-400/45 bg-violet-950/35'
+                              : 'border-white/[0.06] bg-white/[0.06]'
+                        }`}
+                      >
+                        {active && (
+                          <div className="absolute inset-y-0 left-0 w-1/2 animate-pulse rounded-full bg-violet-400/70 shadow-[0_0_14px_rgba(167,139,250,0.45)]" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="mt-3 flex gap-2" aria-label="Analysis progress">
-                {['Extract', 'Clean', 'Profile', 'Analyze', 'Learn'].map((label, index) => {
-                  const completed = index < 3;
-                  const active = index === 3;
-                  return (
-                    <div
-                      key={label}
-                      className={`relative h-2 flex-1 overflow-hidden rounded-full border ${
-                        completed
-                          ? 'border-violet-500/35 bg-violet-500/80'
-                          : active
-                            ? 'border-violet-400/45 bg-violet-950/35'
-                            : 'border-white/[0.06] bg-white/[0.06]'
-                      }`}
-                    >
-                      {active && (
-                        <div className="absolute inset-y-0 left-0 w-1/2 animate-pulse rounded-full bg-violet-400/70 shadow-[0_0_14px_rgba(167,139,250,0.45)]" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+            )}
 
-          <PodcastWorkspaceCtas
-            entitlementPlanId={workspaceEntitlement.entitlementPlanId}
-            isPaidActive={workspaceEntitlement.isPaidActive}
-            hasSource={hasSource}
-            hasAnalysis={hasAnalysisResult}
-            sourceProfile={podcastSourceProfile}
-            analysisId={latestSavedAnalysisId}
-            analysisResult={latestAnalysisResult}
-            sourceType={extractionMeta?.sourceKind ?? null}
-            sourceLabel={sourceLabel}
-            intelligenceMode={analysisMode}
-            onAuthRequired={persistPendingAnalysis}
-          />
-
-          <PracticeAnalysisCta
-            savedToWorkspace={injectedAnalysis?.savedToWorkspace ?? false}
-            savedAnalysisId={injectedAnalysis?.savedAnalysisId ?? latestSavedAnalysisId}
-            learnCards={latestAnalysisResult?.learnCards}
-            analysisContent={latestAnalysisResult ? {
-              title: latestAnalysisResult.title,
-              summary: latestAnalysisResult.summary,
-              keyInsights: latestAnalysisResult.keyInsights,
-              risksOrWarnings: latestAnalysisResult.risksOrWarnings,
-              actionItems: latestAnalysisResult.actionItems,
-            } : undefined}
-            entitlementPlanId={workspaceEntitlement.entitlementPlanId}
-            isPaidActive={workspaceEntitlement.isPaidActive}
-            intelligenceModeId={analysisMode}
-            sourceType={extractionMeta?.sourceKind ?? null}
-            documentTitle={latestAnalysisResult?.title}
-            modeLabel={getIntelligenceModeById(analysisMode)?.label ?? analysisMode}
-            sourceKindLabel={
-              extractionMeta?.sourceKind === "youtube"
-                ? "YouTube"
-                : extractionMeta?.sourceKind === "presentation"
-                  ? "Presentation"
-                  : extractionMeta?.sourceKind === "url"
-                    ? "Article"
-                    : "Document"
-            }
-          />
-
-          {inputMode === "text" && (
-            <p className="text-xs leading-relaxed text-zinc-500">
-              Paste or type your document in the analysis workspace below (min
-              100 characters), then run analysis.
-            </p>
-          )}
-
-        </section>
+          </section>
 
           <TextAnalysisMvp
             entitlementPlanId={workspaceEntitlement.entitlementPlanId}
@@ -785,7 +740,59 @@ export function UploadWorkspace() {
               runAnalysisRef.current = handler;
             }}
             limitNotice={limitNotice}
+            actionModules={
+              <>
+                <PodcastWorkspaceCtas
+                  entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+                  isPaidActive={workspaceEntitlement.isPaidActive}
+                  hasSource={hasSource}
+                  hasAnalysis={hasAnalysisResult}
+                  sourceProfile={podcastSourceProfile}
+                  analysisId={latestSavedAnalysisId}
+                  analysisResult={latestAnalysisResult}
+                  sourceType={extractionMeta?.sourceKind ?? null}
+                  sourceLabel={sourceLabel}
+                  intelligenceMode={analysisMode}
+                  onAuthRequired={persistPendingAnalysis}
+                />
+
+                <PracticeAnalysisCta
+                  savedToWorkspace={injectedAnalysis?.savedToWorkspace ?? false}
+                  savedAnalysisId={injectedAnalysis?.savedAnalysisId ?? latestSavedAnalysisId}
+                  learnCards={latestAnalysisResult?.learnCards}
+                  analysisContent={latestAnalysisResult ? {
+                    title: latestAnalysisResult.title,
+                    summary: latestAnalysisResult.summary,
+                    keyInsights: latestAnalysisResult.keyInsights,
+                    risksOrWarnings: latestAnalysisResult.risksOrWarnings,
+                    actionItems: latestAnalysisResult.actionItems,
+                  } : undefined}
+                  entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+                  isPaidActive={workspaceEntitlement.isPaidActive}
+                  intelligenceModeId={analysisMode}
+                  sourceType={extractionMeta?.sourceKind ?? null}
+                  documentTitle={latestAnalysisResult?.title}
+                  modeLabel={getIntelligenceModeById(analysisMode)?.label ?? analysisMode}
+                  sourceKindLabel={
+                    extractionMeta?.sourceKind === "youtube"
+                      ? "YouTube"
+                      : extractionMeta?.sourceKind === "presentation"
+                        ? "Presentation"
+                        : extractionMeta?.sourceKind === "url"
+                          ? "Article"
+                          : "Document"
+                  }
+                />
+              </>
+            }
           />
+
+          {inputMode === "text" && (
+            <p className="text-xs leading-relaxed text-zinc-500">
+              Paste or type your document in the analysis workspace (min 100
+              characters), then run analysis.
+            </p>
+          )}
 
           <WorkspaceEntitlementBanner entitlement={workspaceEntitlement} />
         </div>
