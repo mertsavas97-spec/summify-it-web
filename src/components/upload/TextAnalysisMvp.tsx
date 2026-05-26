@@ -39,7 +39,6 @@ import type { AnalyzeApiDebugMetadata } from "@/types/text-analysis";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
-import { WorkspaceUsageWarning } from "./WorkspaceUsageWarning";
 import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
 import type { InjectedAnalysisPayload } from "./UploadWorkspace";
 
@@ -499,8 +498,6 @@ export function TextAnalysisMvp({
           </p>
         )}
       </div>
-
-      <WorkspaceUsageWarning />
 
       {error && !pipelineAnalysisFailed && (
         <div className="mt-4 space-y-2">

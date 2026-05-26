@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { sanitizeNextPath, getAuthNextFromRequestCookies } from "@/lib/auth/next-path";
+import { getAuthNextFromRequestCookies } from "@/lib/auth/next-path";
+import { resolveAuthReturnTo } from "@/lib/auth/return-to";
 import { oauthCallbackErrorCode } from "@/lib/auth-errors";
 import { ensureProfileForUser } from "@/lib/auth";
 import { createClientIfConfigured } from "@/lib/supabase/server";
@@ -9,7 +10,11 @@ export async function GET(request: Request) {
   const cookieHeader = request.headers.get("cookie");
   const nextFromQuery = searchParams.get("next");
   const nextFromCookie = getAuthNextFromRequestCookies(cookieHeader);
-  const safeNext = sanitizeNextPath(nextFromQuery ?? nextFromCookie ?? "/account");
+  const { returnTo: safeNext } = resolveAuthReturnTo({
+    query: nextFromQuery,
+    cookie: nextFromCookie,
+    fallback: "/account",
+  });
   const nextQuery = `next=${encodeURIComponent(safeNext)}`;
 
   const oauthError = searchParams.get("error");

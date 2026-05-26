@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
-import { setAuthNextCookie } from "@/lib/auth/next-path";
+import { saveAuthReturnTo } from "@/lib/auth/return-to";
 import { trackEvent } from "@/lib/analytics/events";
 import { mapOAuthSignInError } from "@/lib/auth-errors";
 import { isGoogleAuthEnabled, isSupabaseConfigured } from "@/lib/supabase/env";
@@ -60,7 +60,7 @@ export function GoogleSignInButton({
     }
 
     setLoading(true);
-    setAuthNextCookie(nextPath);
+    saveAuthReturnTo(nextPath);
     trackEvent("signup_started", { method: "google", intent: "sign_in" });
 
     const supabase = createClient();

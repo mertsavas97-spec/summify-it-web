@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
-import { clearAuthNextCookie, setAuthNextCookie } from "@/lib/auth/next-path";
+import {
+  clearAuthReturnTo,
+  readAuthReturnTo,
+  readPendingAnalysis,
+  resolveAuthReturnTo,
+  saveAuthReturnTo,
+} from "@/lib/auth/return-to";
 import { trackEvent } from "@/lib/analytics/events";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { mapAuthError } from "@/lib/auth-errors";
@@ -61,9 +67,25 @@ export function LoginForm({
   }
 
   async function completeSessionRedirect() {
-    clearAuthNextCookie();
+    const pendingAnalysis = readPendingAnalysis();
+    const resolved = resolveAuthReturnTo({
+      query: nextPath,
+      sessionStorageValue: readAuthReturnTo(),
+      fallback: pendingAnalysis?.returnTo ?? "/account",
+    });
+    clearAuthReturnTo();
+    trackEvent("auth_signin_success_redirect" as never, {
+      returnTo: resolved.returnTo,
+      fallbackUsed: resolved.source === "fallback",
+    } as never);
+    if (pendingAnalysis?.analysisId && pendingAnalysis.returnTo === resolved.returnTo) {
+      trackEvent("auth_return_to_restored_analysis" as never, {
+        analysisId: pendingAnalysis.analysisId,
+        route: resolved.returnTo,
+      } as never);
+    }
     router.refresh();
-    router.push(nextPath);
+    router.push(resolved.returnTo);
   }
 
   async function handleSignInWithPassword(event: React.FormEvent) {
@@ -79,7 +101,7 @@ export function LoginForm({
 
     setLoadingAction("signIn");
     setStatus("loading");
-    setAuthNextCookie(nextPath);
+    saveAuthReturnTo(nextPath);
     trackEvent("signup_started", { method: "password", intent: "sign_in" });
 
     const supabase = createClient();
@@ -127,7 +149,7 @@ export function LoginForm({
 
     setLoadingAction("signUp");
     setStatus("loading");
-    setAuthNextCookie(nextPath);
+    saveAuthReturnTo(nextPath);
     trackEvent("signup_started", { method: "password", intent: "sign_up" });
 
     const supabase = createClient();
@@ -177,7 +199,7 @@ export function LoginForm({
 
     setLoadingAction("magic");
     setStatus("loading");
-    setAuthNextCookie(nextPath);
+    saveAuthReturnTo(nextPath);
     trackEvent("signup_started", { method: "magic_link", intent: "sign_in" });
 
     const supabase = createClient();

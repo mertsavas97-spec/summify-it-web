@@ -4,10 +4,28 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, recoverInvalidRefreshSession } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
-function HeaderAuthInner() {
+type HeaderAuthLayout = "desktop" | "mobile";
+
+type HeaderAuthProps = {
+  layout?: HeaderAuthLayout;
+};
+
+function authLinkClass(layout: HeaderAuthLayout, active = false): string {
+  if (layout === "mobile") {
+    return active
+      ? "shrink-0 rounded-lg border border-violet-400/25 bg-violet-500/15 px-2 py-1.5 text-xs font-medium text-violet-100 shadow-sm shadow-violet-500/10 transition-colors hover:border-violet-300/35 hover:bg-violet-500/25"
+      : "shrink-0 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-zinc-100";
+  }
+
+  return active
+    ? "rounded-lg border border-violet-400/25 bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-100 shadow-sm shadow-violet-500/10 transition-colors hover:border-violet-300/35 hover:bg-violet-500/25"
+    : "rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200";
+}
+
+function HeaderAuthInner({ layout = "desktop" }: HeaderAuthProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
@@ -15,14 +33,31 @@ function HeaderAuthInner() {
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null);
-      setReady(true);
-    });
+    void supabase.auth
+      .getUser()
+      .then(async ({ data, error }) => {
+        if (error && (await recoverInvalidRefreshSession(supabase, "HeaderAuth.getUser", error))) {
+          setUser(null);
+          setReady(true);
+          return;
+        }
+
+        setUser(data.user ?? null);
+        setReady(true);
+      })
+      .catch(async (error) => {
+        if (await recoverInvalidRefreshSession(supabase, "HeaderAuth.getUser.catch", error)) {
+          setUser(null);
+          setReady(true);
+          return;
+        }
+
+        setReady(true);
+      });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       router.refresh();
     });
@@ -32,22 +67,25 @@ function HeaderAuthInner() {
 
   if (!ready) {
     return (
-      <span className="hidden h-9 w-16 rounded-lg bg-white/5 sm:inline-block" aria-hidden />
+      <span
+        className={layout === "mobile" ? "h-7 w-14 shrink-0 rounded-lg bg-white/5" : "hidden h-9 w-16 rounded-lg bg-white/5 sm:inline-block"}
+        aria-hidden
+      />
     );
   }
 
   if (user) {
     return (
-      <div className="flex items-center gap-1.5">
+      <div className={layout === "mobile" ? "flex shrink-0 items-center gap-1" : "flex items-center gap-1.5"}>
         <Link
           href="/dashboard"
-          className="rounded-lg border border-violet-400/25 bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-100 shadow-sm shadow-violet-500/10 transition-colors hover:border-violet-300/35 hover:bg-violet-500/25"
+          className={authLinkClass(layout, true)}
         >
           Dashboard
         </Link>
         <Link
           href="/account"
-          className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          className={authLinkClass(layout)}
         >
           Account
         </Link>
@@ -58,17 +96,17 @@ function HeaderAuthInner() {
   return (
     <Link
       href="/login"
-      className="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
+      className={authLinkClass(layout)}
     >
       Sign in
     </Link>
   );
 }
 
-export function HeaderAuth() {
+export function HeaderAuth({ layout = "desktop" }: HeaderAuthProps) {
   if (!isSupabaseConfigured()) {
     return null;
   }
 
-  return <HeaderAuthInner />;
+  return <HeaderAuthInner layout={layout} />;
 }

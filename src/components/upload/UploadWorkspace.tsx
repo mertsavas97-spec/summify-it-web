@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { UploadZone } from "./UploadZone";
 import { UploadPreviewPanel } from "./UploadPreviewPanel";
@@ -36,6 +36,12 @@ import { buildYoutubeSourceContext } from "@/types/analyze-source";
 import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { trackMetaCustomEvent } from "@/lib/metaPixel";
+import {
+  clearPendingAnalysis,
+  readPendingAnalysis,
+  saveAuthReturnTo,
+  savePendingAnalysis,
+} from "@/lib/auth/return-to";
 import { TrustSignals } from "@/components/growth/TrustSignals";
 import { DemoWorkflowBlock } from "@/components/growth/DemoWorkflowBlock";
 import {
@@ -43,6 +49,7 @@ import {
   PodcastWorkspaceCtas,
 } from "@/components/podcast/PodcastWorkspaceCtas";
 import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
+import { WorkspaceUsageWarning } from "./WorkspaceUsageWarning";
 import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 
 function resolvePipelineStage(
@@ -70,23 +77,42 @@ export type InjectedAnalysisPayload = {
 };
 
 export function UploadWorkspace() {
+  const initialPendingAnalysis = readPendingAnalysis();
+  const restoredPendingAnalysis =
+    initialPendingAnalysis && initialPendingAnalysis.returnTo.startsWith("/upload")
+      ? initialPendingAnalysis
+      : null;
   const workspaceEntitlement = useWorkspaceEntitlement();
-  const [inputMode, setInputMode] = useState<WorkspaceInputMode>("file");
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<WorkspaceInputMode>(
+    restoredPendingAnalysis?.inputMode ?? "file",
+  );
+  const [fileName, setFileName] = useState<string | null>(restoredPendingAnalysis?.fileName ?? null);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(restoredPendingAnalysis?.sourceUrl ?? null);
   const [extractStatus, setExtractStatus] =
-    useState<UploadExtractStatus>("idle");
+    useState<UploadExtractStatus>(
+      (restoredPendingAnalysis?.extractStatus as UploadExtractStatus | undefined) ?? "idle",
+    );
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extractionMeta, setExtractionMeta] =
-    useState<ExtractionMetadata | null>(null);
-  const [rawText, setRawText] = useState("");
+    useState<ExtractionMetadata | null>(
+      (restoredPendingAnalysis?.extractionMeta as ExtractionMetadata | null | undefined) ?? null,
+    );
+  const [rawText, setRawText] = useState(restoredPendingAnalysis?.rawText ?? "");
   const [analysisMode, setAnalysisMode] = useState<IntelligenceModeId>(
-    getDefaultIntelligenceModeId(),
+    (restoredPendingAnalysis?.analysisMode as IntelligenceModeId | undefined) ??
+      getDefaultIntelligenceModeId(),
   );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [hasAnalysisResult, setHasAnalysisResult] = useState(false);
+  const [hasAnalysisResult, setHasAnalysisResult] = useState(
+    Boolean(restoredPendingAnalysis?.analysisResult),
+  );
   const [analysisIntelligence, setAnalysisIntelligence] =
-    useState<AnalysisIntelligenceMetadata | null>(null);
+    useState<AnalysisIntelligenceMetadata | null>(
+      (restoredPendingAnalysis?.analysisIntelligence as
+        | AnalysisIntelligenceMetadata
+        | null
+        | undefined) ?? null,
+    );
   const [youtubePipelineActive, setYoutubePipelineActive] = useState(false);
   const [limitNotice, setLimitNotice] = useState<string | null>(null);
   const [youtubeAnalysisError, setYoutubeAnalysisError] = useState<string | null>(
@@ -95,14 +121,61 @@ export function UploadWorkspace() {
   const [urlPipelineActive, setUrlPipelineActive] = useState(false);
   const [urlAnalysisError, setUrlAnalysisError] = useState<string | null>(null);
   const [injectedAnalysis, setInjectedAnalysis] =
-    useState<InjectedAnalysisPayload | null>(null);
+    useState<InjectedAnalysisPayload | null>(
+      (restoredPendingAnalysis?.injectedAnalysis as InjectedAnalysisPayload | null | undefined) ??
+        null,
+    );
   const [latestAnalysisResult, setLatestAnalysisResult] =
-    useState<AnalysisResult | null>(null);
+    useState<AnalysisResult | null>(
+      (restoredPendingAnalysis?.analysisResult as AnalysisResult | null | undefined) ?? null,
+    );
   const [latestSavedAnalysisId, setLatestSavedAnalysisId] = useState<string | null>(
-    null,
+    restoredPendingAnalysis?.analysisId ?? null,
   );
   const runAnalysisRef = useRef<null | (() => void)>(null);
   const uploadStartedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!restoredPendingAnalysis) return;
+    if (restoredPendingAnalysis.analysisId) {
+      trackEvent("auth_return_to_restored_analysis" as never, {
+        analysisId: restoredPendingAnalysis.analysisId,
+        route: restoredPendingAnalysis.returnTo,
+      } as never);
+    }
+    clearPendingAnalysis();
+  }, [restoredPendingAnalysis]);
+
+  const persistPendingAnalysis = useCallback(
+    (feature: "audio" | "podcast", returnTo: string) => {
+      const safeReturnTo = saveAuthReturnTo(returnTo);
+      savePendingAnalysis({
+        analysisId: latestSavedAnalysisId,
+        returnTo: safeReturnTo,
+        inputMode,
+        fileName,
+        sourceUrl,
+        rawText,
+        extractStatus,
+        extractionMeta,
+        analysisMode,
+        analysisResult: latestAnalysisResult,
+        injectedAnalysis,
+        analysisIntelligence,
+      });
+      trackEvent("auth_return_to_saved" as never, {
+        returnTo: safeReturnTo,
+        source: "sessionStorage",
+      } as never);
+      trackEvent("auth_gated_feature_signin_required" as never, {
+        feature,
+        returnTo: safeReturnTo,
+        hasAnalysisId: Boolean(latestSavedAnalysisId),
+        hasPendingDocument: Boolean(rawText.trim() || fileName || sourceUrl),
+      } as never);
+    },
+    [analysisIntelligence, analysisMode, extractStatus, extractionMeta, fileName, injectedAnalysis, inputMode, latestAnalysisResult, latestSavedAnalysisId, rawText, sourceUrl],
+  );
 
   const getSourceType = useCallback((mode: WorkspaceInputMode, meta: ExtractionMetadata | null) => {
     if (mode === "file") return "file";
@@ -508,7 +581,7 @@ export function UploadWorkspace() {
         </p>
         <p className="mt-2 text-xs text-zinc-600">
           <Link
-            href="/login?next=/upload"
+            href="/login?returnTo=/upload"
             className="text-violet-400/80 hover:text-violet-300"
           >
             Sign in to save analyses.
@@ -589,6 +662,8 @@ export function UploadWorkspace() {
                 </Button>
                 <span className="text-xs text-zinc-400">{runAnalysisHelper}</span>
               </div>
+
+              <WorkspaceUsageWarning className="mt-3" />
             </div>
           )}
 
@@ -634,6 +709,7 @@ export function UploadWorkspace() {
             sourceType={extractionMeta?.sourceKind ?? null}
             sourceLabel={sourceLabel}
             intelligenceMode={analysisMode}
+            onAuthRequired={persistPendingAnalysis}
           />
 
           <PracticeAnalysisCta

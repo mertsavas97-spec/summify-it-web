@@ -11,7 +11,7 @@ import Link from "next/link";
 export const metadata = pageSeo.login;
 
 type PageProps = {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; returnTo?: string; error?: string }>;
 };
 
 function errorCopy(code: string | undefined): string | null {
@@ -43,7 +43,7 @@ function isLocalDevHost(host: string | null): boolean {
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const nextPath = sanitizeNextPath(params.next, "/account");
+  const nextPath = sanitizeNextPath(params.returnTo ?? params.next, "/account");
   const user = await getOptionalUser();
   const headerStore = await headers();
   const requestHost = headerStore.get("host");

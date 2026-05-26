@@ -19,7 +19,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthCallbackUrl } from "@/lib/auth-callback";
-import { setAuthNextCookie } from "@/lib/auth/next-path";
+import { saveAuthReturnTo } from "@/lib/auth/return-to";
 import { isGoogleAuthEnabled } from "@/lib/supabase/env";
 import {
   AUDIO_STUDY_UPGRADE_HREF,
@@ -172,6 +172,7 @@ type PodcastWorkspaceCtasProps = {
   sourceLabel?: string | null;
   intelligenceMode?: string | null;
   documentType?: string | null;
+  onAuthRequired?: (feature: "audio" | "podcast", returnTo: string) => void;
 };
 
 function meaningfulCount(items: Array<string | null | undefined>): number {
@@ -204,6 +205,7 @@ export function PodcastWorkspaceCtas({
   sourceLabel,
   intelligenceMode,
   documentType,
+  onAuthRequired,
 }: PodcastWorkspaceCtasProps) {
   const [generatedDiscussion, setGeneratedDiscussion] = useState<{
     podcast: PodcastDiscussionScript;
@@ -271,14 +273,15 @@ export function PodcastWorkspaceCtas({
   const audioLimitReached = showUsageIndicators && (audioUsage?.used ?? 0) >= dailyAudioLimit;
   const podcastLimitReached = showUsageIndicators && (podcastUsage?.used ?? 0) >= dailyPodcastLimit;
 
-  async function startGoogleSignInBackToCurrentPage() {
+  async function startGoogleSignInBackToCurrentPage(feature: "audio" | "podcast") {
     if (!isGoogleAuthEnabled()) {
       window.location.href = "/login";
       return;
     }
 
     const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    setAuthNextCookie(currentPath);
+    saveAuthReturnTo(currentPath);
+    onAuthRequired?.(feature, currentPath);
     const supabase = createClient();
     const redirectTo = getAuthCallbackUrl(currentPath, window.location.origin);
     const { error } = await supabase.auth.signInWithOAuth({
@@ -639,12 +642,12 @@ export function PodcastWorkspaceCtas({
                     <button
                       type="button"
                       onClick={() => {
-                        void startGoogleSignInBackToCurrentPage();
+                        void startGoogleSignInBackToCurrentPage("audio");
                       }}
                       className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
                     >
                       <Lock className="h-3 w-3" aria-hidden />
-                      Unlock audio lessons <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
+                      Sign in to create audio lessons <span className="listening-banner-cta-arrow inline-block" aria-hidden>→</span>
                     </button>
                   )
                 )}
@@ -866,7 +869,7 @@ export function PodcastWorkspaceCtas({
                   type="button"
                   onClick={() => {
                     trackPodcastClick();
-                    void startGoogleSignInBackToCurrentPage();
+                    void startGoogleSignInBackToCurrentPage("podcast");
                   }}
                   className="listening-banner-cta inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
                 >

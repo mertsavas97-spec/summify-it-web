@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import type { User } from "@supabase/supabase-js";
 import { ChevronDown } from "lucide-react";
-import { HeaderAuth } from "@/components/auth/HeaderAuth";
 import { FORMAT_NAV_ITEMS, SEGMENT_NAV_ITEMS } from "@/data/seo-nav";
 import { SUMMIFY_SOCIAL_LINKS } from "@/lib/social-links";
+import { createClient, recoverInvalidRefreshSession } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 function MobileNavGroup({
   label,
@@ -58,9 +60,59 @@ function navLinkClass(active: boolean): string {
   }`;
 }
 
+function accountLinkClass(active = false): string {
+  return active
+    ? "rounded-lg border border-violet-400/25 bg-violet-500/15 px-3 py-2 text-sm font-medium text-violet-100 shadow-sm shadow-violet-500/10 transition-colors hover:border-violet-300/35 hover:bg-violet-500/25"
+    : "rounded-lg px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-zinc-100";
+}
+
 export function MobilePublicNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const supabaseConfigured = isSupabaseConfigured();
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(!supabaseConfigured);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const workspaceName = "Workspace";
+
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+
+    const supabase = createClient();
+
+    void supabase.auth
+      .getUser()
+      .then(async ({ data, error }) => {
+        if (error && (await recoverInvalidRefreshSession(supabase, "MobilePublicNav.getUser", error))) {
+          setUser(null);
+          setAuthReady(true);
+          return;
+        }
+
+        setUser(data.user ?? null);
+        setAuthReady(true);
+      })
+      .catch(async (error) => {
+        if (await recoverInvalidRefreshSession(supabase, "MobilePublicNav.getUser.catch", error)) {
+          setUser(null);
+          setAuthReady(true);
+          return;
+        }
+
+        setAuthReady(true);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setAuthReady(true);
+      router.refresh();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router, supabaseConfigured]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -72,6 +124,22 @@ export function MobilePublicNav() {
   }, [menuOpen]);
 
   const close = () => setMenuOpen(false);
+
+  async function handleSignOut() {
+    if (!supabaseConfigured) return;
+
+    setIsSigningOut(true);
+
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      close();
+      router.refresh();
+      router.push("/");
+    } finally {
+      setIsSigningOut(false);
+    }
+  }
 
   const panel = menuOpen ? (
     <div className="fixed inset-0 z-[100] md:hidden" role="dialog" aria-modal="true" aria-label="Mobile menu">
@@ -89,7 +157,10 @@ export function MobilePublicNav() {
         }}
       >
         <div className="flex shrink-0 items-center justify-between px-4">
-          <span className="text-sm font-semibold text-zinc-200">Menu</span>
+          <div className="min-w-0">
+            <span className="text-sm font-semibold text-zinc-200">Menu</span>
+            <p className="max-w-[180px] truncate text-xs text-zinc-500">{workspaceName}</p>
+          </div>
           <button
             type="button"
             className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200"
@@ -127,9 +198,34 @@ export function MobilePublicNav() {
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
               Account
             </p>
-            <div className="flex flex-col gap-2" onClick={close}>
-              <HeaderAuth />
-            </div>
+            {authReady ? (
+              user ? (
+                <div className="flex flex-col gap-1.5">
+                  <Link href="/dashboard" onClick={close} className={accountLinkClass(pathname.startsWith("/dashboard"))}>
+                    Dashboard
+                  </Link>
+                  <Link href="/account" onClick={close} className={accountLinkClass(pathname.startsWith("/account"))}>
+                    Account
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className={`${accountLinkClass()} w-full text-left disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {isSigningOut ? "Signing out…" : "Sign out"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <Link href="/login" onClick={close} className={accountLinkClass()}>
+                    Sign in
+                  </Link>
+                </div>
+              )
+            ) : (
+              <span className="inline-block h-9 w-24 rounded-lg bg-white/5" aria-hidden />
+            )}
           </div>
 
           <div className="mt-4 border-t border-white/[0.06] pt-4">
@@ -174,7 +270,7 @@ export function MobilePublicNav() {
     <>
       <button
         type="button"
-        className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/5 md:hidden"
+        className="h-9 w-9 shrink-0 rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/5 md:hidden"
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((v) => !v)}

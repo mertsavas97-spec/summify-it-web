@@ -20,6 +20,13 @@ export const ANALYTICS_EVENTS = {
   podcast_saved_to_workspace: "podcast_saved_to_workspace",
   podcast_download_mp3: "podcast_download_mp3",
   podcast_share: "podcast_share",
+  auth_gated_feature_signin_required: "auth_gated_feature_signin_required",
+  auth_return_to_saved: "auth_return_to_saved",
+  auth_signin_success_redirect: "auth_signin_success_redirect",
+  auth_return_to_restored_analysis: "auth_return_to_restored_analysis",
+  mobile_header_workspace_visible: "mobile_header_workspace_visible",
+  auth_refresh_token_invalid_cleared: "auth_refresh_token_invalid_cleared",
+  auth_session_recovered_as_signed_out: "auth_session_recovered_as_signed_out",
 } as const;
 
 export type AnalyticsEventName = keyof typeof ANALYTICS_EVENTS;
@@ -90,6 +97,35 @@ export type AnalyticsEventParams = {
   };
   podcast_share?: {
     analysisId?: string;
+  };
+  auth_gated_feature_signin_required?: {
+    feature?: string;
+    returnTo?: string;
+    hasAnalysisId?: boolean;
+    hasPendingDocument?: boolean;
+  };
+  auth_return_to_saved?: {
+    returnTo?: string;
+    source?: string;
+  };
+  auth_signin_success_redirect?: {
+    returnTo?: string;
+    fallbackUsed?: boolean;
+  };
+  auth_return_to_restored_analysis?: {
+    analysisId?: string;
+    route?: string;
+  };
+  mobile_header_workspace_visible?: {
+    workspaceName?: string;
+    viewport?: "mobile";
+  };
+  auth_refresh_token_invalid_cleared?: {
+    reason?: string;
+    source?: string;
+  };
+  auth_session_recovered_as_signed_out?: {
+    source?: string;
   };
 };
 
