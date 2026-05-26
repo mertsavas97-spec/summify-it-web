@@ -206,15 +206,15 @@ export async function extractFromPptx(params: {
   const { fileName, buffer } = params;
 
   if (!fileName.trim()) {
-    throw new ExtractionError("A file name is required.", 400);
+    throw new ExtractionError("A file name is required.", 400, "EXTRACTION_FAILED");
   }
 
   if (!isPptxFile(fileName)) {
-    throw new ExtractionError("File must be a .pptx presentation.", 400);
+    throw new ExtractionError("File must be a .pptx presentation.", 400, "UNSUPPORTED_FILE_TYPE");
   }
 
   if (buffer.length === 0) {
-    throw new ExtractionError("The uploaded file is empty.", 400);
+    throw new ExtractionError("The uploaded file is empty.", 400, "EMPTY_EXTRACTED_TEXT");
   }
 
   const limits = params.planLimits ?? getPlanLimits(params.planId ?? "free");
@@ -224,6 +224,7 @@ export async function extractFromPptx(params: {
     throw new ExtractionError(
       USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb),
       413,
+      "FILE_TOO_LARGE",
     );
   }
 
@@ -234,6 +235,7 @@ export async function extractFromPptx(params: {
     throw new ExtractionError(
       "Could not read this file as a PowerPoint (.pptx) archive.",
       422,
+      "EXTRACTION_FAILED",
     );
   }
 
@@ -246,6 +248,7 @@ export async function extractFromPptx(params: {
     throw new ExtractionError(
       "Invalid PPTX: missing presentation structure.",
       422,
+      "EXTRACTION_FAILED",
     );
   }
 
@@ -256,6 +259,7 @@ export async function extractFromPptx(params: {
     throw new ExtractionError(
       "No slides found in this presentation.",
       422,
+      "EMPTY_EXTRACTED_TEXT",
     );
   }
 
@@ -296,6 +300,7 @@ export async function extractFromPptx(params: {
     throw new ExtractionError(
       "This presentation has no extractable text. It may be image-only.",
       422,
+      "EMPTY_EXTRACTED_TEXT",
     );
   }
 
@@ -306,6 +311,7 @@ export async function extractFromPptx(params: {
     throw new ExtractionError(
       `Extracted text is too short (minimum ${EXTRACTION_CONFIG.minExtractedChars} characters).`,
       422,
+      "EMPTY_EXTRACTED_TEXT",
     );
   }
 

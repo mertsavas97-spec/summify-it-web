@@ -100,6 +100,16 @@ export type ExtractApiSuccessResponse = {
   limitNotice?: string;
 };
 
+export type ExtractionErrorCode =
+  | "FUNCTION_PAYLOAD_TOO_LARGE"
+  | "FILE_TOO_LARGE"
+  | "UNSUPPORTED_FILE_TYPE"
+  | "PDF_PARSE_FAILED"
+  | "EMPTY_EXTRACTED_TEXT"
+  | "EXTRACTION_TIMEOUT"
+  | "EXTRACTION_FAILED"
+  | "UNKNOWN_SERVER_ERROR";
+
 export type ExtractUrlApiSuccessResponse = {
   success: true;
   extractedText: string;
@@ -117,6 +127,9 @@ export type ExtractYoutubeApiSuccessResponse = {
 export type ExtractApiErrorResponse = {
   success: false;
   error: string;
+  code?: ExtractionErrorCode;
+  details?: string;
+  requestId?: string;
 };
 
 export type ExtractUrlApiErrorResponse = ExtractApiErrorResponse;

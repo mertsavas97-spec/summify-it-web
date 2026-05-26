@@ -34,6 +34,32 @@ body {
   background-size: 100% 100%, 64px 64px, 64px 64px;
 }
 
+body:has([data-workspace-root]) {
+  background-image:
+    radial-gradient(ellipse 70% 42% at 50% -18%, rgba(139, 92, 246, 0.045), transparent),
+    linear-gradient(rgba(255, 255, 255, 0.009) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.009) 1px, transparent 1px);
+  background-size: 100% 100%, 72px 72px, 72px 72px;
+}
+
+body:has([data-workspace-root]) footer {
+  border-color: rgba(255, 255, 255, 0.035);
+  background: rgba(8, 9, 13, 0.82);
+}
+
+body:has([data-workspace-root]) footer > div {
+  max-width: 1180px;
+  padding-block: 1.5rem;
+}
+
+body:has([data-workspace-root]) footer > div > .grid {
+  display: none;
+}
+
+body:has([data-workspace-root]) footer p {
+  margin-top: 0;
+}
+
 ::selection {
   background: rgba(139, 92, 246, 0.35);
   color: #fff;

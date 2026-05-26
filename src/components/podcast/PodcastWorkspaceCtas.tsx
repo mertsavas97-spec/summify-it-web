@@ -172,6 +172,7 @@ type PodcastWorkspaceCtasProps = {
   sourceLabel?: string | null;
   intelligenceMode?: string | null;
   documentType?: string | null;
+  view?: "all" | "audio" | "podcast";
   onAuthRequired?: (feature: "audio" | "podcast", returnTo: string) => void;
 };
 
@@ -205,6 +206,7 @@ export function PodcastWorkspaceCtas({
   sourceLabel,
   intelligenceMode,
   documentType,
+  view = "all",
   onAuthRequired,
 }: PodcastWorkspaceCtasProps) {
   const [generatedDiscussion, setGeneratedDiscussion] = useState<{
@@ -499,9 +501,16 @@ export function PodcastWorkspaceCtas({
     }
   }
 
+  const showAudioCta = view === "all" || view === "audio";
+  const showPodcastCta = view === "all" || view === "podcast";
+
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2" data-podcast-workspace-ctas>
+      <div
+        className={view === "all" ? "grid gap-4 md:grid-cols-2" : "grid gap-4"}
+        data-podcast-workspace-ctas
+      >
+      {showAudioCta ? (
       <section
         className="listening-banner-card group relative flex h-full min-h-44 overflow-hidden rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-950/25 via-violet-950/10 to-zinc-950/60 p-5 transition-[border-color,box-shadow] duration-300 hover:border-violet-400/35"
         aria-label="Audio Study Mode"
@@ -699,7 +708,9 @@ export function PodcastWorkspaceCtas({
           </div>
         </div>
       </section>
+      ) : null}
 
+      {showPodcastCta ? (
       <section
         className={`listening-banner-card group relative flex h-full min-h-44 overflow-hidden rounded-xl border bg-gradient-to-br p-5 transition-[border-color,box-shadow] duration-300 ${
           podcastState === "eligible"
@@ -913,8 +924,9 @@ export function PodcastWorkspaceCtas({
           </div>
         </div>
       </section>
+      ) : null}
       </div>
-      {generatedDiscussion && generatedDiscussion.analysis === analysisResult ? (
+      {showPodcastCta && generatedDiscussion && generatedDiscussion.analysis === analysisResult ? (
         <>
           <CinematicPodcastPlayer
             podcast={generatedDiscussion.podcast}

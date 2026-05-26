@@ -55,7 +55,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(
-        new ExtractionError(USER_MESSAGES.extractTimeout, 408),
+        new ExtractionError(USER_MESSAGES.extractTimeout, 408, "EXTRACTION_TIMEOUT"),
       );
     }, ms);
 
@@ -85,7 +85,7 @@ async function extractRaw(
     case "txt":
       return { text: await extractTxtText(buffer) };
     default:
-      throw new ExtractionError(USER_MESSAGES.extractUnsupported, 400);
+      throw new ExtractionError(USER_MESSAGES.extractUnsupported, 400, "UNSUPPORTED_FILE_TYPE");
   }
 }
 
@@ -106,13 +106,14 @@ export async function extractFromFile(
   const { fileName, buffer } = params;
 
   if (!fileName.trim()) {
-    throw new ExtractionError(USER_MESSAGES.extractFileMissing, 400);
+    throw new ExtractionError(USER_MESSAGES.extractFileMissing, 400, "EXTRACTION_FAILED");
   }
 
   if (buffer.length === 0) {
     throw new ExtractionError(
       "This file appears to be empty. Choose a different file.",
       400,
+      "EMPTY_EXTRACTED_TEXT",
     );
   }
 
@@ -120,12 +121,16 @@ export async function extractFromFile(
   const maxBytes = limits.maxUploadMb * 1024 * 1024;
 
   if (buffer.length > maxBytes) {
-    throw new ExtractionError(USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb), 413);
+    throw new ExtractionError(
+      USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb),
+      413,
+      "FILE_TOO_LARGE",
+    );
   }
 
   const fileType = resolveExtractExtension(fileName);
   if (!fileType) {
-    throw new ExtractionError(USER_MESSAGES.extractUnsupported, 400);
+    throw new ExtractionError(USER_MESSAGES.extractUnsupported, 400, "UNSUPPORTED_FILE_TYPE");
   }
 
   let rawText: string;
@@ -141,7 +146,11 @@ export async function extractFromFile(
   } catch (error) {
     if (error instanceof ExtractionError) throw error;
 
-    throw new ExtractionError(USER_MESSAGES.extractFailed, 422);
+    throw new ExtractionError(
+      fileType === "pdf" ? "We uploaded the file, but couldn't extract readable text from this PDF." : USER_MESSAGES.extractFailed,
+      422,
+      fileType === "pdf" ? "PDF_PARSE_FAILED" : "EXTRACTION_FAILED",
+    );
   }
 
   const cleaned = cleanText(rawText);
@@ -150,6 +159,7 @@ export async function extractFromFile(
     throw new ExtractionError(
       USER_MESSAGES.extractTooShort(EXTRACTION_CONFIG.minExtractedChars),
       422,
+      "EMPTY_EXTRACTED_TEXT",
     );
   }
 

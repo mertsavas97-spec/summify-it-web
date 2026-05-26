@@ -22,7 +22,7 @@ export function DemoWorkflowBlock({
     <section
       className={`rounded-xl border ${
         isSubtle
-          ? "border-white/[0.04] bg-zinc-950/20 p-3.5"
+          ? "border-white/[0.035] bg-black/10 p-3.5 opacity-75"
           : "border-white/[0.06] bg-zinc-950/30 p-5"
       } ${className}`}
       data-workspace-example-workflows
@@ -42,7 +42,7 @@ export function DemoWorkflowBlock({
             key={workflow.id}
             className={
               isSubtle
-                ? "rounded-lg border border-white/[0.04] bg-zinc-950/40 p-3"
+                ? "rounded-lg border border-white/[0.035] bg-white/[0.015] p-3"
                 : "rounded-lg border border-white/[0.05] bg-zinc-950/50 p-4"
             }
           >

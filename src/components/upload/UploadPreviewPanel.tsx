@@ -91,19 +91,19 @@ export function UploadPreviewPanel({
 
   return (
     <aside
-      className="relative flex max-h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-xl border border-violet-500/15 bg-gradient-to-b from-violet-950/15 via-zinc-950/70 to-zinc-950/90 shadow-lg shadow-black/25"
+      className="relative flex max-h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0d1018]/70 shadow-sm shadow-black/20 backdrop-blur"
       data-workspace-source-pane
       data-workspace-preview-panel
     >
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-violet-600/10 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-violet-600/[0.06] to-transparent"
         aria-hidden
       />
-      <div className="relative shrink-0 border-b border-white/[0.08] px-4 py-4 sm:px-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
-          Document intelligence
+      <div className="relative shrink-0 border-b border-white/[0.06] px-4 py-4 sm:px-5">
+        <p className="text-sm font-semibold text-zinc-200">
+          Source profile
         </p>
-        <p className="mt-1 text-sm font-medium text-zinc-200">{intelligenceSubtitle}</p>
+        <p className="mt-1 text-xs text-zinc-500">{intelligenceSubtitle}</p>
       </div>
 
       <div className="relative min-h-0 flex-1 space-y-4 overflow-y-auto p-3.5 sm:p-4">
@@ -129,11 +129,11 @@ export function UploadPreviewPanel({
         )}
 
         <section data-workspace-document-source>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-            Source file
+          <p className="text-xs font-medium text-zinc-400">
+            Source
           </p>
           {metadata && sourceLabel ? (
-            <div className="mt-2.5 rounded-lg border border-white/[0.1] bg-gradient-to-b from-zinc-900/90 to-zinc-950/80 p-3 shadow-inner shadow-black/20">
+            <div className="mt-2.5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
               {isYoutubeSource && (
                 <YoutubeThumbnail
                   videoId={metadata.videoId}
@@ -160,7 +160,7 @@ export function UploadPreviewPanel({
                 </p>
               )}
 
-              <p className="truncate text-base font-semibold tracking-tight text-zinc-100">
+              <p className="truncate text-sm font-semibold tracking-tight text-zinc-100">
                 {isUrlSource
                   ? metadata.title
                   : isYoutubeSource
@@ -327,7 +327,7 @@ export function UploadPreviewPanel({
                 : "Awaiting extraction…"}
             </p>
           ) : (
-            <p className="mt-2 rounded-lg border border-dashed border-white/[0.06] py-6 text-center text-xs text-zinc-600">
+            <p className="mt-2 rounded-xl border border-dashed border-white/[0.06] bg-white/[0.015] py-6 text-center text-xs text-zinc-600">
               Add a file, URL, YouTube link, or text to build a source profile
             </p>
           )}
@@ -335,7 +335,7 @@ export function UploadPreviewPanel({
 
         {isPresentationSource && metadata.slideOutline.length > 0 && (
           <section data-workspace-slide-outline>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+            <p className="text-xs font-medium text-zinc-500">
               Slide outline
             </p>
             <ol className="mt-2 space-y-1 text-[10px]">
@@ -357,10 +357,10 @@ export function UploadPreviewPanel({
 
         {previewSnippet && (
           <section data-workspace-source-excerpt>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+            <p className="text-xs font-medium text-zinc-500">
               Extracted excerpt
             </p>
-            <blockquote className="mt-2 border-l-2 border-violet-500/40 bg-zinc-900/50 py-2 pl-3 pr-2">
+            <blockquote className="mt-2 border-l-2 border-violet-500/25 bg-white/[0.025] py-2 pl-3 pr-2">
               <p className="font-serif text-[12px] leading-[1.65] text-zinc-400">
                 {previewSnippet}
               </p>
@@ -369,17 +369,17 @@ export function UploadPreviewPanel({
         )}
 
         {intelligence?.adaptationLabel && (
-          <p className="rounded-md border border-violet-500/20 bg-violet-950/25 px-2 py-1 text-[10px] text-violet-300/90">
+          <p className="rounded-lg border border-violet-500/15 bg-violet-500/10 px-2 py-1 text-[10px] text-violet-300/90">
             Adapted for: {intelligence.adaptationLabel}
           </p>
         )}
 
         {intelligence && (
           <section data-workspace-intelligence-profile>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+            <p className="text-xs font-medium text-zinc-500">
               Analysis profile
             </p>
-            <div className="mt-2 rounded-lg border border-white/[0.08] bg-zinc-900/60 p-3 text-[11px]">
+            <div className="mt-2 rounded-xl border border-white/[0.07] bg-white/[0.025] p-3 text-[11px]">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-zinc-600">Type</span>
@@ -425,11 +425,11 @@ export function UploadPreviewPanel({
           </section>
         )}
 
-        <section data-workspace-intelligence-lens className="opacity-90">
-          <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-zinc-600">
-            Intelligence lens
+        <section data-workspace-intelligence-mode className="opacity-90">
+          <p className="text-xs font-medium text-zinc-500">
+            Active mode
           </p>
-          <div className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2.5">
+          <div className="mt-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-1.5">
               <p className="text-xs font-medium text-violet-200">
                 {intelligenceMode?.label ?? intelligenceModeId}
@@ -470,7 +470,7 @@ export function UploadPreviewPanel({
         </section>
       </div>
 
-      <footer className="shrink-0 border-t border-white/[0.06] bg-zinc-900/30 px-4 py-3">
+      <footer className="shrink-0 border-t border-white/[0.05] bg-white/[0.02] px-4 py-3">
         <p className="text-[10px] leading-relaxed text-zinc-600">
           {status === "ready"
             ? isYoutubeSource

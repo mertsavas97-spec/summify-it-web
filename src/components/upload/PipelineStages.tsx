@@ -23,9 +23,9 @@ function stageStatus(
 }
 
 const statusStyles: Record<PipelineStageStatus, string> = {
-  pending: "border-white/[0.06] bg-zinc-950/40 text-zinc-600",
-  active: "border-violet-500/40 bg-violet-950/30 text-violet-200",
-  complete: "border-emerald-500/25 bg-emerald-950/20 text-emerald-400/90",
+  pending: "border-white/[0.05] bg-white/[0.02] text-zinc-600",
+  active: "border-violet-500/35 bg-violet-500/10 text-violet-200 shadow-[0_0_18px_rgba(139,92,246,0.12)]",
+  complete: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400/80",
   skipped: "border-white/[0.04] bg-transparent text-zinc-700",
 };
 
@@ -33,17 +33,17 @@ export function PipelineStages({ activeStage }: PipelineStagesProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-medium text-zinc-400">Intelligence pipeline</p>
+        <p className="text-xs font-medium text-zinc-400">Pipeline</p>
         <p className="text-[11px] text-zinc-500 sm:hidden">Extract → Clean → Profile → Analyze → Learn</p>
       </div>
       <ol className="grid grid-cols-3 gap-2 md:grid-cols-6 md:gap-2">
-        {pipelineStages.map((def, index) => {
+        {pipelineStages.map((def) => {
           const status = stageStatus(def.stage, activeStage);
           return (
             <li key={def.stage} className="min-w-0">
               <span
                 title={def.description}
-                className={`flex h-8 w-full min-w-0 items-center justify-center rounded-md border px-2 text-[10px] font-medium leading-none transition-colors ${statusStyles[status]}`}
+                className={`flex h-8 w-full min-w-0 items-center justify-center rounded-lg border px-2 text-[10px] font-medium leading-none transition-colors ${statusStyles[status]}`}
               >
                 {def.label}
               </span>

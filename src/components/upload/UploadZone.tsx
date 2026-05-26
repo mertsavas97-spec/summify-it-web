@@ -26,12 +26,14 @@ const STATUS_LABELS: Record<UploadExtractStatus, string> = {
 };
 
 const STATUS_STYLES: Record<UploadExtractStatus, string> = {
-  idle: "bg-zinc-800 text-zinc-500",
+  idle: "border border-white/[0.06] bg-white/[0.03] text-zinc-500",
   uploading: "bg-violet-500/20 text-violet-300",
   extracting: "bg-violet-500/20 text-violet-300",
   ready: "bg-emerald-500/15 text-emerald-400",
   failed: "bg-red-500/15 text-red-400",
 };
+
+const EMPTY_FORMATS = ["PDF", "DOCX", "PPTX", "TXT"];
 
 export function UploadZone({
   fileName,
@@ -45,6 +47,7 @@ export function UploadZone({
   const copy = getUploadZoneCopy(planId);
   const isDraggingAllowed = status === "idle" || status === "ready" || status === "failed";
   const isBusy = status === "uploading" || status === "extracting";
+  const showEmptyDropState = !fileName && status === "idle";
 
   const handleDragOver = (e: React.DragEvent) => {
     if (!isDraggingAllowed || disabled) return;
@@ -66,28 +69,30 @@ export function UploadZone({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <label className="text-xs font-medium text-zinc-400">
-          Document upload
-        </label>
-        <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[status]}`}
-        >
-          {STATUS_LABELS[status]}
-        </span>
-      </div>
+      {!showEmptyDropState && (
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-xs font-medium text-zinc-300">
+            Document upload
+          </label>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[status]}`}
+          >
+            {STATUS_LABELS[status]}
+          </span>
+        </div>
+      )}
 
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`relative rounded-xl border border-dashed transition-all duration-200 ${
+        className={`relative rounded-2xl border border-dashed transition-all duration-200 ${
           status === "ready"
             ? "border-emerald-500/30 bg-emerald-950/10"
             : status === "failed"
               ? "border-red-500/25 bg-red-950/10"
-              : isBusy
+            : isBusy
                 ? "border-violet-400/40 bg-violet-500/10"
-                : "border-white/12 bg-zinc-950/40 hover:border-white/20 hover:bg-zinc-900/50"
+                : "border-white/[0.1] bg-black/20 hover:border-violet-400/35 hover:bg-violet-950/10"
         } ${disabled || isBusy ? "pointer-events-none opacity-80" : ""}`}
       >
         <input
@@ -98,26 +103,49 @@ export function UploadZone({
           className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
           aria-label="Upload document"
         />
-        <div className="flex items-center gap-4 px-4 py-5 sm:px-5">
+        <div
+          className={
+            showEmptyDropState
+              ? "flex min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center sm:min-h-[300px]"
+              : "flex items-center gap-4 px-4 py-5 sm:px-5"
+          }
+        >
           <span
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border ${
+            className={`flex shrink-0 items-center justify-center rounded-xl border ${
               status === "ready"
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                : "border-white/[0.06] bg-zinc-900 text-zinc-500"
-            }`}
+                : "border-violet-400/20 bg-violet-500/10 text-violet-200"
+            } ${showEmptyDropState ? "h-14 w-14" : "h-11 w-11"}`}
           >
-            <UploadCloudIcon className="h-5 w-5" />
+            <UploadCloudIcon className={showEmptyDropState ? "h-6 w-6" : "h-5 w-5"} />
           </span>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-sm font-medium text-white">
-              {fileName ?? copy.dropLabel}
+          <div className={showEmptyDropState ? "mt-5" : "min-w-0 flex-1 text-left"}>
+            <p className={showEmptyDropState ? "text-lg font-semibold text-white" : "truncate text-sm font-medium text-white"}>
+              {fileName ?? "Drag & drop your file here"}
             </p>
-            <p className="mt-0.5 text-xs text-zinc-500">{copy.limitLine}</p>
+            <p className={showEmptyDropState ? "mt-1 text-sm text-violet-200/80" : "mt-0.5 text-xs text-zinc-500"}>
+              {showEmptyDropState ? "or click to browse" : copy.limitLine}
+            </p>
+            {showEmptyDropState && (
+              <>
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  {EMPTY_FORMATS.map((format) => (
+                    <span
+                      key={format}
+                      className="rounded-full border border-white/[0.08] bg-white/[0.035] px-2.5 py-1 font-mono text-[11px] font-medium text-zinc-400"
+                    >
+                      {format}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-4 text-xs text-zinc-500">Long-form documents supported.</p>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      <FormatBadges formats={copy.formats} />
+      {!showEmptyDropState && <FormatBadges formats={copy.formats} />}
       {limitNotice && (
         <p className="rounded-lg border border-amber-500/20 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
           {limitNotice}
@@ -128,7 +156,7 @@ export function UploadZone({
           {error}
         </p>
       )}
-      <p className="text-[10px] text-zinc-600">
+      <p className="text-[11px] text-zinc-600">
         Files are processed on the server for text extraction only — nothing is
         stored.
       </p>

@@ -51,10 +51,10 @@ export function UrlExtractPanel({
           onChange={(e) => setUrlInput(e.target.value)}
           placeholder="https://example.com/article"
           disabled={disabled || isBusy}
-          className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50"
+          className="mt-1.5 w-full rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50"
         />
       </label>
-      <p className="text-[10px] leading-relaxed text-zinc-600">
+      <p className="text-[11px] leading-relaxed text-zinc-600">
         Public http(s) articles only. Paywalled or login-only pages may fail.
       </p>
       <Button

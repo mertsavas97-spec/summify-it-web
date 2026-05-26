@@ -18,7 +18,7 @@ export const USER_MESSAGES = {
     "Upgrade to Pro for long-form chunked analysis on larger documents.",
   analyzeModeRequired: "Choose an intelligence mode before analyzing.",
   analyzeModeUnknown:
-    "That intelligence mode isn't recognized. Pick an active mode from the lens selector.",
+    "That intelligence mode isn't recognized. Pick an active Intelligence Mode.",
   analyzeModeLocked: (label: string) =>
     `"${label}" is available on Scholar or Pro. Choose one of the free active modes today.`,
   analyzeModeComingSoon: (label: string) =>

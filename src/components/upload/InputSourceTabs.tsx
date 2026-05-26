@@ -27,7 +27,7 @@ export function InputSourceTabs({
 }: InputSourceTabsProps) {
   return (
     <div
-      className="flex flex-wrap gap-0.5 rounded-lg border border-white/[0.06] bg-zinc-950/60 p-0.5"
+      className="flex flex-wrap gap-1 rounded-xl border border-white/[0.06] bg-black/25 p-1"
       role="tablist"
       aria-label="Input source"
     >
@@ -42,9 +42,9 @@ export function InputSourceTabs({
             aria-selected={isActive}
             disabled={disabled}
             onClick={() => onChange(tab.id)}
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-50 ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all disabled:opacity-50 ${
               isActive
-                ? "bg-violet-950/55 text-violet-200 shadow-sm ring-1 ring-violet-500/20"
+                ? "bg-violet-500/15 text-violet-100 shadow-[0_0_18px_rgba(139,92,246,0.12)] ring-1 ring-violet-400/25"
                 : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300"
             }`}
           >
