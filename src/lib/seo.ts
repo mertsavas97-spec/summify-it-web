@@ -113,7 +113,7 @@ export function buildPageMetadata(input: SeoPageInput): Metadata {
   const canonical = buildCanonicalUrl(input.path);
 
   return {
-    title: fullTitle,
+    title: { absolute: fullTitle },
     description: input.description,
     keywords: input.keywords,
     alternates: { canonical },

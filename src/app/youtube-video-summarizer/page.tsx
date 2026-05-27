@@ -74,6 +74,11 @@ export default function YoutubeVideoSummarizerPage() {
       <FAQSection items={FAQS} />
       <RelatedLinksSection
         links={[
+          {
+            href: "/guides/how-to-summarize-youtube-videos-with-ai",
+            label: "YouTube video summarization guide",
+            description: "Learn how to summarize YouTube videos with AI without losing context.",
+          },
           { href: "/best-ai-for-studying", label: "Best AI for studying", description: "See complete learning-system workflows." },
           { href: "/ai-note-tool", label: "AI note tool", description: "Turn video insights into structured revision notes." },
           { href: "/pdf-to-podcast", label: "PDF to podcast", description: "Bring reading and listening together." },
@@ -83,4 +88,3 @@ export default function YoutubeVideoSummarizerPage() {
     </>
   );
 }
-

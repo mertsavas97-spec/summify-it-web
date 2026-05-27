@@ -224,6 +224,7 @@ export const BLOG_POSTS: BlogPost[] = [
     workflowCluster: "study-workflows",
     relatedLinks: [
       { href: "/guides/ai-study-notes-guide", label: "Full study notes guide" },
+      { href: "/guides/how-to-summarize-youtube-videos-with-ai", label: "YouTube video summarization guide" },
       { href: "/for-students", label: "Summify for students" },
       { href: "/upload", label: "Open workspace" },
     ],

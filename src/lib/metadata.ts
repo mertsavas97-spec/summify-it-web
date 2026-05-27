@@ -27,7 +27,7 @@ export function createPageMetadata({
   const canonical = buildCanonicalUrl(canonicalPath);
 
   return {
-    title: pageTitle,
+    title: { absolute: pageTitle },
     description,
     metadataBase: new URL(siteConfig.url),
     alternates: {

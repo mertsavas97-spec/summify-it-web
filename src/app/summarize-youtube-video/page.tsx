@@ -61,7 +61,11 @@ export default function SummarizeYoutubePage() {
                 <InternalTextLink href="/modes/the-creator">The Creator mode</InternalTextLink> for
                 hooks and repurposing. Pair with our{" "}
                 <InternalTextLink href="/summarize-pdf">AI PDF summarizer</InternalTextLink> when
-                research mixes papers and video.
+                research mixes papers and video, or use the{" "}
+                <InternalTextLink href="/guides/how-to-summarize-youtube-videos-with-ai">
+                  YouTube video summarization guide
+                </InternalTextLink>{" "}
+                for the full workflow.
               </>
             ),
           },
