@@ -107,9 +107,9 @@ We're shipping in public, listening closely during beta, and keeping the experie
     headline: "Try Summify during public beta",
     body: "Upload your first source in under a minute. No credit card required for core analysis.",
     primaryLabel: "Open workspace",
-    primaryUrl: "https://summify.app/upload",
+    primaryUrl: "https://www.summify.app/upload",
     secondaryLabel: "View pricing preview",
-    secondaryUrl: "https://summify.app/pricing",
+    secondaryUrl: "https://www.summify.app/pricing",
   },
   media: {
     logoPath: "/brand/summify-mark.svg",

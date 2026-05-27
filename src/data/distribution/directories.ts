@@ -28,7 +28,7 @@ export type DirectoryListing = {
   submissionNotes?: string;
 };
 
-const BASE_URL = "https://summify.app";
+const BASE_URL = "https://www.summify.app";
 const BASE_CTA = `${BASE_URL}/upload`;
 
 export const DIRECTORY_LISTINGS: DirectoryListing[] = [

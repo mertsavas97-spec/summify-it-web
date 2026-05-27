@@ -1,11 +1,16 @@
-const PRODUCTION_ORIGIN = "https://summify.app";
+const PRODUCTION_ORIGIN = "https://www.summify.app";
 const LOCAL_DEV_ORIGIN = "http://localhost:3000";
+const APEX_PRODUCTION_HOST = "summify.app";
+const WWW_PRODUCTION_HOST = "www.summify.app";
 
 function parseOrigin(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   try {
     const parsed = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    if (parsed.hostname === APEX_PRODUCTION_HOST) {
+      parsed.hostname = WWW_PRODUCTION_HOST;
+    }
     return parsed.origin;
   } catch {
     return null;

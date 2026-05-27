@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 
 /**
  * Crawl policy for public marketing site.
- * Sitemap URL uses `siteConfig.url` (NEXT_PUBLIC_SITE_URL → https://summify.app in production).
+ * Sitemap URL uses `siteConfig.url` (NEXT_PUBLIC_SITE_URL → https://www.summify.app in production).
  */
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const h = await headers();
