@@ -231,6 +231,9 @@ export function AdminDashboardView({ metrics }: AdminDashboardViewProps) {
                   Revenue estimates unavailable — showing subscription counts only.
                 </p>
               )}
+              <p className="text-[11px] text-zinc-600">
+                Internal/manual accounts excluded from paid subscription counts.
+              </p>
             </div>
           )}
         />

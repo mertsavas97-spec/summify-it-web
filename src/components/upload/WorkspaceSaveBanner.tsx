@@ -8,11 +8,12 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 type WorkspaceSaveBannerProps = {
   savedToWorkspace?: boolean;
+  isAuthenticated?: boolean;
 };
 
 const supabaseConfigured = isSupabaseConfigured();
 
-export function WorkspaceSaveBanner({ savedToWorkspace }: WorkspaceSaveBannerProps) {
+export function WorkspaceSaveBanner({ savedToWorkspace, isAuthenticated = false }: WorkspaceSaveBannerProps) {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(!supabaseConfigured);
 
@@ -48,7 +49,9 @@ export function WorkspaceSaveBanner({ savedToWorkspace }: WorkspaceSaveBannerPro
     );
   }
 
-  if (!user && supabaseConfigured) {
+  const isLoggedIn = Boolean(user) || isAuthenticated;
+
+  if (!isLoggedIn && supabaseConfigured) {
     return (
       <p className="text-xs text-zinc-600">
         <Link
@@ -57,6 +60,14 @@ export function WorkspaceSaveBanner({ savedToWorkspace }: WorkspaceSaveBannerPro
         >
           Sign in to save analyses.
         </Link>
+      </p>
+    );
+  }
+
+  if (isLoggedIn && savedToWorkspace === false) {
+    return (
+      <p className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-xs text-zinc-500">
+        Analysis ready. Copy or export it here; workspace save status will update automatically.
       </p>
     );
   }

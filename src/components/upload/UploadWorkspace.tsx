@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { uploadPresigned } from "@vercel/blob/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
@@ -76,6 +77,7 @@ const WORKSPACE_CARD =
   "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 shadow-sm shadow-black/20 backdrop-blur";
 const WORKSPACE_CARD_PADDING = "p-4 sm:p-5";
 const SETUP_STEPS = ["Upload", "Intelligence Mode", "Analyze", "Learn"] as const;
+const LARGE_FILE_DIRECT_UPLOAD_THRESHOLD_BYTES = 3.5 * 1024 * 1024;
 type SetupStep = (typeof SETUP_STEPS)[number];
 
 const MODE_CATEGORY_LABELS: Record<IntelligenceModeCategory, string> = {
@@ -758,7 +760,19 @@ function PostAnalysisRail({
 }
 
 const FUNCTION_PAYLOAD_TOO_LARGE_MESSAGE =
-  "This file produced too much data for the current extraction route. Try again, compress the PDF, or use a smaller version.";
+  "This file is too large to send directly. Try again so Summify can use large-file upload.";
+
+function sanitizeBlobFileName(fileName: string): string {
+  return fileName
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96) || "document";
+}
+
+function createBlobUploadPathname(file: File): string {
+  return `uploads/${crypto.randomUUID()}-${sanitizeBlobFileName(file.name)}`;
+}
 
 function getStructuredExtractErrorMessage({
   code,
@@ -773,20 +787,26 @@ function getStructuredExtractErrorMessage({
     code === "FUNCTION_PAYLOAD_TOO_LARGE"
       ? FUNCTION_PAYLOAD_TOO_LARGE_MESSAGE
       : code === "FILE_TOO_LARGE"
-        ? "This file is too large for the current extraction route. Try compressing the PDF or uploading a smaller version."
-        : code === "PDF_PARSE_FAILED"
-          ? "We uploaded the file, but couldn't extract readable text from this PDF."
-          : code === "EMPTY_EXTRACTED_TEXT"
-            ? "This document does not appear to contain readable text."
-            : code === "EXTRACTION_TIMEOUT"
-              ? "Extraction took too long. Try again or upload a lighter version."
-              : code === "UNSUPPORTED_FILE_TYPE"
-                ? USER_MESSAGES.extractUnsupported
-                : code === "EXTRACTION_FAILED"
-                  ? (error ?? USER_MESSAGES.extractFailed)
-                  : code === "UNKNOWN_SERVER_ERROR"
-                    ? (error ?? USER_MESSAGES.extractGeneric)
-                    : (error ?? USER_MESSAGES.extractGeneric);
+        ? "This file is larger than the current 20 MB limit."
+        : code === "BLOB_UPLOAD_FAILED"
+          ? "Large-file upload failed. Please try again."
+          : code === "BLOB_TOKEN_FAILED"
+            ? "Couldn't start large-file upload. Please try again."
+            : code === "BLOB_DOWNLOAD_FAILED"
+              ? "We uploaded the file, but couldn't prepare it for extraction."
+              : code === "PDF_PARSE_FAILED"
+                ? "We uploaded the file, but couldn't extract readable text from this PDF."
+                : code === "EMPTY_EXTRACTED_TEXT"
+                  ? "This document does not appear to contain readable text."
+                  : code === "EXTRACTION_TIMEOUT"
+                    ? "Extraction took too long. Try again or upload a lighter version."
+                    : code === "UNSUPPORTED_FILE_TYPE"
+                      ? USER_MESSAGES.extractUnsupported
+                      : code === "EXTRACTION_FAILED"
+                        ? (error ?? USER_MESSAGES.extractFailed)
+                        : code === "UNKNOWN_SERVER_ERROR"
+                          ? (error ?? USER_MESSAGES.extractGeneric)
+                          : (error ?? USER_MESSAGES.extractGeneric);
 
   if (requestId && (code === "UNKNOWN_SERVER_ERROR" || code === "EXTRACTION_FAILED")) {
     return `${base} Request ID: ${requestId}`;
@@ -877,6 +897,7 @@ export function UploadWorkspace() {
     useState<UploadExtractStatus>(
       (restoredPendingAnalysis?.extractStatus as UploadExtractStatus | undefined) ?? "idle",
     );
+  const [extractStatusMessage, setExtractStatusMessage] = useState<string | null>(null);
   const [extractError, setExtractError] = useState<string | null>(null);
   const [extractionMeta, setExtractionMeta] =
     useState<ExtractionMetadata | null>(
@@ -1006,6 +1027,7 @@ export function UploadWorkspace() {
     setFileName(null);
     setSourceUrl(null);
     setExtractStatus("idle");
+    setExtractStatusMessage(null);
     setExtractError(null);
     setExtractionMeta(null);
     setRawText("");
@@ -1100,6 +1122,7 @@ export function UploadWorkspace() {
     setFileName(file.name);
     setSourceUrl(null);
     setExtractError(null);
+    setExtractStatusMessage(null);
     setExtractionMeta(null);
     setLimitNotice(null);
     resetAnalysisState();
@@ -1113,24 +1136,61 @@ export function UploadWorkspace() {
 
     setExtractStatus("uploading");
     fireUploadStarted("file", null, `file:${file.name}:${file.size}:${file.lastModified}`);
-    trackEvent("upload_started", { trigger: "file", source_type: file.type || "file" });
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    setExtractStatus("extracting");
+    const uploadMode =
+      file.size > LARGE_FILE_DIRECT_UPLOAD_THRESHOLD_BYTES ? "blob" : "direct";
+    trackEvent("upload_started", {
+      trigger: "file",
+      source_type: file.type || "file",
+    });
 
     try {
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        body: formData,
-      });
+      let res: Response;
+
+      if (uploadMode === "blob") {
+        setExtractStatusMessage("Uploading large document...");
+        const blob = await uploadPresigned(createBlobUploadPathname(file), file, {
+          access: "private",
+          handleUploadUrl: "/api/upload/blob",
+          contentType: file.type,
+          multipart: true,
+          clientPayload: JSON.stringify({
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+          }),
+        });
+
+        setExtractStatus("extracting");
+        setExtractStatusMessage("Preparing document for extraction...");
+        res = await fetch("/api/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sourceType: "blob",
+            fileUrl: blob.url,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+            blobPathname: blob.pathname,
+          }),
+        });
+      } else {
+        const formData = new FormData();
+        formData.append("file", file);
+        setExtractStatusMessage("Extracting text...");
+        setExtractStatus("extracting");
+        res = await fetch("/api/extract", {
+          method: "POST",
+          body: formData,
+        });
+      }
 
       const data = await readExtractApiResponse(res);
 
       if (!data.success) {
         setExtractError(data.error);
         setExtractStatus("failed");
+        setExtractStatusMessage(null);
         return;
       }
 
@@ -1138,9 +1198,18 @@ export function UploadWorkspace() {
       setExtractionMeta(data.metadata);
       setLimitNotice(data.limitNotice ?? null);
       setExtractStatus("ready");
-    } catch {
-      setExtractError(USER_MESSAGES.network);
+      setExtractStatusMessage("Source ready");
+    } catch (error) {
+      const lowerMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const message =
+        lowerMessage.includes("client token") || lowerMessage.includes("retrieve the client token")
+          ? "Couldn't start large-file upload. Please try again."
+          : uploadMode === "blob"
+            ? "Large-file upload failed. Please try again."
+            : USER_MESSAGES.network;
+      setExtractError(message);
       setExtractStatus("failed");
+      setExtractStatusMessage(null);
     }
   }, [fireUploadStarted, planLimits.maxUploadMb, resetAnalysisState]);
 
@@ -1273,6 +1342,7 @@ export function UploadWorkspace() {
   const handleInputModeChange = useCallback((mode: WorkspaceInputMode) => {
     setInputMode(mode);
     setExtractError(null);
+    setExtractStatusMessage(null);
     setYoutubeAnalysisError(null);
     setUrlAnalysisError(null);
     if (mode === "text") {
@@ -1487,6 +1557,7 @@ export function UploadWorkspace() {
               <UploadZone
                 fileName={fileName}
                 status={extractStatus}
+                statusLabel={extractStatusMessage}
                 error={extractError}
                 planId={workspaceEntitlement.entitlementPlanId}
                 limitNotice={limitNotice}
@@ -1628,8 +1699,8 @@ export function UploadWorkspace() {
               }}
               deferUntilAnalysisActive={isSourceReadyWorkspace}
               limitNotice={limitNotice}
-              practiceModule={
-                completedAnalysisResult ? (
+              renderPracticeModule={
+                completedAnalysisResult ? ({ onLearnCompleteChange, onStartQuiz }) => (
                   <PracticeAnalysisCta
                     savedToWorkspace={injectedAnalysis?.savedToWorkspace ?? false}
                     savedAnalysisId={injectedAnalysis?.savedAnalysisId ?? latestSavedAnalysisId}
@@ -1654,10 +1725,13 @@ export function UploadWorkspace() {
                           ? "Presentation"
                           : extractionMeta?.sourceKind === "url"
                             ? "Article"
-                            : "Document"
+                        : "Document"
                     }
+                    allowInternalQuiz={false}
+                    onLearnCompleteChange={onLearnCompleteChange}
+                    onStartQuizOverride={onStartQuiz}
                   />
-                ) : null
+                ) : undefined
               }
               mediaModules={
                 completedAnalysisResult

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { get as getBlob } from "@vercel/blob";
 import {
   extractFromFile,
   ExtractionError,
@@ -36,6 +37,17 @@ type ExtractLogMeta = {
   durationMs: number;
   status: number;
   code?: ExtractionErrorCode;
+  uploadMode?: "direct" | "blob";
+  sourceType?: "file" | "blob";
+};
+
+type BlobExtractRequest = {
+  sourceType?: "blob";
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  blobPathname?: string;
 };
 
 function getRequestId(): string {
@@ -68,6 +80,8 @@ function errorPayload(
 function getStatusForCode(code: ExtractionErrorCode): number {
   if (code === "FUNCTION_PAYLOAD_TOO_LARGE" || code === "FILE_TOO_LARGE") return 413;
   if (code === "UNSUPPORTED_FILE_TYPE") return 400;
+  if (code === "BLOB_TOKEN_FAILED" || code === "BLOB_UPLOAD_FAILED") return 500;
+  if (code === "BLOB_DOWNLOAD_FAILED") return 502;
   if (code === "EXTRACTION_TIMEOUT") return 408;
   if (
     code === "PDF_PARSE_FAILED" ||
@@ -106,6 +120,106 @@ function inferUnexpectedError(error: unknown): {
   };
 }
 
+const MAX_BLOB_DOWNLOAD_BYTES = 20 * 1024 * 1024;
+const SUPPORTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+]);
+
+function isSupportedMimeType(mimeType: string | undefined): boolean {
+  return Boolean(mimeType && SUPPORTED_MIME_TYPES.has(mimeType));
+}
+
+function isAllowedBlobUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname.endsWith(".blob.vercel-storage.com") ||
+        url.hostname.endsWith(".public.blob.vercel-storage.com"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function streamToBuffer(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes: number,
+): Promise<Buffer> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > maxBytes) {
+      throw new ExtractionError(
+        USER_MESSAGES.extractFileTooLarge(20),
+        413,
+        "FILE_TOO_LARGE",
+      );
+    }
+    chunks.push(value);
+  }
+
+  return Buffer.concat(chunks, totalBytes);
+}
+
+async function downloadBlobFile(input: {
+  fileUrl: string;
+  blobPathname?: string;
+  expectedSize: number;
+}): Promise<Buffer> {
+  if (!isAllowedBlobUrl(input.fileUrl)) {
+    throw new ExtractionError(
+      "We uploaded the file, but couldn't prepare it for extraction.",
+      400,
+      "BLOB_DOWNLOAD_FAILED",
+    );
+  }
+
+  try {
+    const blob = await getBlob(input.blobPathname || input.fileUrl, {
+      access: "private",
+      useCache: false,
+    });
+
+    if (!blob?.stream) {
+      throw new ExtractionError(
+        "We uploaded the file, but couldn't prepare it for extraction.",
+        502,
+        "BLOB_DOWNLOAD_FAILED",
+      );
+    }
+
+    if (blob.blob.size && blob.blob.size > MAX_BLOB_DOWNLOAD_BYTES) {
+      throw new ExtractionError(
+        "This file is larger than the current 20 MB limit.",
+        413,
+        "FILE_TOO_LARGE",
+      );
+    }
+
+    return streamToBuffer(
+      blob.stream,
+      Math.min(MAX_BLOB_DOWNLOAD_BYTES, Math.max(input.expectedSize, 1) + 1024),
+    );
+  } catch (error) {
+    if (error instanceof ExtractionError) throw error;
+    throw new ExtractionError(
+      "We uploaded the file, but couldn't prepare it for extraction.",
+      502,
+      "BLOB_DOWNLOAD_FAILED",
+      { details: error instanceof Error ? error.message : String(error) },
+    );
+  }
+}
+
 function buildSlideOutline(
   slides: { slideNumber: number; title?: string; text: string }[],
 ): PresentationSlideOutlineItem[] {
@@ -127,6 +241,104 @@ function buildSlideOutline(
   });
 }
 
+async function extractBufferResponse(input: {
+  requestId: string;
+  startedAt: number;
+  contentLength: string | null;
+  method: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  buffer: Buffer;
+  planId: ReturnType<typeof resolveModeEntitlementPlanId>;
+  limits: ReturnType<typeof getPlanLimits>;
+  uploadMode: "direct" | "blob";
+  sourceType: "file" | "blob";
+}) {
+  if (isPptxFile(input.fileName, input.mimeType)) {
+    const pptx = await extractFromPptx({
+      fileName: input.fileName,
+      buffer: input.buffer,
+      planId: input.planId,
+      planLimits: input.limits,
+    });
+
+    const metadata: PresentationExtractionMetadata = {
+      sourceKind: "presentation",
+      fileName: pptx.metadata.fileName,
+      fileType: "pptx",
+      slideCount: pptx.metadata.slideCount,
+      extractedCharacters: pptx.metadata.extractedCharacters,
+      detectedSlideTitles: pptx.metadata.detectedSlideTitles,
+      detectedTitleCount: pptx.metadata.detectedSlideTitles.length,
+      repeatedThemes: pptx.metadata.repeatedThemes,
+      estimatedReadingTimeMinutes: pptx.metadata.estimatedReadingTimeMinutes,
+      complexity: pptx.metadata.complexity,
+      truncated: pptx.metadata.truncated,
+      slideOutline: buildSlideOutline(pptx.slides),
+    };
+
+    const response: ExtractApiSuccessResponse = {
+      success: true,
+      extractedText: pptx.extractedText,
+      metadata,
+      limitNotice: pptx.metadata.limitNotice ?? undefined,
+    };
+
+    logExtract({
+      requestId: input.requestId,
+      endpoint: "/api/extract",
+      method: input.method,
+      contentLength: input.contentLength,
+      fileName: input.fileName,
+      mimeType: input.mimeType,
+      fileSize: input.fileSize,
+      uploadMode: input.uploadMode,
+      sourceType: input.sourceType,
+      extractedCharacterCount: metadata.extractedCharacters,
+      responseJsonBytes: getJsonSizeBytes(response),
+      durationMs: Date.now() - input.startedAt,
+      status: 200,
+    });
+    return NextResponse.json(response);
+  }
+
+  const result = await extractFromFile({
+    fileName: input.fileName,
+    buffer: input.buffer,
+    mimeType: input.mimeType,
+    planId: input.planId,
+    planLimits: input.limits,
+  });
+
+  const response: ExtractApiSuccessResponse = {
+    success: true,
+    extractedText: result.extractedText,
+    metadata: {
+      sourceKind: "file",
+      ...result.metadata,
+    },
+    limitNotice: result.metadata.limitNotice ?? undefined,
+  };
+
+  logExtract({
+    requestId: input.requestId,
+    endpoint: "/api/extract",
+    method: input.method,
+    contentLength: input.contentLength,
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    fileSize: input.fileSize,
+    uploadMode: input.uploadMode,
+    sourceType: input.sourceType,
+    extractedCharacterCount: result.metadata.extractedCharacters,
+    responseJsonBytes: getJsonSizeBytes(response),
+    durationMs: Date.now() - input.startedAt,
+    status: 200,
+  });
+  return NextResponse.json(response);
+}
+
 /**
  * POST /api/extract
  *
@@ -139,6 +351,8 @@ export async function POST(request: Request) {
   let fileName: string | undefined;
   let mimeType: string | undefined;
   let fileSize: number | undefined;
+  let uploadMode: "direct" | "blob" | undefined;
+  let sourceType: "file" | "blob" | undefined;
 
   const ip = request.headers.get("x-forwarded-for")
     ?? request.headers.get("x-real-ip")
@@ -165,7 +379,68 @@ export async function POST(request: Request) {
   }
 
   try {
+    const currentUser = await getOptionalUser();
+    const profile = currentUser ? await getProfile(currentUser.id) : null;
+    const planId = resolveModeEntitlementPlanId(profile, Boolean(currentUser));
+    const limits = getPlanLimits(planId);
+
+    if (request.headers.get("content-type")?.includes("application/json")) {
+      uploadMode = "blob";
+      sourceType = "blob";
+      const body = (await request.json()) as BlobExtractRequest;
+      if (body.sourceType !== "blob") {
+        throw new ExtractionError(USER_MESSAGES.extractFileMissing, 400, "EXTRACTION_FAILED");
+      }
+
+      fileName = body.fileName;
+      mimeType = body.mimeType;
+      fileSize = body.fileSize;
+
+      if (!body.fileUrl || !fileName || !fileSize || !mimeType) {
+        throw new ExtractionError(
+          "We uploaded the file, but couldn't prepare it for extraction.",
+          400,
+          "BLOB_DOWNLOAD_FAILED",
+        );
+      }
+
+      if (!isSupportedMimeType(mimeType)) {
+        throw new ExtractionError(USER_MESSAGES.extractUnsupported, 400, "UNSUPPORTED_FILE_TYPE");
+      }
+
+      if (fileSize > limits.maxUploadMb * 1024 * 1024) {
+        throw new ExtractionError(
+          "This file is larger than the current 20 MB limit.",
+          413,
+          "FILE_TOO_LARGE",
+        );
+      }
+
+      const buffer = await downloadBlobFile({
+        fileUrl: body.fileUrl,
+        blobPathname: body.blobPathname,
+        expectedSize: fileSize,
+      });
+
+      return extractBufferResponse({
+        requestId,
+        startedAt,
+        contentLength,
+        method: request.method,
+        fileName,
+        mimeType,
+        fileSize,
+        buffer,
+        planId,
+        limits,
+        uploadMode: "blob",
+        sourceType: "blob",
+      });
+    }
+
     const formData = await request.formData();
+    uploadMode = "direct";
+    sourceType = "file";
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
@@ -191,11 +466,6 @@ export async function POST(request: Request) {
     mimeType = file.type;
     fileSize = file.size;
 
-    const currentUser = await getOptionalUser();
-    const profile = currentUser ? await getProfile(currentUser.id) : null;
-    const planId = resolveModeEntitlementPlanId(profile, Boolean(currentUser));
-    const limits = getPlanLimits(planId);
-
     if (file.size > limits.maxUploadMb * 1024 * 1024) {
       const payload = errorPayload(
         USER_MESSAGES.extractFileTooLarge(limits.maxUploadMb),
@@ -210,6 +480,8 @@ export async function POST(request: Request) {
         fileName,
         mimeType,
         fileSize,
+        uploadMode: "direct",
+        sourceType: "file",
         responseJsonBytes: getJsonSizeBytes(payload),
         durationMs: Date.now() - startedAt,
         status: 413,
@@ -220,84 +492,20 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    if (isPptxFile(file.name, file.type)) {
-      const pptx = await extractFromPptx({
-        fileName: file.name,
-        buffer,
-        planId,
-        planLimits: limits,
-      });
-
-      const metadata: PresentationExtractionMetadata = {
-        sourceKind: "presentation",
-        fileName: pptx.metadata.fileName,
-        fileType: "pptx",
-        slideCount: pptx.metadata.slideCount,
-        extractedCharacters: pptx.metadata.extractedCharacters,
-        detectedSlideTitles: pptx.metadata.detectedSlideTitles,
-        detectedTitleCount: pptx.metadata.detectedSlideTitles.length,
-        repeatedThemes: pptx.metadata.repeatedThemes,
-        estimatedReadingTimeMinutes: pptx.metadata.estimatedReadingTimeMinutes,
-        complexity: pptx.metadata.complexity,
-        truncated: pptx.metadata.truncated,
-        slideOutline: buildSlideOutline(pptx.slides),
-      };
-
-      const response: ExtractApiSuccessResponse = {
-        success: true,
-        extractedText: pptx.extractedText,
-        metadata,
-        limitNotice: pptx.metadata.limitNotice ?? undefined,
-      };
-
-      logExtract({
-        requestId,
-        endpoint: "/api/extract",
-        method: request.method,
-        contentLength,
-        fileName,
-        mimeType,
-        fileSize,
-        extractedCharacterCount: metadata.extractedCharacters,
-        responseJsonBytes: getJsonSizeBytes(response),
-        durationMs: Date.now() - startedAt,
-        status: 200,
-      });
-      return NextResponse.json(response);
-    }
-
-    const result = await extractFromFile({
-      fileName: file.name,
-      buffer,
-      mimeType: file.type,
-      planId,
-      planLimits: limits,
-    });
-
-    const response: ExtractApiSuccessResponse = {
-      success: true,
-      extractedText: result.extractedText,
-      metadata: {
-        sourceKind: "file",
-        ...result.metadata,
-      },
-      limitNotice: result.metadata.limitNotice ?? undefined,
-    };
-
-    logExtract({
+    return extractBufferResponse({
       requestId,
-      endpoint: "/api/extract",
-      method: request.method,
+      startedAt,
       contentLength,
-      fileName,
-      mimeType,
-      fileSize,
-      extractedCharacterCount: result.metadata.extractedCharacters,
-      responseJsonBytes: getJsonSizeBytes(response),
-      durationMs: Date.now() - startedAt,
-      status: 200,
+      method: request.method,
+      fileName: file.name,
+      mimeType: file.type,
+      fileSize: file.size,
+      buffer,
+      planId,
+      limits,
+      uploadMode: "direct",
+      sourceType: "file",
     });
-    return NextResponse.json(response);
   } catch (error) {
     if (error instanceof ExtractionError) {
       const status = error.statusCode || getStatusForCode(error.code);
@@ -315,6 +523,8 @@ export async function POST(request: Request) {
         fileName,
         mimeType,
         fileSize,
+        uploadMode,
+        sourceType,
         responseJsonBytes: getJsonSizeBytes(payload),
         durationMs: Date.now() - startedAt,
         status,
@@ -344,6 +554,8 @@ export async function POST(request: Request) {
       fileName,
       mimeType,
       fileSize,
+      uploadMode,
+      sourceType,
       responseJsonBytes: getJsonSizeBytes(payload),
       durationMs: Date.now() - startedAt,
       status: mapped.status,

@@ -113,6 +113,7 @@ async function incrementAudioUsage(userId: string): Promise<void> {
 type GenerateBody = {
   analysisId?: string;
   analysisPayload?: Partial<AnalysisResult> & AudioStudyAnalysisInput;
+  input?: Partial<AnalysisResult> & AudioStudyAnalysisInput;
   regenerate?: boolean;
   voiceId?: string;
   synthesizeOnly?: boolean;
@@ -330,14 +331,12 @@ async function synthesizeWithPolly(
 
 export async function POST(request: Request) {
   const user = await getOptionalUser();
-  if (!user) {
-    return NextResponse.json({ error: "Sign in to generate audio lessons." }, { status: 401 });
-  }
+  const body = (await request.json().catch(() => null)) as GenerateBody | null;
 
-  const profile = await getProfile(user.id);
-  const planId = resolveEntitlementPlanIdFromProfile(profile);
+  const profile = user ? await getProfile(user.id) : null;
+  const planId = user ? resolveEntitlementPlanIdFromProfile(profile) : "free";
 
-  if (!canUseAudioStudyMode(planId, hasActivePaidEntitlement(profile ?? undefined))) {
+  if (user && !canUseAudioStudyMode(planId, hasActivePaidEntitlement(profile ?? undefined))) {
     return NextResponse.json(
       { error: "Audio Study Mode is available on Pro, Scholar, and Team plans." },
       { status: 403 },
@@ -345,7 +344,7 @@ export async function POST(request: Request) {
   }
 
   const dailyLimit = getDailyAudioLessonLimit(planId);
-  const usageCheck = await checkAndPrepareAudioUsage(user.id, dailyLimit);
+  const usageCheck = user ? await checkAndPrepareAudioUsage(user.id, dailyLimit) : null;
   if (usageCheck && !usageCheck.allowed) {
     return NextResponse.json(
       {
@@ -357,7 +356,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json().catch(() => null)) as GenerateBody | null;
   const regenerate = Boolean(body?.regenerate);
   const synthesizeOnly = Boolean(body?.synthesizeOnly);
   const voiceId = normalizePollyVoiceId(body?.voiceId);
@@ -366,6 +364,9 @@ export async function POST(request: Request) {
   let cachedMeta: AudioStudyMetadata | undefined;
 
   if (body?.analysisId && body.analysisId !== "live-analysis") {
+    if (!user) {
+      return NextResponse.json({ error: "Sign in to use saved analyses." }, { status: 401 });
+    }
     const row = await getAnalysisById(body.analysisId, user.id);
     if (!row) {
       return NextResponse.json({ error: "Analysis not found." }, { status: 404 });
@@ -374,8 +375,8 @@ export async function POST(request: Request) {
     cachedMeta = row.metadata?.audioStudy;
   }
 
-  if (!analysisInput && body?.analysisPayload) {
-    analysisInput = buildInputFromPayload(body.analysisPayload);
+  if (!analysisInput && (body?.analysisPayload || body?.input)) {
+    analysisInput = buildInputFromPayload(body.analysisPayload ?? body.input);
   }
 
   if (!analysisInput) {
@@ -414,7 +415,9 @@ export async function POST(request: Request) {
         generatedAt: new Date().toISOString(),
       };
       if (body?.analysisId && body.analysisId !== "live-analysis") {
-        await mergeAnalysisAudioStudy(body.analysisId, user.id, scriptBundle);
+        if (user) {
+          await mergeAnalysisAudioStudy(body.analysisId, user.id, scriptBundle);
+        }
       }
     }
 
@@ -425,7 +428,7 @@ export async function POST(request: Request) {
 
     await trackProductEvent({
       eventType: "audio_study_script_generated",
-      userId: user.id,
+      userId: user?.id ?? null,
       sourceType: analysisInput.sourceType ?? null,
       intelligenceMode: analysisInput.intelligenceMode ?? null,
       plan: planId,
@@ -441,7 +444,9 @@ export async function POST(request: Request) {
       insertViaServiceRole: true,
     });
 
-    await incrementAudioUsage(user.id);
+    if (user) {
+      await incrementAudioUsage(user.id);
+    }
 
     const usedAfter = usageCheck ? usageCheck.used + 1 : null;
 

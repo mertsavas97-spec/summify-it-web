@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   BrainCircuit,
@@ -10,7 +10,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { IntelligenceModeDefinition } from "@/types/modes";
-import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import type { AnalysisResult } from "@/types/text-analysis";
 import { getIntelligenceModeById } from "@/config/modes";
@@ -35,7 +34,6 @@ import { getModeAccessState } from "@/lib/mode-access";
 import { canRunAnalysis } from "@/lib/mode-resolver";
 import type { PlanId } from "@/types/plan";
 import { USER_MESSAGES } from "@/lib/user-messages";
-import { IntelligenceLoadingStages } from "./IntelligenceLoadingStages";
 import { AnalysisResultView } from "./AnalysisResultView";
 import { AnalysisToolbar } from "./AnalysisToolbar";
 import { IntelligenceModeSelector } from "./IntelligenceModeSelector";
@@ -47,10 +45,13 @@ import type { AnalyzeApiDebugMetadata } from "@/types/text-analysis";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
-import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
 import type { InjectedAnalysisPayload } from "./UploadWorkspace";
 import { canUseAudioStudyMode } from "@/lib/audio-study/access";
 import { canUsePodcastDiscussionMode } from "@/lib/podcast/access";
+import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
+import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
+import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
+import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
 
 type TextAnalysisMvpProps = {
   rawText: string;
@@ -79,6 +80,11 @@ type TextAnalysisMvpProps = {
   limitNotice?: string | null;
   actionModules?: ReactNode;
   practiceModule?: ReactNode;
+  renderPracticeModule?: (options: {
+    learnComplete: boolean;
+    onLearnCompleteChange: (complete: boolean) => void;
+    onStartQuiz: () => void;
+  }) => ReactNode;
   mediaModules?: (view: "audio" | "podcast") => ReactNode;
   /** Keep analysis wiring mounted while another source-ready shell owns the pre-analysis UI. */
   deferUntilAnalysisActive?: boolean;
@@ -251,7 +257,7 @@ function getSourceKindLabel(inputMode: WorkspaceInputMode, extractionMeta: Extra
   if (extractionMeta?.sourceKind === "youtube") return "YouTube";
   if (extractionMeta?.sourceKind === "url") return "Article";
   if (extractionMeta?.sourceKind === "presentation") return "Presentation";
-  return "Document";
+  return "File";
 }
 
 function estimateReadingTime(result: AnalysisResult) {
@@ -263,6 +269,47 @@ function estimateReadingTime(result: AnalysisResult) {
   ].join(" ");
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   return `${Math.max(1, Math.ceil(words / 220))} min read`;
+}
+
+function getSourceDomain(extractionMeta: ExtractionMetadata | null): string | null {
+  if (extractionMeta?.sourceKind !== "url") return null;
+  try {
+    return new URL(extractionMeta.sourceUrl).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function getResultMetadataChips({
+  result,
+  modeLabel,
+  providerUsed,
+  fallbackUsed,
+  complexity,
+  extractionMeta,
+}: {
+  result: AnalysisResult;
+  modeLabel: string;
+  providerUsed: string;
+  fallbackUsed: boolean;
+  complexity: string | null;
+  extractionMeta: ExtractionMetadata | null;
+}): string[] {
+  const chips = [`Mode: ${modeLabel}`];
+  if (extractionMeta?.sourceKind === "file") {
+    chips.push(`${extractionMeta.estimatedPages} pages`);
+  } else if (extractionMeta?.sourceKind === "presentation") {
+    chips.push(`${extractionMeta.slideCount} slides`);
+  } else if (extractionMeta?.sourceKind === "youtube" && extractionMeta.estimatedDurationMinutes) {
+    chips.push(`${extractionMeta.estimatedDurationMinutes} min video`);
+  } else {
+    chips.push(estimateReadingTime(result));
+  }
+  if (complexity) chips.push(complexity);
+  const domain = getSourceDomain(extractionMeta);
+  if (domain) chips.push(domain);
+  chips.push(`${providerUsed}${fallbackUsed ? " fallback" : ""}`);
+  return chips;
 }
 
 function ResultTabButton({
@@ -285,7 +332,7 @@ function ResultTabButton({
       role="tab"
       aria-selected={active}
       onClick={() => onSelect(tab.id)}
-      className={`group relative min-w-[132px] shrink-0 overflow-hidden rounded-2xl border px-3.5 py-3 text-left transition-all sm:min-w-0 sm:flex-1 ${
+      className={`group relative min-w-[112px] shrink-0 snap-start overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all sm:min-w-0 sm:flex-1 ${
         active
           ? "border-violet-400/35 bg-violet-500/12 text-violet-50 shadow-[0_0_22px_rgba(139,92,246,0.13)]"
           : isPremium
@@ -301,28 +348,28 @@ function ResultTabButton({
           <span className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-violet-500/10 blur-2xl" />
         </span>
       )}
-      <span className="relative flex items-center justify-between gap-3">
-        <span className="flex items-center gap-2">
+      <span className="relative flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-2">
           <span
-            className={`flex h-8 w-8 items-center justify-center rounded-xl border ${
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
               active || isPremium
                 ? "border-violet-400/25 bg-violet-500/12 text-violet-200"
                 : "border-white/[0.06] bg-black/20 text-zinc-500"
             }`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" />
           </span>
-          <span>
+          <span className="min-w-0">
             {tab.eyebrow ? (
-              <span className="block text-[10px] font-medium uppercase tracking-[0.14em] text-violet-300/75">
+              <span className="hidden text-[9px] font-medium uppercase tracking-[0.12em] text-violet-300/75 md:block">
                 {tab.eyebrow}
               </span>
             ) : null}
-            <span className="block text-sm font-semibold">{tab.label}</span>
+            <span className="block truncate text-xs font-semibold sm:text-[13px]">{tab.label}</span>
           </span>
         </span>
         {accessLabel ? (
-          <span className="rounded-full border border-violet-400/18 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium text-violet-200">
+          <span className="hidden rounded-full border border-violet-400/18 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-medium text-violet-200 lg:inline-flex">
             {accessLabel}
           </span>
         ) : null}
@@ -366,29 +413,72 @@ function ContinueLearningStrip({ onSelect }: { onSelect: (tab: ResultTabId) => v
 
 function QuizTabContent({
   result,
+  modeId,
+  sourceType,
+  sourceLabel,
+  entitlementPlanId,
+  isPaidActive,
+  learnComplete,
   onSelect,
 }: {
   result: AnalysisResult;
+  modeId: IntelligenceModeId;
+  sourceType?: string | null;
+  sourceLabel?: string | null;
+  entitlementPlanId: PlanId;
+  isPaidActive: boolean;
+  learnComplete: boolean;
   onSelect: (tab: ResultTabId) => void;
 }) {
   const quizCards = result.learnCards.filter((card) => card.type === "quiz" && !card.isLockedPreview);
+  const cardAccess = useMemo(
+    () => getPracticeCardAccessForPlan(entitlementPlanId, result.learnCards),
+    [entitlementPlanId, result.learnCards],
+  );
+  const quizQuestions = useMemo(
+    () =>
+      generateAnalysisQuiz({
+        title: result.title,
+        summary: result.summary,
+        keyInsights: result.keyInsights,
+        risksOrWarnings: result.risksOrWarnings,
+        actionItems: result.actionItems,
+        learnCards: cardAccess.accessibleCards,
+        maxQuestions: cardAccess.isLimited ? 5 : 6,
+      }),
+    [cardAccess.accessibleCards, cardAccess.isLimited, result],
+  );
+  const quizUnlocked = learnComplete || quizCards.length > 0;
+  const audioInput = useMemo(
+    () =>
+      buildAudioStudyInputFromResult(result, {
+        sourceType,
+        intelligenceMode: modeId,
+        sourceLabel,
+        quizThemes: quizQuestions.map((q) => q.theme).filter(Boolean) as string[],
+      }),
+    [modeId, quizQuestions, result, sourceLabel, sourceType],
+  );
 
   return (
     <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
       <p className="text-sm font-semibold text-white">Quiz</p>
-      {quizCards.length > 0 ? (
-        <>
-          <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-            {quizCards.length} quiz prompt{quizCards.length === 1 ? "" : "s"} are available from your Learn set.
-          </p>
-          <button
-            type="button"
-            onClick={() => onSelect("learn")}
-            className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-500"
-          >
-            Start from Learn cards
-          </button>
-        </>
+      {quizUnlocked && quizQuestions.length > 0 ? (
+        <div className="mt-4">
+          <AnalysisQuizSession
+            analysisId="live-analysis"
+            documentTitle={result.title}
+            questions={quizQuestions}
+            retentionSummary={null}
+            gotItCount={0}
+            reviewAgainCount={0}
+            lockedQuizCount={cardAccess.lockedCount}
+            entitlementPlanId={entitlementPlanId}
+            isPaidActive={isPaidActive}
+            audioStudyInput={audioInput}
+            onRestartLearn={() => onSelect("learn")}
+          />
+        </div>
       ) : (
         <>
           <p className="mt-1 text-sm leading-relaxed text-zinc-500">
@@ -416,9 +506,11 @@ function PostAnalysisResultShell({
   fallbackUsed,
   uiSectionLabels,
   entitlementPlanId,
+  isAuthenticated,
   isPaidActive,
   savedToWorkspace,
   learnModule,
+  renderLearnModule,
   mediaModules,
 }: {
   result: AnalysisResult;
@@ -429,53 +521,76 @@ function PostAnalysisResultShell({
   fallbackUsed: boolean;
   uiSectionLabels?: PersonaUiSectionLabels;
   entitlementPlanId: PlanId;
+  isAuthenticated: boolean;
   isPaidActive: boolean;
   savedToWorkspace?: boolean;
   learnModule?: ReactNode;
+  renderLearnModule?: (options: {
+    learnComplete: boolean;
+    onLearnCompleteChange: (complete: boolean) => void;
+    onStartQuiz: () => void;
+  }) => ReactNode;
   mediaModules?: (view: "audio" | "podcast") => ReactNode;
 }) {
   const [activeTab, setActiveTab] = useState<ResultTabId>("summary");
+  const [learnComplete, setLearnComplete] = useState(false);
   const modeDef = getIntelligenceModeById(modeId);
   const sourceTitle = getResultSourceTitle({ extractionMeta, inputMode, result });
+  const sourceKindLabel = getSourceKindLabel(inputMode, extractionMeta);
   const audioUnlocked = canUseAudioStudyMode(entitlementPlanId, isPaidActive);
   const podcastUnlocked = canUsePodcastDiscussionMode(entitlementPlanId, isPaidActive);
   const complexity = modeDef?.outputDepth
     ? `${modeDef.outputDepth[0].toUpperCase()}${modeDef.outputDepth.slice(1)} depth`
     : null;
+  const modeLabel = modeDef?.label ?? modeId;
+  const metadataChips = getResultMetadataChips({
+    result,
+    modeLabel,
+    providerUsed,
+    fallbackUsed,
+    complexity,
+    extractionMeta,
+  });
+  const resolvedLearnModule =
+    renderLearnModule
+      ? renderLearnModule({
+          learnComplete,
+          onLearnCompleteChange: setLearnComplete,
+          onStartQuiz: () => setActiveTab("quiz"),
+        })
+      : learnModule;
 
   return (
     <div className="space-y-4" data-workspace-analysis-result-shell>
       <header className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-4 shadow-sm shadow-black/20 backdrop-blur sm:p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-violet-200/80">{getSourceKindLabel(inputMode, extractionMeta)}</p>
-            <h3 className="mt-1 truncate text-lg font-semibold tracking-tight text-white">{sourceTitle}</h3>
-            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-zinc-500">
-              <span>Intelligence Mode: {modeDef?.label ?? modeId}</span>
-              <span>·</span>
-              <span>{estimateReadingTime(result)}</span>
-              {complexity ? (
-                <>
-                  <span>·</span>
-                  <span>{complexity}</span>
-                </>
-              ) : null}
-              <span>·</span>
-              <span>
-                Provider: <span className="font-mono text-zinc-400">{providerUsed}</span>
-                {fallbackUsed ? <span className="text-amber-400/90"> · fallback</span> : null}
-              </span>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-violet-200/75">{sourceKindLabel}</p>
+            <h3 className="mt-1 line-clamp-2 max-w-3xl text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
+              {sourceTitle}
+            </h3>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {metadataChips.map((chip) => (
+                <span
+                  key={chip}
+                  className="max-w-full rounded-full border border-white/[0.07] bg-white/[0.035] px-2.5 py-1 text-[11px] text-zinc-400"
+                >
+                  {chip}
+                </span>
+              ))}
             </div>
           </div>
-          <AnalysisToolbar result={result} />
+          <div className="shrink-0 lg:max-w-[260px]">
+            <AnalysisToolbar result={result} />
+          </div>
         </div>
       </header>
 
-      <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} />
+      <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
 
-      <div className="rounded-3xl border border-white/[0.07] bg-[#11141d]/75 p-2.5 shadow-sm shadow-black/20 backdrop-blur">
+      <div className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-1.5 shadow-sm shadow-black/20 backdrop-blur">
         <div
-          className="flex gap-2 overflow-x-auto"
+          className="flex snap-x gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5"
           role="tablist"
           aria-label="Analysis result sections"
         >
@@ -516,11 +631,11 @@ function PostAnalysisResultShell({
         <div hidden={activeTab !== "learn"} className="space-y-4">
           <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
             <p className="text-sm font-semibold text-white">Ready to practice</p>
-            <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-              {sourceTitle} · {modeDef?.label ?? modeId} · {result.learnCards.length} card{result.learnCards.length === 1 ? "" : "s"} available
+          <p className="mt-1 text-sm leading-relaxed text-zinc-500">
+              {sourceTitle} · {modeLabel} · {result.learnCards.length} card{result.learnCards.length === 1 ? "" : "s"} available
             </p>
           </section>
-          {learnModule ?? (
+          {resolvedLearnModule ?? (
             <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">
               No practice cards were generated for this analysis.
             </p>
@@ -528,7 +643,16 @@ function PostAnalysisResultShell({
         </div>
 
         <div hidden={activeTab !== "quiz"}>
-          <QuizTabContent result={result} onSelect={setActiveTab} />
+          <QuizTabContent
+            result={result}
+            modeId={modeId}
+            sourceType={extractionMeta?.sourceKind ?? (inputMode === "text" ? "text" : null)}
+            sourceLabel={sourceTitle}
+            entitlementPlanId={entitlementPlanId}
+            isPaidActive={isPaidActive}
+            learnComplete={learnComplete}
+            onSelect={setActiveTab}
+          />
         </div>
 
         <div hidden={activeTab !== "audio"} className="space-y-4">
@@ -559,13 +683,8 @@ export function TextAnalysisMvp({
   inputMode,
   extractStatus,
   extractionMeta,
-  analyzeDisabled = false,
-  hidePrimaryAnalyze = false,
-  hidePracticeCta = false,
   youtubeAnalysisFailed = false,
   urlAnalysisFailed = false,
-  onRetryYoutubeAnalysis,
-  onRetryUrlAnalysis,
   injectedAnalysis,
   onAnalyzingChange,
   onAnalysisComplete,
@@ -579,6 +698,7 @@ export function TextAnalysisMvp({
   limitNotice,
   actionModules,
   practiceModule,
+  renderPracticeModule,
   mediaModules,
   deferUntilAnalysisActive = false,
 }: TextAnalysisMvpProps) {
@@ -598,13 +718,9 @@ export function TextAnalysisMvp({
   const [savedToWorkspace, setSavedToWorkspace] = useState<boolean | undefined>(
     injectedAnalysis?.savedToWorkspace,
   );
-  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null | undefined>(
-    injectedAnalysis?.savedAnalysisId,
-  );
   const [upgradeMode, setUpgradeMode] = useState<IntelligenceModeDefinition | null>(null);
   const displayResult = injectedAnalysis?.result ?? result;
   const displaySavedToWorkspace = injectedAnalysis?.savedToWorkspace ?? savedToWorkspace;
-  const displaySavedAnalysisId = injectedAnalysis?.savedAnalysisId ?? savedAnalysisId;
   const displayUiSectionLabels =
     injectedAnalysis?.intelligence.personaUiSectionLabels ??
     meta?.personaUiSectionLabels;
@@ -632,15 +748,6 @@ export function TextAnalysisMvp({
     extractionMeta != null && extractStatus === "ready" && rawText.trim().length > 0;
   const useCompactExtractUI = hasExtractedContent && !isManualTextMode;
 
-  const charCount = rawText.trim().length;
-  const canAnalyze =
-    charCount >= inputLimits.minChars &&
-    canRunAnalysis(mode, entitlementPlanId) &&
-    !loading &&
-    !analyzeDisabled &&
-    extractStatus !== "uploading" &&
-    extractStatus !== "extracting";
-
   const handleAnalyze = async () => {
     if (!canRunAnalysis(mode, entitlementPlanId)) return;
     setError(null);
@@ -650,7 +757,6 @@ export function TextAnalysisMvp({
     onSavedAnalysisIdChange?.(null);
     setMeta(null);
     setSavedToWorkspace(undefined);
-    setSavedAnalysisId(undefined);
     onIntelligenceReady?.(null);
     setLoading(true);
     onAnalyzingChange?.(true);
@@ -712,7 +818,6 @@ export function TextAnalysisMvp({
         personaUiSectionLabels: analysis.intelligence.personaUiSectionLabels,
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
-      setSavedAnalysisId(analysis.savedAnalysisId);
       onSavedAnalysisIdChange?.(analysis.savedAnalysisId ?? null);
       setAnalysisLimitNotice(analysis.limitNotice ?? null);
       onIntelligenceReady?.(analysis.intelligence);
@@ -744,8 +849,6 @@ export function TextAnalysisMvp({
         : "Upload a file, paste text, or pick a source to begin";
 
   const pipelineAnalysisFailed = youtubeAnalysisFailed || urlAnalysisFailed;
-  const showRunButton =
-    !hidePrimaryAnalyze || (isYoutubeMode && youtubeAnalysisFailed) || (isUrlMode && urlAnalysisFailed);
   const showUpgradeCopy =
     error?.includes("free analyses") || error?.includes("Scholar or Pro");
 
@@ -786,6 +889,7 @@ export function TextAnalysisMvp({
           modeId={mode}
           extractionMeta={extractionMeta}
           inputMode={inputMode}
+          isAuthenticated={isAuthenticated}
           entitlementPlanId={entitlementPlanId}
           isPaidActive={isPaidActive}
           providerUsed={displayMeta.providerUsed}
@@ -793,6 +897,7 @@ export function TextAnalysisMvp({
           uiSectionLabels={displayUiSectionLabels}
           savedToWorkspace={displaySavedToWorkspace}
           learnModule={practiceModule ?? actionModules}
+          renderLearnModule={renderPracticeModule}
           mediaModules={mediaModules}
         />
       )}

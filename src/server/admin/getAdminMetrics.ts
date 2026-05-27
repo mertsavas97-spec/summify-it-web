@@ -2,6 +2,7 @@ import { getPlanDefinition } from "@/data/pricingPlans";
 import { isActiveSubscriptionStatus } from "@/lib/billing/entitlements";
 import { getSupabaseAdmin, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import { resolvePlanId } from "@/lib/plan-limits";
+import { isInternalAccountEmail } from "@/server/admin/internalAccounts";
 import type { PlanId } from "@/types/plan";
 import { isPlanId } from "@/types/plan";
 
@@ -48,6 +49,7 @@ export type AdminMetrics = {
     pastDue: number;
     estimatedMrrUsd: number | null;
     estimatedArrUsd: number | null;
+    internalAccountsExcluded: number;
   }>;
   sourcesAndModes: MetricSection<{
     bySourceKind: { kind: string; label: string; count: number }[];
@@ -287,13 +289,17 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
 
   const { data: planRows, error: planRowsError } = await admin
     .from("profiles")
-    .select("plan");
+    .select("plan, email");
 
   if (planRowsError) {
     errors.push(planRowsError.message);
   } else {
     for (const row of planRows ?? []) {
       const planId = resolvePlanId(row.plan);
+      if (isInternalAccountEmail(row.email) && PAID_PLAN_IDS.includes(planId as PlanId)) {
+        continue;
+      }
+
       if (isPlanId(planId)) {
         planDistribution[planId] += 1;
       } else {
@@ -379,7 +385,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
   const { data: billingProfiles, error: billingError } = await admin
     .from("profiles")
     .select(
-      "plan, subscription_status, polar_subscription_id, billing_interval",
+      "plan, email, subscription_status, polar_subscription_id, billing_interval",
     );
 
   let subscriptionsSection: AdminMetrics["subscriptions"] = {
@@ -396,8 +402,14 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
     let canceled = 0;
     let pastDue = 0;
     const activePaid: typeof billingProfiles = [];
+    let internalAccountsExcluded = 0;
 
     for (const row of billingProfiles) {
+      if (isInternalAccountEmail(row.email)) {
+        if (isPaidActiveProfile(row)) internalAccountsExcluded += 1;
+        continue;
+      }
+
       const status = row.subscription_status?.toLowerCase() ?? "";
       if (status === "canceled" || status === "cancelled") canceled += 1;
       if (status === "past_due") pastDue += 1;
@@ -430,6 +442,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
         pastDue,
         estimatedMrrUsd: revenue?.mrr ?? null,
         estimatedArrUsd: revenue?.arr ?? null,
+        internalAccountsExcluded,
       },
     };
   } else if (billingError) {

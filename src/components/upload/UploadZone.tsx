@@ -10,6 +10,7 @@ import type { UploadExtractStatus } from "@/types/extraction";
 type UploadZoneProps = {
   fileName: string | null;
   status: UploadExtractStatus;
+  statusLabel?: string | null;
   error: string | null;
   disabled?: boolean;
   planId: PlanId;
@@ -38,6 +39,7 @@ const EMPTY_FORMATS = ["PDF", "DOCX", "PPTX", "TXT"];
 export function UploadZone({
   fileName,
   status,
+  statusLabel,
   error,
   disabled = false,
   planId,
@@ -77,7 +79,7 @@ export function UploadZone({
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[status]}`}
           >
-            {STATUS_LABELS[status]}
+            {statusLabel ?? STATUS_LABELS[status]}
           </span>
         </div>
       )}

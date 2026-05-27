@@ -25,6 +25,9 @@ type AnalysisLearningPathProps = {
   practicePersisted?: boolean;
   hasLearnCards?: boolean;
   autoStart?: boolean;
+  allowInternalQuiz?: boolean;
+  onLearnCompleteChange?: (complete: boolean) => void;
+  onStartQuizOverride?: () => void;
   analysisContent: Pick<
     AnalysisResult,
     "title" | "summary" | "keyInsights" | "risksOrWarnings" | "actionItems"
@@ -44,6 +47,9 @@ export function AnalysisLearningPath({
   practicePersisted = true,
   hasLearnCards = true,
   autoStart = false,
+  allowInternalQuiz = true,
+  onLearnCompleteChange,
+  onStartQuizOverride,
   analysisContent,
 }: AnalysisLearningPathProps) {
   const [learnComplete, setLearnComplete] = useState(false);
@@ -116,7 +122,8 @@ export function AnalysisLearningPath({
     setGotItCount(summary.cardStates.reduce((n, s) => n + s.gotItCount, 0));
     setReviewAgainCount(summary.cardStates.reduce((n, s) => n + s.reviewAgainCount, 0));
     setLearnComplete(true);
-  }, []);
+    onLearnCompleteChange?.(true);
+  }, [onLearnCompleteChange]);
 
   const restartLearn = useCallback(() => {
     setLearnComplete(false);
@@ -124,8 +131,9 @@ export function AnalysisLearningPath({
     setRetentionSummary(null);
     setGotItCount(0);
     setReviewAgainCount(0);
+    onLearnCompleteChange?.(false);
     setSessionKey((k) => k + 1);
-  }, []);
+  }, [onLearnCompleteChange]);
 
   if (quizActive && learnComplete) {
     return (
@@ -163,7 +171,7 @@ export function AnalysisLearningPath({
         practicePersisted={practicePersisted}
         entitlementPlanId={entitlementPlanId}
         onLearnComplete={handleLearnComplete}
-        onStartQuiz={() => setQuizActive(true)}
+        onStartQuiz={allowInternalQuiz ? () => setQuizActive(true) : onStartQuizOverride}
         learnComplete={learnComplete}
         autoStart={autoStart}
         showQuizUnlockHint

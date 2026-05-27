@@ -24,6 +24,9 @@ type PracticeAnalysisCtaProps = {
   isPaidActive?: boolean;
   intelligenceModeId?: string;
   sourceType?: string | null;
+  allowInternalQuiz?: boolean;
+  onLearnCompleteChange?: (complete: boolean) => void;
+  onStartQuizOverride?: () => void;
   analysisContent?: Pick<
     AnalysisResult,
     "title" | "summary" | "keyInsights" | "risksOrWarnings" | "actionItems"
@@ -43,6 +46,9 @@ export function PracticeAnalysisCta({
   isPaidActive = false,
   intelligenceModeId = "general-summary",
   sourceType = null,
+  allowInternalQuiz = true,
+  onLearnCompleteChange,
+  onStartQuizOverride,
   analysisContent,
 }: PracticeAnalysisCtaProps) {
   const router = useRouter();
@@ -144,6 +150,9 @@ export function PracticeAnalysisCta({
           sourceType={sourceType}
           hasLearnCards
           practicePersisted={Boolean(savedAnalysisId)}
+          allowInternalQuiz={allowInternalQuiz}
+          onLearnCompleteChange={onLearnCompleteChange}
+          onStartQuizOverride={onStartQuizOverride}
           analysisContent={
             analysisContent ?? {
               title: documentTitle,

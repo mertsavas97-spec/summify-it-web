@@ -143,6 +143,23 @@ const GENERATION_PROGRESS_MESSAGES = [
   "Almost ready...",
 ];
 
+const GUEST_AUDIO_LIMIT = 3;
+const GUEST_PODCAST_LIMIT = 1;
+const GUEST_AUDIO_STORAGE_KEY = "summify_guest_audio_lessons_used";
+const GUEST_PODCAST_STORAGE_KEY = "summify_guest_podcasts_used";
+
+function readGuestUsage(key: string): number {
+  if (typeof window === "undefined") return 0;
+  const raw = window.localStorage.getItem(key);
+  const parsed = raw ? Number.parseInt(raw, 10) : 0;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function writeGuestUsage(key: string, used: number): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(key, String(Math.max(0, used)));
+}
+
 /**
  * Auto-select density mode based on source profile suitability.
  */
@@ -267,8 +284,16 @@ export function PodcastWorkspaceCtas({
   const [audioUsage, setAudioUsage] = useState<{ used: number; limit: number } | null>(null);
   const [podcastUsage, setPodcastUsage] = useState<{ used: number; limit: number } | null>(null);
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [guestAudioUsed, setGuestAudioUsed] = useState(() => readGuestUsage(GUEST_AUDIO_STORAGE_KEY));
+  const [guestPodcastUsed, setGuestPodcastUsed] = useState(() => readGuestUsage(GUEST_PODCAST_STORAGE_KEY));
   const audioStudyPaidAccess = canUseAudioStudyMode(entitlementPlanId, isPaidActive);
   const podcastPaidAccess = canUsePodcastDiscussionMode(entitlementPlanId, isPaidActive);
+  const isGuest = authReady && !isSignedIn;
+  const guestAudioRemaining = Math.max(0, GUEST_AUDIO_LIMIT - guestAudioUsed);
+  const guestPodcastRemaining = Math.max(0, GUEST_PODCAST_LIMIT - guestPodcastUsed);
+  const audioStudyAccess = audioStudyPaidAccess || (isGuest && guestAudioRemaining > 0);
+  const podcastAccess = podcastPaidAccess || (isGuest && guestPodcastRemaining > 0);
   const showUsageIndicators = entitlementPlanId === "free" || entitlementPlanId === "scholar";
   const dailyAudioLimit = entitlementPlanId === "free" ? 3 : entitlementPlanId === "scholar" ? 10 : 999;
   const dailyPodcastLimit = entitlementPlanId === "free" ? 1 : entitlementPlanId === "scholar" ? 5 : 999;
@@ -356,6 +381,7 @@ export function PodcastWorkspaceCtas({
         data: { user },
       } = await supabase.auth.getUser();
       setIsSignedIn(Boolean(user));
+      setAuthReady(true);
       if (!user) return;
 
       const { data: limits } = await supabase
@@ -385,6 +411,7 @@ export function PodcastWorkspaceCtas({
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
       setIsSignedIn(Boolean(data.user));
+      setAuthReady(true);
     });
   }, [showUsageIndicators]);
 
@@ -407,7 +434,7 @@ export function PodcastWorkspaceCtas({
     trackEvent("podcast_cta_clicked", {
       state: podcastState,
       plan: entitlementPlanId,
-      locked: !podcastPaidAccess,
+      locked: !podcastAccess,
     });
   }
 
@@ -480,6 +507,11 @@ export function PodcastWorkspaceCtas({
       if (data.usage) {
         setPodcastUsage(data.usage);
       }
+      if (isGuest && !regenerate) {
+        const nextUsed = guestPodcastUsed + 1;
+        setGuestPodcastUsed(nextUsed);
+        writeGuestUsage(GUEST_PODCAST_STORAGE_KEY, nextUsed);
+      }
 
       setGeneratedDiscussion({
         podcast: data.podcast,
@@ -537,7 +569,7 @@ export function PodcastWorkspaceCtas({
           <div className="space-y-3">
             {audioStudyState === "idle" || audioStudyState === "generating" ? (
               <>
-                {audioStudyPaidAccess ? (
+                {audioStudyAccess ? (
                   <div className="flex items-center gap-2">
                     <select
                       value={audioStudyVoice}
@@ -554,11 +586,11 @@ export function PodcastWorkspaceCtas({
                     </select>
                   </div>
                 ) : null}
-                {audioStudyPaidAccess ? (
+                {audioStudyAccess ? (
                   <>
                     <button
                       type="button"
-                      disabled={!hasAnalysis || audioStudyState === "generating" || audioLimitReached}
+                      disabled={!hasAnalysis || audioStudyState === "generating" || (!isGuest && audioLimitReached)}
                       onClick={async () => {
                       if (!analysisResult || !hasAnalysis) return;
                       setAudioStudyState("generating");
@@ -631,6 +663,11 @@ export function PodcastWorkspaceCtas({
                         if (data.usage) {
                           setAudioUsage(data.usage);
                         }
+                        if (isGuest) {
+                          const nextUsed = guestAudioUsed + 1;
+                          setGuestAudioUsed(nextUsed);
+                          writeGuestUsage(GUEST_AUDIO_STORAGE_KEY, nextUsed);
+                        }
                         setAudioStudyState("ready");
                       } catch (err) {
                         setAudioStudyError(err instanceof Error ? err.message : "Audio lesson could not be generated right now.");
@@ -639,7 +676,7 @@ export function PodcastWorkspaceCtas({
                     }}
                       className="w-full rounded-lg bg-gradient-to-r from-violet-500/20 to-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-200 transition-all hover:from-violet-500/30 hover:to-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {audioLimitReached
+                      {!isGuest && audioLimitReached
                         ? "Daily limit reached — resets tomorrow"
                         : audioStudyState === "generating"
                           ? "Generating audio lesson..."
@@ -647,7 +684,11 @@ export function PodcastWorkspaceCtas({
                             ? "Generate audio lesson"
                             : "Analyze source first"}
                     </button>
-                    {showUsageIndicators ? (
+                    {isGuest ? (
+                      <p className="text-[11px] text-violet-200/80">
+                        {guestAudioRemaining} free audio lesson{guestAudioRemaining === 1 ? "" : "s"} left
+                      </p>
+                    ) : showUsageIndicators ? (
                       <p className="text-[11px] text-zinc-500">
                         {(audioUsage?.used ?? 0)} of {dailyAudioLimit} audio lessons used today
                       </p>
@@ -725,7 +766,7 @@ export function PodcastWorkspaceCtas({
           <div className="flex items-start gap-3">
             <span className="relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-violet-400/20 bg-violet-500/15">
               <span className="listening-banner-icon-glow absolute -inset-2 rounded-full bg-violet-500/25 blur-md" aria-hidden />
-              {podcastPaidAccess ? (
+              {podcastAccess ? (
                 <Users className="relative h-4 w-4 text-violet-300" aria-hidden />
               ) : (
                 <Lock className="relative h-3.5 w-3.5 text-violet-300" aria-hidden />
@@ -748,7 +789,7 @@ export function PodcastWorkspaceCtas({
                 {eligibility.reason}
               </p>
             ) : null}
-            {podcastState === "eligible" && podcastPaidAccess ? (
+            {podcastState === "eligible" && podcastAccess ? (
               <>
                 {/* Density Mode Selector */}
                 <div className="flex gap-2" role="radiogroup" aria-label="Podcast discussion style">
@@ -845,7 +886,7 @@ export function PodcastWorkspaceCtas({
                 </div>
                 <button
                   type="button"
-                  disabled={loading > 0 || !analysisResult || podcastLimitReached}
+                  disabled={loading > 0 || !analysisResult || (!isGuest && podcastLimitReached)}
                   onClick={() => {
                     trackPodcastClick();
                     void generatePodcast();
@@ -866,14 +907,20 @@ export function PodcastWorkspaceCtas({
                     <span className="flex items-center justify-center gap-2">
                       <Mic className="h-5 w-5" aria-hidden />
                       <span>
-                        {podcastLimitReached
+                        {!isGuest && podcastLimitReached
                           ? "Daily limit reached — resets tomorrow"
                           : "Generate podcast lesson"}
                       </span>
                     </span>
                   )}
                 </button>
-                {showUsageIndicators ? (
+                {isGuest ? (
+                  <p className="text-[11px] text-violet-200/80">
+                    {guestPodcastRemaining > 0
+                      ? "1 free podcast lesson included"
+                      : "Free podcast used. Sign in to create more."}
+                  </p>
+                ) : showUsageIndicators ? (
                   <p className="text-[11px] text-zinc-500">
                     {(podcastUsage?.used ?? 0)} of {dailyPodcastLimit} podcasts used today
                   </p>

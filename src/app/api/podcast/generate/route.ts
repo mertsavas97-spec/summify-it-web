@@ -228,16 +228,10 @@ function routeEligibility(
 
 export async function POST(request: Request) {
   const user = await getOptionalUser();
-  if (!user) {
-    return NextResponse.json(
-      { success: false, error: "Sign in to generate podcast discussions." },
-      { status: 401 },
-    );
-  }
-
-  const profile = await getProfile(user.id);
-  const planId = resolveEntitlementPlanIdFromProfile(profile);
-  if (!canUsePodcastDiscussionMode(planId, hasActivePaidEntitlement(profile ?? undefined))) {
+  const body = (await request.json().catch(() => null)) as PodcastGenerateBody | null;
+  const profile = user ? await getProfile(user.id) : null;
+  const planId = user ? resolveEntitlementPlanIdFromProfile(profile) : "free";
+  if (user && !canUsePodcastDiscussionMode(planId, hasActivePaidEntitlement(profile ?? undefined))) {
     return NextResponse.json(
       { success: false, error: "Podcast Mode is available on Pro, Scholar, and Team plans." },
       { status: 403 },
@@ -245,7 +239,7 @@ export async function POST(request: Request) {
   }
 
   const dailyLimit = getDailyPodcastLimit(planId);
-  const usageCheck = await checkAndPreparePodcastUsage(user.id, dailyLimit);
+  const usageCheck = user ? await checkAndPreparePodcastUsage(user.id, dailyLimit) : null;
   if (usageCheck && !usageCheck.allowed) {
     return NextResponse.json(
       { error: "daily_limit_reached", limit: usageCheck.limit, used: usageCheck.used },
@@ -253,12 +247,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json().catch(() => null)) as PodcastGenerateBody | null;
   const regenerate = Boolean(body?.regenerate);
   let analysisInput: PodcastDiscussionAnalysisInput | null = null;
   let cachedPodcast: PodcastDiscussionMetadata | undefined;
 
   if (body?.analysisId && body.analysisId !== "live-analysis") {
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Sign in to use saved analyses." }, { status: 401 });
+    }
     const row = await getAnalysisById(body.analysisId, user.id);
     if (!row) {
       return NextResponse.json({ success: false, error: "Analysis not found." }, { status: 404 });
@@ -354,12 +350,12 @@ export async function POST(request: Request) {
       }
 
       scriptCached = false;
-      if (body?.analysisId && body.analysisId !== "live-analysis") {
+      if (user && body?.analysisId && body.analysisId !== "live-analysis") {
         await mergeAnalysisPodcastDiscussion(body.analysisId, user.id, podcast);
       }
       await trackProductEvent({
         eventType: regenerate ? "podcast_script_regenerated" : "podcast_script_generated",
-        userId: user.id,
+        userId: user?.id ?? null,
         sourceType: analysisInput.sourceType ?? null,
         intelligenceMode: analysisInput.intelligenceMode ?? null,
         plan: planId,
@@ -377,7 +373,7 @@ export async function POST(request: Request) {
       const audio = await generatePodcastDiscussionAudio(podcast);
       await trackProductEvent({
         eventType: regenerate ? "podcast_audio_regenerated" : "podcast_audio_generated",
-        userId: user.id,
+        userId: user?.id ?? null,
         sourceType: analysisInput.sourceType ?? null,
         intelligenceMode: analysisInput.intelligenceMode ?? null,
         plan: planId,
@@ -392,7 +388,9 @@ export async function POST(request: Request) {
         },
         insertViaServiceRole: true,
       });
-      await incrementPodcastUsage(user.id);
+      if (user) {
+        await incrementPodcastUsage(user.id);
+      }
       return NextResponse.json({
         success: true,
         podcast,
@@ -416,7 +414,7 @@ export async function POST(request: Request) {
       });
       await trackProductEvent({
         eventType: "podcast_audio_failed",
-        userId: user.id,
+        userId: user?.id ?? null,
         sourceType: analysisInput.sourceType ?? null,
         intelligenceMode: analysisInput.intelligenceMode ?? null,
         plan: planId,
@@ -436,7 +434,7 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       analysisId: body?.analysisId,
-      userId: user.id,
+      userId: user?.id ?? null,
       sourceType: analysisInput?.sourceType,
     });
     const message = error instanceof Error ? error.message : "Podcast generation failed.";
