@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -115,6 +116,7 @@ export default function RootLayout({
       <body className="min-h-full bg-[#0e1016] text-zinc-100">
         <meta name="apple-itunes-app" content="app-id=6770321706" />
         <GoogleAnalytics />
+        <Analytics />
 
         <Script
           src="https://analytics.ahrefs.com/analytics.js"
