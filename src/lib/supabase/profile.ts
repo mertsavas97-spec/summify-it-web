@@ -6,6 +6,10 @@ import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { Profile, UserLimits } from "@/types/database";
 import { devLog, devWarn } from "@/server/logging";
 import { createClientIfConfigured } from "@/lib/supabase/server";
+import {
+  notifyInternalNonBlocking,
+  shouldSkipInternalNotificationsForEmail,
+} from "@/server/internalNotifications";
 
 function utcToday(): string {
   return new Date().toISOString().slice(0, 10);
@@ -138,6 +142,24 @@ export async function ensureProfileForUser(passedUser?: User): Promise<Profile |
 
     profile = data as Profile | null;
     profileError = error;
+
+      // New user = first successful profile insert.
+      // Never block auth callback; fail silently.
+      if (!error && profile && !shouldSkipInternalNotificationsForEmail(email)) {
+        notifyInternalNonBlocking({
+          title: "New Summify user",
+          summary: `New Summify user: ${email ?? "unknown"}`,
+          slackEmoji: "👤",
+          pushoverTitle: "New Summify user",
+          context: {
+            Email: email,
+            "Auth provider": (user.app_metadata as { provider?: string } | null)?.provider ??
+              (user.app_metadata as { providers?: string[] } | null)?.providers?.[0] ??
+              null,
+            Timestamp: new Date().toISOString(),
+          },
+        });
+      }
 
     if (error?.code === "23505") {
       const { data: retry, error: retryError } = await supabase

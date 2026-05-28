@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
+import { SendTestNotificationButton } from "@/components/admin/SendTestNotificationButton";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -67,6 +68,7 @@ export default async function AdminDashboardPage() {
                 <Button href="/dashboard/admin/blog" size="sm" variant="secondary">
                   Blog CMS
                 </Button>
+                <SendTestNotificationButton />
                 <Button href="/dashboard" size="sm" variant="secondary">
                   Back to workspace
                 </Button>

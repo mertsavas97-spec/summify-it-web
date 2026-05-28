@@ -38,6 +38,10 @@ import {
   recordAnalysisCompleted,
   recordAnalysisFailed,
 } from "@/server/usage/recordAnalysisAnalytics";
+import {
+  notifyInternalNonBlocking,
+  shouldSkipInternalNotificationsForEmail,
+} from "@/server/internalNotifications";
 import { devError, devLog, logServerError } from "@/server/logging";
 import { analyzeLimiter } from "@/lib/rateLimit";
 
@@ -344,6 +348,51 @@ export async function POST(request: Request) {
         intelligence.cleanedText?.length ?? intelligence.analysisLimits?.extractedCharacters ?? analyzeRawTextLength,
       pagesProcessed: intelligence.analysisLimits?.extractedPages,
     });
+
+    // Internal notifications: only on fully-successful completion.
+    // This executes after orchestrator success + (best-effort) persistence + analytics tracking.
+    // Never include sensitive content (text, summaries, URLs) — only metadata.
+    const actorEmail = currentUser?.email ?? null;
+    const skipInternal = shouldSkipInternalNotificationsForEmail(actorEmail);
+    if (!skipInternal) {
+      const sourceType = sourceHint
+        ? sourceHint === "file"
+          ? "PDF/File"
+          : sourceHint === "url"
+            ? "URL"
+            : sourceHint === "youtube"
+              ? "YouTube"
+              : "Text"
+        : null;
+
+      const sourceTitle =
+        sourceContext?.sourceKind === "presentation"
+          ? sourceContext.fileName
+          : sourceContext?.sourceKind === "youtube"
+            ? (sourceContext.title?.trim() || `YouTube · ${sourceContext.videoId}`)
+            : null;
+
+      const intelligenceModeLabel = getIntelligenceModeById(intelligenceModeId)?.label;
+      const characterCount =
+        intelligence.cleanedText?.length ??
+        intelligence.analysisLimits?.extractedCharacters ??
+        analyzeRawTextLength;
+
+      notifyInternalNonBlocking({
+        title: "New Summify analysis",
+        summary: "New Summify analysis completed.",
+        slackEmoji: "🧠",
+        pushoverTitle: "New analysis",
+        context: {
+          "Source type": sourceType,
+          "File / title": sourceTitle,
+          "Intelligence mode": intelligenceModeLabel ?? intelligenceModeId,
+          Actor: actorEmail ? `User · ${actorEmail}` : "Guest",
+          "Character count": typeof characterCount === "number" ? characterCount : null,
+          Timestamp: new Date().toISOString(),
+        },
+      });
+    }
 
     const jsonResponse = NextResponse.json(response);
     if (!currentUser) {
