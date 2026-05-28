@@ -281,9 +281,9 @@ export function AnalysisQuizSession({
           </div>
         </>
       ) : (
-        <>
+        <div className="mt-4 space-y-4" data-quiz-feedback>
           <div
-            className={`mt-4 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
               wasCorrect
                 ? "border-emerald-500/25 bg-emerald-950/25 text-emerald-200"
                 : "border-rose-500/25 bg-rose-950/20 text-rose-200"
@@ -296,20 +296,39 @@ export function AnalysisQuizSession({
             )}
             {wasCorrect ? "Correct" : "Not quite"}
           </div>
-          <p className="mt-4 text-sm leading-relaxed text-zinc-300">
-            <span className="font-medium text-zinc-100">Answer {active.correctOptionKey}: </span>
-            {active.options.find((o) => o.key === active.correctOptionKey)?.text}
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-400">{active.explanation}</p>
+
+          <div className="rounded-xl border border-white/[0.07] bg-black/25 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+              Correct answer
+            </p>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-200">
+              <span className="font-semibold text-zinc-50">{active.correctOptionKey}. </span>
+              {active.options.find((o) => o.key === active.correctOptionKey)?.text}
+            </p>
+
+            <p className="mt-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+              Explanation
+            </p>
+            <div
+              className="mt-2 max-h-[40vh] overflow-y-auto pr-1 [overflow-wrap:anywhere]"
+              data-quiz-explanation
+            >
+              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-300">
+                {active.explanation}
+              </p>
+            </div>
+          </div>
+
           {active.sourceTrace ? (
             <LearnSourceTracePanel trace={active.sourceTrace} className="mt-4" />
           ) : null}
-          <div className="mt-6">
+
+          <div className="sticky bottom-0 -mx-4 mt-2 border-t border-white/[0.06] bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent px-4 pb-1 pt-3 sm:-mx-6 sm:px-6">
             <Button type="button" size="sm" onClick={goNext}>
               {index + 1 >= questions.length ? "See results" : "Next question"}
             </Button>
           </div>
-        </>
+        </div>
       )}
     </section>
   );

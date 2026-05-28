@@ -30,6 +30,12 @@ const EXTRACTION_TYPE_TO_PROVIDER: Record<string, LearnCardProviderType> = {
 const QUESTION_MAX = 80;
 const ANSWER_MAX = 160;
 
+function containsNonEnglishFragment(text: string): boolean {
+  // Detect common Turkish characters that indicate untranslated content
+  const turkishWordPattern = /[ğışöüçĞİŞÖÜÇ]{2,}|ş[a-z]+|ğ[a-z]+/;
+  return turkishWordPattern.test(text);
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -347,6 +353,21 @@ export function parseLearnCardsGenerationResponse(
           ? `${generated.question}\n---\n${generated.answer}`
           : generated.answer,
     };
+
+    // Monitoring only: warn about possible untranslated fragments leaking into Q/A.
+    // Do NOT reject automatically — this is a heuristic.
+    if (containsNonEnglishFragment(generated.question)) {
+      console.warn(
+        "[learn-cards] Possible untranslated fragment detected:",
+        generated.question.slice(0, 80),
+      );
+    }
+    if (containsNonEnglishFragment(generated.answer)) {
+      console.warn(
+        "[learn-cards] Possible untranslated fragment detected:",
+        generated.answer.slice(0, 80),
+      );
+    }
 
     for (const name of names) {
       personCardCount.set(name, (personCardCount.get(name) ?? 0) + 1);

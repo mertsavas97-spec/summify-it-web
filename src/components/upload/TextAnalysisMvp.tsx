@@ -94,6 +94,8 @@ type TextAnalysisMvpProps = {
 
 type ResultTabId = "summary" | "learn" | "quiz" | "audio" | "podcast";
 
+type ResultTabTone = "base" | "audio" | "podcast";
+
 const RESULT_TABS: {
   id: ResultTabId;
   label: string;
@@ -316,15 +318,51 @@ function ResultTabButton({
   tab,
   active,
   accessLabel,
+  tone = "base",
   onSelect,
 }: {
   tab: (typeof RESULT_TABS)[number];
   active: boolean;
   accessLabel?: string;
+  tone?: ResultTabTone;
   onSelect: (tab: ResultTabId) => void;
 }) {
   const Icon = tab.icon;
   const isPremium = Boolean(tab.premium);
+
+  const toneClasses: Record<ResultTabTone, { active: string; inactive: string; icon: string }> = {
+    base: {
+      active:
+        "border-violet-400/35 bg-violet-500/12 text-violet-50 shadow-[0_0_22px_rgba(139,92,246,0.13)]",
+      inactive:
+        isPremium
+          ? "border-violet-400/12 bg-violet-500/[0.035] text-zinc-300 hover:border-violet-400/25 hover:bg-violet-500/[0.07]"
+          : "border-white/[0.06] bg-white/[0.018] text-zinc-400 hover:border-white/[0.11] hover:bg-white/[0.035] hover:text-zinc-200",
+      icon: active || isPremium
+        ? "border-violet-400/25 bg-violet-500/12 text-violet-200"
+        : "border-white/[0.06] bg-black/20 text-zinc-500",
+    },
+    audio: {
+      active:
+        "border-sky-400/35 bg-sky-500/12 text-sky-50 shadow-[0_0_22px_rgba(56,189,248,0.14)]",
+      inactive:
+        "border-sky-400/15 bg-sky-500/[0.045] text-zinc-200 hover:border-sky-300/30 hover:bg-sky-500/[0.07]",
+      icon: active
+        ? "border-sky-300/35 bg-sky-500/15 text-sky-200"
+        : "border-sky-400/18 bg-sky-950/35 text-sky-200/80",
+    },
+    podcast: {
+      active:
+        "border-fuchsia-400/35 bg-fuchsia-500/10 text-fuchsia-50 shadow-[0_0_22px_rgba(232,121,249,0.12)]",
+      inactive:
+        "border-fuchsia-400/15 bg-fuchsia-500/[0.04] text-zinc-200 hover:border-fuchsia-300/30 hover:bg-fuchsia-500/[0.065]",
+      icon: active
+        ? "border-fuchsia-300/30 bg-fuchsia-500/12 text-fuchsia-200"
+        : "border-fuchsia-400/18 bg-fuchsia-950/35 text-fuchsia-200/80",
+    },
+  };
+
+  const resolvedTone = toneClasses[tone];
 
   return (
     <button
@@ -332,12 +370,8 @@ function ResultTabButton({
       role="tab"
       aria-selected={active}
       onClick={() => onSelect(tab.id)}
-      className={`group relative min-w-[112px] shrink-0 snap-start overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all sm:min-w-0 sm:flex-1 ${
-        active
-          ? "border-violet-400/35 bg-violet-500/12 text-violet-50 shadow-[0_0_22px_rgba(139,92,246,0.13)]"
-          : isPremium
-            ? "border-violet-400/12 bg-violet-500/[0.035] text-zinc-300 hover:border-violet-400/25 hover:bg-violet-500/[0.07]"
-            : "border-white/[0.06] bg-white/[0.018] text-zinc-400 hover:border-white/[0.11] hover:bg-white/[0.035] hover:text-zinc-200"
+      className={`group relative min-w-0 overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all ${
+        active ? resolvedTone.active : resolvedTone.inactive
       }`}
     >
       {isPremium && (
@@ -351,17 +385,13 @@ function ResultTabButton({
       <span className="relative flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2">
           <span
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
-              active || isPremium
-                ? "border-violet-400/25 bg-violet-500/12 text-violet-200"
-                : "border-white/[0.06] bg-black/20 text-zinc-500"
-            }`}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${resolvedTone.icon}`}
           >
             <Icon className="h-3.5 w-3.5" />
           </span>
           <span className="min-w-0">
             {tab.eyebrow ? (
-              <span className="hidden text-[9px] font-medium uppercase tracking-[0.12em] text-violet-300/75 md:block">
+              <span className="hidden text-[9px] font-medium uppercase tracking-[0.12em] text-zinc-200/70 md:block">
                 {tab.eyebrow}
               </span>
             ) : null}
@@ -588,27 +618,36 @@ function PostAnalysisResultShell({
 
       <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
 
-      <div className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-1.5 shadow-sm shadow-black/20 backdrop-blur">
-        <div
-          className="flex snap-x gap-1.5 overflow-x-auto overscroll-x-contain pb-0.5"
-          role="tablist"
-          aria-label="Analysis result sections"
-        >
-          {RESULT_TABS.map((tab) => (
-            <ResultTabButton
-              key={tab.id}
-              tab={tab}
-              active={activeTab === tab.id}
-              accessLabel={
-                tab.premium === "audio"
-                  ? audioUnlocked ? "Pro" : "Upgrade"
-                  : tab.premium === "podcast"
-                    ? podcastUnlocked ? "Pro" : "Upgrade"
-                    : undefined
-              }
-              onSelect={setActiveTab}
-            />
-          ))}
+      <div className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-2 shadow-sm shadow-black/20 backdrop-blur">
+        <div className="grid gap-2" role="tablist" aria-label="Analysis result sections">
+          <div className="grid grid-cols-3 gap-2">
+            {RESULT_TABS.filter((t) => t.id === "summary" || t.id === "learn" || t.id === "quiz").map((tab) => (
+              <ResultTabButton
+                key={tab.id}
+                tab={tab}
+                active={activeTab === tab.id}
+                onSelect={setActiveTab}
+              />
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {RESULT_TABS.filter((t) => t.id === "audio" || t.id === "podcast").map((tab) => (
+              <ResultTabButton
+                key={tab.id}
+                tab={tab}
+                active={activeTab === tab.id}
+                tone={tab.id === "audio" ? "audio" : "podcast"}
+                accessLabel={
+                  tab.premium === "audio"
+                    ? audioUnlocked ? "Pro" : "Upgrade"
+                    : tab.premium === "podcast"
+                      ? podcastUnlocked ? "Pro" : "Upgrade"
+                      : undefined
+                }
+                onSelect={setActiveTab}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -695,7 +734,6 @@ export function TextAnalysisMvp({
   entitlementPlanId,
   isAuthenticated,
   isPaidActive = false,
-  limitNotice,
   actionModules,
   practiceModule,
   renderPracticeModule,
@@ -704,7 +742,6 @@ export function TextAnalysisMvp({
 }: TextAnalysisMvpProps) {
   const inputLimits = getClientAnalysisInputLimits(entitlementPlanId);
   const [loading, setLoading] = useState(false);
-  const [analysisLimitNotice, setAnalysisLimitNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [failureDebug, setFailureDebug] = useState<AnalyzeApiDebugMetadata | null>(
     null,
@@ -819,7 +856,6 @@ export function TextAnalysisMvp({
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
       onSavedAnalysisIdChange?.(analysis.savedAnalysisId ?? null);
-      setAnalysisLimitNotice(analysis.limitNotice ?? null);
       onIntelligenceReady?.(analysis.intelligence);
       onAnalysisComplete?.(true);
     } catch {
@@ -852,7 +888,11 @@ export function TextAnalysisMvp({
   const showUpgradeCopy =
     error?.includes("free analyses") || error?.includes("Scholar or Pro");
 
-  if (deferUntilAnalysisActive && !loading && !displayResult && !error && !analysisLimitNotice) {
+  // In the /upload source-ready shell, quota/paywall warnings must render in the top
+  // source-ready action area (UploadWorkspace) — not inside this lower “Analysis workspace” card.
+  // We still keep this component mounted so it can wire `onAnalyzeReady`, but we avoid rendering
+  // any pre-analysis UI (including limit notices) until analysis is actually running or complete.
+  if (deferUntilAnalysisActive && !loading && !displayResult && !error) {
     return null;
   }
 
@@ -877,11 +917,7 @@ export function TextAnalysisMvp({
       </div>
       )}
 
-      {!displayResult && (limitNotice || analysisLimitNotice) && (
-        <p className="mt-4 rounded-lg border border-amber-500/20 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
-          {analysisLimitNotice ?? limitNotice}
-        </p>
-      )}
+      {/* Intentionally do not render quota/limit notices here. (See deferUntilAnalysisActive guard above.) */}
 
       {displayMeta && displayResult && (
         <PostAnalysisResultShell

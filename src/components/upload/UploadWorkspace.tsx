@@ -69,7 +69,6 @@ import {
   PodcastWorkspaceCtas,
 } from "@/components/podcast/PodcastWorkspaceCtas";
 import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
-import { WorkspaceUsageWarning } from "./WorkspaceUsageWarning";
 import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 
@@ -363,6 +362,12 @@ function SourceReadyActionBar({
   const selectedMode = getIntelligenceModeById(selectedModeId);
   const selectedModeLabel = selectedMode?.label ?? selectedModeId;
 
+  const isDailyFreeLimit =
+    runAnalysisHelper.includes("You've used today's 3 free analyses") ||
+    runAnalysisHelper.includes("You’ve used today’s 3 free analyses");
+
+  const shouldShowDailyLimit = !canRun && isDailyFreeLimit;
+
   return (
     <section
       className="rounded-2xl border border-violet-400/15 bg-[#11141d]/75 p-3.5 shadow-[0_0_24px_rgba(139,92,246,0.08)] backdrop-blur sm:p-4"
@@ -375,19 +380,63 @@ function SourceReadyActionBar({
             Source ready · {selectedModeLabel} selected
           </p>
         </div>
-        <Button
-          type="button"
-          size="md"
-          disabled={!canRun || isAnalyzing}
-          onClick={onRunAnalysis}
-          className="shadow-violet-500/25 sm:min-w-[148px]"
-        >
-          {isAnalyzing ? "Analyzing..." : "Run analysis"}
-        </Button>
+
+        {!canRun && isDailyFreeLimit ? (
+          <Link
+            href="/pricing"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-amber-400/25 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 px-4 py-3 text-sm font-semibold text-amber-50 shadow-[0_0_0_1px_rgba(245,158,11,0.10)] transition-colors hover:border-amber-300/40 hover:bg-amber-950/55 focus:outline-none focus:ring-2 focus:ring-amber-300/30 focus:ring-offset-2 focus:ring-offset-zinc-950 sm:w-auto sm:min-w-[168px]"
+          >
+            View plans
+          </Link>
+        ) : (
+          <Button
+            type="button"
+            size="md"
+            disabled={!canRun || isAnalyzing}
+            onClick={onRunAnalysis}
+            className="shadow-violet-500/25 sm:min-w-[148px]"
+          >
+            {isAnalyzing ? "Analyzing..." : "Run analysis"}
+          </Button>
+        )}
       </div>
-      {!canRun && (
+
+      {!shouldShowDailyLimit && !canRun ? (
         <p className="mt-2 text-[11px] text-zinc-600">{runAnalysisHelper}</p>
-      )}
+      ) : null}
+    </section>
+  );
+}
+
+function isDailyFreeLimitCopy(message: string): boolean {
+  return (
+    message.includes("You've used today's 3 free analyses") ||
+    message.includes("You’ve used today’s 3 free analyses")
+  );
+}
+
+function SourceReadyDailyLimitCard({ onViewPlans }: { onViewPlans?: () => void }) {
+  return (
+    <section
+      className="w-full rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 px-4 py-4 shadow-[0_0_0_1px_rgba(245,158,11,0.08)] sm:px-5"
+      role="status"
+      aria-live="polite"
+      data-workspace-daily-limit
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-amber-50">Daily free analysis limit reached</p>
+          <p className="mt-1 text-sm text-amber-100/80">You’ve used today’s 3 free analyses.</p>
+          <p className="mt-2 text-xs text-zinc-400">Sign in or upgrade to continue.</p>
+        </div>
+        <Link
+          href="/pricing"
+          onClick={onViewPlans}
+          className="inline-flex w-full items-center justify-center rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-50 transition-colors hover:border-amber-200/45 hover:bg-amber-400/15 focus:outline-none focus:ring-2 focus:ring-amber-300/35 focus:ring-offset-2 focus:ring-offset-zinc-950 sm:w-auto sm:min-w-[160px]"
+        >
+          View plans
+        </Link>
+      </div>
     </section>
   );
 }
@@ -1458,6 +1507,11 @@ export function UploadWorkspace() {
   const completedAnalysisResult =
     hasAnalysisResult ? latestAnalysisResult ?? injectedAnalysis?.result ?? null : null;
   const isCompletedResultWorkspace = Boolean(completedAnalysisResult);
+  const shouldRenderAnalysisWorkspace =
+    hasUsableSource ||
+    isGeneratingAnalysisWorkspace ||
+    Boolean(completedAnalysisResult) ||
+    hasAnalysisResult;
 
   return (
     <div
@@ -1481,12 +1535,14 @@ export function UploadWorkspace() {
             </p>
           </div>
           <div className="lg:text-right">
-            <Link
-              href="/login?returnTo=/upload"
-              className="text-xs font-medium text-violet-300/80 transition-colors hover:text-violet-200"
-            >
-              Sign in to save analyses
-            </Link>
+            {!workspaceEntitlement.isAuthenticated ? (
+              <Link
+                href="/login?returnTo=/upload"
+                className="text-xs font-medium text-violet-300/80 transition-colors hover:text-violet-200"
+              >
+                Sign in to save analyses
+              </Link>
+            ) : null}
             {!isEmptyWorkspace && (
               <TrustSignals variant="compact" className="mt-3 lg:justify-end" />
             )}
@@ -1515,6 +1571,14 @@ export function UploadWorkspace() {
                 rawText={rawText}
                 onReplace={handleReplaceSource}
               />
+
+              {/* Daily free analysis limit warning must be rendered here (top source-ready area),
+                  directly under the source card and above the mode selection. */}
+              {!workspaceEntitlement.isPaidActive &&
+              !canRunSourceReadyAnalysis &&
+              isDailyFreeLimitCopy(runAnalysisHelper) ? (
+                <SourceReadyDailyLimitCard />
+              ) : null}
               <SourceReadyActionBar
                 selectedModeId={analysisMode}
                 isAnalyzing={isAnalyzing}
@@ -1622,8 +1686,6 @@ export function UploadWorkspace() {
                   </Button>
                   <span className="text-xs text-zinc-400">{runAnalysisHelper}</span>
                 </div>
-
-                <WorkspaceUsageWarning className="mt-3" />
               </div>
             )}
 
@@ -1661,7 +1723,7 @@ export function UploadWorkspace() {
             </section>
           )}
 
-          {!isEmptyWorkspace && (
+          {shouldRenderAnalysisWorkspace && (
             <TextAnalysisMvp
               entitlementPlanId={workspaceEntitlement.entitlementPlanId}
               isAuthenticated={workspaceEntitlement.isAuthenticated}

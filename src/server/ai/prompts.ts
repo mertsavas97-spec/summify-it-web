@@ -1,22 +1,27 @@
 import type { TextAnalysisMode } from "./schemas";
-import { ANALYSIS_OUTPUT_LANGUAGE_RULES } from "./output-language";
+import {
+  ANALYSIS_OUTPUT_LANGUAGE_RULES,
+  NATIVE_ENGLISH_EDITORIAL_STYLE_POLICY,
+  OUTPUT_QA_CHECKLIST,
+} from "./output-language";
 import type { LearnDepthHint, OutputDepth } from "@/server/intelligence/types";
+import { DEFAULT_OUTPUT_LANGUAGE } from "@/config/language";
 
 /** Shared JSON-only contract — identical for Groq and Gemini. */
 export const JSON_OUTPUT_CONTRACT = `Respond with a single JSON object only (no markdown fences, no preamble).
 Use exactly these keys: title, summary, keyInsights, risksOrWarnings, actionItems, learnCards.
-All string values must be fluent English (proper nouns may keep source spelling).`;
+All string values must be fluent, native ${DEFAULT_OUTPUT_LANGUAGE} (proper nouns may keep source spelling).`;
 
 const SOURCE_GROUNDING_RULES = `Source grounding (required):
 - Use concrete entities, brand names, section titles, numbers, and dates from the provided text.
-- Name specific concepts from the source; express them in English analysis (keep proper nouns in original spelling).
+- Name specific concepts from the source; express them in ${DEFAULT_OUTPUT_LANGUAGE} analysis (keep proper nouns in original spelling).
 - Knowledge-layer excerpts may be in the source language — interpret them; do not paste non-English sentences into summary or insights.
 - Banned unless the document literally says them: "engaging experience", "enhance productivity", "improve engagement", "drive innovation", "best practices", "leverage synergies".
-- When the knowledge layer lists entities, sections, or distinctive phrases, use them for grounding; write analysis in English.`;
+- When the knowledge layer lists entities, sections, or distinctive phrases, use them for grounding; write analysis in ${DEFAULT_OUTPUT_LANGUAGE}.`;
 
 const RISK_GROUNDING_RULES = `Risk grounding for risksOrWarnings:
 - Every risk must be tied to something stated or clearly implied in the document.
-- If inferred, prefix with "Potential risk:" and cite what triggered the inference.
+- If inferred, state the trigger (what in the source caused the inference). Avoid templated prefixes like "Potential risk:".
 - Do not list generic logistics, budget, timing, stakeholder, production, legal, or compliance risks unless the source mentions those topics.
 - If the adaptive plan suppresses risks, use an empty array [] unless the source explicitly discusses material downside.
 - If no clear risks exist and risks are NOT suppressed by the plan, prefer [] over filler — only use "The source does not provide enough risk signals." when the plan expects a risk section and the source is silent.
@@ -70,7 +75,7 @@ const LEARN_CARDS_DEFERRED = `Learn cards / flashcards:
 - Flashcards are generated in a separate precision-extraction pass; do not create learnCards here.`;
 
 const YOUTUBE_TRANSCRIPT_RULES = `YouTube transcript rules (when source is spoken video):
-- Transcript may be any language; write all analysis fields in fluent English (not a line-by-line translation).
+- Transcript may be any language; write all analysis fields in fluent ${DEFAULT_OUTPUT_LANGUAGE} (not a line-by-line translation).
 - This is a TRANSCRIPT of speech, not a polished article. Organize messy spoken content into structured insight.
 - Write like editorial notes, documentary analysis, or lecture intelligence — NOT a narrator recap.
 - BANNED framing: "the speaker discusses…", "the video talks about…", "this video covers…", "the presenter explains…".
@@ -87,7 +92,7 @@ const YOUTUBE_MODE_LENSES: Record<TextAnalysisMode, string> = {
 };
 
 const PRESENTATION_RULES = `Presentation deck rules (when source is a slide deck):
-- Slide text may be any language; write all analysis fields in fluent English (abstract themes, do not copy fragment labels verbatim).
+- Slide text may be any language; write all analysis fields in fluent ${DEFAULT_OUTPUT_LANGUAGE} (abstract themes, do not copy fragment labels verbatim).
 - This is SLIDE content in order — not a polished article or essay.
 - Infer narrative, argument, and structure from slide sequence; do not merge unrelated bullets into faux paragraphs.
 - Identify: core narrative, weak logic gaps, repeated themes, missing proof/KPIs (if relevant), audience fit, slide flow, strategic clarity.
@@ -102,8 +107,8 @@ const PRESENTATION_MODE_LENSES: Record<TextAnalysisMode, string> = {
 };
 
 const OUTPUT_FIELD_RULES = `Output field rules (same JSON shape for every mode):
-- All string fields must be English (see output language rules).
-- title: specific to this document (names, parties, or topics); English prose with preserved proper nouns
+- All string fields must be ${DEFAULT_OUTPUT_LANGUAGE} (see output language rules).
+- title: specific to this document (names, parties, or topics); ${DEFAULT_OUTPUT_LANGUAGE} prose with preserved proper nouns
 - summary: 2–4 paragraphs, document-specific; open with the document's actual subject, not "this document discusses…"
 - keyInsights: 3–6 non-empty bullets with concrete details (numbers, names, dates, section references); never omit or leave empty
 - risksOrWarnings: follow risk grounding rules and adaptive plan (0–5 items; [] allowed)
@@ -172,6 +177,8 @@ Analyze the user's document and return structured JSON only.
 
 ${ANALYSIS_OUTPUT_LANGUAGE_RULES}
 
+${NATIVE_ENGLISH_EDITORIAL_STYLE_POLICY}
+
 Selected backend family: ${mode}
 ${intelligenceModeBlock ? `${intelligenceModeBlock}\n` : ""}${cognitionBlock}${MODE_ANALYSIS_LENSES[mode]}${youtubeBlock}${presentationBlock}
 
@@ -187,11 +194,13 @@ ${ANTI_GENERIC_GUARDRAILS}${depthHints}
 
 When a knowledge layer or document profile is provided, treat entities, sections, and distinctive phrases as primary grounding — verify against excerpts.
 
+${OUTPUT_QA_CHECKLIST}
+
 ${JSON_OUTPUT_CONTRACT}
 ${JSON_SCHEMA_HINT}`;
 }
 
 /** Pre-compacted user message from the intelligence layer (preferred). */
 export function buildUserPromptFromCompacted(compactedUserPrompt: string): string {
-  return `${compactedUserPrompt}\n\n${ANALYSIS_OUTPUT_LANGUAGE_RULES}\n\n${JSON_OUTPUT_CONTRACT}`;
+  return `${compactedUserPrompt}\n\n${ANALYSIS_OUTPUT_LANGUAGE_RULES}\n\n${NATIVE_ENGLISH_EDITORIAL_STYLE_POLICY}\n\n${OUTPUT_QA_CHECKLIST}\n\n${JSON_OUTPUT_CONTRACT}`;
 }

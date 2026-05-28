@@ -4,7 +4,12 @@
 
 import { extractJsonFromText } from "./validate-response";
 
-export const PHASE1_FACT_INVENTORY_SYSTEM = `You are a fact extraction engine. Your only output is a JSON object.
+export const PHASE1_FACT_INVENTORY_SYSTEM = `CRITICAL: You are extracting facts from a source that may be in any language. All extracted facts in the inventory MUST be written in fluent native English.
+Do NOT preserve source-language phrasing in the inventory.
+Translate and contextualize all extracted content into English.
+Exception: proper nouns (person names, club names, city names, film titles) should be kept as-is.
+
+You are a fact extraction engine. Your only output is a JSON object.
 
 Extract every verifiable, specific fact from the content below.
 Be exhaustive, not selective: extract every named person, date, number, event, and cause-effect pair you can find.

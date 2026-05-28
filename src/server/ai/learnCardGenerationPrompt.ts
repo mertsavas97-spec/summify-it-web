@@ -16,6 +16,18 @@ ${normalizeLearningLanguage()}
 
 ${sourceLanguageGroundingNote()}
 
+CRITICAL OUTPUT LANGUAGE RULE:
+All card content MUST be written in fluent native English.
+This applies to:
+- question field
+- answer field
+- topic field
+- Any other text field
+
+If the fact inventory contains non-English fragments, translate them to English before using them in cards.
+Do NOT copy non-English phrases into card questions or answers.
+Exception: proper nouns like person names, club names, city names stay in their standard form.
+
 RULES — all mandatory:
 
 Question format:
@@ -67,6 +79,9 @@ export function buildPhase2FlashcardUserPrompt(input: Phase2FlashcardUserInput):
   const language = input.language || getLearningOutputLanguageLabel();
   return `Generate ${input.cardCount} flashcards.
 Language: ${language} (required — all question and answer text)
+
+Write all questions and answers in English.
+Do not use Turkish, Spanish, German, or any other language in the output even if the source was in that language.
 
 Use ONLY facts from this inventory — do not invent or infer:
 

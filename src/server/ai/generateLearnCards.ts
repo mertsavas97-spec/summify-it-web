@@ -30,6 +30,16 @@ import { devLog, devWarn } from "@/server/logging";
 const PHASE1_MAX_TOKENS = 2000;
 const PHASE2_MAX_TOKENS = 1000;
 
+const PHASE1_FACT_INVENTORY_USER_RULES = `IMPORTANT: Write all inventory entries in English.
+For Turkish or other non-English sources:
+- "3 Temmuz süreci" or "3 Temmuz kumpası" → "the July 3, 2011 match-fixing investigations"
+- "kuruluş yıldönümü" → "founding anniversary" or "centenary"
+- "şike" → "match-fixing allegations"
+- "kumpas" → "alleged conspiracy" or "politically charged investigation"
+- "kurşunlanma" → "armed attack"
+- "şampiyonluk" → "league title" or "championship"
+- Do not leave any Turkish or other non-English words in the inventory output unless they are proper nouns.`;
+
 function getGroqClient(): Groq {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error("GROQ_API_KEY is not configured.");
@@ -95,11 +105,12 @@ async function extractFactInventory(
   content: string,
 ): Promise<FactInventory | null> {
   const userContent = content.slice(0, CHUNKED_ANALYSIS_SEGMENT_CHARS);
+  const userPrompt = `${PHASE1_FACT_INVENTORY_USER_RULES}\n\nCONTENT:\n${userContent}`;
   try {
     const raw = await callProviderJson(
       provider,
       PHASE1_FACT_INVENTORY_SYSTEM,
-      userContent,
+      userPrompt,
       PHASE1_MAX_TOKENS,
     );
     return parseFactInventoryResponse(raw);
