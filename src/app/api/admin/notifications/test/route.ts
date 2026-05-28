@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminSession } from "@/lib/admin/requireAdmin";
-import { sendPushoverAlert, sendSlackAlert } from "@/server/alerts/notifiers";
-
-type NotificationMissingConfigCode =
-  | "slack_not_configured"
-  | "pushover_not_configured"
-  | "notifications_not_configured";
+import { notificationProviders } from "@/server/notifications/providers";
 
 function getEnvLabel(): string | null {
   const raw =
@@ -18,17 +13,28 @@ function getEnvLabel(): string | null {
   return trimmed ? trimmed : null;
 }
 
-function buildMessage(): { title: string; summary: string } {
+function buildTestPayload(params: {
+  triggeredByEmail: string | null;
+}): { title: string; body: string; metadata: Record<string, string> } {
   const timestamp = new Date().toISOString();
   const env = getEnvLabel();
-  const contextBits = [env ? `env=${env}` : null, `time=${timestamp}`].filter(Boolean);
-  const suffix = contextBits.length ? ` (${contextBits.join(", ")})` : "";
-
   return {
-    title: "Summify test notification",
-    summary: `Summify test notification${suffix}`,
+    title: "Summify notification test",
+    body: "Test notification from Summify admin dashboard.",
+    metadata: {
+      ...(env ? { environment: env } : {}),
+      timestamp,
+      ...(params.triggeredByEmail ? { triggeredBy: params.triggeredByEmail } : {}),
+    },
   };
 }
+
+type ProviderTestResult = {
+  provider: string;
+  configured: boolean;
+  ok: boolean;
+  errorCode: string | null;
+};
 
 /**
  * POST /api/admin/notifications/test
@@ -37,46 +43,60 @@ function buildMessage(): { title: string; summary: string } {
  * Never returns secret values.
  */
 export async function POST() {
+  let adminEmail: string | null = null;
   try {
-    await requireAdminSession();
+    const user = await requireAdminSession();
+    adminEmail = user.email ?? null;
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { title, summary } = buildMessage();
-  const alert = {
-    key: "deployment_health_failure" as const,
-    title,
-    severity: "info" as const,
-    summary,
-    slackEmoji: ":bell:",
-    pushoverTitle: title,
-    context: undefined,
-  };
+  const payloadBase = buildTestPayload({ triggeredByEmail: adminEmail });
 
-  const [slackOk, pushoverOk] = await Promise.all([
-    sendSlackAlert(alert),
-    sendPushoverAlert(alert),
-  ]);
+  const results: ProviderTestResult[] = await Promise.all(
+    notificationProviders.map(async (provider) => {
+      const configured = provider.isConfigured();
+      if (!configured) {
+        return {
+          provider: provider.id,
+          configured: false,
+          ok: false,
+          errorCode: "not_configured",
+        };
+      }
 
-  if (!slackOk || !pushoverOk) {
-    let code: NotificationMissingConfigCode = "notifications_not_configured";
-    if (!slackOk && pushoverOk) code = "slack_not_configured";
-    if (slackOk && !pushoverOk) code = "pushover_not_configured";
+      try {
+        const ok = await provider.sendTestNotification({
+          ...payloadBase,
+          metadata: {
+            ...payloadBase.metadata,
+            provider: provider.id,
+          },
+        });
 
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Notification delivery failed (missing config or provider error).",
-        code,
-        providers: {
-          slack: { ok: slackOk },
-          pushover: { ok: pushoverOk },
-        },
-      },
-      { status: 500 },
-    );
-  }
+        return {
+          provider: provider.id,
+          configured: true,
+          ok,
+          errorCode: ok ? null : "send_failed",
+        };
+      } catch {
+        return {
+          provider: provider.id,
+          configured: true,
+          ok: false,
+          errorCode: "exception",
+        };
+      }
+    }),
+  );
 
-  return NextResponse.json({ ok: true });
+  const configuredCount = results.filter((r) => r.configured).length;
+  const anyOk = results.some((r) => r.ok);
+  const ok = configuredCount === 0 ? false : anyOk;
+
+  // Only fail the whole endpoint if there are configured providers and ALL of them fail.
+  const status = configuredCount > 0 && !anyOk ? 500 : 200;
+
+  return NextResponse.json({ ok, results }, { status });
 }
