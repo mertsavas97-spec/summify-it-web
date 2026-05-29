@@ -15,6 +15,21 @@ export type AdminOAuthTokenRow = {
   created_at: string;
 };
 
+let loggedAdminOAuthEnv = false;
+
+function logAdminOAuthStorageDiagnosticOnce() {
+  if (loggedAdminOAuthEnv) return;
+  loggedAdminOAuthEnv = true;
+
+  // Server-only diagnostic to confirm service role config is present.
+  // IMPORTANT: Do not log token values or env values.
+  console.info("[summify.admin_oauth_tokens] storage_client_diagnostic", {
+    hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+    hasSupabaseUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()),
+    clientType: "service_role",
+  });
+}
+
 export function isAdminOAuthStorageConfigured(): boolean {
   return isServiceRoleConfigured();
 }
@@ -23,6 +38,8 @@ export async function getAdminOAuthToken(
   provider: AdminOAuthProvider,
 ): Promise<AdminOAuthTokenRow | null> {
   if (!isServiceRoleConfigured()) return null;
+
+  logAdminOAuthStorageDiagnosticOnce();
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("admin_oauth_tokens")
@@ -63,6 +80,7 @@ export async function upsertAdminOAuthToken(
     throw new Error("Supabase service role not configured; cannot store OAuth tokens.");
   }
 
+  logAdminOAuthStorageDiagnosticOnce();
   const admin = getSupabaseAdmin();
   const now = new Date();
 
@@ -84,6 +102,7 @@ export async function upsertAdminOAuthToken(
 
 export async function clearAdminOAuthToken(provider: AdminOAuthProvider): Promise<void> {
   if (!isServiceRoleConfigured()) return;
+  logAdminOAuthStorageDiagnosticOnce();
   const admin = getSupabaseAdmin();
   const { error } = await admin.from("admin_oauth_tokens").delete().eq("provider", provider);
   if (error) {
