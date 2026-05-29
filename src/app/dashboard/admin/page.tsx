@@ -65,6 +65,9 @@ export default async function AdminDashboardPage() {
                 <Button href="/dashboard/admin/api-health" size="sm" variant="secondary">
                   API Health
                 </Button>
+                <Button href="/dashboard/admin/analytics" size="sm" variant="secondary">
+                  Analytics
+                </Button>
                 <Button href="/dashboard/admin/blog" size="sm" variant="secondary">
                   Blog CMS
                 </Button>
