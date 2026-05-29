@@ -56,6 +56,8 @@ import { buildYoutubeSourceContext } from "@/types/analyze-source";
 import { trackEvent } from "@/lib/analytics/events";
 import { runTextAnalysis } from "@/lib/run-text-analysis";
 import { trackMetaCustomEvent } from "@/lib/metaPixel";
+import { getBillingStatusCopy } from "@/lib/billing/provider";
+// import { isEduEmail } from "@/lib/auth/edu-email";
 import {
   clearPendingAnalysis,
   readPendingAnalysis,
@@ -71,6 +73,7 @@ import {
 import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
 import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
+import { UploadPaywallModal } from "./UploadPaywallModal";
 
 const WORKSPACE_CARD =
   "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 shadow-sm shadow-black/20 backdrop-blur";
@@ -382,12 +385,14 @@ function SourceReadyActionBar({
         </div>
 
         {!canRun && isDailyFreeLimit ? (
-          <Link
-            href="/pricing"
-            className="inline-flex w-full items-center justify-center rounded-xl border border-amber-400/25 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 px-4 py-3 text-sm font-semibold text-amber-50 shadow-[0_0_0_1px_rgba(245,158,11,0.10)] transition-colors hover:border-amber-300/40 hover:bg-amber-950/55 focus:outline-none focus:ring-2 focus:ring-amber-300/30 focus:ring-offset-2 focus:ring-offset-zinc-950 sm:w-auto sm:min-w-[168px]"
+          <Button
+            type="button"
+            size="md"
+            onClick={onRunAnalysis}
+            className="border border-amber-400/25 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 text-amber-50 shadow-[0_0_0_1px_rgba(245,158,11,0.10)] hover:border-amber-300/40 hover:bg-amber-950/55 sm:min-w-[168px]"
           >
             View plans
-          </Link>
+          </Button>
         ) : (
           <Button
             type="button"
@@ -404,39 +409,6 @@ function SourceReadyActionBar({
       {!shouldShowDailyLimit && !canRun ? (
         <p className="mt-2 text-[11px] text-zinc-600">{runAnalysisHelper}</p>
       ) : null}
-    </section>
-  );
-}
-
-function isDailyFreeLimitCopy(message: string): boolean {
-  return (
-    message.includes("You've used today's 3 free analyses") ||
-    message.includes("You’ve used today’s 3 free analyses")
-  );
-}
-
-function SourceReadyDailyLimitCard({ onViewPlans }: { onViewPlans?: () => void }) {
-  return (
-    <section
-      className="w-full rounded-2xl border border-amber-400/20 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 px-4 py-4 shadow-[0_0_0_1px_rgba(245,158,11,0.08)] sm:px-5"
-      role="status"
-      aria-live="polite"
-      data-workspace-daily-limit
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-base font-semibold text-amber-50">Daily free analysis limit reached</p>
-          <p className="mt-1 text-sm text-amber-100/80">You’ve used today’s 3 free analyses.</p>
-          <p className="mt-2 text-xs text-zinc-400">Sign in or upgrade to continue.</p>
-        </div>
-        <Link
-          href="/pricing"
-          onClick={onViewPlans}
-          className="inline-flex w-full items-center justify-center rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-50 transition-colors hover:border-amber-200/45 hover:bg-amber-400/15 focus:outline-none focus:ring-2 focus:ring-amber-300/35 focus:ring-offset-2 focus:ring-offset-zinc-950 sm:w-auto sm:min-w-[160px]"
-        >
-          View plans
-        </Link>
-      </div>
     </section>
   );
 }
@@ -988,9 +960,15 @@ export function UploadWorkspace() {
     restoredPendingAnalysis?.analysisId ?? null,
   );
   const [upgradeMode, setUpgradeMode] = useState<IntelligenceModeDefinition | null>(null);
+  const [showAnalysisPaywall, setShowAnalysisPaywall] = useState(false);
   const modeSectionRef = useRef<HTMLDivElement | null>(null);
   const runAnalysisRef = useRef<null | (() => void)>(null);
   const uploadStartedRef = useRef<Set<string>>(new Set());
+
+  const billing = useMemo(() => getBillingStatusCopy(), []);
+  // `useWorkspaceEntitlement` does not currently expose profile/email.
+  // Keep the same checkout surface but disable edu detection here.
+  const scholarCheckoutEligible = false;
 
   useEffect(() => {
     if (!restoredPendingAnalysis) return;
@@ -1404,10 +1382,29 @@ export function UploadWorkspace() {
     if (analyzing) setHasAnalysisResult(false);
   }, []);
 
+  const isDailyFreeLimitReached = useMemo(() => {
+    if (workspaceEntitlement.isPaidActive) return false;
+    if (canRunModeAnalysis(analysisMode, workspaceEntitlement.entitlementPlanId)) return false;
+
+    // Avoid referencing `runAnalysisHelper` here (declared below) to keep hooks order safe.
+    // The helper copy encodes the daily-limit state.
+    return (
+      extractStatus === "failed" &&
+      (extractError?.includes("You've used today's 3 free analyses") ||
+        extractError?.includes("You’ve used today’s 3 free analyses"))
+    );
+  }, [analysisMode, extractError, extractStatus, workspaceEntitlement.entitlementPlanId, workspaceEntitlement.isPaidActive]);
+
   const handleRunAnalysis = useCallback(() => {
+    // When daily free analyses are exhausted for guest/free, do not redirect.
+    // Keep the user in context and show the in-upload pricing modal.
+    if (isDailyFreeLimitReached) {
+      setShowAnalysisPaywall(true);
+      return;
+    }
     fireAnalysisStarted(extractionMeta);
     runAnalysisRef.current?.();
-  }, [extractionMeta, fireAnalysisStarted]);
+  }, [extractionMeta, fireAnalysisStarted, isDailyFreeLimitReached]);
 
   const sourceLabel = getExtractionSourceLabel(extractionMeta) || fileName;
   const isExtracting =
@@ -1514,10 +1511,19 @@ export function UploadWorkspace() {
     hasAnalysisResult;
 
   return (
-    <div
-      className="mx-auto w-full max-w-[1180px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8"
-      data-workspace-root
-    >
+    <>
+      <UploadPaywallModal
+        open={showAnalysisPaywall}
+        billing={billing}
+        scholarCheckoutEligible={scholarCheckoutEligible}
+        onClose={() => setShowAnalysisPaywall(false)}
+      />
+      <div
+        className={`mx-auto w-full max-w-[1180px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8 ${
+          showAnalysisPaywall ? "blur-sm brightness-75" : ""
+        }`}
+        data-workspace-root
+      >
       {!isCompletedResultWorkspace && (
       <header className="pb-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -1572,13 +1578,6 @@ export function UploadWorkspace() {
                 onReplace={handleReplaceSource}
               />
 
-              {/* Daily free analysis limit warning must be rendered here (top source-ready area),
-                  directly under the source card and above the mode selection. */}
-              {!workspaceEntitlement.isPaidActive &&
-              !canRunSourceReadyAnalysis &&
-              isDailyFreeLimitCopy(runAnalysisHelper) ? (
-                <SourceReadyDailyLimitCard />
-              ) : null}
               <SourceReadyActionBar
                 selectedModeId={analysisMode}
                 isAnalyzing={isAnalyzing}
@@ -1761,6 +1760,7 @@ export function UploadWorkspace() {
               }}
               deferUntilAnalysisActive={isSourceReadyWorkspace}
               limitNotice={limitNotice}
+              onPaywall={() => setShowAnalysisPaywall(true)}
               renderPracticeModule={
                 completedAnalysisResult ? ({ onLearnCompleteChange, onStartQuiz }) => (
                   <PracticeAnalysisCta
@@ -1878,6 +1878,7 @@ export function UploadWorkspace() {
         isAuthenticated={workspaceEntitlement.isAuthenticated}
         onClose={() => setUpgradeMode(null)}
       />
-    </div>
+      </div>
+    </>
   );
 }

@@ -6,7 +6,7 @@ const LIMITS = {
   keyInsights: 6,
   risksOrWarnings: 5,
   actionItems: 6,
-  learnCards: 5,
+  learnCards: 8,
 } as const;
 
 const DEFAULT_RISK_MESSAGE =

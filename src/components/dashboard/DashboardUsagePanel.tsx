@@ -71,12 +71,14 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
         </div>
       )}
 
-      <p className="mt-3 text-[10px] text-zinc-600">
-        Free includes 3 analyses per day, 20MB uploads, 5 modes, 5 Learn cards, and your last 3 saved analyses.{" "}
-        <Link href="/account" className="text-violet-400/70 hover:text-violet-300">
-          Account
-        </Link>
-      </p>
+      {!usage.isBeta ? (
+        <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
+          Free includes 3 analyses per day, 20MB uploads, 5 modes, 8 Learn cards, and your last 3 saved analyses.{" "}
+          <Link href="/account" className="text-violet-400/70 hover:text-violet-300">
+            Account
+          </Link>
+        </p>
+      ) : null}
     </section>
   );
 }

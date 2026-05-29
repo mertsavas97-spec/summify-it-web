@@ -46,8 +46,6 @@ import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
 import type { InjectedAnalysisPayload } from "./UploadWorkspace";
-import { canUseAudioStudyMode } from "@/lib/audio-study/access";
-import { canUsePodcastDiscussionMode } from "@/lib/podcast/access";
 import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
@@ -78,6 +76,8 @@ type TextAnalysisMvpProps = {
   isAuthenticated: boolean;
   isPaidActive?: boolean;
   limitNotice?: string | null;
+  /** Invoked when analysis is blocked due to paywall/quota. (e.g. free daily limit reached) */
+  onPaywall?: () => void;
   actionModules?: ReactNode;
   practiceModule?: ReactNode;
   renderPracticeModule?: (options: {
@@ -399,7 +399,13 @@ function ResultTabButton({
           </span>
         </span>
         {accessLabel ? (
-          <span className="hidden rounded-full border border-violet-400/18 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-medium text-violet-200 lg:inline-flex">
+          <span
+            className={`hidden rounded-full border px-1.5 py-0.5 text-[9px] font-medium lg:inline-flex ${
+              accessLabel === "Included"
+                ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-200"
+                : "border-violet-400/18 bg-violet-500/10 text-violet-200"
+            }`}
+          >
             {accessLabel}
           </span>
         ) : null}
@@ -567,8 +573,8 @@ function PostAnalysisResultShell({
   const modeDef = getIntelligenceModeById(modeId);
   const sourceTitle = getResultSourceTitle({ extractionMeta, inputMode, result });
   const sourceKindLabel = getSourceKindLabel(inputMode, extractionMeta);
-  const audioUnlocked = canUseAudioStudyMode(entitlementPlanId, isPaidActive);
-  const podcastUnlocked = canUsePodcastDiscussionMode(entitlementPlanId, isPaidActive);
+  // Audio/Podcast are now presented as "Included" in the Upload workspace UI.
+  // Keep capability checks inside the actual media modules.
   const complexity = modeDef?.outputDepth
     ? `${modeDef.outputDepth[0].toUpperCase()}${modeDef.outputDepth.slice(1)} depth`
     : null;
@@ -637,13 +643,7 @@ function PostAnalysisResultShell({
                 tab={tab}
                 active={activeTab === tab.id}
                 tone={tab.id === "audio" ? "audio" : "podcast"}
-                accessLabel={
-                  tab.premium === "audio"
-                    ? audioUnlocked ? "Pro" : "Upgrade"
-                    : tab.premium === "podcast"
-                      ? podcastUnlocked ? "Pro" : "Upgrade"
-                      : undefined
-                }
+                accessLabel={"Included"}
                 onSelect={setActiveTab}
               />
             ))}
@@ -739,6 +739,7 @@ export function TextAnalysisMvp({
   renderPracticeModule,
   mediaModules,
   deferUntilAnalysisActive = false,
+  onPaywall,
 }: TextAnalysisMvpProps) {
   const inputLimits = getClientAnalysisInputLimits(entitlementPlanId);
   const [loading, setLoading] = useState(false);
@@ -885,14 +886,59 @@ export function TextAnalysisMvp({
         : "Upload a file, paste text, or pick a source to begin";
 
   const pipelineAnalysisFailed = youtubeAnalysisFailed || urlAnalysisFailed;
-  const showUpgradeCopy =
-    error?.includes("free analyses") || error?.includes("Scholar or Pro");
+  const isFreeDailyQuotaError = useMemo(() => {
+    if (!error) return false;
+    return (
+      error.includes("You've used today's 3 free analyses") ||
+      error.includes("You’ve used today’s 3 free analyses") ||
+      error.includes("free daily") ||
+      error.includes("free analyses")
+    );
+  }, [error]);
+
+  const showUpgradeCopy = isFreeDailyQuotaError || error?.includes("Scholar or Pro");
+
+  useEffect(() => {
+    if (!error) return;
+    if (!isAuthenticated && isFreeDailyQuotaError) {
+      onPaywall?.();
+    }
+  }, [error, isAuthenticated, isFreeDailyQuotaError, onPaywall]);
 
   // In the /upload source-ready shell, quota/paywall warnings must render in the top
   // source-ready action area (UploadWorkspace) — not inside this lower “Analysis workspace” card.
   // We still keep this component mounted so it can wire `onAnalyzeReady`, but we avoid rendering
   // any pre-analysis UI (including limit notices) until analysis is actually running or complete.
   if (deferUntilAnalysisActive && !loading && !displayResult && !error) {
+    return null;
+  }
+
+  // /upload now owns all pre-analysis UI (source card + mode selection + run button).
+  // This component should only render results (or analysis-time errors) to avoid
+  // duplicating the legacy "Analysis workspace" block.
+  if (deferUntilAnalysisActive && !displayResult) {
+    // Keep debug info visible in development only.
+    if (process.env.NODE_ENV === "development" && error && failureDebug) {
+      return (
+        <section
+          className="rounded-2xl border border-amber-500/20 bg-amber-950/10 p-4"
+          data-workspace-analysis-pane
+        >
+          <p className="text-xs font-semibold text-amber-200">Dev: Analysis failed</p>
+          <p className="mt-2 font-mono text-[10px] leading-relaxed text-amber-200/80">
+            {failureDebug.failureReason
+              ? formatFailureReasonLabel(failureDebug.failureReason)
+              : "Unknown failure"}
+            {failureDebug.attempts && failureDebug.attempts.length > 0 && (
+              <span className="mt-1 block text-amber-300/80">
+                {formatAttemptSummary(failureDebug.attempts)}
+              </span>
+            )}
+          </p>
+        </section>
+      );
+    }
+
     return null;
   }
 
@@ -989,7 +1035,7 @@ export function TextAnalysisMvp({
         </>
       )}
 
-      {error && !pipelineAnalysisFailed && (
+      {error && !pipelineAnalysisFailed && !(isFreeDailyQuotaError && !isAuthenticated) && (
         <div className="mt-4 space-y-2">
           <p className="rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-2 text-xs text-red-300">
             {error}{" "}

@@ -3,7 +3,7 @@ import type { PlanId } from "@/types/plan";
 import type { LearnCardOutput } from "@/types/text-analysis";
 
 /** Free / beta users can practice this many cards per analysis. */
-export const FREE_PRACTICE_ACCESSIBLE_COUNT = 5;
+export const FREE_PRACTICE_ACCESSIBLE_COUNT = 8;
 
 export type PracticeCardAccess = {
   allCards: LearnCardOutput[];
