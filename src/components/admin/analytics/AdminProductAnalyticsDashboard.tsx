@@ -137,23 +137,71 @@ export function AdminProductAnalyticsDashboard() {
     };
   }, [query]);
 
-  const rangeLabel = presetLabel(preset, data && "dateRange" in data ? data.dateRange : undefined);
-  const available = data?.available === true;
+   const rangeLabel = presetLabel(preset, data && "dateRange" in data ? data.dateRange : undefined);
+   const available = data?.available === true;
 
-  const trendSeries = useMemo(() => {
-    if (data?.available !== true) return [] as Array<{ date: string; value: number }>;
-    const raw =
-      trendMetric === "analyses"
-        ? data.timeseries.analysesPerDay
-        : trendMetric === "uploads"
-          ? data.timeseries.uploadsPerDay
-          : trendMetric === "learnCards"
-            ? data.timeseries.learnCardsPerDay
-            : trendMetric === "audioMode"
-              ? data.timeseries.audioModePerDay
-              : data.timeseries.podcastPerDay;
-    return raw.map((p) => ({ date: normalizeGaDate(p.date), value: p.value }));
-  }, [data, trendMetric]);
+   // Safe fallback defaults for analytics data
+   const safeData = useMemo(() => {
+     if (data?.available !== true) {
+       return {
+         overview: {},
+         funnel: {
+           visitor: 0,
+           upload: 0,
+           analysis: 0,
+           signup: 0,
+           pricing: 0,
+           subscription: 0,
+           rates: {},
+         },
+         topModes: [],
+         topSources: [],
+         timeseries: {
+           analysesPerDay: [],
+           uploadsPerDay: [],
+           learnCardsPerDay: [],
+           audioModePerDay: [],
+           podcastPerDay: [],
+         },
+       };
+     }
+     return {
+       overview: data.overview ?? {},
+       funnel: data.funnel ?? {
+         visitor: 0,
+         upload: 0,
+         analysis: 0,
+         signup: 0,
+         pricing: 0,
+         subscription: 0,
+         rates: {},
+       },
+       topModes: data.topModes ?? [],
+       topSources: data.topSources ?? [],
+       timeseries: {
+         analysesPerDay: data.timeseries?.analysesPerDay ?? [],
+         uploadsPerDay: data.timeseries?.uploadsPerDay ?? [],
+         learnCardsPerDay: data.timeseries?.learnCardsPerDay ?? [],
+         audioModePerDay: data.timeseries?.audioModePerDay ?? [],
+         podcastPerDay: data.timeseries?.podcastPerDay ?? [],
+       },
+     };
+   }, [data]);
+
+   const trendSeries = useMemo(() => {
+     if (data?.available !== true) return [] as Array<{ date: string; value: number }>;
+     const raw =
+       trendMetric === "analyses"
+         ? safeData.timeseries.analysesPerDay ?? []
+         : trendMetric === "uploads"
+           ? safeData.timeseries.uploadsPerDay ?? []
+           : trendMetric === "learnCards"
+             ? safeData.timeseries.learnCardsPerDay ?? []
+             : trendMetric === "audioMode"
+               ? safeData.timeseries.audioModePerDay ?? []
+               : safeData.timeseries.podcastPerDay ?? [];
+     return (raw ?? []).map((p) => ({ date: normalizeGaDate(p.date), value: p.value }));
+   }, [data, trendMetric, safeData]);
 
   const trendMetricLabel = {
     analyses: "Analyses",

@@ -119,29 +119,62 @@ async function distinctSessionsForEvent(
 }
 
 async function topMetadataKey(
-  admin: ReturnType<typeof getSupabaseAdmin>,
-  args: { name: string; start: string; end: string; key: string },
+   admin: ReturnType<typeof getSupabaseAdmin>,
+   args: { name: string; start: string; end: string; key: string },
 ): Promise<Array<{ key: string; count: number }>> {
+   const { data } = await admin
+     .from("product_events")
+     .select("metadata")
+     .eq("event_name", args.name)
+     .gte("created_at", `${args.start}T00:00:00.000Z`)
+     .lte("created_at", `${args.end}T23:59:59.999Z`)
+     .not("metadata", "is", null)
+     .limit(5000);
+
+   const counts = new Map<string, number>();
+   for (const row of data ?? []) {
+     const meta = row.metadata as Record<string, unknown> | null;
+     const value = meta ? meta[args.key] : null;
+     const normalized = args.key === "intelligence_mode" ? normalizeMode(value) : normalizeSource(value);
+     counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+   }
+
+   return [...counts.entries()]
+     .map(([key, count]) => ({ key, count }))
+     .sort((a, b) => b.count - a.count);
+}
+
+async function eventTimeseriesPerDay(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  args: { name: string; start: string; end: string },
+): Promise<Array<{ date: string; value: number }>> {
   const { data } = await admin
     .from("product_events")
-    .select("metadata")
+    .select("created_at")
     .eq("event_name", args.name)
     .gte("created_at", `${args.start}T00:00:00.000Z`)
     .lte("created_at", `${args.end}T23:59:59.999Z`)
-    .not("metadata", "is", null)
-    .limit(5000);
+    .limit(10000);
 
   const counts = new Map<string, number>();
   for (const row of data ?? []) {
-    const meta = row.metadata as Record<string, unknown> | null;
-    const value = meta ? meta[args.key] : null;
-    const normalized = args.key === "intelligence_mode" ? normalizeMode(value) : normalizeSource(value);
-    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+    const date = typeof row.created_at === "string" ? row.created_at.slice(0, 10) : null;
+    if (date) {
+      counts.set(date, (counts.get(date) ?? 0) + 1);
+    }
   }
 
-  return [...counts.entries()]
-    .map(([key, count]) => ({ key, count }))
-    .sort((a, b) => b.count - a.count);
+  // Generate all dates in range with 0 if no data
+  const result: Array<{ date: string; value: number }> = [];
+  const startDate = new Date(`${args.start}T00:00:00Z`);
+  const endDate = new Date(`${args.end}T23:59:59Z`);
+  
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const dateStr = isoDate(d);
+    result.push({ date: dateStr, value: counts.get(dateStr) ?? 0 });
+  }
+
+  return result;
 }
 
 /**
@@ -184,6 +217,11 @@ export async function GET(request: Request) {
     signups,
     pricingViewers,
     subscribers,
+    analysesPerDay,
+    uploadsPerDay,
+    learnCardsPerDay,
+    audioModePerDay,
+    podcastPerDay,
   ] = await Promise.all([
     countEvents(admin, { name: "analysis_completed", start, end }),
     countEvents(admin, { name: "upload_completed", start, end }),
@@ -201,6 +239,13 @@ export async function GET(request: Request) {
     distinctSessionsForEvent(admin, { name: "signup_completed", start, end }),
     distinctSessionsForEvent(admin, { name: "pricing_view", start, end }),
     distinctSessionsForEvent(admin, { name: "subscription_created", start, end }),
+
+    // Timeseries data
+    eventTimeseriesPerDay(admin, { name: "analysis_completed", start, end }),
+    eventTimeseriesPerDay(admin, { name: "upload_completed", start, end }),
+    eventTimeseriesPerDay(admin, { name: "learn_card_opened", start, end }),
+    eventTimeseriesPerDay(admin, { name: "audio_mode_clicked", start, end }),
+    eventTimeseriesPerDay(admin, { name: "podcast_clicked", start, end }),
   ]);
 
   const avgAnalysesPerUser = uniqueAnalyzers > 0 ? analysesCompleted / uniqueAnalyzers : 0;
@@ -233,6 +278,13 @@ export async function GET(request: Request) {
       learnCardsOpened,
       audioModeClicks,
       podcastClicks,
+    },
+    timeseries: {
+      analysesPerDay,
+      uploadsPerDay,
+      learnCardsPerDay,
+      audioModePerDay: audioModePerDay,
+      podcastPerDay,
     },
     funnel,
     topModes,
