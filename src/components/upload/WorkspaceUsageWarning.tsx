@@ -15,7 +15,15 @@ type WorkspaceUsageWarningProps = {
 
 function normalizeWarningCopy(message: string): string {
   if (message.includes("You've used today's 3 free analyses")) {
-    return "You’ve used today’s 3 free analyses.";
+    return "You’ve used today’s free analyses.";
+  }
+
+  if (message.includes("You've used today's 5 free analyses")) {
+    return "You’ve used today’s free analyses.";
+  }
+
+  if (message.includes("Create a free account and get 5 analyses per day")) {
+    return "Create a free account and get 5 analyses per day.";
   }
 
   return message;

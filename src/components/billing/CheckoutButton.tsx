@@ -76,7 +76,9 @@ export function CheckoutButton({
           provider: billing.provider,
           enabled: billing.enabled,
         });
-        window.location.href = "/upload";
+        // Billing is not available on this deployment; keep user on pricing rather than
+        // incorrectly sending them to the workspace.
+        window.location.href = "/pricing";
         return;
       }
 

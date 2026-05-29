@@ -22,6 +22,21 @@ type PricingCardsProps = {
   scholarCheckoutEligible: boolean;
 };
 
+type GuestPlanCard = {
+  id: "guest";
+  name: string;
+  displayPrice: string;
+  displayPeriod: string;
+  tagline: string;
+  featureBullets: string[];
+  cta: string;
+  ctaHref: string;
+  highlighted?: boolean;
+  comingSoon?: boolean;
+  badge?: string;
+  savings?: string;
+};
+
 function isHighlightedPricingFeature(feature: string) {
   const normalized = feature.toLowerCase();
 
@@ -115,12 +130,34 @@ export function PricingCards({
 }: PricingCardsProps) {
   const plans = getPricingPlansForInterval(interval);
 
+  const guestPlan: GuestPlanCard = {
+    id: "guest",
+    name: "Guest",
+    displayPrice: "$0",
+    displayPeriod: "",
+    tagline: "Try Summify once before you sign up",
+    featureBullets: [
+      "1 analysis",
+      "3 Learn Cards",
+      "Summary only",
+      "No Audio Lessons",
+      "No Podcast",
+      "No Exports",
+      "No History",
+    ],
+    cta: "Create Free Account",
+    ctaHref: `/login?next=${encodeURIComponent("/upload")}`,
+  };
+
+  const allPlans = [guestPlan, ...plans];
+
   return (
-    <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-5">
-      {plans.map((plan) => {
+    <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-5 xl:gap-5">
+      {allPlans.map((plan) => {
         const isPro = plan.highlighted;
+        const isGuest = plan.id === "guest";
         const isScholar = plan.id === "scholar";
-        const footnote = isScholar ? null : getPricingPlanFootnote(plan.id);
+        const footnote = isGuest || isScholar ? null : getPricingPlanFootnote(plan.id);
         const checkoutEnabled =
           (plan.id === "pro" || plan.id === "team") && isPlanCheckoutEnabled(plan.id);
         const showScholarCheckout =
@@ -188,7 +225,16 @@ export function PricingCards({
             </ul>
 
             <div className="mt-6">
-              {plan.id === "free" ? (
+              {isGuest ? (
+                <Button
+                  href={plan.ctaHref}
+                  variant="secondary"
+                  className="w-full"
+                  size="md"
+                >
+                  {plan.cta}
+                </Button>
+              ) : plan.id === "free" ? (
                 <Button
                   href={plan.ctaHref ?? "/upload"}
                   variant={isPro ? "primary" : "secondary"}

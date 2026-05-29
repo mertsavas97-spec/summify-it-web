@@ -46,7 +46,8 @@ import { devError, devLog, logServerError } from "@/server/logging";
 import { analyzeLimiter } from "@/lib/rateLimit";
 
 const ANONYMOUS_USAGE_COOKIE = "summify_anon_usage";
-const ANONYMOUS_DAILY_ANALYSIS_LIMIT = 3;
+// Guest plan: 1 analysis total (per browser via cookie).
+const ANONYMOUS_TOTAL_ANALYSIS_LIMIT = 1;
 
 function isDevelopment(): boolean {
   return process.env.NODE_ENV === "development";
@@ -57,12 +58,12 @@ function utcToday(): string {
 }
 
 function parseAnonymousUsage(value?: string): { date: string; count: number } {
+  // Guest analysis is a one-time allowance (per browser).
+  // Keep the date portion for backwards compatibility with existing cookies.
   const today = utcToday();
   if (!value) return { date: today, count: 0 };
 
-  const [date, rawCount] = value.split(".");
-  if (date !== today) return { date: today, count: 0 };
-
+  const [, rawCount] = value.split(".");
   const count = Number.parseInt(rawCount ?? "0", 10);
   return {
     date: today,
@@ -231,17 +232,17 @@ export async function POST(request: Request) {
         cookieStore.get(ANONYMOUS_USAGE_COOKIE)?.value,
       );
 
-      if (anonymousUsage.count >= ANONYMOUS_DAILY_ANALYSIS_LIMIT) {
+      if (anonymousUsage.count >= ANONYMOUS_TOTAL_ANALYSIS_LIMIT) {
         const payload: AnalyzeApiErrorResponse = {
           success: false,
-          error: "You've used today's 3 free analyses.",
+          error: "Create a free account and get 5 analyses per day.",
         };
         return NextResponse.json(payload, { status: 429 });
       }
     } else if (!quota.allowed) {
       const payload: AnalyzeApiErrorResponse = {
         success: false,
-        error: quota.warning ?? "You've used today's 3 free analyses.",
+        error: quota.warning ?? "You’ve used today’s free analyses.",
       };
       return NextResponse.json(payload, { status: 429 });
     }

@@ -83,7 +83,7 @@ export function getUserPlanLimits(
     enforceLimits: plan.enforceLimits,
     analysesPerDay: cap,
     maxDailyAudioLessons:
-      planId === "free" ? 3 : planId === "scholar" ? 10 : 999,
+      planId === "free" ? 2 : planId === "scholar" ? 10 : 999,
     maxDailyPodcasts:
       planId === "free" ? 1 : planId === "scholar" ? 5 : 999,
     dailyAnalysisCount: usedToday,

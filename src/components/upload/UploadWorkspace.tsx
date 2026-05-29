@@ -74,6 +74,7 @@ import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
 import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { UploadPaywallModal } from "./UploadPaywallModal";
+import { GuestWorkspaceBanner } from "./GuestWorkspaceBanner";
 
 const WORKSPACE_CARD =
   "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 shadow-sm shadow-black/20 backdrop-blur";
@@ -365,11 +366,12 @@ function SourceReadyActionBar({
   const selectedMode = getIntelligenceModeById(selectedModeId);
   const selectedModeLabel = selectedMode?.label ?? selectedModeId;
 
-  const isDailyFreeLimit =
-    runAnalysisHelper.includes("You've used today's 3 free analyses") ||
-    runAnalysisHelper.includes("You’ve used today’s 3 free analyses");
+  const isQuotaLimit =
+    runAnalysisHelper.includes("Create a free account and get 5 analyses per day") ||
+    runAnalysisHelper.includes("You've used today's") ||
+    runAnalysisHelper.includes("You’ve used today’s");
 
-  const shouldShowDailyLimit = !canRun && isDailyFreeLimit;
+  const shouldShowDailyLimit = !canRun && isQuotaLimit;
 
   return (
     <section
@@ -384,7 +386,7 @@ function SourceReadyActionBar({
           </p>
         </div>
 
-        {!canRun && isDailyFreeLimit ? (
+        {!canRun && isQuotaLimit ? (
           <Button
             type="button"
             size="md"
@@ -966,6 +968,10 @@ export function UploadWorkspace() {
   const uploadStartedRef = useRef<Set<string>>(new Set());
 
   const billing = useMemo(() => getBillingStatusCopy(), []);
+  const guestBannerExhausted =
+    !workspaceEntitlement.isAuthenticated &&
+    (extractError?.includes("Create a free account and get 5 analyses per day") ?? false);
+
   // `useWorkspaceEntitlement` does not currently expose profile/email.
   // Keep the same checkout surface but disable edu detection here.
   const scholarCheckoutEligible = false;
@@ -1390,8 +1396,9 @@ export function UploadWorkspace() {
     // The helper copy encodes the daily-limit state.
     return (
       extractStatus === "failed" &&
-      (extractError?.includes("You've used today's 3 free analyses") ||
-        extractError?.includes("You’ve used today’s 3 free analyses"))
+      (extractError?.includes("Create a free account and get 5 analyses per day") ||
+        extractError?.includes("You've used today's") ||
+        extractError?.includes("You’ve used today’s"))
     );
   }, [analysisMode, extractError, extractStatus, workspaceEntitlement.entitlementPlanId, workspaceEntitlement.isPaidActive]);
 
@@ -1556,6 +1563,10 @@ export function UploadWorkspace() {
         </div>
       </header>
       )}
+
+      {!workspaceEntitlement.isAuthenticated && !isCompletedResultWorkspace ? (
+        <GuestWorkspaceBanner exhausted={guestBannerExhausted} className="mb-5" />
+      ) : null}
 
       {!isCompletedResultWorkspace && (
       <div className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING} mt-3`}>

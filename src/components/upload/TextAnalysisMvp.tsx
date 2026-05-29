@@ -890,6 +890,7 @@ export function TextAnalysisMvp({
     if (!error) return false;
     return (
       error.includes("You've used today's 3 free analyses") ||
+      error.includes("Create a free account and get 5 analyses per day") ||
       error.includes("You’ve used today’s 3 free analyses") ||
       error.includes("free daily") ||
       error.includes("free analyses")
