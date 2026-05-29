@@ -19,6 +19,8 @@ import {
   SEO_BRAND,
 } from "@/lib/seo";
 import { isIndexableHost, resolveRequestHost } from "@/lib/seo-host";
+import { getOptionalUser } from "@/lib/auth";
+import { getProfile } from "@/lib/supabase/profile";
 
 import "./globals.css";
 
@@ -103,16 +105,41 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch user data to set analytics context on window object (client-side)
+  let userEmail: string | null = null;
+  const isAdmin = false; // TODO: determine from profile if user has admin role
+
+  try {
+    const user = await getOptionalUser().catch(() => null);
+    if (user?.email) {
+      userEmail = user.email;
+      // Try to determine if user is admin (for now, we'll skip this check)
+      // In the future, you can check the user's profile for an admin role
+      if (user.id) {
+        await getProfile(user.id).catch(() => null);
+        // Check if user has admin role (if your profile schema has this)
+        // isAdmin = profile?.role === 'admin';
+      }
+    }
+  } catch {
+    // Silently fail - if we can't get user data, analytics will still work
+  }
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Set user context for client-side analytics filtering */}
+        {userEmail && <meta name="summify-user-email" content={userEmail} />}
+        {isAdmin && <meta name="summify-is-admin" content="true" />}
+      </head>
       <body className="min-h-full bg-[#0e1016] text-zinc-100">
         <meta name="apple-itunes-app" content="app-id=6770321706" />
         <GoogleAnalytics />

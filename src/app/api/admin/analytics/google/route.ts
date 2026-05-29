@@ -50,6 +50,21 @@ function mapDimensionRows(report: Awaited<ReturnType<typeof runGaReport>>) {
   }));
 }
 
+function mapDimensionRows2(report: Awaited<ReturnType<typeof runGaReport>>) {
+  return (report.rows ?? []).map((row) => ({
+    key: row.dimensionValues?.[0]?.value ?? "",
+    value1: Number(row.metricValues?.[0]?.value ?? 0),
+    value2: Number(row.metricValues?.[1]?.value ?? 0),
+  }));
+}
+
+function mapDailyRows(report: Awaited<ReturnType<typeof runGaReport>>) {
+  return (report.rows ?? []).map((row) => ({
+    date: row.dimensionValues?.[0]?.value ?? "",
+    value: Number(row.metricValues?.[0]?.value ?? 0),
+  }));
+}
+
 /**
  * GET /api/admin/analytics/google
  * Returns simplified GA4 metrics for the admin dashboard.
@@ -72,6 +87,7 @@ export async function GET(request: Request) {
       visitors,
       visits,
       pageViews,
+      homepageVisits,
       topPages,
       trafficSources,
       devices,
@@ -79,31 +95,44 @@ export async function GET(request: Request) {
       uploadVisits,
       pricingVisits,
       loginVisits,
+      dailyUsers,
+      dailySessions,
+      dailyPageViews,
     ] = await Promise.all([
       runGaReport({ dateRange, metrics: ["totalUsers"] }),
       runGaReport({ dateRange, metrics: ["sessions"] }),
       runGaReport({ dateRange, metrics: ["screenPageViews"] }),
       runGaReport({
         dateRange,
-        metrics: ["screenPageViews"],
+        metrics: ["sessions"],
+        dimensionFilter: {
+          filter: {
+            fieldName: "pagePath",
+            stringFilter: { matchType: "EXACT", value: "/" },
+          },
+        },
+      }),
+      runGaReport({
+        dateRange,
+        metrics: ["screenPageViews", "totalUsers"],
         dimensions: ["pagePath"],
         limit: 10,
       }),
       runGaReport({
         dateRange,
-        metrics: ["sessions"],
+        metrics: ["totalUsers", "sessions"],
         dimensions: ["sessionSource"],
         limit: 10,
       }),
       runGaReport({
         dateRange,
-        metrics: ["sessions"],
+        metrics: ["totalUsers"],
         dimensions: ["deviceCategory"],
         limit: 10,
       }),
       runGaReport({
         dateRange,
-        metrics: ["sessions"],
+        metrics: ["totalUsers"],
         dimensions: ["country"],
         limit: 10,
       }),
@@ -137,6 +166,9 @@ export async function GET(request: Request) {
           },
         },
       }),
+      runGaReport({ dateRange, metrics: ["totalUsers"], dimensions: ["date"] }),
+      runGaReport({ dateRange, metrics: ["sessions"], dimensions: ["date"] }),
+      runGaReport({ dateRange, metrics: ["screenPageViews"], dimensions: ["date"] }),
     ]);
 
     return NextResponse.json({
@@ -146,13 +178,19 @@ export async function GET(request: Request) {
         uniqueVisitors: getMetricValue(visitors),
         visits: getMetricValue(visits),
         pageViews: getMetricValue(pageViews),
+        homepageVisits: getMetricValue(homepageVisits),
         uploadVisits: getMetricValue(uploadVisits),
         pricingVisits: getMetricValue(pricingVisits),
         loginVisits: getMetricValue(loginVisits),
       },
+      timeseries: {
+        peopleByDay: mapDailyRows(dailyUsers),
+        sessionsByDay: mapDailyRows(dailySessions),
+        pageOpensByDay: mapDailyRows(dailyPageViews),
+      },
       breakdowns: {
-        topPages: mapDimensionRows(topPages),
-        trafficSources: mapDimensionRows(trafficSources),
+        topPages: mapDimensionRows2(topPages),
+        trafficSources: mapDimensionRows2(trafficSources),
         devices: mapDimensionRows(devices),
         countries: mapDimensionRows(countries),
       },

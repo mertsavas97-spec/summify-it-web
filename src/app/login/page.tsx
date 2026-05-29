@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { ProductEventTracker } from "@/components/analytics/ProductEventTracker";
 import { oauthCallbackErrorMessage } from "@/lib/auth-errors";
 import { getOptionalUser } from "@/lib/auth";
 import { isMisconfiguredLocalSiteUrl } from "@/lib/app-origin";
@@ -62,6 +63,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
   return (
     <article className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <ProductEventTracker event="login_view" />
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-400/80">
         Account
       </p>

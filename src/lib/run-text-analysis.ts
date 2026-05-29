@@ -3,6 +3,7 @@ import type { AnalyzeApiResponse } from "@/types/text-analysis";
 import type { IntelligenceModeId } from "@/types/modes";
 import type { AnalysisIntelligenceMetadata } from "@/types/intelligence";
 import type { AnalysisResult } from "@/types/text-analysis";
+import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 
 export type RunTextAnalysisParams = {
   rawText: string;
@@ -38,6 +39,11 @@ export type RunTextAnalysisResult = RunTextAnalysisSuccess | RunTextAnalysisFail
 export async function runTextAnalysis(
   params: RunTextAnalysisParams,
 ): Promise<RunTextAnalysisResult> {
+  const sourceType = params.sourceHint ?? (params.fileType ? "file" : "text");
+  const baseMeta = { intelligence_mode: params.mode, source_type: sourceType };
+  trackProductEventV2Client("upload_started", { metadata: baseMeta });
+  trackProductEventV2Client("analysis_started", { metadata: baseMeta });
+
   const res = await fetch("/api/analyze", {
     method: "POST",
     credentials: "same-origin",
@@ -59,6 +65,12 @@ export async function runTextAnalysis(
       error: data.error,
     };
   }
+
+  trackProductEventV2Client("upload_completed", { metadata: baseMeta });
+  trackProductEventV2Client("analysis_completed", {
+    eventValue: typeof data.savedAnalysisId === "string" ? data.savedAnalysisId : null,
+    metadata: { ...baseMeta, saved: Boolean(data.savedAnalysisId) },
+  });
 
   return {
     success: true,

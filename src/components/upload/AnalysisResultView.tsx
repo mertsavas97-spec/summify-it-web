@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
+import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 import type { AnalysisResult } from "@/types/text-analysis";
 import type { IntelligenceModeId } from "@/types/modes";
@@ -36,6 +38,17 @@ export function AnalysisResultView({
   entitlementPlanId = "free",
 }: AnalysisResultViewProps) {
   const showLearn = sections === "all" && result.learnCards.length > 0;
+  const insightTracked = useRef(false);
+
+  useEffect(() => {
+    if (insightTracked.current) return;
+    if (sections !== "all") return;
+    if (result.keyInsights.length === 0) return;
+    insightTracked.current = true;
+    trackProductEventV2Client("insight_opened", {
+      metadata: { insights: result.keyInsights.length },
+    });
+  }, [sections, result.keyInsights.length]);
 
   const summaryTitle = uiSectionLabels?.summary ?? "Summary";
   const insightsTitle = uiSectionLabels?.keyInsights ?? "Key insights";

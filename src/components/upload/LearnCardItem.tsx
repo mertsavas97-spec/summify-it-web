@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 import { LearnMemoryAnchorPanel } from "@/components/learn/LearnMemoryAnchorPanel";
 import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 import type { LearnCardOutput, LearnCardOutputType } from "@/types/text-analysis";
@@ -129,6 +130,13 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
   const isQuiz = card.type === "quiz";
   const quiz = isQuiz ? parseQuizContent(card.content) : null;
   const [showAnswer, setShowAnswer] = useState(false);
+  const openTracked = useRef(false);
+
+  const handleCardOpen = () => {
+    if (openTracked.current) return;
+    openTracked.current = true;
+    trackProductEventV2Client("learn_card_opened", { metadata: { card_type: card.type } });
+  };
 
   const displayContent = isQuiz && quiz ? quiz.question : card.content;
   const relCount = card.cardRelationships?.length ?? 0;
@@ -146,6 +154,7 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
       className={`group rounded-lg border p-2.5 transition-colors duration-150 hover:border-white/15 ${style.border} ${style.bg} ${style.hoverShadow}`}
       data-learn-card-type={card.type}
       data-workspace-learn-card
+      onClick={handleCardOpen}
     >
       <div className="flex gap-2.5">
         <span

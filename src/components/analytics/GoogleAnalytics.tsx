@@ -21,6 +21,29 @@ function GoogleAnalyticsPageView() {
 }
 
 /**
+ * Set user context for analytics filtering on the window object.
+ * This allows client-side analytics checks to skip internal/admin users.
+ */
+function AnalyticsContextProvider() {
+  useEffect(() => {
+    // Try to read user email and admin status from meta tags or data attributes
+    // set by the server during SSR (see layout.tsx)
+    const userEmailMeta = document.querySelector('meta[name="summify-user-email"]');
+    const isAdminMeta = document.querySelector('meta[name="summify-is-admin"]');
+
+    if (userEmailMeta?.getAttribute("content")) {
+      window.__summify_user_email = userEmailMeta.getAttribute("content");
+    }
+
+    if (isAdminMeta?.getAttribute("content") === "true") {
+      window.__summify_is_admin = true;
+    }
+  }, []);
+
+  return null;
+}
+
+/**
  * GA4 — loads only when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set.
  * Initial script bootstraps gtag; page views fire on App Router navigations.
  */
@@ -44,6 +67,7 @@ export function GoogleAnalytics() {
         `}
       </Script>
       <Suspense fallback={null}>
+        <AnalyticsContextProvider />
         <GoogleAnalyticsPageView />
       </Suspense>
     </>

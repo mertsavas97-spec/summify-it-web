@@ -1,4 +1,5 @@
 import { UploadWorkspace } from "@/components/upload/UploadWorkspace";
+import { ProductEventTracker } from "@/components/analytics/ProductEventTracker";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { pageSeo } from "@/lib/page-metadata";
 import { breadcrumbSchema, workspaceSoftwareApplicationSchema } from "@/lib/schema";
@@ -8,6 +9,7 @@ export const metadata = pageSeo.upload;
 export default function UploadPage() {
   return (
     <>
+      <ProductEventTracker event="upload_page_view" />
       <JsonLd
         data={[
           workspaceSoftwareApplicationSchema(),

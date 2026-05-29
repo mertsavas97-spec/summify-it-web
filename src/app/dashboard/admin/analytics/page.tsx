@@ -11,6 +11,7 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import { AdminGoogleAnalyticsDashboard } from "@/components/admin/analytics/AdminGoogleAnalyticsDashboard";
+import { AdminProductAnalyticsDashboard } from "@/components/admin/analytics/AdminProductAnalyticsDashboard";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Admin Analytics",
@@ -37,7 +38,10 @@ export default async function AdminAnalyticsPage() {
       <DashboardSidebar savedCount={savedCount} dailyCount={daily} planLabel={planLabel} />
       <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <AdminGoogleAnalyticsDashboard />
+          <div className="space-y-10">
+            <AdminProductAnalyticsDashboard />
+            <AdminGoogleAnalyticsDashboard />
+          </div>
         </div>
       </div>
     </div>

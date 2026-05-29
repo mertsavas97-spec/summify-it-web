@@ -11,6 +11,7 @@ import {
 import { isPlanCheckoutEnabled } from "@/lib/billing/plan-availability";
 import { readCheckoutApiError } from "@/lib/billing/polar/api-error";
 import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
+import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { Button } from "@/components/ui/Button";
 
@@ -118,19 +119,25 @@ export function CheckoutButton({
           details: parsed.details,
         });
 
-        if (response.status === 401) {
-          saveCheckoutIntent(target);
-          window.location.href = `/login?next=${encodeURIComponent("/pricing")}`;
-          return;
-        }
+         if (response.status === 401) {
+           trackProductEventV2Client("signup_started", {
+             metadata: { plan: target.planId, interval: target.interval, trigger: "checkout_gated" },
+           });
+           saveCheckoutIntent(target);
+           window.location.href = `/login?next=${encodeURIComponent("/pricing")}`;
+           return;
+         }
 
-        if (!response.ok || !parsed.success || !parsed.url) {
-          throw new Error(
-            readCheckoutApiError(body, "Checkout could not be started."),
-          );
-        }
+         if (!response.ok || !parsed.success || !parsed.url) {
+           throw new Error(
+             readCheckoutApiError(body, "Checkout could not be started."),
+           );
+         }
 
-        window.location.href = parsed.url;
+         trackProductEventV2Client("checkout_started", {
+           metadata: { plan: target.planId, interval: target.interval, provider: parsed.provider },
+         });
+         window.location.href = parsed.url;
       } catch (err) {
         devWarn("failed", {
           message: err instanceof Error ? err.message : String(err),

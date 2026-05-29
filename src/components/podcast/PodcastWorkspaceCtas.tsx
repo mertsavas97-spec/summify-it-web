@@ -33,6 +33,7 @@ import {
 } from "@/lib/audio-study/pollyVoices";
 import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
 import { trackEvent } from "@/lib/analytics/events";
+import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import { canUsePodcastDiscussionMode } from "@/lib/podcast/access";
 import {
@@ -431,6 +432,7 @@ export function PodcastWorkspaceCtas({
         : "Better as quick audio lesson";
 
   function trackPodcastClick() {
+    trackProductEventV2Client("podcast_clicked", { metadata: { state: podcastState } });
     trackEvent("podcast_cta_clicked", {
       state: podcastState,
       plan: entitlementPlanId,
@@ -592,6 +594,9 @@ export function PodcastWorkspaceCtas({
                       type="button"
                       disabled={!hasAnalysis || audioStudyState === "generating" || (!isGuest && audioLimitReached)}
                       onClick={async () => {
+                        trackProductEventV2Client("audio_mode_clicked", {
+                          metadata: { state: audioStudyState },
+                        });
                       if (!analysisResult || !hasAnalysis) return;
                       setAudioStudyState("generating");
                       setAudioStudyError(null);

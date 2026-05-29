@@ -2,6 +2,7 @@ import { pageSeo } from "@/lib/page-metadata";
 import { howToSummifySchema, softwareApplicationSchema } from "@/lib/schema";
 import { SUMMIFY_HOW_TO_STEPS } from "@/data/seo-howto";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { ProductEventTracker } from "@/components/analytics/ProductEventTracker";
 import { PublicHero } from "@/components/public/PublicHero";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
@@ -28,6 +29,7 @@ const formats = [
 export default function HomePage() {
   return (
     <>
+      <ProductEventTracker event="landing_view" />
       <JsonLd
         data={[
           softwareApplicationSchema({ path: "/" }),
