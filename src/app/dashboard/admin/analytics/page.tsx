@@ -38,10 +38,10 @@ export default async function AdminAnalyticsPage() {
       <DashboardSidebar savedCount={savedCount} dailyCount={daily} planLabel={planLabel} />
       <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="space-y-10">
-            <AdminProductAnalyticsDashboard />
-            <AdminGoogleAnalyticsDashboard />
-          </div>
+       <div className="space-y-10">
+             <AdminGoogleAnalyticsDashboard />
+             <AdminProductAnalyticsDashboard />
+           </div>
         </div>
       </div>
     </div>

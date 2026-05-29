@@ -74,11 +74,12 @@ function mapPageLabel(path: string): { label: string; sublabel?: string } {
   const base = clean.split("?")[0];
   const mapping: Record<string, string> = {
     "/": "Homepage",
-    "/upload": "Upload workspace",
+    "/upload": "Upload Workspace",
     "/pricing": "Pricing",
     "/login": "Login",
     "/dashboard": "Dashboard",
     "/blog": "Blog",
+    "/account": "Account",
   };
   const direct = mapping[base];
   if (direct) return { label: direct, sublabel: base };
@@ -121,6 +122,12 @@ function formatShortDate(iso: string) {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(d);
 }
 
+function formatFullDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "2-digit" }).format(d);
+}
+
 function sum(values: Array<{ value: number }>) {
   return values.reduce((acc, v) => acc + (Number(v.value) || 0), 0);
 }
@@ -133,6 +140,8 @@ export function AdminGoogleAnalyticsDashboard() {
   const [data, setData] = useState<GoogleAnalyticsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("people");
+  const [showTrendTable, setShowTrendTable] = useState(false);
+  const [hoveredTrendPoint, setHoveredTrendPoint] = useState<{ date: string; value: number } | null>(null);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -217,19 +226,26 @@ export function AdminGoogleAnalyticsDashboard() {
     return rows;
   }, [data]);
 
+  const countriesSliced = useMemo(() => {
+    if (data?.connected !== true) return [];
+    return data.breakdowns.countries.slice().sort((a, b) => b.value - a.value).slice(0, 10);
+  }, [data]);
+
+  const trendMetricLabel = trendMetric === "people" ? "People" : trendMetric === "sessions" ? "Sessions" : "Page Opens";
+
   return (
     <div className="space-y-6">
       <header className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-sky-950/30 via-zinc-900/50 to-zinc-950/80 p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <Badge variant="accent" className="mb-2">
-              Internal
+              GA4
             </Badge>
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Admin Analytics
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
-              Google Analytics (GA4) overview.
+              Google Analytics (GA4) overview. Traffic and acquisition metrics.
             </p>
           </div>
 
@@ -247,7 +263,7 @@ export function AdminGoogleAnalyticsDashboard() {
         </div>
       </header>
 
-      <div className="mt-6 rounded-2xl border border-white/[0.08] bg-zinc-950/40 p-4 sm:p-5">
+      <div className="rounded-2xl border border-white/[0.08] bg-zinc-950/40 p-4 sm:p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-medium text-zinc-400">Date range</p>
@@ -304,7 +320,7 @@ export function AdminGoogleAnalyticsDashboard() {
               Google Analytics is not connected yet.
             </p>
             <p className="mt-2 text-xs text-zinc-500">
-              Click “Connect Google Analytics” to authorize read-only access. Tokens stay on the server.
+              Click &quot;Connect Google Analytics&quot; to authorize read-only access. Tokens stay on the server.
             </p>
           </div>
         ) : null}
@@ -313,52 +329,61 @@ export function AdminGoogleAnalyticsDashboard() {
           <div className="mt-6 space-y-6">
             {!hasAnyData ? (
               <div className="rounded-xl border border-white/[0.08] bg-zinc-950/60 p-4">
-                <p className="text-sm text-zinc-300">No analytics data for this range yet.</p>
+                <p className="text-sm text-zinc-300">No traffic data available yet.</p>
                 <p className="mt-2 text-xs text-zinc-500">
-                  GA4 can take a bit to populate. Try a longer range like 30d.
+                  GA4 can take time to populate. Try a longer range like 30d.
                 </p>
               </div>
             ) : null}
 
             {/* A) Overview */}
-            <SectionHeader title="Overview" subtitle="Founder-friendly snapshot of the last period." />
+            <SectionHeader title="Overview" subtitle="Founder-friendly snapshot of the selected period." />
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <MetricCardStrong
-                title="People"
+                title="Visitors"
                 value={formatNumber(data.metrics.uniqueVisitors)}
-                helper="Unique visitors"
+                helper="Unique people"
               />
               <MetricCardStrong title="Sessions" value={formatNumber(data.metrics.visits)} helper="Total visits" />
               <MetricCardStrong
-                title="Page opens"
+                title="Page Views"
                 value={formatNumber(data.metrics.pageViews)}
-                helper="All page views"
+                helper="All views"
               />
               <MetricCardStrong
-                title="Upload page opens"
+                title="Upload Intent"
                 value={formatNumber(data.metrics.uploadVisits)}
-                helper="Interest in summarizing"
+                helper="Upload page"
               />
               <MetricCardStrong
-                title="Pricing interest"
+                title="Pricing Interest"
                 value={formatNumber(data.metrics.pricingVisits)}
-                helper="Visits to pricing"
+                helper="Pricing page"
               />
               <MetricCardStrong
-                title="Login intent"
+                title="Login Intent"
                 value={formatNumber(data.metrics.loginVisits)}
-                helper="Visits to login"
+                helper="Login page"
               />
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
               {/* B) Traffic trend */}
               <div className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-4">
-                <SectionHeader
-                  title="Traffic trend"
-                  subtitle="Daily movement across the selected range."
-                  compact
-                />
+                <div className="flex items-center justify-between">
+                  <SectionHeader
+                    title="Traffic Trend"
+                    subtitle="Daily movement across the selected range."
+                    compact
+                  />
+                  <Button
+                    size="sm"
+                    variant={showTrendTable ? "primary" : "secondary"}
+                    onClick={() => setShowTrendTable(!showTrendTable)}
+                  >
+                    {showTrendTable ? "Hide" : "Show"} Table
+                  </Button>
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     size="sm"
@@ -379,15 +404,22 @@ export function AdminGoogleAnalyticsDashboard() {
                     variant={trendMetric === "pageOpens" ? "primary" : "secondary"}
                     onClick={() => setTrendMetric("pageOpens")}
                   >
-                    Page opens
+                    Page Views
                   </Button>
                 </div>
 
                 <div className="mt-4">
                   {!hasTimeSeries ? (
-                    <p className="text-xs text-zinc-500">No trend data yet.</p>
+                    <p className="text-xs text-zinc-500">No trend data available yet.</p>
+                  ) : showTrendTable ? (
+                    <TrendDataTable series={trendSeries} metricLabel={trendMetricLabel} />
                   ) : (
-                    <MiniLineChart series={trendSeries} />
+                    <MiniLineChart
+                      series={trendSeries}
+                      onHover={setHoveredTrendPoint}
+                      hovered={hoveredTrendPoint}
+                      metricLabel={trendMetricLabel}
+                    />
                   )}
                 </div>
               </div>
@@ -395,24 +427,24 @@ export function AdminGoogleAnalyticsDashboard() {
               {/* C) Conversion signals */}
               <div className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-4">
                 <SectionHeader
-                  title="Conversion signals"
+                  title="Conversion Signals"
                   subtitle="Quick, page-based signals that correlate with intent."
                   compact
                 />
 
                 <div className="mt-4 space-y-4">
                   <SignalBar
-                    label="Landing to Upload"
+                    label="Homepage → Upload"
                     value={safeDivide(data.metrics.uploadVisits, data.metrics.homepageVisits)}
                     rightLabel={formatPercent(safeDivide(data.metrics.uploadVisits, data.metrics.homepageVisits))}
                   />
                   <SignalBar
-                    label="Upload to Pricing"
+                    label="Upload → Pricing"
                     value={safeDivide(data.metrics.pricingVisits, data.metrics.uploadVisits)}
                     rightLabel={formatPercent(safeDivide(data.metrics.pricingVisits, data.metrics.uploadVisits))}
                   />
                   <SignalBar
-                    label="Upload to Login"
+                    label="Upload → Login"
                     value={safeDivide(data.metrics.loginVisits, data.metrics.uploadVisits)}
                     rightLabel={formatPercent(safeDivide(data.metrics.loginVisits, data.metrics.uploadVisits))}
                   />
@@ -425,22 +457,19 @@ export function AdminGoogleAnalyticsDashboard() {
             </div>
 
             {/* D) Acquisition */}
-            <SectionHeader title="Acquisition" subtitle="Where people are coming from." />
+            <SectionHeader title="Acquisition" subtitle="Where visitors are coming from." />
             <div className="grid gap-4 lg:grid-cols-2">
               <TrafficSourcesTable rows={data.breakdowns.trafficSources} />
               <DevicesCard rows={devicesNormalized} />
             </div>
 
             {/* E) Content / pages */}
-            <SectionHeader title="Content / pages" subtitle="What’s being opened." />
+            <SectionHeader title="Content & Pages" subtitle="Most visited pages." />
             <TopPagesTable rows={data.breakdowns.topPages} />
 
-            {/* F) Geography & devices */}
-            <SectionHeader title="Geography & devices" subtitle="Where people are and what they use." />
-            <div className="grid gap-4 lg:grid-cols-2">
-              <CountriesCard rows={data.breakdowns.countries} />
-              <DevicesCard rows={devicesNormalized} />
-            </div>
+            {/* F) Geography */}
+            <SectionHeader title="Geography" subtitle="Where visitors are located." />
+            <CountriesCard rows={countriesSliced} />
           </div>
         ) : null}
       </div>
@@ -462,7 +491,7 @@ function MetricCardStrong({
       <p className="text-xs font-medium text-zinc-400">{title}</p>
       <p className="mt-2 text-2xl font-semibold tracking-tight text-white">{value}</p>
       <p className="mt-1 text-xs text-zinc-500">{helper}</p>
-      <div className="mt-3 h-[2px] w-10 rounded-full bg-purple-500/60" />
+      <div className="mt-3 h-[2px] w-10 rounded-full bg-sky-500/60" />
     </div>
   );
 }
@@ -525,7 +554,7 @@ function SignalBar({
         <p className="text-xs font-semibold text-zinc-100">{rightLabel}</p>
       </div>
       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
-        <div className="h-full rounded-full bg-purple-500/70" style={{ width }} />
+        <div className="h-full rounded-full bg-sky-500/70" style={{ width }} />
       </div>
     </div>
   );
@@ -537,9 +566,9 @@ function TrafficSourcesTable({
   rows: Array<{ key: string; value1: number; value2: number }>;
 }) {
   return (
-    <CardShell title="Traffic sources" right={<span className="text-xs text-zinc-500">People & Sessions</span>}>
+    <CardShell title="Traffic Sources" right={<span className="text-xs text-zinc-500">People & Sessions</span>}>
       {rows.length === 0 ? (
-        <p className="text-xs text-zinc-500">No data.</p>
+        <p className="text-xs text-zinc-500">No traffic sources recorded yet.</p>
       ) : (
         <div className="space-y-2">
           <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] font-medium text-zinc-500">
@@ -566,9 +595,9 @@ function TopPagesTable({
   rows: Array<{ key: string; value1: number; value2: number }>;
 }) {
   return (
-    <CardShell title="Top pages" right={<span className="text-xs text-zinc-500">Views & People</span>}>
+    <CardShell title="Top Pages" right={<span className="text-xs text-zinc-500">Views & People</span>}>
       {rows.length === 0 ? (
-        <p className="text-xs text-zinc-500">No data.</p>
+        <p className="text-xs text-zinc-500">No page data available yet.</p>
       ) : (
         <div className="space-y-2">
           <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] font-medium text-zinc-500">
@@ -579,7 +608,7 @@ function TopPagesTable({
           {rows.map((row) => {
             const { label, sublabel } = mapPageLabel(row.key);
             return (
-              <div key={`page-${row.key}`} className="grid grid-cols-[1fr_auto_auto_auto] gap-3">
+              <div key={`page-${row.key}`} className="grid grid-cols-[1fr_auto_auto] gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-medium text-zinc-200">{label}</p>
                   {sublabel ? <p className="truncate text-[11px] text-zinc-500">{sublabel}</p> : null}
@@ -598,9 +627,9 @@ function TopPagesTable({
 function DevicesCard({ rows }: { rows: Array<{ key: string; value: number }> }) {
   const total = sum(rows);
   return (
-    <CardShell title="Devices" right={<span className="text-xs text-zinc-500">% of people</span>}>
+    <CardShell title="Devices" right={<span className="text-xs text-zinc-500">% of visitors</span>}>
       {rows.length === 0 ? (
-        <p className="text-xs text-zinc-500">No data.</p>
+        <p className="text-xs text-zinc-500">No device data available yet.</p>
       ) : (
         <div className="space-y-3">
           {rows.map((row) => {
@@ -613,7 +642,7 @@ function DevicesCard({ rows }: { rows: Array<{ key: string; value: number }> }) 
                 </div>
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
                   <div
-                    className="h-full rounded-full bg-purple-500/60"
+                    className="h-full rounded-full bg-sky-500/60"
                     style={{ width: `${Math.round(clamp01(pct) * 100)}%` }}
                   />
                 </div>
@@ -629,33 +658,46 @@ function DevicesCard({ rows }: { rows: Array<{ key: string; value: number }> }) 
 function CountriesCard({ rows }: { rows: Array<{ key: string; value: number }> }) {
   const total = sum(rows);
   return (
-    <CardShell title="Countries" right={<span className="text-xs text-zinc-500">People</span>}>
+    <CardShell title="Top Countries" right={<span className="text-xs text-zinc-500">People</span>}>
       {rows.length === 0 ? (
-        <p className="text-xs text-zinc-500">No data.</p>
+        <p className="text-xs text-zinc-500">No geographic data available yet.</p>
       ) : (
-        <div className="space-y-2">
-          {rows
-            .slice()
-            .sort((a, b) => b.value - a.value)
-            .map((row) => {
-              const pct = total > 0 ? row.value / total : 0;
-              return (
-                <div key={`country-${row.key}`} className="flex items-center justify-between gap-3">
-                  <p className="truncate text-xs text-zinc-200">{row.key || "Unknown"}</p>
-                  <div className="flex items-center gap-3">
-                    <p className="w-14 text-right text-xs font-medium text-zinc-100">{formatNumber(row.value)}</p>
-                    <p className="w-12 text-right text-xs text-zinc-500">{formatPercent(pct)}</p>
-                  </div>
+        <div className="space-y-3">
+          {rows.map((row) => {
+            const pct = total > 0 ? row.value / total : 0;
+            return (
+              <div key={`country-${row.key}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-xs font-medium text-zinc-200">{row.key || "Unknown"}</p>
+                  <p className="text-xs font-semibold text-zinc-100">{formatNumber(row.value)}</p>
                 </div>
-              );
-            })}
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                  <div
+                    className="h-full rounded-full bg-sky-500/50"
+                    style={{ width: `${Math.round(clamp01(pct) * 100)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-zinc-500">{formatPercent(pct)}</p>
+              </div>
+            );
+          })}
         </div>
       )}
     </CardShell>
   );
 }
 
-function MiniLineChart({ series }: { series: Array<{ date: string; value: number }> }) {
+function MiniLineChart({
+  series,
+  onHover,
+  hovered,
+  metricLabel,
+}: {
+  series: Array<{ date: string; value: number }>;
+  onHover?: (point: { date: string; value: number } | null) => void;
+  hovered?: { date: string; value: number } | null;
+  metricLabel?: string;
+}) {
   const width = 640;
   const height = 180;
   const padX = 12;
@@ -688,31 +730,104 @@ function MiniLineChart({ series }: { series: Array<{ date: string; value: number
   const first = series[0]?.date;
   const last = series[series.length - 1]?.date;
 
+  const hoveredPoint = hovered ? points.find((p) => p.date === hovered.date) : null;
+
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-950/40">
-      <svg viewBox={`0 0 ${width} ${height}`} className="h-44 w-full">
-        <defs>
-          <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(168,85,247,0.35)" />
-            <stop offset="100%" stopColor="rgba(168,85,247,0)" />
-          </linearGradient>
-        </defs>
+    <div className="space-y-3">
+      <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-950/40">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          className="h-44 w-full"
+          onMouseMove={(e) => {
+            if (!onHover) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * width;
+            const closestPoint = points.reduce((prev, curr) =>
+              Math.abs(curr.x - x) < Math.abs(prev.x - x) ? curr : prev,
+            );
+            onHover(closestPoint);
+          }}
+          onMouseLeave={() => {
+            if (onHover) onHover(null);
+          }}
+        >
+          <defs>
+            <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="rgba(14,165,233,0.35)" />
+              <stop offset="100%" stopColor="rgba(14,165,233,0)" />
+            </linearGradient>
+          </defs>
 
-        {/* subtle grid */}
-        <line x1={padX} y1={padY + innerH} x2={padX + innerW} y2={padY + innerH} stroke="rgba(255,255,255,0.08)" />
-        <line x1={padX} y1={padY} x2={padX} y2={padY + innerH} stroke="rgba(255,255,255,0.08)" />
+          {/* subtle grid */}
+          <line x1={padX} y1={padY + innerH} x2={padX + innerW} y2={padY + innerH} stroke="rgba(255,255,255,0.08)" />
+          <line x1={padX} y1={padY} x2={padX} y2={padY + innerH} stroke="rgba(255,255,255,0.08)" />
 
-        <path d={areaD} fill="url(#trendFill)" />
-        <path d={d} fill="none" stroke="rgba(168,85,247,0.9)" strokeWidth={2.5} />
+          <path d={areaD} fill="url(#trendFill)" />
+          <path d={d} fill="none" stroke="rgba(14,165,233,0.9)" strokeWidth={2.5} />
 
-        {points.slice(-1).map((pt) => (
-          <circle key="last" cx={pt.x} cy={pt.y} r={4} fill="rgba(168,85,247,1)" />
-        ))}
-      </svg>
-      <div className="flex items-center justify-between px-3 pb-3 text-[11px] text-zinc-500">
-        <span>{first ? formatShortDate(first) : ""}</span>
-        <span>{last ? formatShortDate(last) : ""}</span>
+          {/* Hover indicator */}
+          {hoveredPoint && (
+            <>
+              <line
+                x1={hoveredPoint.x}
+                y1={padY}
+                x2={hoveredPoint.x}
+                y2={padY + innerH}
+                stroke="rgba(255,255,255,0.2)"
+                strokeDasharray="4"
+              />
+              <circle cx={hoveredPoint.x} cy={hoveredPoint.y} r={5} fill="rgba(14,165,233,0.8)" />
+              <circle cx={hoveredPoint.x} cy={hoveredPoint.y} r={7} fill="none" stroke="rgba(14,165,233,0.4)" strokeWidth={1.5} />
+            </>
+          )}
+
+          {points.slice(-1).map((pt) => (
+            <circle key="last" cx={pt.x} cy={pt.y} r={4} fill="rgba(14,165,233,1)" />
+          ))}
+        </svg>
+        <div className="flex items-center justify-between px-3 pb-3 text-[11px] text-zinc-500">
+          <span>{first ? formatShortDate(first) : ""}</span>
+          <span>{last ? formatShortDate(last) : ""}</span>
+        </div>
       </div>
+
+      {/* Tooltip */}
+      {hoveredPoint && (
+        <div className="rounded-lg border border-sky-500/30 bg-sky-950/40 p-3">
+          <p className="text-xs font-medium text-sky-100">{formatFullDate(hoveredPoint.date)}</p>
+          <p className="mt-1 text-lg font-semibold text-white">{formatNumber(hoveredPoint.value)}</p>
+          <p className="mt-0.5 text-xs text-sky-200">{metricLabel}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TrendDataTable({
+  series,
+  metricLabel,
+}: {
+  series: Array<{ date: string; value: number }>;
+  metricLabel: string;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-white/[0.08] bg-zinc-950/40">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-white/[0.08]">
+            <th className="px-3 py-2 text-left text-xs font-medium text-zinc-400">Date</th>
+            <th className="px-3 py-2 text-right text-xs font-medium text-zinc-400">{metricLabel}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/[0.08]">
+          {series.map((row) => (
+            <tr key={row.date} className="hover:bg-white/[0.02]">
+              <td className="px-3 py-2 text-xs text-zinc-300">{formatFullDate(row.date)}</td>
+              <td className="px-3 py-2 text-right text-xs font-medium text-zinc-100">{formatNumber(row.value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
