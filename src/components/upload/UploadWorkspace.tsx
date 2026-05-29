@@ -75,6 +75,7 @@ import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { UploadPaywallModal } from "./UploadPaywallModal";
 import { GuestWorkspaceBanner } from "./GuestWorkspaceBanner";
+import { DocumentIqCard } from "./DocumentIqCard";
 
 const WORKSPACE_CARD =
   "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 shadow-sm shadow-black/20 backdrop-blur";
@@ -751,6 +752,8 @@ function PostAnalysisRail({
         </dl>
       </section>
 
+      {rawText.trim() ? <DocumentIqCard extractedText={rawText} /> : null}
+
       <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
         <h2 className="text-xs font-semibold text-zinc-200">Analysis profile</h2>
         <p className="mt-2 text-sm font-medium text-white">{mode?.label ?? selectedModeId}</p>
@@ -986,6 +989,31 @@ export function UploadWorkspace() {
     }
     clearPendingAnalysis();
   }, [restoredPendingAnalysis]);
+
+  useEffect(() => {
+    function handleRecommendation(event: Event) {
+      const detail = (event as CustomEvent<{ modeId?: string }>).detail;
+      if (!detail?.modeId) return;
+      setAnalysisMode(detail.modeId as IntelligenceModeId);
+
+      // Make it feel “interactive” by scrolling to the mode section after the change.
+      // This keeps the UI hierarchy intact while showing the selected mode updated.
+      requestAnimationFrame(() => {
+        modeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    window.addEventListener(
+      "workspace:intelligence-mode-recommendation",
+      handleRecommendation as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        "workspace:intelligence-mode-recommendation",
+        handleRecommendation as EventListener,
+      );
+    };
+  }, []);
 
   const persistPendingAnalysis = useCallback(
     (feature: "audio" | "podcast", returnTo: string) => {
@@ -1837,9 +1865,10 @@ export function UploadWorkspace() {
           )}
 
           {!isEmptyWorkspace && !isCompletedResultWorkspace && <WorkspaceEntitlementBanner entitlement={workspaceEntitlement} />}
+
         </div>
 
-        <div className="min-w-0 space-y-4 lg:sticky lg:top-[4.5rem] lg:z-10 lg:max-h-[calc(100vh-5.5rem)] lg:self-start">
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-[4.5rem] lg:z-10 lg:self-start">
           {isEmptyWorkspace ? (
             <EmptyHelperRail />
           ) : isSourceReadyWorkspace || isGeneratingAnalysisWorkspace ? (
@@ -1883,6 +1912,7 @@ export function UploadWorkspace() {
           )}
         </div>
       </div>
+
       <PlanUpgradeModal
         mode={upgradeMode}
         entitlementPlanId={workspaceEntitlement.entitlementPlanId}

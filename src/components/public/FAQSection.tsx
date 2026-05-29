@@ -20,11 +20,11 @@ export function FAQSection({
 }: FAQSectionProps) {
   return (
     <section
-      className={`border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8 ${className}`}
+      className={`border-b border-white/[0.04] px-4 py-12 sm:px-6 sm:py-14 lg:px-8 ${className}`}
       aria-labelledby="faq-section-heading"
     >
       {withSchema && <JsonLd data={faqPageSchema(items)} />}
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         <h2
           id="faq-section-heading"
           className="text-2xl font-semibold tracking-tight text-white sm:text-3xl"
@@ -34,13 +34,13 @@ export function FAQSection({
         {subtitle && (
           <p className="mt-3 text-sm leading-relaxed text-zinc-500">{subtitle}</p>
         )}
-        <div className="mt-8 space-y-2">
+        <div className="mt-10 space-y-2">
           {items.map((item) => (
             <details
               key={item.q}
-              className="group rounded-xl border border-white/[0.06] bg-zinc-950/50 open:border-violet-500/20 open:bg-violet-950/10"
+              className="group rounded-2xl border border-white/[0.06] bg-zinc-950/45 transition-colors hover:border-white/[0.10] open:border-violet-500/20 open:bg-violet-950/10"
             >
-              <summary className="cursor-pointer list-none px-4 py-3.5 text-sm font-medium text-zinc-200 marker:content-none [&::-webkit-details-marker]:hidden">
+              <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium text-zinc-200 marker:content-none [&::-webkit-details-marker]:hidden">
                 <span className="flex items-center justify-between gap-3">
                   {item.q}
                   <span
@@ -51,7 +51,7 @@ export function FAQSection({
                   </span>
                 </span>
               </summary>
-              <div className="border-t border-white/[0.04] px-4 pb-4 pt-2">
+              <div className="border-t border-white/[0.04] px-5 pb-5 pt-3">
                 <p className="text-sm leading-relaxed text-zinc-400">{item.a}</p>
               </div>
             </details>

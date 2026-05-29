@@ -1,6 +1,8 @@
 type Feature = {
   title: string;
   description: string;
+  icon?: React.ReactNode;
+  accent?: "violet" | "cyan" | "emerald" | "amber" | "fuchsia" | "sky";
 };
 
 type FeatureGridProps = {
@@ -12,7 +14,7 @@ type FeatureGridProps = {
 
 export function FeatureGrid({ eyebrow, title, subtitle, features }: FeatureGridProps) {
   return (
-    <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">
+    <section className="border-b border-white/[0.04] px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
       <div className="mx-auto max-w-6xl">
         {eyebrow && (
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-400/80">
@@ -29,10 +31,49 @@ export function FeatureGrid({ eyebrow, title, subtitle, features }: FeatureGridP
           {features.map((feature) => (
             <li
               key={feature.title}
-              className="rounded-xl border border-white/[0.06] bg-zinc-950/50 p-5 transition-colors hover:border-violet-500/20"
+              className="group flex h-full min-h-[152px] flex-col rounded-2xl border border-white/[0.06] bg-zinc-950/45 p-6 shadow-[0_18px_70px_-56px_rgba(124,58,237,0.55)] transition-colors hover:border-violet-500/25 hover:bg-zinc-950/55"
             >
-              <h3 className="text-sm font-semibold text-zinc-100">{feature.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-zinc-500">{feature.description}</p>
+              <div className="flex items-start gap-3">
+                <span
+                  className={
+                    feature.accent === "cyan"
+                      ? "relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-950/25 text-cyan-200"
+                      : feature.accent === "emerald"
+                        ? "relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-950/20 text-emerald-200"
+                        : feature.accent === "amber"
+                          ? "relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-950/15 text-amber-200"
+                          : feature.accent === "fuchsia"
+                            ? "relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-fuchsia-400/25 bg-fuchsia-950/15 text-fuchsia-200"
+                            : feature.accent === "sky"
+                              ? "relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-950/15 text-sky-200"
+                              : "relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-950/25 text-violet-200"
+                  }
+                >
+                  <span
+                    className={
+                      feature.accent === "cyan"
+                        ? "pointer-events-none absolute -inset-3 rounded-full bg-cyan-400/16 blur-lg"
+                        : feature.accent === "emerald"
+                          ? "pointer-events-none absolute -inset-3 rounded-full bg-emerald-400/16 blur-lg"
+                          : feature.accent === "amber"
+                            ? "pointer-events-none absolute -inset-3 rounded-full bg-amber-400/14 blur-lg"
+                            : feature.accent === "fuchsia"
+                              ? "pointer-events-none absolute -inset-3 rounded-full bg-fuchsia-400/14 blur-lg"
+                              : feature.accent === "sky"
+                                ? "pointer-events-none absolute -inset-3 rounded-full bg-sky-400/14 blur-lg"
+                                : "pointer-events-none absolute -inset-3 rounded-full bg-violet-500/16 blur-lg"
+                    }
+                    aria-hidden
+                  />
+                  <span className="relative text-[14px] font-semibold">
+                    {feature.icon ?? "✦"}
+                  </span>
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-zinc-100">{feature.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">{feature.description}</p>
+                </div>
+              </div>
             </li>
           ))}
         </ul>

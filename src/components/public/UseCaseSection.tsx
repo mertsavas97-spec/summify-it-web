@@ -11,7 +11,7 @@ type UseCaseSectionProps = {
 
 export function UseCaseSection({ title, subtitle, cases }: UseCaseSectionProps) {
   return (
-    <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">
+    <section className="border-b border-white/[0.04] px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">{title}</h2>
         {subtitle && (
@@ -21,7 +21,7 @@ export function UseCaseSection({ title, subtitle, cases }: UseCaseSectionProps) 
           {cases.map((item) => (
             <article
               key={item.title}
-              className="rounded-xl border border-white/[0.06] bg-gradient-to-b from-zinc-900/60 to-zinc-950/40 p-5"
+              className="flex h-full flex-col rounded-2xl border border-white/[0.06] bg-gradient-to-b from-zinc-900/60 to-zinc-950/35 p-6"
             >
               <h3 className="text-sm font-medium text-violet-200">{item.title}</h3>
               <p className="mt-2 text-xs leading-relaxed text-zinc-500">{item.description}</p>

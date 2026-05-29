@@ -91,7 +91,7 @@ export function UploadPreviewPanel({
 
   return (
     <aside
-      className="relative flex max-h-[calc(100vh-5.5rem)] flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-[#0d1018]/70 shadow-sm shadow-black/20 backdrop-blur"
+      className="relative flex flex-col overflow-visible rounded-2xl border border-white/[0.07] bg-[#0d1018]/70 shadow-sm shadow-black/20 backdrop-blur"
       data-workspace-source-pane
       data-workspace-preview-panel
     >
@@ -106,7 +106,7 @@ export function UploadPreviewPanel({
         <p className="mt-1 text-xs text-zinc-500">{intelligenceSubtitle}</p>
       </div>
 
-      <div className="relative min-h-0 flex-1 space-y-4 overflow-y-auto p-3.5 sm:p-4">
+      <div className="relative space-y-4 overflow-visible p-3.5 sm:p-4">
         {youtubePipelineActive && (
           <IntelligenceLoadingStages
             key="youtube-pipeline-loading"
