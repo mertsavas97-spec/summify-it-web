@@ -31,13 +31,17 @@ type ProductAnalyticsResponse =
         podcastPerDay: Array<{ date: string; value: number }>;
       };
       funnel: {
-        visitor: number;
-        upload: number;
-        analysis: number;
-        signup: number;
-        pricing: number;
-        subscription: number;
-        rates: Record<string, number>;
+        stages: Array<{
+          key: string;
+          label: string;
+          count: number;
+          prevRate: number;
+          topRate: number;
+          dropOffPrev: number;
+          dropOffTop: number;
+        }>;
+        insights: string[];
+        hasEnoughData: boolean;
       };
       topModes: Array<{ key: string; count: number }>;
       topSources: Array<{ key: string; count: number }>;
@@ -145,15 +149,7 @@ export function AdminProductAnalyticsDashboard() {
      if (data?.available !== true) {
        return {
          overview: {},
-         funnel: {
-           visitor: 0,
-           upload: 0,
-           analysis: 0,
-           signup: 0,
-           pricing: 0,
-           subscription: 0,
-           rates: {},
-         },
+          funnel: { stages: [], insights: [], hasEnoughData: false },
          topModes: [],
          topSources: [],
          timeseries: {
@@ -167,15 +163,7 @@ export function AdminProductAnalyticsDashboard() {
      }
      return {
        overview: data.overview ?? {},
-       funnel: data.funnel ?? {
-         visitor: 0,
-         upload: 0,
-         analysis: 0,
-         signup: 0,
-         pricing: 0,
-         subscription: 0,
-         rates: {},
-       },
+        funnel: data.funnel ?? { stages: [], insights: [], hasEnoughData: false },
        topModes: data.topModes ?? [],
        topSources: data.topSources ?? [],
        timeseries: {
@@ -386,10 +374,6 @@ export function AdminProductAnalyticsDashboard() {
             <SectionHeader title="Most Engaged Features" subtitle="Feature adoption ranking." />
             <MostEngagedFeaturesCard overview={data.overview} />
 
-            {/* Funnel */}
-            <SectionHeader title="Funnel" subtitle="Visitor → Upload → Analysis → Signup → Pricing → Subscription" />
-            <FunnelCardNew data={data.funnel} />
-
             {/* Top Modes & Sources in grid */}
             <SectionHeader title="Top Content" subtitle="Most popular analysis modes and sources." />
             <div className="grid gap-4 lg:grid-cols-2">
@@ -516,85 +500,6 @@ function MostEngagedFeaturesCard({ overview }: { overview: {
         </div>
       )}
     </CardShell>
-  );
-}
-
-function FunnelCardNew({
-  data,
-}: {
-  data: {
-    visitor: number;
-    upload: number;
-    analysis: number;
-    signup: number;
-    pricing: number;
-    subscription: number;
-    rates: Record<string, number>;
-  };
-}) {
-  const rows = [
-    { label: "Visitors", count: data.visitor, rate: null },
-    { label: "Uploads", count: data.upload, rate: data.rates.visitor_to_upload },
-    { label: "Analyses", count: data.analysis, rate: data.rates.upload_to_analysis },
-    { label: "Signups", count: data.signup, rate: data.rates.analysis_to_signup },
-    { label: "Pricing", count: data.pricing, rate: data.rates.signup_to_pricing },
-    { label: "Subscriptions", count: data.subscription, rate: data.rates.pricing_to_subscription },
-  ];
-
-  const maxCount = Math.max(...rows.map((r) => r.count), 1);
-
-  return (
-    <div className="space-y-3">
-      {rows.map((row, idx) => {
-        const widthPct = (row.count / maxCount) * 100;
-        const dropOffPct = row.rate ? Math.max(0, 1 - (row.rate || 0)) : null;
-        const isSevereDropOff = dropOffPct && dropOffPct > 0.7;
-
-        return (
-          <div key={row.label}>
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-zinc-100">{row.label}</p>
-                <p className="mt-0.5 text-[11px] text-zinc-500">{formatNumber(row.count)}</p>
-              </div>
-              {row.rate !== null && (
-                <div className="text-right">
-                  <p className={`text-xs font-semibold ${isSevereDropOff ? "text-rose-400" : "text-zinc-200"}`}>
-                    {formatPercent(row.rate)}
-                  </p>
-                  {dropOffPct && (
-                    <p className={`text-[11px] ${isSevereDropOff ? "text-rose-500/70" : "text-zinc-500"}`}>
-                      {formatPercent(dropOffPct)} drop
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
-              <div
-                className={`h-full rounded-full transition-all ${
-                  isSevereDropOff ? "bg-rose-500/70" : "bg-violet-500/60"
-                }`}
-                style={{ width: `${widthPct}%` }}
-              />
-            </div>
-            {idx < rows.length - 1 && (
-              <div className="mt-2 flex justify-center">
-                <svg className="h-3 w-3 text-zinc-500" fill="none" viewBox="0 0 16 16">
-                  <path
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M8 2v10M12 10l-4 4-4-4"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
   );
 }
 

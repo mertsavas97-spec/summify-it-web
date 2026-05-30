@@ -7,6 +7,12 @@ export const dynamic = "force-dynamic";
 
 type DateFilterPreset = "7d" | "30d" | "90d" | "custom";
 
+const INTERNAL_EMAILS = new Set([
+  "mertsavas97@gmail.com",
+  "mert@075collective.com",
+  "mert.savas@college.com.tr",
+]);
+
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -97,6 +103,115 @@ async function distinctUsersForEvent(
     if (row.user_id) set.add(String(row.user_id));
   }
   return set.size;
+}
+
+async function getInternalUserIds(admin: ReturnType<typeof getSupabaseAdmin>): Promise<Set<string>> {
+  const { data } = await admin.from("profiles").select("id,email").limit(10000);
+  const set = new Set<string>();
+  for (const row of data ?? []) {
+    const email = typeof row.email === "string" ? row.email.toLowerCase().trim() : "";
+    if (email && INTERNAL_EMAILS.has(email)) set.add(String(row.id));
+  }
+  return set;
+}
+
+async function getDistinctSessionOrUserCount(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  args: { names: string[]; start: string; end: string; by: "session" | "user"; excludedUserIds?: Set<string> },
+): Promise<number> {
+  const { data } = await admin
+    .from("product_events")
+    .select(args.by === "session" ? "session_id,user_id" : "user_id")
+    .in("event_name", args.names)
+    .gte("created_at", `${args.start}T00:00:00.000Z`)
+    .lte("created_at", `${args.end}T23:59:59.999Z`)
+    .limit(20000);
+
+  const set = new Set<string>();
+  for (const row of data ?? []) {
+    const userId = "user_id" in row ? row.user_id : null;
+    if (userId && args.excludedUserIds?.has(String(userId))) continue;
+    if (args.by === "session") {
+      if ("session_id" in row && row.session_id) set.add(String(row.session_id));
+    } else if (userId) {
+      set.add(String(userId));
+    }
+  }
+  return set.size;
+}
+
+async function countUsersWithAtLeastTwoAnalyses(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  args: { start: string; end: string; excludedUserIds?: Set<string> },
+): Promise<number> {
+  const { data } = await admin
+    .from("product_events")
+    .select("user_id")
+    .eq("event_name", "analysis_completed")
+    .gte("created_at", `${args.start}T00:00:00.000Z`)
+    .lte("created_at", `${args.end}T23:59:59.999Z`)
+    .not("user_id", "is", null)
+    .limit(20000);
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    if (!row.user_id) continue;
+    const id = String(row.user_id);
+    if (args.excludedUserIds?.has(id)) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  let total = 0;
+  for (const c of counts.values()) {
+    if (c >= 2) total += 1;
+  }
+  return total;
+}
+
+async function countActivePaidUsers(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  args: { start: string; end: string; excludedUserIds?: Set<string> },
+): Promise<number> {
+  const { data } = await admin
+    .from("profiles")
+    .select("id,plan,subscription_status,current_period_end,created_at")
+    .gte("created_at", `${args.start}T00:00:00.000Z`)
+    .lte("created_at", `${args.end}T23:59:59.999Z`)
+    .limit(10000);
+
+  const now = new Date();
+  const set = new Set<string>();
+  for (const row of data ?? []) {
+    const id = String(row.id);
+    if (args.excludedUserIds?.has(id)) continue;
+    const plan = typeof row.plan === "string" ? row.plan.toLowerCase() : "";
+    const status = typeof row.subscription_status === "string" ? row.subscription_status.toLowerCase() : "";
+    const paidPlan = !!plan && plan !== "free";
+    const statusActive = ["active", "trialing"].includes(status);
+    const periodEndValid = !row.current_period_end || new Date(row.current_period_end) > now;
+    if (paidPlan && statusActive && periodEndValid) set.add(id);
+  }
+  return set.size;
+}
+
+function buildFunnelInsights(stages: Array<{ label: string; count: number; prevRate: number; topRate: number }>): string[] {
+  const insights: string[] = [];
+  for (let i = 1; i < stages.length; i += 1) {
+    const prev = stages[i - 1];
+    const current = stages[i];
+    if (prev.count <= 0) continue;
+    const pct = Math.round(current.prevRate * 100);
+    if (current.prevRate >= 0.7) {
+      insights.push(`${prev.label} → ${current.label} conversion is strong (${pct}%).`);
+    } else if (current.prevRate <= 0.3) {
+      insights.push(`${prev.label} → ${current.label} conversion is weak (${pct}%).`);
+    }
+  }
+  const second = stages.find((s) => s.label === "Second Analysis Completed");
+  if (second) {
+    if (second.topRate < 0.15) insights.push("Second-analysis rate suggests low retention.");
+    else if (second.topRate > 0.35) insights.push("Second-analysis rate suggests healthy early retention.");
+  }
+  return insights.slice(0, 3);
 }
 
 async function distinctSessionsForEvent(
@@ -202,6 +317,8 @@ export async function GET(request: Request) {
   const start = dateRange.startDate;
   const end = dateRange.endDate;
 
+  const internalUserIds = await getInternalUserIds(admin);
+
   const [
     analysesCompleted,
     uploadsCompleted,
@@ -212,11 +329,12 @@ export async function GET(request: Request) {
     topModes,
     topSources,
     visitors,
-    uploaders,
-    analyzers,
-    signups,
-    pricingViewers,
-    subscribers,
+    sourceUploaded,
+    analysisStarted,
+    analysisCompletedUsers,
+    accountCreated,
+    secondAnalysisCompleted,
+    paidSubscriptions,
     analysesPerDay,
     uploadsPerDay,
     learnCardsPerDay,
@@ -233,12 +351,13 @@ export async function GET(request: Request) {
     topMetadataKey(admin, { name: "analysis_completed", start, end, key: "source_type" }),
 
     // Funnel counts (unique sessions per stage)
-    distinctSessionsForEvent(admin, { name: "landing_view", start, end }),
-    distinctSessionsForEvent(admin, { name: "upload_started", start, end }),
-    distinctSessionsForEvent(admin, { name: "analysis_started", start, end }),
-    distinctSessionsForEvent(admin, { name: "signup_completed", start, end }),
-    distinctSessionsForEvent(admin, { name: "pricing_view", start, end }),
-    distinctSessionsForEvent(admin, { name: "subscription_created", start, end }),
+    getDistinctSessionOrUserCount(admin, { names: ["landing_view"], start, end, by: "session", excludedUserIds: internalUserIds }),
+    getDistinctSessionOrUserCount(admin, { names: ["upload_started", "upload_completed"], start, end, by: "session", excludedUserIds: internalUserIds }),
+    getDistinctSessionOrUserCount(admin, { names: ["analysis_started"], start, end, by: "session", excludedUserIds: internalUserIds }),
+    getDistinctSessionOrUserCount(admin, { names: ["analysis_completed"], start, end, by: "user", excludedUserIds: internalUserIds }),
+    getDistinctSessionOrUserCount(admin, { names: ["signup_completed"], start, end, by: "user", excludedUserIds: internalUserIds }),
+    countUsersWithAtLeastTwoAnalyses(admin, { start, end, excludedUserIds: internalUserIds }),
+    countActivePaidUsers(admin, { start, end, excludedUserIds: internalUserIds }),
 
     // Timeseries data
     eventTimeseriesPerDay(admin, { name: "analysis_completed", start, end }),
@@ -250,20 +369,26 @@ export async function GET(request: Request) {
 
   const avgAnalysesPerUser = uniqueAnalyzers > 0 ? analysesCompleted / uniqueAnalyzers : 0;
 
+  const funnelStages = [
+    { key: "visitors", label: "Visitors", count: visitors },
+    { key: "source_uploaded", label: "Source Uploaded", count: sourceUploaded },
+    { key: "analysis_started", label: "Analysis Started", count: analysisStarted },
+    { key: "analysis_completed", label: "Analysis Completed", count: analysisCompletedUsers },
+    { key: "account_created", label: "Account Created", count: accountCreated },
+    { key: "second_analysis_completed", label: "Second Analysis Completed", count: secondAnalysisCompleted },
+    { key: "paid_subscription", label: "Paid Subscription", count: paidSubscriptions },
+  ];
+  const top = funnelStages[0]?.count ?? 0;
+  const enrichedStages = funnelStages.map((stage, i) => {
+    const prev = i === 0 ? stage.count : funnelStages[i - 1].count;
+    const prevRate = i === 0 ? 1 : safeDivide(stage.count, prev);
+    const topRate = i === 0 ? 1 : safeDivide(stage.count, top);
+    return { ...stage, prevRate, topRate, dropOffPrev: i === 0 ? 0 : 1 - prevRate, dropOffTop: i === 0 ? 0 : 1 - topRate };
+  });
   const funnel = {
-    visitor: visitors,
-    upload: uploaders,
-    analysis: analyzers,
-    signup: signups,
-    pricing: pricingViewers,
-    subscription: subscribers,
-    rates: {
-      visitor_to_upload: safeDivide(uploaders, visitors),
-      upload_to_analysis: safeDivide(analyzers, uploaders),
-      analysis_to_signup: safeDivide(signups, analyzers),
-      signup_to_pricing: safeDivide(pricingViewers, signups),
-      pricing_to_subscription: safeDivide(subscribers, pricingViewers),
-    },
+    stages: enrichedStages,
+    insights: buildFunnelInsights(enrichedStages),
+    hasEnoughData: top > 0,
   };
 
   return NextResponse.json({

@@ -11,6 +11,7 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import { AdminGoogleAnalyticsDashboard } from "@/components/admin/analytics/AdminGoogleAnalyticsDashboard";
+import { AdminConversionFunnel } from "@/components/admin/analytics/AdminConversionFunnel";
 import { AdminProductAnalyticsDashboard } from "@/components/admin/analytics/AdminProductAnalyticsDashboard";
 
 export const metadata: Metadata = createPageMetadata({
@@ -39,9 +40,10 @@ export default async function AdminAnalyticsPage() {
       <div className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
        <div className="space-y-10">
-             <AdminGoogleAnalyticsDashboard />
-             <AdminProductAnalyticsDashboard />
-           </div>
+              <AdminGoogleAnalyticsDashboard />
+              <AdminConversionFunnel />
+              <AdminProductAnalyticsDashboard />
+            </div>
         </div>
       </div>
     </div>

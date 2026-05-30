@@ -125,41 +125,50 @@ export function LiveActivityFeed({ maxVisible = 10 }: LiveActivityFeedProps) {
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<ActivityEvent[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
+   useEffect(() => {
+     let cancelled = false;
 
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/admin/analytics/activity", {
-          credentials: "include",
-          cache: "no-store",
+     async function load() {
+       setLoading(true);
+       setError(null);
+       try {
+         const res = await fetch("/api/admin/analytics/activity", {
+           credentials: "include",
+           cache: "no-store",
         });
 
-        const json = (await res.json()) as ActivityResponse;
+         if (!res.ok) {
+           if (cancelled) return;
+           setError("Failed to fetch activity events");
+           return;
+         }
 
-        if (cancelled) return;
+         const json = (await res.json()) as ActivityResponse;
 
-        if (!json.available) {
-          setError(json.message || "Failed to load activity feed");
-          return;
-        }
+         if (cancelled) return;
 
-        setEvents(json.events || []);
-      } catch (e) {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load activity feed");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
+         // API always returns available: true with events array (empty if no data)
+         if (!json.available) {
+           setError("Activity feed unavailable");
+           return;
+         }
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+         setEvents(json.events || []);
+       } catch (e) {
+         if (cancelled) return;
+         const message = e instanceof Error ? e.message : "Failed to load activity feed";
+         console.error("[LiveActivityFeed] Fetch error:", message);
+         setError("Failed to fetch activity events");
+       } finally {
+         if (!cancelled) setLoading(false);
+       }
+     }
+
+     void load();
+     return () => {
+       cancelled = true;
+     };
+   }, []);
 
   const visibleEvents = events.slice(0, maxVisible);
   const hasMore = events.length > maxVisible;
