@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
+import { SeoIndexingPanel } from "@/components/admin/SeoIndexingPanel";
 import { SendTestNotificationButton } from "@/components/admin/SendTestNotificationButton";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { Badge } from "@/components/ui/Badge";
@@ -81,6 +82,10 @@ export default async function AdminDashboardPage() {
 
           <div className="mt-8">
             <AdminDashboardView metrics={metrics} />
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-white/[0.08] bg-zinc-900/50 p-5 sm:p-6">
+            <SeoIndexingPanel />
           </div>
 
           <p className="mt-8 text-center text-[11px] text-zinc-600">
