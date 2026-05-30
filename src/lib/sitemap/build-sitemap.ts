@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
-import { BLOG_POSTS } from "@/data/blog-posts";
-import { listPublishedCmsBlogPosts } from "@/server/blog/cmsBlogRepository";
+import { getAllPublicBlogPosts } from "@/lib/blog/resolvePost";
 import { getAllBlogCategorySlugs } from "@/data/blog-categories";
 import { COMPARISON_SLUGS } from "@/data/comparisons/registry";
 import { FORMAT_LANDINGS } from "@/data/format-landings";
@@ -160,15 +159,9 @@ export async function buildSitemapEntries(): Promise<MetadataRoute.Sitemap> {
     push(metaForPath(path));
   }
 
-  const cmsPosts = await listPublishedCmsBlogPosts();
-  const cmsSlugs = new Set(cmsPosts.map((post) => post.slug));
-  for (const post of BLOG_POSTS) {
-    if (cmsSlugs.has(post.slug)) continue;
+  const allPosts = await getAllPublicBlogPosts();
+  for (const post of allPosts) {
     push(metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.date));
-  }
-
-  for (const post of cmsPosts) {
-    push(metaForPath(`/blog/${post.slug}`, post.updatedAt ?? post.publishedAt ?? undefined));
   }
 
   return entries.sort((a, b) => a.url.localeCompare(b.url));
