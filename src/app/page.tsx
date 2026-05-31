@@ -20,12 +20,17 @@ import Link from "next/link";
 export const metadata = pageSeo.home;
 
 const formats = [
-  { href: "/summarize-pdf", label: "PDF", desc: "AI PDF summarizer" },
-  { href: "/summarize-youtube-video", label: "YouTube", desc: "Transcript summarizer" },
-  { href: "/summarize-powerpoint", label: "PowerPoint", desc: "PPTX deck analysis" },
-  { href: "/upload", label: "Web & text", desc: "Document workspace" },
+  { href: "/summarize-pdf", label: "PDF", desc: "PDF to audio lessons" },
+  { href: "/summarize-youtube-video", label: "YouTube", desc: "Video to study workflow" },
+  { href: "/summarize-powerpoint", label: "PowerPoint", desc: "Deck to study materials" },
+  { href: "/upload", label: "Web & text", desc: "Personal learning workspace" },
 ];
 
+/* Hero headline alternatives (comment-only, do not auto-replace):
+   1) Turn any source into an audio lesson that helps you learn and remember.
+   2) Transform PDFs, videos, and articles into audio-first study sessions.
+   3) Learn faster from any source with teacher-style audio lessons and recall loops.
+*/
 export default function HomePage() {
   return (
     <>
@@ -42,9 +47,9 @@ export default function HomePage() {
         badge="Public beta · Audio-first study"
         title={
           <>
-            Master any topic while you{" "}
+            Turn any PDF, video, or article into your{" "}
             <span className="bg-gradient-to-r from-violet-300 via-cyan-200 to-sky-300 bg-clip-text text-transparent">
-              walk, commute, or exercise
+              private study podcast
             </span>
             .
           </>
@@ -55,8 +60,8 @@ export default function HomePage() {
               Turn PDFs, videos, and articles into private study podcasts.
             </span>
             <span className="mt-3 block">
-              Summify creates teacher-style audio lessons, smart study cards, and quizzes
-              from your documents — helping you learn faster without the screen.
+              Summify creates teacher-style audio lessons, smart study cards, quizzes, and mind maps
+              from your source — helping you summarize, listen, learn, and remember without a screen.
             </span>
           </>
         }
@@ -71,13 +76,13 @@ export default function HomePage() {
       <HomeTrustBar />
 
       {/* 3. Audio Spotlight Section */}
-      <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <section className="border-b border-slate-200/70 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 dark:border-white/[0.04]">
         <div className="mx-auto max-w-6xl">
           <div className="mb-8 text-center sm:text-left">
-            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
               Audio lessons that go where you go
             </h2>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500">
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
               Listen while walking, commuting, or exercising. Turn spare moments into focused
               learning.
             </p>
@@ -92,10 +97,10 @@ export default function HomePage() {
                 { label: "Remember more", icon: "🧠" },
               ].map((b) => (
                 <div key={b.label} className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-950/30 text-[10px] text-violet-200">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-violet-300/60 bg-violet-100 text-[10px] text-violet-700 dark:border-violet-500/20 dark:bg-violet-950/30 dark:text-violet-200">
                     {b.icon}
                   </span>
-                  <span className="text-sm text-zinc-300">{b.label}</span>
+                  <span className="text-sm text-slate-700 dark:text-zinc-300">{b.label}</span>
                 </div>
               ))}
             </div>
@@ -104,10 +109,10 @@ export default function HomePage() {
       </section>
 
       {/* 4. Supported Sources (Minor strip) */}
-      <section className="border-b border-white/[0.04] px-4 py-4 sm:px-6 lg:px-8">
+      <section className="border-b border-slate-200/70 px-4 py-4 sm:px-6 lg:px-8 dark:border-white/[0.04]">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-500">
               Supported sources
             </p>
             <div className="flex flex-wrap gap-2">
@@ -115,11 +120,11 @@ export default function HomePage() {
                 <Link
                   key={f.href}
                   href={f.href}
-                  className="group inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-zinc-950/40 px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:border-violet-500/25 hover:text-zinc-200"
+                  className="group inline-flex items-center gap-2 rounded-full border border-slate-300/80 bg-white px-3 py-1.5 text-[11px] text-slate-600 transition-colors hover:border-violet-400/50 hover:text-slate-900 dark:border-white/[0.06] dark:bg-zinc-950/40 dark:text-zinc-400 dark:hover:border-violet-500/25 dark:hover:text-zinc-200"
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-white/20 group-hover:bg-violet-400/60" />
-                  <span className="font-medium text-zinc-200/90">{f.label}</span>
-                  <span className="hidden text-zinc-500 sm:inline">· {f.desc}</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-slate-300 group-hover:bg-violet-500/70 dark:bg-white/20 dark:group-hover:bg-violet-400/60" />
+                  <span className="font-medium text-slate-800 dark:text-zinc-200/90">{f.label}</span>
+                  <span className="hidden text-slate-500 dark:text-zinc-500 sm:inline">· {f.desc}</span>
                 </Link>
               ))}
             </div>
@@ -132,11 +137,11 @@ export default function HomePage() {
         variant="loop"
         eyebrow="The Workflow"
         title="A learning workflow, not just a summary tool"
-        subtitle="Go beyond document compression. Master your material with an integrated loop designed for retention."
+        subtitle="Upload once, then move through summary, audio lesson, study cards, quiz, and memory-friendly review."
         features={[
           {
-            title: "1. Distill",
-            description: "Extract core insights and key concepts instantly.",
+            title: "1. Understand",
+            description: "Extract key ideas and core concepts from your source.",
             icon: "≋",
             accent: "violet",
           },
@@ -170,7 +175,7 @@ export default function HomePage() {
       {/* 6. ICP / Use Case Cards */}
       <UseCaseSection
         title="Built for how you learn"
-        subtitle="Specialized intelligence lenses for students, researchers, and creators."
+        subtitle="Choose a workflow designed for the way you learn."
         cases={[
           {
             title: "For ADHD Students",
@@ -186,11 +191,11 @@ export default function HomePage() {
           },
           {
             title: "For Creators",
-            description: "Turn videos and articles into structured summaries and content scripts.",
+            description: "Turn videos and articles into audio explainers, summary notes, and reusable study cards.",
           },
           {
             title: "For Professionals",
-            description: "Save hours of reading. Get executive briefs and strategic insights.",
+            description: "Save hours of reading. Get audio briefings plus quiz-ready recall prompts.",
           },
         ]}
       />
@@ -198,31 +203,35 @@ export default function HomePage() {
       {/* 7. How It Works */}
       <FormatWorkflow
         id="how-it-works"
-        title="From reading to mastery in 4 steps"
+        title="From reading to memory in 5 steps"
         steps={[
           {
             title: "Upload or paste",
             description: "Add a PDF, YouTube URL, web article, or text.",
           },
           {
-            title: "Choose your lens",
-            description: "Pick an intelligence mode tailored to your study goal.",
+            title: "Get your summary",
+            description: "Summify extracts key ideas and core concepts from your source.",
           },
           {
-            title: "AI Synthesis",
-            description: "Our engine transforms dense material into structured insights.",
+            title: "Listen to your lesson",
+            description: "Play a teacher-style audio lesson while walking, commuting, or exercising.",
           },
           {
-            title: "Learn by listening",
-            description: "Review study cards, quiz yourself, and play the audio lesson.",
+            title: "Review study cards",
+            description: "Use smart study cards to lock in definitions, concepts, and explanations.",
+          },
+          {
+            title: "Quiz and remember",
+            description: "Test recall with quizzes and return later with memory-friendly review.",
           },
         ]}
       />
 
       {/* 8. Proof Strip */}
-      <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 lg:px-8">
+      <section className="border-b border-slate-200/70 px-4 py-8 sm:px-6 lg:px-8 dark:border-white/[0.04]">
         <div className="mx-auto max-w-6xl">
-          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[12px] font-medium uppercase tracking-widest text-zinc-500">
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[12px] font-medium uppercase tracking-widest text-slate-500 dark:text-zinc-500">
             <li>Built for students & researchers</li>
             <li>Teacher-style audio lessons</li>
             <li>Private by design</li>
@@ -244,7 +253,7 @@ export default function HomePage() {
       {/* 11. Final CTA */}
       <CTASection
         title="Ready to turn your reading into real learning?"
-        description="Join thousands of learners mastering their material through AI-powered audio and structured study guides."
+        description="Summify is not just summaries — it is a complete learning workflow with audio lessons, study cards, quizzes, and memory-friendly review."
         primaryLabel="Start Learning Free"
         secondaryHref="#how-it-works"
         secondaryLabel="See how it works"

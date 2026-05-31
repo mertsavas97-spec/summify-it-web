@@ -18,12 +18,12 @@ const SOURCE_FILTERS = [
   { value: "youtube", label: "YouTube" },
   { value: "presentation", label: "Presentation" },
   { value: "url", label: "Web article" },
-  { value: "file", label: "Upload" },
+  { value: "file", label: "File" },
   { value: "text", label: "Text" },
 ] as const;
 
 const selectClassName =
-  "rounded-lg border border-white/[0.08] bg-zinc-950/80 px-3 py-2 text-xs text-zinc-200 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30";
+  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 dark:border-white/[0.08] dark:bg-zinc-950/80 dark:text-zinc-200";
 
 export function DashboardAnalysesExplorer({ analyses }: DashboardAnalysesExplorerProps) {
   const [query, setQuery] = useState("");
@@ -62,9 +62,9 @@ export function DashboardAnalysesExplorer({ analyses }: DashboardAnalysesExplore
   if (analyses.length === 0) {
     return (
       <DashboardEmptyState
-        title="No saved analyses yet"
-        description="Complete an analysis in the workspace while signed in — your summary and Learn cards will appear here automatically."
-        primaryAction={{ href: "/upload", label: "Start a new summary" }}
+        title="No learning sessions yet"
+        description="Start a learning session while signed in — your audio lesson, summary, and study cards will appear here automatically."
+        primaryAction={{ href: "/upload", label: "Start a learning session" }}
       />
     );
   }
@@ -73,19 +73,19 @@ export function DashboardAnalysesExplorer({ analyses }: DashboardAnalysesExplore
     <section className="mt-8 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <label className="min-w-[12rem] flex-1">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-zinc-500">
             Search
           </span>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Title, summary, source…"
+            placeholder="Title, lesson, source…"
             className={`mt-1 w-full ${selectClassName}`}
           />
         </label>
         <label>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-zinc-500">
             Source
           </span>
           <select
@@ -101,15 +101,15 @@ export function DashboardAnalysesExplorer({ analyses }: DashboardAnalysesExplore
           </select>
         </label>
         <label>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-            Mode
+            <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+            Study Mode
           </span>
           <select
             value={modeFilter}
             onChange={(e) => setModeFilter(e.target.value)}
             className={`mt-1 block min-w-[9rem] ${selectClassName}`}
           >
-            <option value="all">All modes</option>
+            <option value="all">All study modes</option>
             {modeOptions.map((id) => (
               <option key={id} value={id}>
                 {getIntelligenceModeLabel(id)}
@@ -119,14 +119,14 @@ export function DashboardAnalysesExplorer({ analyses }: DashboardAnalysesExplore
         </label>
       </div>
 
-      <p className="text-[11px] text-zinc-600">
+      <p className="text-[11px] text-slate-500 dark:text-zinc-600">
         Showing {filtered.length} of {analyses.length} saved{" "}
         {analyses.length === 1 ? "session" : "sessions"}
       </p>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-4 py-8 text-center">
-          <p className="text-sm text-zinc-400">No analyses match your filters.</p>
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center dark:border-white/[0.06] dark:bg-zinc-950/40">
+          <p className="text-sm text-slate-600 dark:text-zinc-400">No learning sessions match your filters.</p>
           <button
             type="button"
             onClick={() => {

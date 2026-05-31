@@ -34,9 +34,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const defaultTitle = "Summify — AI Summary & Learn";
+const defaultTitle = "Summify — AI Learning Platform";
 const defaultDescription =
-  "Turn PDFs, YouTube videos, audio, and web articles into AI summaries, learn cards, audio lessons, and study podcasts.";
+  "Turn PDFs, YouTube videos, audio, and web articles into teacher-style audio lessons, study cards, quizzes, and memory-friendly review.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
@@ -57,11 +57,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: siteConfig.description,
 
     keywords: [
-      "document intelligence",
-      "PDF summarizer",
-      "YouTube transcript AI",
-      "PowerPoint summarizer",
-      "AI study notes",
+      "AI learning platform",
+      "PDF to audio lessons",
+      "study cards",
+      "AI quizzes",
+      "learn by listening",
     ],
 
     authors: [{ name: SEO_BRAND }],
@@ -131,16 +131,13 @@ export default async function RootLayout({
   }
 
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         {/* Set user context for client-side analytics filtering */}
         {userEmail && <meta name="summify-user-email" content={userEmail} />}
         {isAdmin && <meta name="summify-is-admin" content="true" />}
       </head>
-      <body className="min-h-full bg-[#0e1016] text-zinc-100">
+      <body className="min-h-full bg-background text-foreground transition-colors">
         <meta name="apple-itunes-app" content="app-id=6770321706" />
         <GoogleAnalytics />
         <Analytics />
@@ -177,7 +174,6 @@ export default async function RootLayout({
         </noscript>
 
         <JsonLd data={globalLayoutJsonLd()} />
-
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

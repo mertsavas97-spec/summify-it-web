@@ -5,88 +5,88 @@ import { buildPageMetadata } from "@/lib/seo";
 
 export const pageSeo = {
   home: buildPageMetadata({
-    title: "AI Study Companion — Summaries, Quizzes & Audio Learning",
+    title: "AI Learning Platform — Audio Lessons, Study Cards & Quizzes",
     description:
-      "Summify turns PDFs, videos, and articles into AI-powered summaries, podcast-style learning experiences, and teacher-style audio lessons. Learn by listening with 29 intelligence modes. Free in beta.",
+      "Summify turns PDFs, videos, and articles into teacher-style audio lessons, smart study cards, and quizzes. Learn without a screen — free in beta.",
     path: "/",
     keywords: [
-      "AI study companion",
+      "AI learning platform",
       "audio learning",
       "learn by listening",
-      "AI podcast study",
-      "PDF summarizer",
-      "YouTube summarizer",
+      "PDF to audio",
+      "study cards",
+      "quiz from PDF",
     ],
   }),
 
   upload: buildPageMetadata({
-    title: "AI Document Workspace — Summarize, Learn & Listen",
+    title: "AI Study Workspace — Upload, Learn & Listen",
     description:
-      "Upload PDFs, decks, videos, articles, or text. Get structured summaries, Learn cards, quizzes, and teacher-style audio lessons. Turn any document into a podcast-style learning experience. Free in beta.",
+      "Upload PDFs, decks, videos, articles, or text. Get audio lessons, study cards, quizzes, and memory-friendly review. Turn any document into a learning workflow. Free in beta.",
     path: "/upload",
-    keywords: ["document workspace", "audio study mode", "AI learning platform"],
+    keywords: ["study workspace", "audio study mode", "AI learning platform"],
   }),
 
   summarizePdf: buildPageMetadata({
-    title: "AI PDF Summarizer & Study Notes",
+    title: "PDF to Audio Lessons & Study Cards",
     description:
-      "Turn PDFs into structured summaries, insights, and AI study notes with Learn cards. Upload a report or paper and start summarizing instantly — free in beta.",
+      "Turn PDFs into audio lessons, study cards, and quizzes. Upload a report or paper and start learning — free in beta.",
     path: "/summarize-pdf",
-    keywords: ["AI PDF summarizer", "PDF study notes", "summarize PDF"],
+    keywords: ["PDF to audio", "PDF study notes", "PDF learning"],
   }),
 
   summarizeYoutube: buildPageMetadata({
-    title: "AI YouTube Video Summarizer",
+    title: "YouTube to Audio Study Lessons",
     description:
-      "Extract YouTube transcripts and get structured video intelligence, key moments, and study-ready notes. Paste a link and analyze in one step — try free in beta.",
+      "Turn YouTube transcripts into audio lessons, study cards, and quizzes. Paste a link and start learning — try free in beta.",
     path: "/summarize-youtube-video",
-    keywords: ["YouTube summarizer", "transcript summary", "video notes AI"],
+    keywords: ["YouTube to audio", "YouTube study notes", "video learning"],
   }),
 
   summarizePowerpoint: buildPageMetadata({
-    title: "AI PowerPoint Summarizer",
+    title: "PowerPoint to Study Materials",
     description:
-      "Summarize slide decks into executive insights, themes, and action items. Upload PPTX and analyze with intelligence modes. Try free during public beta.",
+      "Turn slide decks into audio lessons, study cards, and quizzes. Upload PPTX and start learning. Try free during public beta.",
     path: "/summarize-powerpoint",
-    keywords: ["PowerPoint summarizer", "PPTX AI summary", "deck analyzer"],
+    keywords: ["PowerPoint to audio", "PPTX study", "deck learning"],
   }),
 
   summarizeWebArticles: buildPageMetadata({
-    title: "AI Web Article Summarizer",
+    title: "Web Article to Audio Lessons & Study Cards",
     description:
-      "Paste a URL or upload article text for structured summaries, insights, and Learn cards. Intelligence modes for study, executive, and creator workflows — free in beta.",
+      "Paste a URL or upload article text for audio lessons, study cards, and quizzes. Learn from articles on the go — free in beta.",
     path: "/summarize-web-articles",
-    keywords: ["article summarizer", "URL summarizer AI", "web page summary"],
+    keywords: ["article to audio", "web article learning", "URL study"],
   }),
 
   summarizeDocx: buildPageMetadata({
-    title: "AI DOCX & Word Document Summarizer",
+    title: "DOCX & Word Document Study Tool",
     description:
-      "Upload Word .docx files for structured document intelligence — executive briefs, study notes, and contract first reads. Try free during public beta.",
+      "Upload Word .docx files for audio lessons, study cards, and contract summaries. Learn from documents on the go — try free during public beta.",
     path: "/summarize-docx",
-    keywords: ["DOCX summarizer", "Word document AI summary", "summarize docx"],
+    keywords: ["DOCX learning", "Word document study", "DOCX to audio"],
   }),
 
   summarizeMp3: buildPageMetadata({
-    title: "AI Podcast & Audio Transcript Summarizer",
+    title: "Podcast & Audio Transcript Study Tool",
     description:
-      "Turn podcast and interview transcripts into structured notes, hooks, and Learn cards. Works with TXT exports and captioned YouTube — try free in beta.",
+      "Turn podcast and interview transcripts into study cards, quizzes, and audio lessons. Works with TXT exports and captioned YouTube — try free in beta.",
     path: "/summarize-mp3",
-    keywords: ["podcast summarizer AI", "audio transcript summary", "MP3 notes"],
+    keywords: ["podcast learning", "audio transcript study", "MP3 study"],
   }),
 
   pdfSummarizer: buildPageMetadata({
-    title: "PDF Summarizer for Study Workflows & Audio Learning",
+    title: "PDF to Audio Study System — Learn Without a Screen",
     description:
-      "Turn long PDFs into structured study systems with summaries, Learn cards, audio lessons, and podcast-style discussion in one workspace.",
+      "Turn long PDFs into audio lessons, study cards, quizzes, and memory-friendly review in one workspace.",
     path: "/pdf-summarizer",
-    keywords: ["pdf summarizer", "study workflow", "research paper summary", "ai study system"],
+    keywords: ["PDF to audio", "PDF study system", "PDF learning"],
   }),
 
   bestAiForStudying: buildPageMetadata({
-    title: "Best AI for Studying in 2026 — Turn Notes, PDFs & Videos into Study Systems",
+    title: "Best AI for Studying in 2026 — Audio Lessons, Study Cards & Quizzes",
     description:
-      "Summify turns your lecture notes, PDFs, and YouTube videos into structured study workflows: learn cards, audio lessons, and podcast-style discussions. Built for students.",
+      "Summify turns your lecture notes, PDFs, and YouTube videos into audio lessons, study cards, and quizzes. Built for students who learn by listening.",
     path: "/best-ai-for-studying",
     keywords: ["best ai for studying", "ai study workspace", "active recall ai", "audio-first studying"],
   }),
@@ -132,11 +132,11 @@ export const pageSeo = {
   }),
 
   forTeams: buildPageMetadata({
-    title: "AI Document Intelligence for Teams",
+    title: "AI Learning Platform for Teams",
     description:
-      "Turn reports, decks, and meeting transcripts into executive briefs teams can act on. Structured analysis and Learn cards — free during public beta.",
+      "Turn reports, decks, and meeting transcripts into shared audio lessons and study cards. Team learning workflows — free during public beta.",
     path: "/for-teams",
-    keywords: ["team document summarizer", "meeting summary AI", "executive brief"],
+    keywords: ["team learning platform", "meeting summary AI", "executive brief"],
   }),
 
   forFreelancers: buildPageMetadata({
@@ -148,32 +148,32 @@ export const pageSeo = {
   }),
 
   forResearchers: buildPageMetadata({
-    title: "AI Research Paper & Article Summarizer",
+    title: "Research Paper Study Tool — Audio Lessons & Study Cards",
     description:
-      "Synthesize PDFs, preprints, and web articles into structured notes for literature review. The Student and General Summary modes — try free in beta.",
+      "Turn PDFs, preprints, and web articles into audio lessons and study cards for literature review. The Student and General Summary modes — try free in beta.",
     path: "/for-researchers",
-    keywords: ["research paper summarizer", "literature review AI", "academic PDF summary"],
+    keywords: ["research paper study", "literature review AI", "academic PDF learning"],
   }),
 
   modes: buildPageMetadata({
-    title: "29 AI Intelligence Modes for Documents & Video",
+    title: "29 AI Study Modes for Documents & Video",
     description:
-      "Browse executive, study, creator, and document intelligence lenses for PDFs, YouTube, decks, and articles. Five modes active in public beta — more unlocking with Pro.",
+      "Browse executive, study, creator, and general learning modes for PDFs, YouTube, decks, and articles. Five modes active in public beta — more unlocking with Pro.",
     path: "/modes",
-    keywords: ["AI analysis modes", "document intelligence modes"],
+    keywords: ["AI study modes", "learning modes"],
   }),
 
   pricing: buildPageMetadata({
-    title: "Pricing — AI Document Intelligence Plans",
+    title: "Pricing — AI Learning Platform Plans",
     description:
-      "Compare Free, Scholar, Pro, and Team plans for AI summarization, Learn cards, mind maps, memory review, and workspace features. Public beta pricing preview.",
+      "Compare Free, Scholar, Pro, and Team plans for audio lessons, study cards, quizzes, mind maps, and memory review. Public beta pricing preview.",
     path: "/pricing",
   }),
 
   about: buildPageMetadata({
     title: "About Summify",
     description:
-      "Summify is an AI document intelligence workspace for PDFs, videos, decks, and articles — with structured analysis and Learn cards. Explore the public beta.",
+      "Summify is an AI learning platform that turns PDFs, videos, decks, and articles into audio lessons, study cards, and quizzes. Explore the public beta.",
     path: "/about",
   }),
 

@@ -41,7 +41,7 @@ export const SUMMIFY_SOFTWARE_FEATURE_LIST = [
 ] as const;
 
 const DEFAULT_SOFTWARE_DESCRIPTION =
-  "AI document intelligence workspace and study companion for PDFs, YouTube, PowerPoint, web articles, DOCX, and TXT — with Learn cards, quizzes, and teacher-style audio study lessons.";
+  "AI learning platform for PDFs, YouTube, PowerPoint, web articles, DOCX, and TXT — with audio lessons, study cards, quizzes, and memory-friendly review.";
 
 export type HowToStepInput = {
   name: string;
@@ -358,7 +358,7 @@ export function productPricingSchema(): JsonLdObject {
     "@type": "Product",
     name: `${SEO_BRAND} Workspace`,
     description:
-      "AI document intelligence plans for summarizing PDFs, YouTube videos, PowerPoint decks, and articles with Learn cards, practice, and quizzes.",
+      "AI learning plans for studying PDFs, YouTube videos, PowerPoint decks, and articles with audio lessons, study cards, and quizzes.",
     brand: {
       "@type": "Brand",
       name: SEO_BRAND,
