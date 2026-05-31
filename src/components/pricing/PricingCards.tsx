@@ -41,11 +41,14 @@ function isHighlightedPricingFeature(feature: string) {
   const normalized = feature.toLowerCase();
 
   return [
+    "1 analysis",
     "analyses per day",
     "audio lessons per day",
     "podcasts per day",
     "podcast per day",
     "learn cards per run",
+    "30-second audio preview",
+    "document iq",
     "audio study mode",
     "teacher-style audio lessons",
     "unlimited audio lessons",
@@ -58,6 +61,14 @@ function getHighlightedFeatureParts(feature: string) {
 
   if (normalized.includes("audio study mode")) {
     return { highlighted: "Audio Study Mode", trailing: feature.replace(/audio study mode/i, "") };
+  }
+
+  if (normalized.includes("30-second audio preview")) {
+    return { highlighted: "30-second Audio Preview", trailing: "" };
+  }
+
+  if (normalized.includes("document iq")) {
+    return { highlighted: "Document IQ", trailing: feature.replace(/document iq/i, "") };
   }
 
   if (normalized.includes("teacher-style audio lessons")) {
@@ -135,15 +146,21 @@ export function PricingCards({
     name: "Guest",
     displayPrice: "$0",
     displayPeriod: "",
-    tagline: "Try Summify once before you sign up",
+    tagline: "Experience the guest workflow before creating an account",
     featureBullets: [
       "1 analysis",
-      "3 Learn Cards",
-      "Summary only",
-      "No Audio Lessons",
-      "No Podcast",
-      "No Exports",
-      "No History",
+      "Summary",
+      "Deep Analysis preview",
+      "Learn Cards preview",
+      "30-second Audio Preview",
+      "Document IQ",
+      "No saved analyses",
+      "No full Learn Cards",
+      "No full Audio Study Mode",
+      "No podcasts",
+      "No exports",
+      "No history",
+      "No workspace library",
     ],
     cta: "Create Free Account",
     ctaHref: `/login?next=${encodeURIComponent("/upload")}`,

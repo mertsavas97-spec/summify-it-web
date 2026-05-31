@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   BookOpen,
   BrainCircuit,
@@ -51,7 +50,8 @@ import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
-import { DEFAULT_POLLY_VOICE_ID } from "@/lib/audio-study/pollyVoices";
+import { buildGuestPreviewScript } from "@/lib/audio-study/buildGuestPreviewScript";
+import { GuestAudioPreviewHero } from "./GuestAudioPreviewHero";
 
 type TextAnalysisMvpProps = {
   rawText: string;
@@ -597,7 +597,7 @@ function PostAnalysisResultShell({
           onStartQuiz: () => setActiveTab("quiz"),
         })
       : learnModule;
-  const [guestAudioPreviewState, setGuestAudioPreviewState] = useState<"idle" | "generating" | "ready" | "error">("idle");
+  const [guestAudioPreviewState, setGuestAudioPreviewState] = useState<"idle" | "generating" | "ready" | "error" | "timeout" | "fallback">("idle");
   const [guestAudioPreview, setGuestAudioPreview] = useState<{
     title: string;
     durationEstimate: string;
@@ -606,7 +606,6 @@ function PostAnalysisResultShell({
     audioBase64?: string;
     audioMime?: string;
   } | null>(null);
-  const [guestAudioPreviewError, setGuestAudioPreviewError] = useState<string | null>(null);
   const guestPreviewSrc = guestAudioPreview?.audioUrl
     ?? (guestAudioPreview?.audioBase64
       ? `data:${guestAudioPreview.audioMime ?? "audio/mpeg"};base64,${guestAudioPreview.audioBase64}`
@@ -615,32 +614,55 @@ function PostAnalysisResultShell({
 
   useEffect(() => {
     if (isAuthenticated) return;
-    if (guestAudioPreviewState === "ready" || guestAudioPreviewState === "generating") return;
+    if (
+      guestAudioPreviewState === "ready"
+      || guestAudioPreviewState === "generating"
+      || guestAudioPreviewState === "timeout"
+      || guestAudioPreviewState === "fallback"
+    ) return;
 
     const generateGuestPreview = async () => {
       setGuestAudioPreviewState("generating");
-      setGuestAudioPreviewError(null);
+
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[guest-audio-preview] preview request started");
+      }
+
+      const controller = new AbortController();
+      const timeoutMs = 15000;
+      const timeoutId = window.setTimeout(() => {
+        controller.abort("timeout");
+      }, timeoutMs);
+
       try {
-        const input = buildAudioStudyInputFromResult(
-          {
-            ...result,
-            summary: result.summary.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ").trim() || result.summary,
-          },
-          {
-            sourceType: extractionMeta?.sourceKind ?? (inputMode === "text" ? "text" : null),
-            intelligenceMode: modeId,
-            sourceLabel: sourceTitle,
-          },
-        );
-        const res = await fetch("/api/audio-study/generate", {
+        const sourceType = extractionMeta?.sourceKind ?? (inputMode === "text" ? "text" : null);
+        const documentProfile = [sourceType ?? "document", complexity ?? "standard depth"].join(" · ");
+        const previewScriptPayload = buildGuestPreviewScript({
+          title: sourceTitle,
+          keyInsights: result.keyInsights,
+          intelligenceModeLabel: modeLabel,
+          documentProfile,
+        });
+        const analysisFingerprint = `${sourceTitle}|${modeId}|${previewScriptPayload.script}`.slice(0, 240);
+
+        const res = await fetch("/api/audio-study/guest-preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
-            analysisId: "guest-preview",
-            voiceId: DEFAULT_POLLY_VOICE_ID,
-            input,
+            previewScript: previewScriptPayload.script,
+            analysisFingerprint,
           }),
         });
+
+        if ([401, 403, 429, 500].includes(res.status)) {
+          setGuestAudioPreviewState("fallback");
+          if (process.env.NODE_ENV === "development") {
+            console.debug("[guest-audio-preview] preview request failed", { status: res.status });
+          }
+          return;
+        }
+
         const data = (await res.json()) as {
           title?: string;
           durationEstimate?: string;
@@ -662,13 +684,24 @@ function PostAnalysisResultShell({
           audioMime: data.audioMime,
         });
         setGuestAudioPreviewState("ready");
+        if (process.env.NODE_ENV === "development") {
+          console.debug("[guest-audio-preview] preview request success");
+        }
       } catch (err) {
-        const rawMessage = err instanceof Error ? err.message : "Preview audio could not be generated.";
-        const safeMessage = /sign in to use saved analyses/i.test(rawMessage)
-          ? "Preview audio could not be generated."
-          : rawMessage;
-        setGuestAudioPreviewError(safeMessage);
+        if (err instanceof DOMException && err.name === "AbortError") {
+          setGuestAudioPreviewState("timeout");
+          if (process.env.NODE_ENV === "development") {
+            console.debug("[guest-audio-preview] preview timed out", { timeoutMs });
+          }
+          return;
+        }
+
         setGuestAudioPreviewState("error");
+        if (process.env.NODE_ENV === "development") {
+          console.debug("[guest-audio-preview] preview request failed", { error: err });
+        }
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     };
 
@@ -730,6 +763,20 @@ function PostAnalysisResultShell({
 
       <div className="space-y-4">
         <div hidden={activeTab !== "summary"} className="space-y-4">
+          {!isAuthenticated ? (
+            <GuestAudioPreviewHero state={guestAudioPreviewState} previewSrc={guestPreviewSrc} />
+          ) : (
+            <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
+              <p className="text-sm font-semibold text-white">Audio Study Mode</p>
+              <div className="mt-3">
+                {mediaModules?.("audio") ?? (
+                  <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">
+                    Audio lesson generation is not available for this analysis yet.
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
           <AnalysisResultView
             result={result}
             modeId={modeId}
@@ -741,43 +788,7 @@ function PostAnalysisResultShell({
             showHeader={false}
             showToolbar={false}
           />
-          <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
-            <p className="text-sm font-semibold text-white">▶ 30 Second Audio Preview</p>
-            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              Teacher-style lesson generated from this document.
-            </p>
-            <div className="mt-4">
-              {isAuthenticated ? (
-                mediaModules?.("audio") ?? (
-                  <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">
-                    Audio lesson generation is not available for this analysis yet.
-                  </p>
-                )
-              ) : guestAudioPreviewState === "ready" && guestAudioPreviewPlayable ? (
-                <audio controls className="w-full" src={guestPreviewSrc ?? undefined} />
-              ) : guestAudioPreviewState === "generating" ? (
-                <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">Preparing your preview...</p>
-              ) : (
-                <div className="rounded-xl border border-amber-400/20 bg-amber-950/20 px-3.5 py-3 text-xs text-amber-200/90">
-                  <p className="font-medium text-amber-100">Audio preview not ready</p>
-                  <p className="mt-1">Create a free account to generate and save audio lessons.</p>
-                  <Link
-                    href="/login?next=/upload"
-                    className="mt-3 inline-flex items-center justify-center rounded-lg border border-violet-300/40 bg-violet-500 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-violet-400"
-                  >
-                    Create Free Account
-                  </Link>
-                  {guestAudioPreviewError ? <p className="mt-2 text-[11px] text-amber-200/80">{guestAudioPreviewError}</p> : null}
-                </div>
-              )}
-            </div>
-            <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-950/20 p-3.5">
-              <p className="text-sm font-semibold text-violet-100">Unlock full Audio Study Mode</p>
-              <p className="mt-1 text-xs leading-relaxed text-violet-200/80">
-                Generate complete lessons, custom voices, and full-length audio learning.
-              </p>
-            </div>
-          </section>
+          <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
           <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
             <p className="text-sm font-semibold text-white">Learn Cards Preview</p>
             <p className="mt-1 text-xs leading-relaxed text-zinc-500">
@@ -791,10 +802,9 @@ function PostAnalysisResultShell({
               )}
             </div>
           </section>
-          <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
           {!isAuthenticated ? (
             <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
-              <p className="text-sm font-semibold text-white">Deep Analysis</p>
+              <p className="text-sm font-semibold text-white">Detailed Analysis</p>
               <div className="mt-3">
                 <AnalysisResultView
                   result={result}
