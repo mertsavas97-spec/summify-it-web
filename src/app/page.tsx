@@ -36,13 +36,15 @@ export default function HomePage() {
           howToSummifySchema(SUMMIFY_HOW_TO_STEPS),
         ]}
       />
+
+      {/* 1. Hero Section */}
       <PublicHero
-        badge="Public beta · AI study companion"
+        badge="Public beta · Audio-first study"
         title={
           <>
-            Turn any PDF, video, or article into a complete{" "}
+            Master any topic while you{" "}
             <span className="bg-gradient-to-r from-violet-300 via-cyan-200 to-sky-300 bg-clip-text text-transparent">
-              learning experience
+              walk, commute, or exercise
             </span>
             .
           </>
@@ -50,47 +52,59 @@ export default function HomePage() {
         description={
           <>
             <span className="block text-base font-medium text-zinc-200">
-              Summarize. Learn. Quiz yourself. Listen on the go.
+              Turn PDFs, videos, and articles into private study podcasts.
             </span>
             <span className="mt-3 block">
-              Summify helps you go beyond summaries with Learn Cards, quizzes, audio lessons, and
-              podcast-style study flows — all in one workspace.
+              Summify creates teacher-style audio lessons, smart study cards, and quizzes
+              from your documents — helping you learn faster without the screen.
             </span>
           </>
         }
-        primaryCta={{ href: "/upload", label: "Try Summify Free" }}
+        primaryCta={{ href: "/upload", label: "Start Learning Free" }}
         secondaryCta={{ href: "#how-it-works", label: "See how it works" }}
         variant="home"
       >
         <ProductMockCard variant="home" />
       </PublicHero>
 
-      <section className="border-b border-white/[0.04] px-4 pb-8 pt-0 sm:px-6 lg:px-8">
+      {/* 2. Trust Bar (Moved directly below hero) */}
+      <HomeTrustBar />
+
+      {/* 3. Audio Spotlight Section */}
+      <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <ul className="mt-0 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-zinc-500">
-            <li className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-violet-400/70" aria-hidden />
-              <span>
-                <span className="text-zinc-200">1</span> guest analysis
-              </span>
-            </li>
-            <li className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-300/70" aria-hidden />
-              <span>
-                Free accounts get <span className="text-zinc-200">5 analyses/day</span>
-              </span>
-            </li>
-            <li className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300/70" aria-hidden />
-              <span>No credit card required</span>
-            </li>
-          </ul>
+          <div className="mb-8 text-center sm:text-left">
+            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Audio lessons that go where you go
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500">
+              Listen while walking, commuting, or exercising. Turn spare moments into focused
+              learning.
+            </p>
+          </div>
+          <div className="grid gap-8 lg:grid-cols-[1fr_0.4fr]">
+            <VoiceStudyPromo unlocked className="!py-8 !px-6" />
+            <div className="flex flex-col justify-center gap-4">
+              {[
+                { label: "Teacher-style explanations", icon: "✦" },
+                { label: "Built for focus", icon: "🎯" },
+                { label: "Anywhere learning", icon: "🌍" },
+                { label: "Remember more", icon: "🧠" },
+              ].map((b) => (
+                <div key={b.label} className="flex items-center gap-3">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-950/30 text-[10px] text-violet-200">
+                    {b.icon}
+                  </span>
+                  <span className="text-sm text-zinc-300">{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <HomeTrustBar />
-
-      <section className="border-b border-white/[0.04] px-4 py-6 sm:px-6 lg:px-8">
+      {/* 4. Supported Sources (Minor strip) */}
+      <section className="border-b border-white/[0.04] px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
@@ -113,118 +127,130 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* 5. Learning Loop Section (FeatureGrid) */}
       <FeatureGrid
-        eyebrow="Why Summify"
-        title="AI study workflows — not just summaries"
-        subtitle="A premium AI learning workspace with summaries, Learn Cards, quizzes, audio lessons, podcasts, and mind maps."
+        variant="loop"
+        eyebrow="The Workflow"
+        title="A learning workflow, not just a summary tool"
+        subtitle="Go beyond document compression. Master your material with an integrated loop designed for retention."
         features={[
           {
-            title: "AI Summaries",
-            description: "Clear, structured takeaways you can actually study from.",
+            title: "1. Distill",
+            description: "Extract core insights and key concepts instantly.",
             icon: "≋",
             accent: "violet",
           },
           {
-            title: "Learn Cards",
-            description: "Concept + why-it-matters cards that build retention fast.",
+            title: "2. Learn",
+            description: "Deep dive with concept + why-it-matters cards.",
             icon: "▦",
             accent: "cyan",
           },
           {
-            title: "Quizzes",
-            description: "Self-test with questions generated from your source.",
+            title: "3. Test",
+            description: "Check your knowledge with auto-generated quizzes.",
             icon: "?",
             accent: "amber",
           },
           {
-            title: "Audio Lessons",
-            description: "Teacher-style voice lessons you can play on the go.",
+            title: "4. Listen",
+            description: "Play teacher-style audio lessons on the go.",
             icon: "▶",
             accent: "emerald",
           },
           {
-            title: "Podcasts",
-            description: "Podcast-style study flows that make long sources easy.",
-            icon: "◉",
+            title: "5. Remember",
+            description: "Master topics with memory-friendly review habit.",
+            icon: "⟡",
             accent: "fuchsia",
           },
-          {
-            title: "Mind Maps",
-            description: "Turn documents into visual mental models and connections.",
-            icon: "⟡",
-            accent: "sky",
-          },
         ]}
       />
 
+      {/* 6. ICP / Use Case Cards */}
       <UseCaseSection
-        title="Built for real document workflows"
-        subtitle="Students, creators, and operators use the same workspace with different intelligence lenses."
+        title="Built for how you learn"
+        subtitle="Specialized intelligence lenses for students, researchers, and creators."
         cases={[
           {
-            title: "AI study notes for school",
-            description:
-              "Turn lectures, papers, and videos into concepts, quizzes, and exam-ready notes.",
+            title: "For ADHD Students",
+            description: "Reduce overwhelm. Turn dense text into clear audio and bite-sized cards.",
           },
           {
-            title: "YouTube & long-form video",
-            description:
-              "Digest transcripts for hooks, themes, and study notes without rewatching hours of video.",
+            title: "For Researchers",
+            description: "Digest papers while you move. Capture insights without the screen.",
           },
           {
-            title: "Decks, reports & articles",
-            description:
-              "Executive briefs and presentation analysis from PDFs, PPTX, and web sources.",
+            title: "For Med & Law",
+            description: "Master complex topics with teacher-style audio and structured review.",
+          },
+          {
+            title: "For Creators",
+            description: "Turn videos and articles into structured summaries and content scripts.",
+          },
+          {
+            title: "For Professionals",
+            description: "Save hours of reading. Get executive briefs and strategic insights.",
           },
         ]}
       />
 
+      {/* 7. How It Works */}
       <FormatWorkflow
         id="how-it-works"
-        title="How this document summary tool works"
+        title="From reading to mastery in 4 steps"
         steps={[
           {
-            title: "Add a source",
-            description: "Upload or paste — PDF, deck, YouTube URL, web article, or text.",
+            title: "Upload or paste",
+            description: "Add a PDF, YouTube URL, web article, or text.",
           },
           {
-            title: "Choose a lens",
-            description: "Pick an active intelligence mode from 29 options.",
+            title: "Choose your lens",
+            description: "Pick an intelligence mode tailored to your study goal.",
           },
           {
-            title: "Run AI document analysis",
-            description: "Adaptive compaction and structured outputs from your source.",
+            title: "AI Synthesis",
+            description: "Our engine transforms dense material into structured insights.",
           },
           {
-            title: "Learn, quiz & listen",
-            description: "Review analysis, drill Learn cards, take the quiz, then generate audio study.",
+            title: "Learn by listening",
+            description: "Review study cards, quiz yourself, and play the audio lesson.",
           },
         ]}
       />
 
-      <HomePricingPreview />
-
-      <FAQSection
-        title="Common questions about Summify"
-        subtitle="Quick answers before you open the workspace."
-        items={HOME_FAQS}
-      />
-
+      {/* 8. Proof Strip */}
       <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <VoiceStudyPromo />
+          <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-[12px] font-medium uppercase tracking-widest text-zinc-500">
+            <li>Built for students & researchers</li>
+            <li>Teacher-style audio lessons</li>
+            <li>Private by design</li>
+            <li>Try your first lesson free</li>
+          </ul>
         </div>
       </section>
 
-      <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
+      {/* 9. Pricing Preview */}
+      <HomePricingPreview />
 
+      {/* 10. FAQ Section */}
+      <FAQSection
+        title="Common questions about Summify"
+        subtitle="Quick answers before you start your first lesson."
+        items={HOME_FAQS}
+      />
+
+      {/* 11. Final CTA */}
       <CTASection
-        title="Ready to turn documents into learnable content?"
-        description="Upload a source and get summaries, Learn Cards, quizzes, and audio study flows in minutes."
-        primaryLabel="Try Summify Free"
+        title="Ready to turn your reading into real learning?"
+        description="Join thousands of learners mastering their material through AI-powered audio and structured study guides."
+        primaryLabel="Start Learning Free"
         secondaryHref="#how-it-works"
         secondaryLabel="See how it works"
       />
+
+      <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
     </>
   );
 }

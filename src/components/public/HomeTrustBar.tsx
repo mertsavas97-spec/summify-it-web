@@ -1,4 +1,4 @@
-import { Sparkles, Activity, Globe, Headphones, GraduationCap, Layers } from "lucide-react";
+import { Sparkles, ShieldCheck, Lock, Headphones, GraduationCap, Heart } from "lucide-react";
 
 type TrustItem = {
   label: string;
@@ -7,17 +7,17 @@ type TrustItem = {
 };
 
 const ITEMS: TrustItem[] = [
-  { icon: Sparkles, value: "Public beta", label: "Live now" },
-  { icon: Layers, value: "8", label: "Learn Cards per analysis" },
-  { icon: Activity, value: "5", label: "analyses per day" },
-  { icon: Globe, value: "29", label: "intelligence modes" },
-  { icon: Headphones, value: "Audio", label: "lessons included" },
-  { icon: GraduationCap, value: "Quiz", label: "generation included" },
+  { icon: Lock, value: "Private by design", label: "No AI training on data" },
+  { icon: Sparkles, value: "Try your first lesson free", label: "No account required" },
+  { icon: ShieldCheck, value: "Secure processing", label: "Enterprise-grade" },
+  { icon: Heart, value: "Loved by learners", label: "Students & researchers" },
+  { icon: Headphones, value: "Audio lessons", label: "Listen anywhere" },
+  { icon: GraduationCap, value: "Exam ready", label: "Quiz generation" },
 ];
 
 export function HomeTrustBar() {
   return (
-    <section className="border-b border-white/[0.04] px-4 pb-8 pt-0 sm:px-6 lg:px-8">
+    <section className="border-b border-white/[0.04] px-4 pb-6 pt-0 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <ul
           className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6"

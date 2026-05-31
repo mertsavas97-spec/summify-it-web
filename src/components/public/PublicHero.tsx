@@ -32,7 +32,7 @@ export function PublicHero({
     <section
       className={
         isHome
-          ? "relative overflow-hidden border-b border-white/[0.04] px-4 pb-12 pt-16 sm:px-6 sm:pb-16 sm:pt-20 lg:px-8"
+          ? "relative overflow-hidden border-b border-white/[0.04] px-4 pb-8 pt-12 sm:px-6 sm:pb-10 sm:pt-16 lg:px-8"
           : "relative overflow-hidden border-b border-white/[0.04] px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
       }
       aria-labelledby={headingId}

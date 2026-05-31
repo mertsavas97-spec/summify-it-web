@@ -37,10 +37,10 @@ export function ProductMockCard({
               </div>
               <div className="mt-3 space-y-1">
                 {[
-                  { label: "Summary", active: true },
+                  { label: "Summary" },
                   { label: "Learn Cards" },
                   { label: "Quiz" },
-                  { label: "Audio Lesson" },
+                  { label: "Audio Lesson", active: true },
                   { label: "Podcast" },
                 ].map((item) => (
                   <div
@@ -145,17 +145,22 @@ export function ProductMockCard({
                 </div>
 
                 {/* Audio player strip */}
-                <div className="rounded-2xl border border-white/[0.08] bg-zinc-950/55 p-3">
+                <div className="rounded-2xl border border-violet-500/30 bg-violet-950/20 p-3 shadow-[0_0_20px_-10px_rgba(124,58,237,0.5)]">
                   <div className="flex items-center gap-3">
-                    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-950/30">
-                      <span className="absolute -inset-2 rounded-full bg-violet-500/15 blur-md" />
-                      <span className="relative text-[10px] font-semibold text-violet-200">▶</span>
+                    <div className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-violet-500/40 bg-violet-950/50">
+                      <span className="absolute -inset-2 rounded-full bg-violet-500/25 blur-md" aria-hidden />
+                      <span className="relative text-[10px] font-semibold text-violet-100">▶</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-medium text-zinc-200">Audio lesson</p>
-                      <p className="mt-0.5 text-[10px] text-zinc-500">Teacher-style voice · 5:42</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-semibold text-violet-100">Audio lesson</p>
+                        <span className="rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-tight text-violet-200">
+                          Teacher mode
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[10px] text-zinc-400">Natural voice · 5:42</p>
                       <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-white/10">
-                        <div className="h-full w-[42%] rounded bg-gradient-to-r from-violet-400/70 to-cyan-300/70" />
+                        <div className="h-full w-[42%] rounded bg-gradient-to-r from-violet-400 to-cyan-300" />
                       </div>
                     </div>
                     <div className="hidden items-center gap-2 sm:flex">

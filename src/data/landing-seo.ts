@@ -4,7 +4,7 @@ import type { RelatedLinkItem } from "@/components/public/RelatedLinksSection";
 export const HOME_FAQS: FaqItem[] = [
   {
     q: "What is Summify?",
-    a: "Summify is an AI document intelligence workspace. Upload PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, or TXT, choose an intelligence mode, and get structured analysis plus Learn cards.",
+    a: "Summify is an audio-first learning platform that transforms complex sources like PDFs, videos, and articles into teacher-style audio lessons, interactive study cards, and quizzes.",
   },
   {
     q: "Can Summify summarize YouTube videos?",

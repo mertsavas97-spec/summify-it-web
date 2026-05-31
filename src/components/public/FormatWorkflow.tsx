@@ -15,7 +15,7 @@ export function FormatWorkflow({
   steps,
 }: FormatWorkflowProps) {
   return (
-    <section id={id} className="border-b border-white/[0.04] px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+    <section id={id} className="border-b border-white/[0.04] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-2xl font-semibold tracking-tight text-white">{title}</h2>
         <div className="relative mt-10">

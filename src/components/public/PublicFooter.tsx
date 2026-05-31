@@ -7,14 +7,14 @@ import { SEO_BRAND } from "@/lib/seo";
 
 const footerSections = [
   {
-    title: "Formats",
+    title: "Learning",
     links: [
-      { href: "/summarize-pdf", label: "PDF Summarizer" },
-      { href: "/summarize-youtube-video", label: "YouTube Summarizer" },
-      { href: "/summarize-powerpoint", label: "PowerPoint Summarizer" },
+      { href: "/summarize-pdf", label: "Learn from PDF" },
+      { href: "/summarize-youtube-video", label: "YouTube Lessons" },
+      { href: "/summarize-powerpoint", label: "PowerPoint Guides" },
       { href: "/summarize-web-articles", label: "Web Articles" },
-      { href: "/summarize-docx", label: "DOCX Summarizer" },
-      { href: "/summarize-mp3", label: "MP3 / Audio" },
+      { href: "/summarize-docx", label: "Word Documents" },
+      { href: "/summarize-mp3", label: "Audio & MP3" },
     ],
   },
   {
@@ -75,8 +75,8 @@ export function PublicFooter() {
           <div className="sm:col-span-2 lg:col-span-1">
             <BrandMark href="/" size="footer" className="opacity-95" />
             <p className="mt-3 max-w-xs text-xs leading-relaxed text-zinc-400">
-              Structured intelligence from PDFs, decks, videos, and articles — with Learn cards
-              built in.
+              Audio-first learning platform for students, researchers, and creators. Master any
+              topic with teacher-style lessons and smart cards.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <a

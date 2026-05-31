@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Headphones, Lock } from "lucide-react";
+import { Headphones, Lock, Play } from "lucide-react";
 import { AUDIO_STUDY_UPGRADE_HREF } from "@/lib/audio-study/access";
 
 type VoiceStudyPromoProps = {
@@ -8,60 +8,82 @@ type VoiceStudyPromoProps = {
   className?: string;
 };
 
-/** Lightweight Voice Study CTA — same footprint as LearnByListeningBanner. */
+/** 
+ * Compelling Audio Spotlight card for marketing.
+ * Shows a mock player with waveform and play button.
+ */
 export function VoiceStudyPromo({ unlocked = false, className = "" }: VoiceStudyPromoProps) {
   return (
-    <section
-      className={`listening-banner-card group relative overflow-hidden rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-950/25 via-violet-950/10 to-zinc-950/60 px-4 py-3.5 transition-[border-color,box-shadow] duration-300 hover:border-violet-400/35 ${className}`.trim()}
+    <div
+      className={`group relative overflow-hidden rounded-2xl border border-violet-500/30 bg-zinc-950/60 p-6 shadow-[0_0_50px_-12px_rgba(124,58,237,0.3)] transition-all duration-300 hover:border-violet-400/40 ${className}`.trim()}
     >
-      <div className="listening-banner-sweep pointer-events-none absolute inset-0" aria-hidden />
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="relative flex h-4 w-4 shrink-0 items-center justify-center self-center">
-            <span
-              className="listening-banner-icon-glow absolute -inset-2 rounded-full bg-violet-500/25 blur-md"
-              aria-hidden
-            />
-            {unlocked ? (
-              <Headphones className="listening-banner-icon-pulse relative z-[1] h-4 w-4 text-violet-300" aria-hidden />
-            ) : (
-              <Lock className="relative z-[1] h-3.5 w-3.5 text-violet-300/90" aria-hidden />
-            )}
+      {/* Background Glow */}
+      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-violet-600/15 blur-[80px]" aria-hidden />
+      <div className="pointer-events-none absolute -left-12 -bottom-12 h-48 w-48 rounded-full bg-cyan-500/10 blur-[70px]" aria-hidden />
+
+      <div className="relative flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-950/40 text-violet-300">
+              <Headphones className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-zinc-100">AI Audio Lesson</h3>
+              <p className="text-xs text-zinc-500">Teacher Mode · Natural Voice</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-zinc-100">Learn by listening</p>
-            <p className="text-xs text-zinc-500">
-              Teacher-style audio lessons from your analyses.
-            </p>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full border border-violet-400/25 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200/90">
+          <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-violet-300">
             {unlocked ? "Pro" : "New"}
           </span>
-          {unlocked ? (
-            <Link
-              href="/upload"
-              className="listening-banner-cta text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
-            >
-              Generate from an analysis
-              <span className="listening-banner-cta-arrow ml-0.5 inline-block" aria-hidden>
-                →
-              </span>
-            </Link>
-          ) : (
-            <Link
-              href={AUDIO_STUDY_UPGRADE_HREF}
-              className="listening-banner-cta text-xs font-semibold text-violet-300 transition-colors duration-200 hover:text-violet-100"
-            >
-              Unlock voice learning
-              <span className="listening-banner-cta-arrow ml-0.5 inline-block" aria-hidden>
-                →
-              </span>
-            </Link>
-          )}
+        </div>
+
+        {/* Mock Player Card */}
+        <div className="rounded-xl border border-white/[0.08] bg-zinc-900/40 p-4 ring-1 ring-white/[0.04]">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+                <div className="absolute -inset-2 rounded-full bg-violet-500/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+                <button 
+                  className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-500 text-white shadow-[0_8px_20px_-4px_rgba(139,92,246,0.5)] transition-transform hover:scale-105 active:scale-95"
+                  aria-label="Play sample audio"
+                >
+                    <Play className="h-6 w-6 fill-current" />
+                </button>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-zinc-100">The Psychology of Learning.pdf</p>
+              <div className="mt-3 flex items-center gap-3">
+                {/* Waveform Mock */}
+                <div className="flex h-8 flex-1 items-end gap-[2px]" aria-hidden>
+                  {[40, 70, 45, 90, 65, 30, 50, 80, 55, 40, 60, 75, 50, 35, 60, 85, 45, 30, 50, 70, 40, 60, 55, 45, 75, 90, 40].map((h, i) => (
+                    <div 
+                      key={i} 
+                      className={`w-full rounded-t-[1px] transition-colors ${i < 12 ? 'bg-violet-400' : 'bg-zinc-700/50'}`} 
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-medium text-zinc-500 tabular-nums">08:24</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {!unlocked && <Lock className="h-3 w-3 text-zinc-500" />}
+            <p className="text-xs text-zinc-400">
+              {unlocked ? "Available in 29+ study modes" : "Unlock for your documents"}
+            </p>
+          </div>
+          <Link
+            href={unlocked ? "/upload" : AUDIO_STUDY_UPGRADE_HREF}
+            className="group/link text-xs font-semibold text-violet-400 transition-colors hover:text-violet-300"
+          >
+            {unlocked ? "Generate from an analysis" : "Get Pro Access"}
+            <span className="ml-1 inline-block transition-transform group-hover/link:translate-x-0.5">→</span>
+          </Link>
         </div>
       </div>
-    </section>
+    </div>
   );
 }

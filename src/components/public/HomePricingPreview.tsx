@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 type PricingPreviewPlan = {
-  id: "guest" | "free" | "pro";
+  id: "guest" | "free" | "pro" | "team";
   name: string;
   price: string;
   period?: string;
@@ -16,8 +16,8 @@ const PLANS: PricingPreviewPlan[] = [
     id: "guest",
     name: "Guest",
     price: "$0",
-    tagline: "Try Summify once",
-    bullets: ["1 analysis", "3 Learn Cards"],
+    tagline: "Instant one-time trial",
+    bullets: ["1 analysis to try", "Audio preview", "3 Learn Cards", "No account required"],
     cta: { label: "Try once", href: "/upload", variant: "secondary" },
   },
   {
@@ -25,8 +25,8 @@ const PLANS: PricingPreviewPlan[] = [
     name: "Free",
     price: "$0",
     period: "/month",
-    tagline: "Best for getting started",
-    bullets: ["5 analyses/day", "8 Learn Cards", "Audio lessons included"],
+    tagline: "Daily free access",
+    bullets: ["1 analysis per day", "Standard summaries", "Limited study cards", "Cloud history"],
     cta: {
       label: "Create free account",
       href: `/login?next=${encodeURIComponent("/upload")}`,
@@ -38,16 +38,27 @@ const PLANS: PricingPreviewPlan[] = [
     name: "Pro",
     price: "$7.99",
     period: "/month",
-    tagline: "For power users",
+    tagline: "Full learning workflow",
     bullets: [
-      "More daily analysis capacity",
-      "Advanced learning workflows",
-      "Audio + Podcast modes",
+      "Full Audio Lessons",
+      "Podcast Mode enabled",
+      "Unlimited history",
+      "All 29+ study modes",
     ],
     cta: { label: "Start Pro", href: "/pricing?plan=pro", variant: "primary" },
     highlighted: true,
   },
 ];
+
+const TEAM_PLAN: PricingPreviewPlan = {
+  id: "team",
+  name: "Team",
+  price: "$24.99",
+  period: "/month",
+  tagline: "For labs and groups",
+  bullets: ["Shared Library", "Team Memory", "Admin Controls"],
+  cta: { label: "Start Team", href: "/pricing?plan=team", variant: "secondary" },
+};
 
 function CardCta({ href, label, variant }: { href: string; label: string; variant?: "primary" | "secondary" }) {
   const base =
@@ -76,7 +87,7 @@ function CardCta({ href, label, variant }: { href: string; label: string; varian
 
 export function HomePricingPreview() {
   return (
-    <section className="border-b border-white/[0.04] px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+    <section className="border-b border-white/[0.04] px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -99,8 +110,8 @@ export function HomePricingPreview() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-4 lg:grid-cols-3">
-          {PLANS.map((plan) => (
+        <div className="mt-10 grid gap-4 lg:grid-cols-4">
+          {[...PLANS, TEAM_PLAN].map((plan) => (
             <article
               key={plan.id}
               className={
