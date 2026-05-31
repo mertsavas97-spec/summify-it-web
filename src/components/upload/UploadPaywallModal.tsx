@@ -11,6 +11,7 @@ type UploadPaywallModalProps = {
   open: boolean;
   billing: BillingStatusCopy;
   scholarCheckoutEligible: boolean;
+  isAuthenticated: boolean;
   onClose: () => void;
 };
 
@@ -18,6 +19,7 @@ export function UploadPaywallModal({
   open,
   billing,
   scholarCheckoutEligible,
+  isAuthenticated,
   onClose,
 }: UploadPaywallModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -107,6 +109,8 @@ export function UploadPaywallModal({
 
   if (!open) return null;
 
+  const guestMode = !isAuthenticated;
+
   return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -128,17 +132,35 @@ export function UploadPaywallModal({
       >
         <header className="text-center">
           <h2 id="upload-paywall-title" className="text-xl font-semibold text-white sm:text-2xl">
-            You’ve used your free daily analyses.
+            {guestMode ? "Save your study session" : "You’ve reached your free daily limit."}
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-            Upgrade to continue analyzing documents, videos, articles, and long-form content.
+            {guestMode
+              ? "Create a free account to keep your Learn Cards, continue listening, and build your memory library."
+              : "Upgrade to continue analyzing, listening, and practicing today."}
           </p>
+          {guestMode ? <p className="mt-2 text-xs text-zinc-500">No credit card required.</p> : null}
         </header>
+
+        {guestMode ? (
+          <div className="mx-auto mt-5 max-w-xl rounded-2xl border border-violet-400/20 bg-violet-950/20 p-4">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-center">
+              <Button href={freeAuthHref} size="md" className="sm:min-w-[220px]">
+                Create free account
+              </Button>
+              <Button href="/pricing" variant="secondary" size="md" className="sm:min-w-[160px]">
+                View plans
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-col gap-4">
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <div className="text-xs text-zinc-400">
-              Compact plan comparison. Details are on the pricing page.
+              {guestMode
+                ? "Optional plan comparison. You can create a free account first."
+                : "Compact plan comparison. Details are on the pricing page."}
             </div>
 
             <div
@@ -163,7 +185,7 @@ export function UploadPaywallModal({
             </div>
           </div>
 
-          <div className="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <div className={`grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-5 ${guestMode ? "opacity-85" : ""}`}>
             {plans.map((plan) => {
               const isPro = Boolean(plan.highlighted);
               const showScholarCheckout =
@@ -173,12 +195,12 @@ export function UploadPaywallModal({
                 <article
                   key={plan.id}
                   className={`relative flex min-h-[250px] flex-col rounded-xl border px-4 pb-4 pt-3 ${
-                    isPro
+                    isPro && !guestMode
                       ? "border-violet-500/45 bg-gradient-to-b from-violet-950/45 via-zinc-900/85 to-zinc-950 shadow-[0_0_40px_-10px_rgba(139,92,246,0.35)] ring-1 ring-violet-500/25"
                       : "border-white/[0.08] bg-zinc-900/45"
                   }`}
                 >
-                  {isPro ? (
+                  {isPro && !guestMode ? (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-violet-400/30 bg-violet-600 px-3 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-500/30">
                       Recommended
                     </div>
@@ -213,11 +235,11 @@ export function UploadPaywallModal({
 
                   <div className="mt-3">
                     {plan.cta.kind === "close" ? (
-                      <Button type="button" variant={isPro ? "primary" : "secondary"} className="w-full" size="md" onClick={onClose}>
+                        <Button type="button" variant={isPro && !guestMode ? "primary" : "secondary"} className="w-full" size="md" onClick={onClose}>
                         {plan.cta.label}
                       </Button>
                     ) : plan.cta.kind === "href" ? (
-                      <Button href={plan.cta.href} variant={isPro ? "primary" : "secondary"} className="w-full" size="md">
+                        <Button href={plan.cta.href} variant={isPro && !guestMode ? "primary" : "secondary"} className="w-full" size="md">
                         {plan.cta.label}
                       </Button>
                     ) : plan.cta.kind === "scholar" ? (
@@ -226,14 +248,14 @@ export function UploadPaywallModal({
                           plan="scholar"
                           interval={interval}
                           label={plan.cta.label}
-                          variant="primary"
+                            variant={isPro && !guestMode ? "primary" : "secondary"}
                           billing={billing}
                           allowScholarCheckout
                         />
                       ) : (
                         <Button
                           href={`/login?next=${encodeURIComponent("/pricing")}`}
-                          variant={isPro ? "primary" : "secondary"}
+                            variant={isPro && !guestMode ? "primary" : "secondary"}
                           className="w-full"
                           size="md"
                         >
@@ -245,7 +267,7 @@ export function UploadPaywallModal({
                         plan={plan.cta.plan}
                         interval={interval}
                         label={plan.cta.label}
-                        variant={isPro ? "primary" : "secondary"}
+                          variant={isPro && !guestMode ? "primary" : "secondary"}
                         billing={billing}
                       />
                     )}

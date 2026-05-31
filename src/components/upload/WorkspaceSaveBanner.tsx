@@ -53,22 +53,41 @@ export function WorkspaceSaveBanner({ savedToWorkspace, isAuthenticated = false 
 
   if (!isLoggedIn && supabaseConfigured) {
     return (
-      <p className="text-xs text-zinc-600">
+      <section
+        className="mt-8 w-full rounded-2xl border border-violet-300/30 bg-gradient-to-b from-violet-950/35 via-[#171322]/90 to-[#12111c]/95 px-5 py-6 text-xs shadow-[0_0_38px_rgba(139,92,246,0.2)] sm:mt-10 sm:px-6 sm:py-7"
+        aria-label="Save this study session"
+      >
+        <p className="text-base font-semibold tracking-tight text-violet-50 sm:text-lg">Save this study session</p>
+        <div className="mt-3 space-y-1.5 text-sm leading-relaxed text-zinc-200 sm:text-[15px]">
+          <p>Keep your Learn Cards.</p>
+          <p>Continue listening later.</p>
+          <p>Build your memory library.</p>
+        </div>
         <Link
           href="/login?next=/upload"
-          className="text-violet-400/80 hover:text-violet-300"
+          className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-violet-200/45 bg-violet-500 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.35)] transition-colors hover:bg-violet-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12111c] sm:mt-6"
         >
-          Sign in to save analyses.
+          Create Free Account
         </Link>
-      </p>
+        <p className="mt-3 text-[11px] text-zinc-400 sm:mt-3.5">Your analysis will stay linked after signup.</p>
+      </section>
     );
   }
 
   if (isLoggedIn && savedToWorkspace === false) {
     return (
-      <p className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-xs text-zinc-500">
-        Analysis ready. Copy or export it here; workspace save status will update automatically.
-      </p>
+      <section className="rounded-xl border border-white/[0.06] bg-white/[0.025] px-3.5 py-3 text-xs">
+        <p className="font-medium text-zinc-200">Continue learning from this analysis</p>
+        <p className="mt-1 leading-relaxed text-zinc-500">
+          Use Dashboard for history and saved sessions, or continue with Learn, Quiz, and Audio right here.
+        </p>
+        <Link
+          href="/dashboard"
+          className="mt-2 inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[11px] font-medium text-zinc-200 transition-colors hover:border-violet-400/30 hover:text-violet-100"
+        >
+          Open Dashboard
+        </Link>
+      </section>
     );
   }
 

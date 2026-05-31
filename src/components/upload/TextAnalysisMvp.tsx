@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   BookOpen,
   BrainCircuit,
@@ -50,6 +51,7 @@ import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
+import { DEFAULT_POLLY_VOICE_ID } from "@/lib/audio-study/pollyVoices";
 
 type TextAnalysisMvpProps = {
   rawText: string;
@@ -595,6 +597,83 @@ function PostAnalysisResultShell({
           onStartQuiz: () => setActiveTab("quiz"),
         })
       : learnModule;
+  const [guestAudioPreviewState, setGuestAudioPreviewState] = useState<"idle" | "generating" | "ready" | "error">("idle");
+  const [guestAudioPreview, setGuestAudioPreview] = useState<{
+    title: string;
+    durationEstimate: string;
+    script: string;
+    audioUrl?: string;
+    audioBase64?: string;
+    audioMime?: string;
+  } | null>(null);
+  const [guestAudioPreviewError, setGuestAudioPreviewError] = useState<string | null>(null);
+  const guestPreviewSrc = guestAudioPreview?.audioUrl
+    ?? (guestAudioPreview?.audioBase64
+      ? `data:${guestAudioPreview.audioMime ?? "audio/mpeg"};base64,${guestAudioPreview.audioBase64}`
+      : null);
+  const guestAudioPreviewPlayable = Boolean(guestPreviewSrc);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+    if (guestAudioPreviewState === "ready" || guestAudioPreviewState === "generating") return;
+
+    const generateGuestPreview = async () => {
+      setGuestAudioPreviewState("generating");
+      setGuestAudioPreviewError(null);
+      try {
+        const input = buildAudioStudyInputFromResult(
+          {
+            ...result,
+            summary: result.summary.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ").trim() || result.summary,
+          },
+          {
+            sourceType: extractionMeta?.sourceKind ?? (inputMode === "text" ? "text" : null),
+            intelligenceMode: modeId,
+            sourceLabel: sourceTitle,
+          },
+        );
+        const res = await fetch("/api/audio-study/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            analysisId: "guest-preview",
+            voiceId: DEFAULT_POLLY_VOICE_ID,
+            input,
+          }),
+        });
+        const data = (await res.json()) as {
+          title?: string;
+          durationEstimate?: string;
+          script?: string;
+          audioUrl?: string;
+          audioBase64?: string;
+          audioMime?: string;
+          error?: string;
+        };
+        if (!res.ok || (!data.audioUrl && !data.audioBase64)) {
+          throw new Error(data.error ?? "Preview audio could not be generated.");
+        }
+        setGuestAudioPreview({
+          title: data.title ?? "30 Second Audio Preview",
+          durationEstimate: data.durationEstimate ?? "~30 sec",
+          script: data.script ?? "",
+          audioUrl: data.audioUrl,
+          audioBase64: data.audioBase64,
+          audioMime: data.audioMime,
+        });
+        setGuestAudioPreviewState("ready");
+      } catch (err) {
+        const rawMessage = err instanceof Error ? err.message : "Preview audio could not be generated.";
+        const safeMessage = /sign in to use saved analyses/i.test(rawMessage)
+          ? "Preview audio could not be generated."
+          : rawMessage;
+        setGuestAudioPreviewError(safeMessage);
+        setGuestAudioPreviewState("error");
+      }
+    };
+
+    void generateGuestPreview();
+  }, [guestAudioPreviewState, inputMode, isAuthenticated, modeId, result, sourceTitle, extractionMeta]);
 
   return (
     <div className="space-y-4" data-workspace-analysis-result-shell>
@@ -621,8 +700,6 @@ function PostAnalysisResultShell({
           </div>
         </div>
       </header>
-
-      <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
 
       <div className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-2 shadow-sm shadow-black/20 backdrop-blur">
         <div className="grid gap-2" role="tablist" aria-label="Analysis result sections">
@@ -664,7 +741,78 @@ function PostAnalysisResultShell({
             showHeader={false}
             showToolbar={false}
           />
-          <ContinueLearningStrip onSelect={setActiveTab} />
+          <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
+            <p className="text-sm font-semibold text-white">▶ 30 Second Audio Preview</p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+              Teacher-style lesson generated from this document.
+            </p>
+            <div className="mt-4">
+              {isAuthenticated ? (
+                mediaModules?.("audio") ?? (
+                  <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">
+                    Audio lesson generation is not available for this analysis yet.
+                  </p>
+                )
+              ) : guestAudioPreviewState === "ready" && guestAudioPreviewPlayable ? (
+                <audio controls className="w-full" src={guestPreviewSrc ?? undefined} />
+              ) : guestAudioPreviewState === "generating" ? (
+                <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">Preparing your preview...</p>
+              ) : (
+                <div className="rounded-xl border border-amber-400/20 bg-amber-950/20 px-3.5 py-3 text-xs text-amber-200/90">
+                  <p className="font-medium text-amber-100">Audio preview not ready</p>
+                  <p className="mt-1">Create a free account to generate and save audio lessons.</p>
+                  <Link
+                    href="/login?next=/upload"
+                    className="mt-3 inline-flex items-center justify-center rounded-lg border border-violet-300/40 bg-violet-500 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-violet-400"
+                  >
+                    Create Free Account
+                  </Link>
+                  {guestAudioPreviewError ? <p className="mt-2 text-[11px] text-amber-200/80">{guestAudioPreviewError}</p> : null}
+                </div>
+              )}
+            </div>
+            <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-950/20 p-3.5">
+              <p className="text-sm font-semibold text-violet-100">Unlock full Audio Study Mode</p>
+              <p className="mt-1 text-xs leading-relaxed text-violet-200/80">
+                Generate complete lessons, custom voices, and full-length audio learning.
+              </p>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
+            <p className="text-sm font-semibold text-white">Learn Cards Preview</p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+              Practice the most important ideas before moving to quiz.
+            </p>
+            <div className="mt-4">
+              {resolvedLearnModule ?? (
+                <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">
+                  No practice cards were generated for this analysis.
+                </p>
+              )}
+            </div>
+          </section>
+          <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
+          {!isAuthenticated ? (
+            <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
+              <p className="text-sm font-semibold text-white">Deep Analysis</p>
+              <div className="mt-3">
+                <AnalysisResultView
+                  result={result}
+                  modeId={modeId}
+                  entitlementPlanId={entitlementPlanId}
+                  providerUsed={providerUsed}
+                  fallbackUsed={fallbackUsed}
+                  uiSectionLabels={uiSectionLabels}
+                  sections="deep"
+                  collapseDeepSecondarySections
+                  showHeader={false}
+                  showToolbar={false}
+                  embedded
+                />
+              </div>
+            </section>
+          ) : null}
+          {isAuthenticated && <ContinueLearningStrip onSelect={setActiveTab} />}
         </div>
 
         <div hidden={activeTab !== "learn"} className="space-y-4">

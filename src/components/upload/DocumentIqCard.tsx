@@ -136,7 +136,13 @@ function Accordion({
   );
 }
 
-export function DocumentIqCard({ extractedText }: { extractedText: string }) {
+export function DocumentIqCard({
+  extractedText,
+  guestSimplified = false,
+}: {
+  extractedText: string;
+  guestSimplified?: boolean;
+}) {
   const trimmed = extractedText.trim();
   const isTooShort = trimmed.length < 220;
 
@@ -193,93 +199,102 @@ export function DocumentIqCard({ extractedText }: { extractedText: string }) {
               </dl>
             </section>
 
-            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">Detected document type</p>
-              <div className="mt-2 flex items-baseline justify-between gap-3">
-                <p className="text-sm font-semibold text-white">{iq.detectedDocumentType.type}</p>
-                <p className="text-xs font-medium text-zinc-500">Low confidence match</p>
-              </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full border border-white/[0.06] bg-white/[0.03]">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-500/70 to-fuchsia-400/70 shadow-[0_0_18px_rgba(139,92,246,0.18)]"
-                  style={{ width: `${clamp(iq.detectedDocumentType.confidence)}%` }}
-                />
-              </div>
-            </div>
+            {guestSimplified ? (
+              <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
+                <h3 className="text-xs font-semibold text-zinc-200">Study Friendly</h3>
+                <MetricBar label="Study Friendly" value={iq.readability} tone={METRICS[0].tone} />
+              </section>
+            ) : null}
 
-            <div className="space-y-3">
-              {METRICS.map(({ key, tone }) => (
-                <MetricBar
-                  key={key}
-                  label={tone.label}
-                  value={iq[key]}
-                  tone={tone}
-                />
-              ))}
-            </div>
+            {!guestSimplified ? (
+              <>
+                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">Detected document type</p>
+                  <div className="mt-2 flex items-baseline justify-between gap-3">
+                    <p className="text-sm font-semibold text-white">{iq.detectedDocumentType.type}</p>
+                    <p className="text-xs font-medium text-zinc-500">Low confidence match</p>
+                  </div>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full border border-white/[0.06] bg-white/[0.03]">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500/70 to-fuchsia-400/70 shadow-[0_0_18px_rgba(139,92,246,0.18)]"
+                      style={{ width: `${clamp(iq.detectedDocumentType.confidence)}%` }}
+                    />
+                  </div>
+                </div>
 
-            <Accordion title="Why this score?">
-              <ul className="space-y-1.5 text-xs text-zinc-500">
-                {iq.whyThisScore.positives.map((item) => (
-                  <li key={`p:${item}`} className="flex gap-2">
-                    <span className="text-emerald-300/90">✓</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-                {iq.whyThisScore.negatives.map((item) => (
-                  <li key={`n:${item}`} className="flex gap-2">
-                    <span className="text-rose-300/90">✕</span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Accordion>
+                <div className="space-y-3">
+                  {METRICS.map(({ key, tone }) => (
+                    <MetricBar
+                      key={key}
+                      label={tone.label}
+                      value={iq[key]}
+                      tone={tone}
+                    />
+                  ))}
+                </div>
 
-            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
-                Recommended intelligence modes
-              </p>
-              <div className="mt-2 space-y-2">
-                {iq.recommendedIntelligenceModeIds.map((modeId) => {
-                  const mode = getIntelligenceModeById(modeId as never);
-                  const isActive = mode?.availability === "active";
-                  return (
-                    <button
-                      key={modeId}
-                      type="button"
-                      onClick={() => {
-                        // Update the upload workspace intelligence mode without a direct prop dependency.
-                        // `UploadWorkspace` listens for this event and updates the active mode.
-                        window.dispatchEvent(
-                          new CustomEvent("workspace:intelligence-mode-recommendation", {
-                            detail: { modeId },
-                          }),
-                        );
-                      }}
-                      className="flex w-full items-center justify-between gap-3 rounded-xl border border-transparent px-1 py-1 text-left transition-colors outline-none hover:border-white/[0.06] hover:bg-white/[0.02] focus-visible:ring-2 focus-visible:ring-violet-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0e15]"
-                      title="Switch active intelligence mode"
-                    >
-                      <p className="text-xs font-medium text-zinc-200">
-                        <span className="mr-2 text-emerald-300/90">✓</span>
-                        {mode?.label ?? modeId}
-                      </p>
-                      {isActive ? (
-                        <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-200">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.10] bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-zinc-300">
-                          <span aria-hidden className="text-zinc-400">
-                            🔒
-                          </span>
-                          Pro
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                <Accordion title="Why this score?">
+                  <ul className="space-y-1.5 text-xs text-zinc-500">
+                    {iq.whyThisScore.positives.map((item) => (
+                      <li key={`p:${item}`} className="flex gap-2">
+                        <span className="text-emerald-300/90">✓</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                    {iq.whyThisScore.negatives.map((item) => (
+                      <li key={`n:${item}`} className="flex gap-2">
+                        <span className="text-rose-300/90">✕</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </Accordion>
+
+                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
+                    Recommended intelligence modes
+                  </p>
+                  <div className="mt-2 space-y-2">
+                    {iq.recommendedIntelligenceModeIds.map((modeId) => {
+                      const mode = getIntelligenceModeById(modeId as never);
+                      const isActive = mode?.availability === "active";
+                      return (
+                        <button
+                          key={modeId}
+                          type="button"
+                          onClick={() => {
+                            window.dispatchEvent(
+                              new CustomEvent("workspace:intelligence-mode-recommendation", {
+                                detail: { modeId },
+                              }),
+                            );
+                          }}
+                          className="flex w-full items-center justify-between gap-3 rounded-xl border border-transparent px-1 py-1 text-left transition-colors outline-none hover:border-white/[0.06] hover:bg-white/[0.02] focus-visible:ring-2 focus-visible:ring-violet-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0e15]"
+                          title="Switch active intelligence mode"
+                        >
+                          <p className="text-xs font-medium text-zinc-200">
+                            <span className="mr-2 text-emerald-300/90">✓</span>
+                            {mode?.label ?? modeId}
+                          </p>
+                          {isActive ? (
+                            <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-200">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.10] bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-zinc-300">
+                              <span aria-hidden className="text-zinc-400">
+                                🔒
+                              </span>
+                              Pro
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : null}
           </>
         ) : null}
 

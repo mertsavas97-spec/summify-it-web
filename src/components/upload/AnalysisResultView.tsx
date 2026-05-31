@@ -17,12 +17,13 @@ type AnalysisResultViewProps = {
   providerUsed: string;
   fallbackUsed: boolean;
   embedded?: boolean;
-  sections?: "all" | "summary";
+  sections?: "all" | "summary" | "deep";
   showToolbar?: boolean;
   showHeader?: boolean;
   /** Phase 11C — adaptive headings from persona plan (optional). */
   uiSectionLabels?: PersonaUiSectionLabels;
   entitlementPlanId?: PlanId;
+  collapseDeepSecondarySections?: boolean;
 };
 
 export function AnalysisResultView({
@@ -36,8 +37,13 @@ export function AnalysisResultView({
   showHeader = true,
   uiSectionLabels,
   entitlementPlanId = "free",
+  collapseDeepSecondarySections = false,
 }: AnalysisResultViewProps) {
   const showLearn = sections === "all" && result.learnCards.length > 0;
+  const showSummary = sections !== "deep";
+  const showInsights = sections !== "summary";
+  const showRisks = sections !== "summary" && result.risksOrWarnings.length > 0;
+  const showActions = sections !== "summary" && result.actionItems.length > 0;
   const insightTracked = useRef(false);
 
   useEffect(() => {
@@ -80,33 +86,37 @@ export function AnalysisResultView({
       ) : null}
 
       <div className={embedded ? "" : "divide-y divide-white/[0.04] px-4"}>
-        <CollapsibleSection title={summaryTitle} defaultOpen>
-          <p className="max-w-prose text-sm leading-[1.7] text-zinc-400">{result.summary}</p>
-        </CollapsibleSection>
+        {showSummary ? (
+          <CollapsibleSection title={summaryTitle} defaultOpen>
+            <p className="max-w-prose text-sm leading-[1.7] text-zinc-400">{result.summary}</p>
+          </CollapsibleSection>
+        ) : null}
 
-        <CollapsibleSection
-          title={insightsTitle}
-          count={result.keyInsights.length}
-          defaultOpen
-        >
-          <InsightList items={result.keyInsights} />
-        </CollapsibleSection>
+        {showInsights ? (
+          <CollapsibleSection
+            title={insightsTitle}
+            count={result.keyInsights.length}
+            defaultOpen
+          >
+            <InsightList items={result.keyInsights} />
+          </CollapsibleSection>
+        ) : null}
 
-        {result.risksOrWarnings.length > 0 ? (
+        {showRisks ? (
           <CollapsibleSection
             title={risksTitle}
             count={result.risksOrWarnings.length}
-            defaultOpen
+            defaultOpen={!collapseDeepSecondarySections}
           >
             <InsightList items={result.risksOrWarnings} variant="warning" />
           </CollapsibleSection>
         ) : null}
 
-        {result.actionItems.length > 0 ? (
+        {showActions ? (
           <CollapsibleSection
             title={actionsTitle}
             count={result.actionItems.length}
-            defaultOpen
+            defaultOpen={!collapseDeepSecondarySections}
           >
             <InsightList items={result.actionItems} variant="action" />
           </CollapsibleSection>

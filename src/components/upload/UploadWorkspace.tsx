@@ -720,6 +720,7 @@ function PostAnalysisRail({
   rawText,
   selectedModeId,
   result,
+  isAuthenticated,
 }: {
   inputMode: WorkspaceInputMode;
   sourceLabel: string | null;
@@ -727,6 +728,7 @@ function PostAnalysisRail({
   rawText: string;
   selectedModeId: IntelligenceModeId;
   result: AnalysisResult;
+  isAuthenticated: boolean;
 }) {
   const title = getSourceTitle({ inputMode, sourceLabel, metadata });
   const facts = getSourceFacts({ inputMode, metadata, rawText });
@@ -735,44 +737,50 @@ function PostAnalysisRail({
 
   return (
     <aside className="space-y-4" data-workspace-post-analysis-rail>
-      <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
-        <h2 className="text-xs font-semibold text-zinc-200">Source profile</h2>
-        <p className="mt-2 truncate text-sm font-medium text-white">{title}</p>
-        <dl className="mt-3 space-y-2 text-xs">
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-zinc-600">Type</dt>
-            <dd className="text-zinc-400">{getSourceTypeLabel(inputMode, metadata)}</dd>
-          </div>
-          {facts.slice(0, 3).map((fact) => (
-            <div key={fact} className="flex items-center justify-between gap-3">
-              <dt className="text-zinc-600">{fact.includes("characters") ? "Characters" : "Detail"}</dt>
-              <dd className="text-right text-zinc-400">{fact}</dd>
+      {isAuthenticated ? (
+        <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
+          <h2 className="text-xs font-semibold text-zinc-200">Source profile</h2>
+          <p className="mt-2 truncate text-sm font-medium text-white">{title}</p>
+          <dl className="mt-3 space-y-2 text-xs">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-zinc-600">Type</dt>
+              <dd className="text-zinc-400">{getSourceTypeLabel(inputMode, metadata)}</dd>
             </div>
-          ))}
-        </dl>
-      </section>
+            {facts.slice(0, 3).map((fact) => (
+              <div key={fact} className="flex items-center justify-between gap-3">
+                <dt className="text-zinc-600">{fact.includes("characters") ? "Characters" : "Detail"}</dt>
+                <dd className="text-right text-zinc-400">{fact}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
 
-      {rawText.trim() ? <DocumentIqCard extractedText={rawText} /> : null}
+      {rawText.trim() ? (
+        <DocumentIqCard extractedText={rawText} guestSimplified={!isAuthenticated} />
+      ) : null}
 
-      <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
-        <h2 className="text-xs font-semibold text-zinc-200">Analysis profile</h2>
-        <p className="mt-2 text-sm font-medium text-white">{mode?.label ?? selectedModeId}</p>
-        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          {mode?.shortDescription ?? "Structured Summify analysis."}
-        </p>
-        <dl className="mt-3 space-y-2 text-xs">
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-zinc-600">Insights</dt>
-            <dd className="text-zinc-400">{result.keyInsights.length}</dd>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-zinc-600">Learn cards</dt>
-            <dd className="text-zinc-400">{result.learnCards.length}</dd>
-          </div>
-        </dl>
-      </section>
+      {isAuthenticated ? (
+        <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
+          <h2 className="text-xs font-semibold text-zinc-200">Analysis profile</h2>
+          <p className="mt-2 text-sm font-medium text-white">{mode?.label ?? selectedModeId}</p>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+            {mode?.shortDescription ?? "Structured Summify analysis."}
+          </p>
+          <dl className="mt-3 space-y-2 text-xs">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-zinc-600">Insights</dt>
+              <dd className="text-zinc-400">{result.keyInsights.length}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="text-zinc-600">Learn cards</dt>
+              <dd className="text-zinc-400">{result.learnCards.length}</dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
 
-      {excerpt ? (
+      {isAuthenticated && excerpt ? (
         <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
           <h2 className="text-xs font-semibold text-zinc-200">Source excerpt</h2>
           <p className="mt-2 line-clamp-5 text-xs leading-relaxed text-zinc-500">
@@ -1551,6 +1559,7 @@ export function UploadWorkspace() {
         open={showAnalysisPaywall}
         billing={billing}
         scholarCheckoutEligible={scholarCheckoutEligible}
+        isAuthenticated={workspaceEntitlement.isAuthenticated}
         onClose={() => setShowAnalysisPaywall(false)}
       />
       <div
@@ -1888,6 +1897,7 @@ export function UploadWorkspace() {
               rawText={rawText}
               selectedModeId={analysisMode}
               result={completedAnalysisResult}
+            isAuthenticated={workspaceEntitlement.isAuthenticated}
             />
           ) : (
             <>
