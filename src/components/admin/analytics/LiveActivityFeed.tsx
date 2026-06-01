@@ -6,18 +6,27 @@ import type { ActivityEvent, ActivityResponse } from "@/app/api/admin/analytics/
 
 // Event label translations
 const EVENT_LABELS: Record<string, string> = {
+  page_view: "Page viewed",
+  analytics_page_view: "Page viewed",
   landing_view: "Visitor opened landing page",
   upload_page_view: "Visitor opened upload workspace",
+  upload_page_viewed: "Upload viewed",
   upload_started: "Upload started",
   upload_completed: "Upload completed",
   analysis_started: "Analysis started",
   analysis_completed: "Analysis completed",
   learn_card_opened: "Learn card opened",
+  learn_cards_opened: "Learn cards opened",
   insight_opened: "Insight viewed",
   audio_mode_clicked: "Audio lesson clicked",
   podcast_clicked: "Podcast clicked",
+  guest_audio_preview_generated: "Audio preview generated",
+  guest_audio_preview_played: "Audio preview played",
+  save_study_session_clicked: "Save study session clicked",
   pricing_view: "Pricing page viewed",
+  pricing_viewed: "Pricing viewed",
   login_view: "Login page viewed",
+  login_intent: "Login intent",
   signup_started: "Signup started",
   signup_completed: "Signup completed",
   checkout_started: "Checkout started",
@@ -30,9 +39,14 @@ type EventCategory = "acquisition" | "product" | "engagement" | "conversion";
 const EVENT_CATEGORIES: Record<string, EventCategory> = {
   // Acquisition
   landing_view: "acquisition",
+  page_view: "acquisition",
+  analytics_page_view: "acquisition",
   upload_page_view: "acquisition",
+  upload_page_viewed: "acquisition",
   pricing_view: "acquisition",
+  pricing_viewed: "acquisition",
   login_view: "acquisition",
+  login_intent: "acquisition",
 
   // Product
   upload_started: "product",
@@ -42,9 +56,13 @@ const EVENT_CATEGORIES: Record<string, EventCategory> = {
 
   // Engagement
   learn_card_opened: "engagement",
+  learn_cards_opened: "engagement",
   insight_opened: "engagement",
   audio_mode_clicked: "engagement",
   podcast_clicked: "engagement",
+  guest_audio_preview_generated: "engagement",
+  guest_audio_preview_played: "engagement",
+  save_study_session_clicked: "engagement",
 
   // Conversion
   signup_started: "conversion",
@@ -123,6 +141,7 @@ interface LiveActivityFeedProps {
 export function LiveActivityFeed({ maxVisible = 10 }: LiveActivityFeedProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [emptyHint, setEmptyHint] = useState<string | null>(null);
   const [events, setEvents] = useState<ActivityEvent[]>([]);
 
    useEffect(() => {
@@ -131,6 +150,7 @@ export function LiveActivityFeed({ maxVisible = 10 }: LiveActivityFeedProps) {
      async function load() {
        setLoading(true);
        setError(null);
+        setEmptyHint(null);
        try {
          const res = await fetch("/api/admin/analytics/activity", {
            credentials: "include",
@@ -154,6 +174,7 @@ export function LiveActivityFeed({ maxVisible = 10 }: LiveActivityFeedProps) {
          }
 
          setEvents(json.events || []);
+          setEmptyHint(typeof json.message === "string" ? json.message : null);
        } catch (e) {
          if (cancelled) return;
          const message = e instanceof Error ? e.message : "Failed to load activity feed";
@@ -196,7 +217,8 @@ export function LiveActivityFeed({ maxVisible = 10 }: LiveActivityFeedProps) {
 
       {!loading && !error && events.length === 0 && (
         <div className="mt-4 rounded-lg border border-white/[0.08] bg-zinc-950/30 p-4">
-          <p className="text-xs text-zinc-400">No product activity recorded yet.</p>
+          <p className="text-xs text-zinc-400">No recent product events in this selected period.</p>
+          {emptyHint ? <p className="mt-2 text-[11px] text-zinc-500">{emptyHint}</p> : null}
         </div>
       )}
 

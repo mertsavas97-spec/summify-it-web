@@ -8,6 +8,13 @@ type DatePreset = "today" | "7d" | "30d" | "90d" | "custom";
 
 type TrendMetric = "people" | "sessions" | "pageOpens";
 
+type TrendBucket = {
+  dateKey: string;
+  timestamp: number;
+  label: string;
+  value: number;
+};
+
 type GoogleAnalyticsResponse =
   | {
       connected: false;
@@ -141,7 +148,7 @@ export function AdminGoogleAnalyticsDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [trendMetric, setTrendMetric] = useState<TrendMetric>("people");
   const [showTrendTable, setShowTrendTable] = useState(false);
-  const [hoveredTrendPoint, setHoveredTrendPoint] = useState<{ date: string; value: number } | null>(null);
+  const [hoveredTrendPoint, setHoveredTrendPoint] = useState<TrendBucket | null>(null);
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
@@ -197,14 +204,27 @@ export function AdminGoogleAnalyticsDashboard() {
   const rangeLabel = presetLabel(preset, data?.connected === true ? data.dateRange : undefined);
 
   const trendSeries = useMemo(() => {
-    if (data?.connected !== true) return [] as Array<{ date: string; value: number }>;
+    if (data?.connected !== true) return [] as TrendBucket[];
     const raw =
       trendMetric === "people"
         ? data.timeseries.peopleByDay
         : trendMetric === "sessions"
           ? data.timeseries.sessionsByDay
           : data.timeseries.pageOpensByDay;
-    return raw.map((p) => ({ date: normalizeGaDate(p.date), value: p.value }));
+
+    return raw
+      .map((p) => {
+        const dateKey = normalizeGaDate(p.date);
+        const timestamp = Date.parse(`${dateKey}T00:00:00.000Z`);
+        return {
+          dateKey,
+          timestamp: Number.isFinite(timestamp) ? timestamp : -1,
+          label: formatFullDate(dateKey),
+          value: p.value,
+        };
+      })
+      .filter((row) => row.timestamp >= 0)
+      .sort((a, b) => a.timestamp - b.timestamp);
   }, [data, trendMetric]);
 
   const devicesNormalized = useMemo(() => {
@@ -693,9 +713,9 @@ function MiniLineChart({
   hovered,
   metricLabel,
 }: {
-  series: Array<{ date: string; value: number }>;
-  onHover?: (point: { date: string; value: number } | null) => void;
-  hovered?: { date: string; value: number } | null;
+  series: TrendBucket[];
+  onHover?: (point: TrendBucket | null) => void;
+  hovered?: TrendBucket | null;
   metricLabel?: string;
 }) {
   const width = 640;
@@ -727,10 +747,10 @@ function MiniLineChart({
     2,
   )},${(padY + innerH).toFixed(2)} Z`;
 
-  const first = series[0]?.date;
-  const last = series[series.length - 1]?.date;
+  const first = series[0]?.dateKey;
+  const last = series[series.length - 1]?.dateKey;
 
-  const hoveredPoint = hovered ? points.find((p) => p.date === hovered.date) : null;
+  const hoveredPoint = hovered ? points.find((p) => p.dateKey === hovered.dateKey) : null;
 
   return (
     <div className="space-y-3">
@@ -794,7 +814,7 @@ function MiniLineChart({
       {/* Tooltip */}
       {hoveredPoint && (
         <div className="rounded-lg border border-sky-500/30 bg-sky-950/40 p-3">
-          <p className="text-xs font-medium text-sky-100">{formatFullDate(hoveredPoint.date)}</p>
+          <p className="text-xs font-medium text-sky-100">{hoveredPoint.label}</p>
           <p className="mt-1 text-lg font-semibold text-white">{formatNumber(hoveredPoint.value)}</p>
           <p className="mt-0.5 text-xs text-sky-200">{metricLabel}</p>
         </div>
@@ -807,7 +827,7 @@ function TrendDataTable({
   series,
   metricLabel,
 }: {
-  series: Array<{ date: string; value: number }>;
+  series: TrendBucket[];
   metricLabel: string;
 }) {
   return (
@@ -821,8 +841,8 @@ function TrendDataTable({
         </thead>
         <tbody className="divide-y divide-white/[0.08]">
           {series.map((row) => (
-            <tr key={row.date} className="hover:bg-white/[0.02]">
-              <td className="px-3 py-2 text-xs text-zinc-300">{formatFullDate(row.date)}</td>
+            <tr key={row.dateKey} className="hover:bg-white/[0.02]">
+              <td className="px-3 py-2 text-xs text-zinc-300">{row.label}</td>
               <td className="px-3 py-2 text-right text-xs font-medium text-zinc-100">{formatNumber(row.value)}</td>
             </tr>
           ))}
