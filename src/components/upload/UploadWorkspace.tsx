@@ -71,11 +71,13 @@ import {
   PodcastWorkspaceCtas,
 } from "@/components/podcast/PodcastWorkspaceCtas";
 import { PracticeAnalysisCta } from "./PracticeAnalysisCta";
+import { ClaimGhostSessionOnAuth } from "@/components/auth/ClaimGhostSessionOnAuth";
 import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { UploadPaywallModal } from "./UploadPaywallModal";
 import { GuestWorkspaceBanner } from "./GuestWorkspaceBanner";
 import { DocumentIqCard } from "./DocumentIqCard";
+import { readGhostSession, saveGhostSession } from "@/lib/ghost-session";
 
 const WORKSPACE_CARD =
   "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 shadow-sm shadow-black/20 backdrop-blur";
@@ -978,6 +980,14 @@ export function UploadWorkspace() {
   const runAnalysisRef = useRef<null | (() => void)>(null);
   const uploadStartedRef = useRef<Set<string>>(new Set());
 
+  const hydrateCompletedAnalysis = useCallback((payload: InjectedAnalysisPayload) => {
+    setInjectedAnalysis(payload);
+    setLatestAnalysisResult(payload.result);
+    setLatestSavedAnalysisId(payload.savedAnalysisId ?? null);
+    setAnalysisIntelligence(payload.intelligence);
+    setHasAnalysisResult(true);
+  }, []);
+
   const billing = useMemo(() => getBillingStatusCopy(), []);
   const guestBannerExhausted =
     !workspaceEntitlement.isAuthenticated &&
@@ -997,6 +1007,30 @@ export function UploadWorkspace() {
     }
     clearPendingAnalysis();
   }, [restoredPendingAnalysis]);
+
+  useEffect(() => {
+    const ghost = readGhostSession();
+    if (!ghost) return;
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+
+      hydrateCompletedAnalysis({
+        result: ghost.analysisResult,
+        providerUsed: ghost.providerUsed,
+        fallbackUsed: ghost.fallbackUsed,
+        intelligence: ghost.intelligenceMetadata,
+        savedToWorkspace: false,
+        savedAnalysisId: null,
+      });
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [hydrateCompletedAnalysis]);
 
   useEffect(() => {
     function handleRecommendation(event: Event) {
@@ -1141,6 +1175,12 @@ export function UploadWorkspace() {
       setLatestSavedAnalysisId(analysis.savedAnalysisId ?? null);
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
+      saveGhostSession({
+        analysisResult: analysis.result,
+        providerUsed: analysis.providerUsed,
+        fallbackUsed: analysis.fallbackUsed,
+        intelligenceMetadata: analysis.intelligence,
+      });
       return true;
     },
     [analysisMode],
@@ -1176,6 +1216,12 @@ export function UploadWorkspace() {
       setLatestSavedAnalysisId(analysis.savedAnalysisId ?? null);
       setAnalysisIntelligence(analysis.intelligence);
       setHasAnalysisResult(true);
+      saveGhostSession({
+        analysisResult: analysis.result,
+        providerUsed: analysis.providerUsed,
+        fallbackUsed: analysis.fallbackUsed,
+        intelligenceMetadata: analysis.intelligence,
+      });
       return true;
     },
     [analysisMode],
@@ -1555,6 +1601,7 @@ export function UploadWorkspace() {
 
   return (
     <>
+      <ClaimGhostSessionOnAuth enabled={workspaceEntitlement.isAuthenticated} />
       <UploadPaywallModal
         open={showAnalysisPaywall}
         billing={billing}
@@ -1803,6 +1850,22 @@ export function UploadWorkspace() {
               onAnalysisResultChange={setLatestAnalysisResult}
               onSavedAnalysisIdChange={setLatestSavedAnalysisId}
               onIntelligenceReady={setAnalysisIntelligence}
+              onAnalysisSuccess={({ result, providerUsed, fallbackUsed, intelligence }) => {
+                hydrateCompletedAnalysis({
+                  result,
+                  providerUsed,
+                  fallbackUsed,
+                  intelligence,
+                  savedToWorkspace: false,
+                  savedAnalysisId: latestSavedAnalysisId,
+                });
+                saveGhostSession({
+                  analysisResult: result,
+                  providerUsed,
+                  fallbackUsed,
+                  intelligenceMetadata: intelligence,
+                });
+              }}
               onAnalyzeReady={(handler) => {
                 runAnalysisRef.current = handler;
               }}

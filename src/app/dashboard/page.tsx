@@ -19,6 +19,7 @@ import { getUserPlanLimits } from "@/lib/plan-limits";
 import { MemoryDashboardPanel } from "@/components/memory/MemoryDashboardPanel";
 import { DashboardUsagePanel } from "@/components/dashboard/DashboardUsagePanel";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
+import { ClaimGhostSessionOnAuth } from "@/components/auth/ClaimGhostSessionOnAuth";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Dashboard",
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
+      <ClaimGhostSessionOnAuth />
       <DashboardSidebar
         savedCount={savedCount}
         dailyCount={limits?.daily_analysis_count ?? 0}

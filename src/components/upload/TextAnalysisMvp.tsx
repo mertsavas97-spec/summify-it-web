@@ -73,6 +73,12 @@ type TextAnalysisMvpProps = {
   onAnalysisResultChange?: (result: AnalysisResult | null) => void;
   onSavedAnalysisIdChange?: (analysisId: string | null) => void;
   onIntelligenceReady?: (metadata: AnalysisIntelligenceMetadata | null) => void;
+  onAnalysisSuccess?: (payload: {
+    result: AnalysisResult;
+    providerUsed: string;
+    fallbackUsed: boolean;
+    intelligence: AnalysisIntelligenceMetadata;
+  }) => void;
   onAnalyzeReady?: (handler: () => void) => void;
   entitlementPlanId: PlanId;
   isAuthenticated: boolean;
@@ -888,6 +894,7 @@ export function TextAnalysisMvp({
   onAnalysisResultChange,
   onSavedAnalysisIdChange,
   onIntelligenceReady,
+  onAnalysisSuccess,
   onAnalyzeReady,
   entitlementPlanId,
   isAuthenticated,
@@ -1016,6 +1023,12 @@ export function TextAnalysisMvp({
       setSavedToWorkspace(analysis.savedToWorkspace);
       onSavedAnalysisIdChange?.(analysis.savedAnalysisId ?? null);
       onIntelligenceReady?.(analysis.intelligence);
+      onAnalysisSuccess?.({
+        result: analysis.result,
+        providerUsed: analysis.providerUsed,
+        fallbackUsed: analysis.fallbackUsed,
+        intelligence: analysis.intelligence,
+      });
       onAnalysisComplete?.(true);
     } catch {
       setError(USER_MESSAGES.network);

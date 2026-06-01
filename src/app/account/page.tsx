@@ -18,6 +18,7 @@ import { TEAM_ACCOUNT_PLACEHOLDER } from "@/lib/billing/plan-availability";
 import { hasActivePaidEntitlement } from "@/lib/billing/entitlements";
 import { countUserAnalyses } from "@/server/analyses/countUserAnalyses";
 import { getUserAnalyses } from "@/server/analyses/getUserAnalyses";
+import { ClaimGhostSessionOnAuth } from "@/components/auth/ClaimGhostSessionOnAuth";
 
 export const metadata = pageSeo.account;
 
@@ -68,6 +69,7 @@ export default async function AccountPage() {
 
   return (
     <article className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <ClaimGhostSessionOnAuth />
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-400/80">
         Account
       </p>
