@@ -1,4 +1,5 @@
 import { getMaxLearnCardsForPlan } from "@/lib/plan-features";
+import { filterValidLearnCards } from "@/lib/learn/learnCardValidation";
 import type { PlanId } from "@/types/plan";
 import type { LearnCardOutput } from "@/types/text-analysis";
 
@@ -55,7 +56,7 @@ export function getPracticeCardAccessForPlan(
   planId: PlanId,
   cards: LearnCardOutput[],
 ): PracticeCardAccess {
-  const allCards = cards;
+  const allCards = filterValidLearnCards(cards, "practice_card_access");
   const totalCount = allCards.length;
   const accessibleCount = getMaxAccessiblePracticeCards(planId, totalCount);
   const accessibleCards = allCards.slice(0, accessibleCount);

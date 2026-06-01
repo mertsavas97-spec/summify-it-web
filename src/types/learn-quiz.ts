@@ -1,4 +1,5 @@
 import type { LearnSourceTrace } from "@/types/adaptive-learn";
+import type { LearnCardOutput } from "@/types/text-analysis";
 
 export type QuizOptionKey = "A" | "B" | "C" | "D";
 
@@ -44,14 +45,6 @@ export type AnalysisQuizInput = {
   keyInsights: string[];
   risksOrWarnings: string[];
   actionItems: string[];
-  learnCards: Array<{
-    cardId?: string;
-    type: string;
-    title: string;
-    content: string;
-    isLockedPreview?: boolean;
-    sourceTrace?: LearnSourceTrace;
-    recallDifficulty?: "easy" | "medium" | "hard";
-  }>;
+  learnCards: LearnCardOutput[];
   maxQuestions?: number;
 };

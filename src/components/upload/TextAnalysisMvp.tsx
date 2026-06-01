@@ -795,19 +795,6 @@ function PostAnalysisResultShell({
             showToolbar={false}
           />
           <WorkspaceSaveBanner savedToWorkspace={savedToWorkspace} isAuthenticated={isAuthenticated} />
-          <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
-            <p className="text-sm font-semibold text-white">Learn Cards Preview</p>
-            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              Practice the most important ideas before moving to quiz.
-            </p>
-            <div className="mt-4">
-              {resolvedLearnModule ?? (
-                <p className="rounded-xl border border-white/[0.06] bg-zinc-950/40 px-3.5 py-2.5 text-xs text-zinc-500">
-                  No practice cards were generated for this analysis.
-                </p>
-              )}
-            </div>
-          </section>
           {!isAuthenticated ? (
             <section className="rounded-2xl border border-white/[0.07] bg-black/20 p-5">
               <p className="text-sm font-semibold text-white">Detailed Analysis</p>

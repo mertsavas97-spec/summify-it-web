@@ -25,6 +25,7 @@ import {
   getPracticeCardAccessForPlan,
   toPracticeAccessMeta,
 } from "@/lib/learn/practiceCardAccess";
+import { filterValidLearnCards } from "@/lib/learn/learnCardValidation";
 import { canAccessMode, resolveModeEntitlementPlanId } from "@/lib/mode-access";
 import { getIntelligenceModeById } from "@/config/modes";
 import { USER_MESSAGES } from "@/lib/user-messages";
@@ -271,7 +272,8 @@ export async function POST(request: Request) {
       orchestratorResult;
     intelligence = ctx;
 
-    const cardAccess = getPracticeCardAccessForPlan(planId, result.learnCards);
+    const validLearnCards = filterValidLearnCards(result.learnCards, "analyze_api");
+    const cardAccess = getPracticeCardAccessForPlan(planId, validLearnCards);
     const clientResult = {
       ...result,
       learnCards: [...cardAccess.accessibleCards, ...cardAccess.lockedCards],
@@ -320,7 +322,10 @@ export async function POST(request: Request) {
         sourceContext,
         providerUsed,
         fallbackUsed,
-        result,
+        result: {
+          ...result,
+          learnCards: validLearnCards,
+        },
         intelligence,
         storedPlan: profile?.plan,
       });

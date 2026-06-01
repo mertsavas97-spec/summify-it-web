@@ -5,6 +5,7 @@ import type {
   QuizOptionKey,
   QuizQuestion,
 } from "@/types/learn-quiz";
+import { filterValidLearnCards } from "@/lib/learn/learnCardValidation";
 
 const OPTION_KEYS: QuizOptionKey[] = ["A", "B", "C", "D"];
 
@@ -166,7 +167,10 @@ function questionFromInsight(
  * Builds multiple-choice quiz questions from analysis output and accessible Learn cards.
  */
 export function generateAnalysisQuiz(input: AnalysisQuizInput): QuizQuestion[] {
-  const openCards = input.learnCards.filter((c) => !c.isLockedPreview);
+  const openCards = filterValidLearnCards(
+    input.learnCards.filter((c) => !c.isLockedPreview),
+    "quiz_generation",
+  );
   const pool = [
     ...openCards.map(cardAnswerText),
     ...input.keyInsights,
