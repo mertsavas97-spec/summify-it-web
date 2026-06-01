@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { buildSitemapEntries } from "@/lib/sitemap/build-sitemap";
 
+export const dynamic = "force-dynamic";
+
 /**
  * Dynamic sitemap — derived at build/deploy from blog posts, format landings,
  * intelligence modes, use cases, and core marketing routes.

@@ -6,6 +6,8 @@ import {
 import {
   getPublicSitemapUrls,
   getLatestBlogUrls,
+  getNewBlogUrlsSinceLastSubmission,
+  getSeoIndexingDebugInfo,
   submitUrlsToIndexNow,
 } from "@/server/seo/indexnow";
 
@@ -15,14 +17,19 @@ export const dynamic = "force-dynamic";
 const CANONICAL_BASE = "https://www.summify.app";
 
 type SubmitBody = {
-  mode: "all_sitemap" | "urls" | "latest_blog";
+  mode: "all_sitemap" | "urls" | "latest_blog" | "new_blog";
   urls?: string[];
 };
 
 function isValidBody(body: unknown): body is SubmitBody {
   if (!body || typeof body !== "object") return false;
   const b = body as Record<string, unknown>;
-  if (b.mode !== "all_sitemap" && b.mode !== "urls" && b.mode !== "latest_blog") {
+  if (
+    b.mode !== "all_sitemap" &&
+    b.mode !== "urls" &&
+    b.mode !== "latest_blog" &&
+    b.mode !== "new_blog"
+  ) {
     return false;
   }
   if (b.mode === "urls") {
@@ -38,7 +45,7 @@ function isValidBody(body: unknown): body is SubmitBody {
  * Admin-only endpoint to submit URLs to IndexNow.
  *
  * Body:
- * - mode: "all_sitemap" | "latest_blog" | "urls"
+ * - mode: "all_sitemap" | "latest_blog" | "new_blog" | "urls"
  * - urls?: string[] (required when mode="urls")
  */
 export async function POST(request: Request) {
@@ -69,7 +76,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         message:
-          'Invalid body. Expected { mode: "all_sitemap" | "latest_blog" | "urls", urls?: string[] }',
+          'Invalid body. Expected { mode: "all_sitemap" | "latest_blog" | "new_blog" | "urls", urls?: string[] }',
       },
       { status: 400 },
     );
@@ -85,6 +92,10 @@ export async function POST(request: Request) {
       }
       case "latest_blog": {
         urlsToSubmit = await getLatestBlogUrls(10);
+        break;
+      }
+      case "new_blog": {
+        urlsToSubmit = await getNewBlogUrlsSinceLastSubmission();
         break;
       }
       case "urls": {
@@ -114,7 +125,14 @@ export async function POST(request: Request) {
       });
     }
 
-    const result = await submitUrlsToIndexNow(urlsToSubmit);
+    const actionType =
+      body.mode === "all_sitemap"
+        ? "sitemap"
+        : body.mode === "new_blog"
+          ? "new_blog"
+          : "latest_blog";
+
+    const result = await submitUrlsToIndexNow(urlsToSubmit, actionType);
 
     return NextResponse.json({
       ok: result.ok,
@@ -124,6 +142,7 @@ export async function POST(request: Request) {
       indexNowStatus: result.indexNowStatus,
       indexNowResponseText: result.indexNowResponseText,
       submittedAt: result.submittedAt,
+      actionType,
     });
   } catch (err) {
     console.error("[seo/indexnow] Unexpected error:", {
@@ -158,16 +177,22 @@ export async function GET() {
   }
 
   try {
-    const sitemapUrls = await getPublicSitemapUrls();
-    const blogUrls = await getLatestBlogUrls(10);
+    const debugInfo = await getSeoIndexingDebugInfo();
 
     return NextResponse.json({
       ok: true,
       indexNowKeyConfigured: true,
       sitemapUrl: `${CANONICAL_BASE}/sitemap.xml`,
-      sitemapUrlCount: sitemapUrls.length,
-      latestBlogUrlCount: blogUrls.length,
-      latestBlogUrls: blogUrls,
+      sitemapUrlCount: debugInfo.totalPublicUrls,
+      latestBlogUrlCount: debugInfo.latest10BlogUrls.length,
+      latestBlogUrls: debugInfo.latest10BlogUrls,
+      totalPublicUrls: debugInfo.totalPublicUrls,
+      totalBlogUrls: debugInfo.totalBlogUrls,
+      latest10BlogUrls: debugInfo.latest10BlogUrls,
+      newBlogUrlsSinceLastSubmission: debugInfo.newBlogUrlsSinceLastSubmission,
+      missingPublishedBlogUrlsFromSitemap: debugInfo.missingPublishedBlogUrlsFromSitemap,
+      lastSubmission: debugInfo.lastSubmission,
+      sitemapGenerationMode: "build_deploy",
     });
   } catch (err) {
     console.error("[seo/indexnow] GET error:", {

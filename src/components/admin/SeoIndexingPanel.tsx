@@ -12,6 +12,18 @@ type SeoInfo = {
   sitemapUrlCount: number;
   latestBlogUrlCount: number;
   latestBlogUrls: string[];
+  totalPublicUrls: number;
+  totalBlogUrls: number;
+  latest10BlogUrls: string[];
+  newBlogUrlsSinceLastSubmission: string[];
+  missingPublishedBlogUrlsFromSitemap?: string[];
+  lastSubmission: {
+    timestamp: string;
+    submittedUrls: string[];
+    count: number;
+    actionType: "sitemap" | "latest_blog" | "new_blog";
+  } | null;
+  sitemapGenerationMode?: "build_deploy" | "runtime";
 };
 
 type SubmissionResult = {
@@ -22,6 +34,7 @@ type SubmissionResult = {
   indexNowStatus: number;
   indexNowResponseText?: string;
   submittedAt: string;
+  actionType?: "sitemap" | "latest_blog" | "new_blog";
   message?: string;
 };
 
@@ -54,7 +67,7 @@ export function SeoIndexingPanel() {
   }, []);
 
   const handleSubmit = useCallback(
-    async (mode: "all_sitemap" | "latest_blog") => {
+    async (mode: "all_sitemap" | "latest_blog" | "new_blog") => {
       setLoading(true);
       setError(null);
       setLastResult(null);
@@ -74,6 +87,11 @@ export function SeoIndexingPanel() {
         }
 
         setLastResult(data);
+        const refreshed = await fetch("/api/admin/seo/indexnow");
+        if (refreshed.ok) {
+          const nextInfo = await refreshed.json();
+          setSeoInfo(nextInfo);
+        }
       } catch {
         setError("IndexNow submission failed. Check server logs.");
       } finally {
@@ -85,7 +103,11 @@ export function SeoIndexingPanel() {
 
   const keyStatus = seoInfo?.indexNowKeyConfigured;
   const sitemapCount = seoInfo?.sitemapUrlCount ?? 0;
-  const blogCount = seoInfo?.latestBlogUrlCount ?? 0;
+  const latest10 = seoInfo?.latest10BlogUrls ?? [];
+  const newBlogUrls = seoInfo?.newBlogUrlsSinceLastSubmission ?? [];
+  const missingFromSitemap = seoInfo?.missingPublishedBlogUrlsFromSitemap ?? [];
+  const blogCount = latest10.length;
+  const lastSubmission = seoInfo?.lastSubmission;
 
   return (
     <div className="space-y-4">
@@ -148,6 +170,15 @@ export function SeoIndexingPanel() {
                 {lastResult.submittedCount} URLs submitted
               </p>
             </>
+          ) : lastSubmission ? (
+            <>
+              <p className="mt-1 text-xs text-zinc-300">
+                {new Date(lastSubmission.timestamp).toLocaleString()}
+              </p>
+              <p className="mt-0.5 text-[11px] text-zinc-500">
+                {lastSubmission.actionType} · {lastSubmission.count} URLs
+              </p>
+            </>
           ) : (
             <p className="mt-1 text-xs text-zinc-500">No submissions yet</p>
           )}
@@ -156,11 +187,11 @@ export function SeoIndexingPanel() {
         {/* Latest blog count */}
         <Card compact>
           <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-            Latest Blog URLs
+            Latest 10 Blog URLs
           </p>
           {!infoLoading ? (
             <p className="mt-1 text-xs text-zinc-300">
-              {blogCount} available
+               {blogCount} available
             </p>
           ) : (
             <p className="mt-1 text-xs text-zinc-500">Loading...</p>
@@ -184,7 +215,15 @@ export function SeoIndexingPanel() {
           onClick={() => handleSubmit("latest_blog")}
           disabled={loading || blogCount === 0}
         >
-          Submit latest blog URLs
+          Submit latest 10 blog URLs
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => handleSubmit("new_blog")}
+          disabled={loading || newBlogUrls.length === 0}
+        >
+          Submit new blog URLs
         </Button>
         <a
           href="https://search.google.com/search-console/overview"
@@ -203,6 +242,21 @@ export function SeoIndexingPanel() {
         </Card>
       )}
 
+      {missingFromSitemap.length > 0 && (
+        <Card compact className="border-amber-500/30 bg-amber-950/20">
+          <p className="text-xs font-medium text-amber-300">
+            Some published blog posts are missing from sitemap.
+          </p>
+          <ul className="mt-1 max-h-28 list-disc space-y-0.5 overflow-y-auto pl-4 text-[11px] text-amber-200/90">
+            {missingFromSitemap.map((url) => (
+              <li key={`missing-${url}`} className="truncate">
+                {url}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       {lastResult && !error && (
         <Card compact className="border-emerald-500/20 bg-emerald-950/20">
           <div className="space-y-1">
@@ -210,6 +264,8 @@ export function SeoIndexingPanel() {
               {lastResult.ok ? "Submission successful" : "Submission failed"}
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-zinc-400">
+              <span>Action:</span>
+              <span>{lastResult.actionType ?? "unknown"}</span>
               <span>Status:</span>
               <span>{lastResult.indexNowStatus}</span>
               <span>Submitted:</span>
@@ -244,6 +300,46 @@ export function SeoIndexingPanel() {
         </Card>
       )}
 
+      <Card compact className="border-white/[0.04]">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+          Debug · Blog URL Selection
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-2 text-[11px] text-zinc-400 sm:grid-cols-2">
+          <p>Total public URLs: {seoInfo?.totalPublicUrls ?? sitemapCount}</p>
+          <p>Total blog URLs: {seoInfo?.totalBlogUrls ?? 0}</p>
+          <p>
+            Last submission: {lastSubmission?.actionType ?? "none"}
+            {lastSubmission?.timestamp ? ` · ${new Date(lastSubmission.timestamp).toLocaleString()}` : ""}
+          </p>
+        </div>
+
+        <details className="mt-2">
+          <summary className="cursor-pointer text-[11px] text-zinc-500 hover:text-zinc-400">
+            Latest 10 blog URLs ({latest10.length})
+          </summary>
+          <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto text-[10px] text-zinc-500">
+            {latest10.map((url) => (
+              <li key={`latest-${url}`} className="truncate">
+                {url}
+              </li>
+            ))}
+          </ul>
+        </details>
+
+        <details className="mt-2">
+          <summary className="cursor-pointer text-[11px] text-zinc-500 hover:text-zinc-400">
+            New blog URLs since last submission ({newBlogUrls.length})
+          </summary>
+          <ul className="mt-1 max-h-40 space-y-0.5 overflow-y-auto text-[10px] text-zinc-500">
+            {newBlogUrls.map((url) => (
+              <li key={`new-${url}`} className="truncate">
+                {url}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </Card>
+
       {/* Search Console guidance */}
       <Card compact className="border-white/[0.04]">
         <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
@@ -268,6 +364,9 @@ export function SeoIndexingPanel() {
             https://www.summify.app/sitemap.xml
           </code>
         </p>
+        {seoInfo?.sitemapGenerationMode === "build_deploy" && (
+          <p className="mt-2 text-[11px] text-amber-300/90">Sitemap updates after deployment.</p>
+        )}
       </Card>
     </div>
   );
