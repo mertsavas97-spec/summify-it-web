@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -196,6 +196,16 @@ function buildQuotaUsage(freeUsed: number, isPremium: boolean): AudioStudyQuotaU
     freeRemaining: Math.max(FREE_AUDIO_STUDY_LIMIT - freeUsed, 0),
     isPremium,
   };
+}
+
+function createGuestAudioStudyUserId(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
+  const realIp = request.headers.get("x-real-ip") ?? "";
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const acceptLanguage = request.headers.get("accept-language") ?? "";
+  const fingerprint = [forwardedFor, realIp, userAgent, acceptLanguage].join("|");
+  const hash = createHash("sha256").update(fingerprint || randomUUID()).digest("hex").slice(0, 16);
+  return `guest-${hash}`;
 }
 
 function isMissingAudioStudyUsageTableError(error: { code?: string; message?: string } | null): boolean {
@@ -468,7 +478,14 @@ function responseAudioStudy(
 // This route is mobile-only and must not be used by the existing web Audio Study UI.
 export async function POST(request: Request) {
   const auth = await getMobileUserFromBearer(request.headers.get("authorization"));
-  if (!auth.ok) {
+  const isGuest = !auth.ok;
+  const guestUserId = isGuest ? createGuestAudioStudyUserId(request) : null;
+
+  if (isGuest) {
+    devLog("[mobile-audio-study] audio_study_guest_request_allowed", { userId: guestUserId });
+  }
+
+  if (!auth.ok && !guestUserId) {
     return jsonError({ error: "unauthorized", code: auth.code }, 401);
   }
 
@@ -483,19 +500,20 @@ export async function POST(request: Request) {
 
   const idempotencyKey = getMeaningfulString(body.idempotencyKey);
   const storageKey = idempotencyKey ?? randomUUID();
-  const storagePath = buildStoragePath(auth.user.id, outputLanguage, storageKey);
+  const userId = auth.ok ? auth.user.id : guestUserId!;
+  const storagePath = buildStoragePath(userId, outputLanguage, storageKey);
   const voice = resolveMobilePollyVoice(outputLanguage, body.voiceId);
   const createdAt = new Date().toISOString();
 
   try {
     const admin = getServerSupabaseAdmin();
-    const profile = await getProfileByUserId(admin, auth.user.id);
+    const profile = auth.ok ? await getProfileByUserId(admin, userId) : null;
     const planId = resolveEntitlementPlanIdFromProfile(profile);
     const isPremium = canUseAudioStudyMode(planId, hasActivePaidEntitlement(profile));
-    const quotaUsage = await getFreeAudioStudyUsage(admin, auth.user.id, isPremium);
+    const quotaUsage = await getFreeAudioStudyUsage(admin, userId, isPremium);
 
     devLog("[mobile-audio-study] mobile_audio_free_quota_checked", {
-      userId: auth.user.id,
+      userId,
       freeUsed: quotaUsage.freeUsed,
       freeLimit: quotaUsage.freeLimit,
       freeRemaining: quotaUsage.freeRemaining,
@@ -512,13 +530,13 @@ export async function POST(request: Request) {
         if (!isPremium && !recorded && quotaUsage.freeUsed < FREE_AUDIO_STUDY_LIMIT) {
           const recordedMissingUsage = await recordAudioStudyGeneration(
             admin,
-            auth.user.id,
+            userId,
             idempotencyKey,
             storagePath,
           );
           if (recordedMissingUsage) {
             devLog("[mobile-audio-study] mobile_audio_usage_recorded", {
-              userId: auth.user.id,
+              userId,
               recoveredIdempotentUsage: true,
             });
           }
@@ -526,10 +544,10 @@ export async function POST(request: Request) {
 
         const currentUsage = isPremium
           ? quotaUsage
-          : await getFreeAudioStudyUsage(admin, auth.user.id, false);
+          : await getFreeAudioStudyUsage(admin, userId, false);
 
         devLog("[mobile-audio-study] mobile_audio_idempotent_hit", {
-          userId: auth.user.id,
+          userId,
           outputLanguage,
           recorded: Boolean(recorded),
         });
@@ -555,7 +573,7 @@ export async function POST(request: Request) {
 
     if (!isPremium && quotaUsage.freeUsed >= FREE_AUDIO_STUDY_LIMIT) {
       devLog("[mobile-audio-study] mobile_audio_free_quota_exhausted", {
-        userId: auth.user.id,
+        userId,
         freeUsed: quotaUsage.freeUsed,
         freeLimit: quotaUsage.freeLimit,
       });
@@ -571,7 +589,7 @@ export async function POST(request: Request) {
 
     if (!isPremium) {
       devLog("[mobile-audio-study] mobile_audio_free_quota_allowed", {
-        userId: auth.user.id,
+        userId,
         freeUsed: quotaUsage.freeUsed,
         freeLimit: quotaUsage.freeLimit,
         freeRemaining: quotaUsage.freeRemaining,
@@ -579,7 +597,7 @@ export async function POST(request: Request) {
     }
 
     const dailyLimit = getDailyAudioLessonLimit(planId);
-    const usageCheck = await checkAndPrepareAudioUsage(admin, auth.user.id, dailyLimit);
+    const usageCheck = await checkAndPrepareAudioUsage(admin, userId, dailyLimit);
     if (!usageCheck.allowed) {
       return jsonError({ error: "daily_limit_reached", used: usageCheck.used, limit: usageCheck.limit }, 429);
     }
@@ -588,25 +606,33 @@ export async function POST(request: Request) {
       withLanguageInstruction(analysisInput, outputLanguage),
       getAudioStudyScriptLimits(planId),
     );
+    if (isGuest) {
+      devLog("[mobile-audio-study] audio_study_guest_generation_started", {
+        userId,
+        outputLanguage,
+        idempotent: Boolean(idempotencyKey),
+      });
+    }
+
     const audio = await synthesizePollyMp3(script.script, voice.voiceId);
     const stored = await storeAudio(admin, storagePath, audio);
     let responseUsage = quotaUsage;
 
     if (!isPremium) {
-      const recorded = await recordAudioStudyGeneration(admin, auth.user.id, storageKey, storagePath);
+      const recorded = await recordAudioStudyGeneration(admin, userId, storageKey, storagePath);
       if (recorded) {
         devLog("[mobile-audio-study] mobile_audio_usage_recorded", {
-          userId: auth.user.id,
+          userId,
         });
       }
-      responseUsage = await getFreeAudioStudyUsage(admin, auth.user.id, false);
+      responseUsage = await getFreeAudioStudyUsage(admin, userId, false);
     }
 
-    await incrementAudioUsage(admin, auth.user.id);
+    await incrementAudioUsage(admin, userId);
 
     await trackProductEvent({
       eventType: "audio_study_script_generated",
-      userId: auth.user.id,
+      userId,
       sourceType: analysisInput.sourceType ?? null,
       intelligenceMode: analysisInput.intelligenceMode ?? null,
       plan: planId,
@@ -628,7 +654,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     devWarn("[mobile-audio-study] generation_failed", {
-      userId: auth.user.id,
+      userId,
       outputLanguage,
       message: error instanceof Error ? error.message : "unknown_error",
     });
