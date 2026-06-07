@@ -653,6 +653,22 @@ export async function POST(request: Request) {
       usage: responseUsage,
     });
   } catch (error) {
+    const stackFirstLine = error instanceof Error ? error.stack?.split("\n").find(Boolean) ?? null : null;
+    devWarn("[mobile-audio-study] generation_failed", {
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorMessage: error instanceof Error ? error.message : "unknown_error",
+      stackFirstLine,
+      isGuest: auth.user.role === "guest",
+      userId: auth.user.id,
+      idempotencyKey,
+      storagePath,
+      outputLanguage,
+      voiceId: voice.voiceId,
+      pollyConfigured: getPollyEnvCheck().envConfigured && getPollyEnvCheck().canInitializeClient,
+      supabaseBucket: AUDIO_STUDY_BUCKET,
+      uploadAttempted: false,
+      signedUrlAttempted: false,
+    });
     devWarn("[mobile-audio-study] generation_failed", {
       userId,
       outputLanguage,
