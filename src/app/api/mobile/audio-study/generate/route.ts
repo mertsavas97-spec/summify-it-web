@@ -64,6 +64,15 @@ type AudioStudyQuotaUsage = {
   isPremium: boolean;
 };
 
+type GuestAudioStudyQuotaUsage = AudioStudyQuotaUsage & {
+  guestQuotaSource: "legacy-db-skipped" | "fallback";
+};
+
+type GuestQuotaState = {
+  usage: GuestAudioStudyQuotaUsage;
+  guestQuotaSkippedLegacyDb: boolean;
+};
+
 type MobileVoiceResolution = {
   voiceId: string;
   voiceFallback: boolean;
@@ -198,6 +207,13 @@ function buildQuotaUsage(freeUsed: number, isPremium: boolean): AudioStudyQuotaU
   };
 }
 
+function buildGuestQuotaUsage(freeUsed: number, guestQuotaSource: GuestAudioStudyQuotaUsage["guestQuotaSource"]): GuestAudioStudyQuotaUsage {
+  return {
+    ...buildQuotaUsage(freeUsed, false),
+    guestQuotaSource,
+  };
+}
+
 function createGuestAudioStudyUserId(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
   const realIp = request.headers.get("x-real-ip") ?? "";
@@ -284,6 +300,28 @@ async function getProfileByUserId(admin: SupabaseClient, userId: string): Promis
     return null;
   }
   return data as Profile;
+}
+
+async function getGuestAudioStudyUsage(admin: SupabaseClient, guestUserId: string): Promise<GuestQuotaState> {
+  const { count, error } = await admin
+    .from("audio_study_generations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", guestUserId)
+    .eq("feature", AUDIO_STUDY_USAGE_FEATURE);
+
+  if (error) {
+    if (isMissingAudioStudyUsageTableError(error)) {
+      devLog("[mobile-audio-study] guest_quota_legacy_db_skipped", { guestUserId });
+      return { usage: buildGuestQuotaUsage(0, "legacy-db-skipped"), guestQuotaSkippedLegacyDb: true };
+    }
+    devWarn("[mobile-audio-study] guest_quota_query_failed_fallback", {
+      guestUserId,
+      message: error.message,
+    });
+    return { usage: buildGuestQuotaUsage(0, "fallback"), guestQuotaSkippedLegacyDb: false };
+  }
+
+  return { usage: buildGuestQuotaUsage(count ?? 0, "fallback"), guestQuotaSkippedLegacyDb: false };
 }
 
 function getDailyAudioLessonLimit(planId: PlanId): number {
@@ -510,7 +548,10 @@ export async function POST(request: Request) {
     const profile = auth.ok ? await getProfileByUserId(admin, userId) : null;
     const planId = resolveEntitlementPlanIdFromProfile(profile);
     const isPremium = canUseAudioStudyMode(planId, hasActivePaidEntitlement(profile));
-    const quotaUsage = await getFreeAudioStudyUsage(admin, userId, isPremium);
+    const guestQuotaState = isGuest ? await getGuestAudioStudyUsage(admin, userId) : null;
+    const quotaUsage = isGuest
+      ? guestQuotaState!.usage
+      : await getFreeAudioStudyUsage(admin, userId, isPremium);
 
     devLog("[mobile-audio-study] mobile_audio_free_quota_checked", {
       userId,
@@ -521,13 +562,13 @@ export async function POST(request: Request) {
     });
 
     if (idempotencyKey) {
-      const recorded = isPremium ? null : await getRecordedAudioStudyGeneration(admin, userId, idempotencyKey);
+      const recorded = !isGuest && !isPremium ? await getRecordedAudioStudyGeneration(admin, userId, idempotencyKey) : null;
       const existing = recorded
         ? await createSignedAudioUrl(admin, recorded.storagePath)
         : await getExistingStoredAudio(admin, storagePath);
 
       if (existing) {
-        if (!isPremium && !recorded && quotaUsage.freeUsed < FREE_AUDIO_STUDY_LIMIT) {
+        if (!isGuest && !isPremium && !recorded && quotaUsage.freeUsed < FREE_AUDIO_STUDY_LIMIT) {
           const recordedMissingUsage = await recordAudioStudyGeneration(
             admin,
             userId,
@@ -542,7 +583,9 @@ export async function POST(request: Request) {
           }
         }
 
-        const currentUsage = isPremium
+        const currentUsage = isGuest
+          ? guestQuotaState!.usage
+          : isPremium
           ? quotaUsage
           : await getFreeAudioStudyUsage(admin, userId, false);
 
@@ -572,6 +615,9 @@ export async function POST(request: Request) {
     }
 
     if (!isPremium && quotaUsage.freeUsed >= FREE_AUDIO_STUDY_LIMIT) {
+      if (isGuest) {
+        devLog("[mobile-audio-study] guest_quota_legacy_db_skipped", { guestUserId: userId });
+      }
       devLog("[mobile-audio-study] mobile_audio_free_quota_exhausted", {
         userId,
         freeUsed: quotaUsage.freeUsed,
@@ -587,6 +633,10 @@ export async function POST(request: Request) {
       );
     }
 
+    if (isGuest && guestQuotaState?.guestQuotaSkippedLegacyDb) {
+      devLog("[mobile-audio-study] guest_quota_legacy_db_skipped", { guestUserId: userId });
+    }
+
     if (!isPremium) {
       devLog("[mobile-audio-study] mobile_audio_free_quota_allowed", {
         userId,
@@ -597,9 +647,11 @@ export async function POST(request: Request) {
     }
 
     const dailyLimit = getDailyAudioLessonLimit(planId);
-    const usageCheck = await checkAndPrepareAudioUsage(admin, userId, dailyLimit);
-    if (!usageCheck.allowed) {
-      return jsonError({ error: "daily_limit_reached", used: usageCheck.used, limit: usageCheck.limit }, 429);
+    if (!isGuest) {
+      const usageCheck = await checkAndPrepareAudioUsage(admin, userId, dailyLimit);
+      if (!usageCheck.allowed) {
+        return jsonError({ error: "daily_limit_reached", used: usageCheck.used, limit: usageCheck.limit }, 429);
+      }
     }
 
     const script = await generateAudioStudyScript(
@@ -607,7 +659,7 @@ export async function POST(request: Request) {
       getAudioStudyScriptLimits(planId),
     );
     if (isGuest) {
-      devLog("[mobile-audio-study] audio_study_guest_generation_started", {
+      devLog("[mobile-audio-study] guest_audio_generation_started", {
         userId,
         outputLanguage,
         idempotent: Boolean(idempotencyKey),
@@ -619,33 +671,50 @@ export async function POST(request: Request) {
     let responseUsage = quotaUsage;
 
     if (!isPremium) {
-      const recorded = await recordAudioStudyGeneration(admin, userId, storageKey, storagePath);
-      if (recorded) {
-        devLog("[mobile-audio-study] mobile_audio_usage_recorded", {
-          userId,
-        });
+      if (!isGuest) {
+        const recorded = await recordAudioStudyGeneration(admin, userId, storageKey, storagePath);
+        if (recorded) {
+          devLog("[mobile-audio-study] mobile_audio_usage_recorded", {
+            userId,
+          });
+        }
+        responseUsage = await getFreeAudioStudyUsage(admin, userId, false);
+      } else {
+        responseUsage = buildGuestQuotaUsage(Math.min(quotaUsage.freeUsed + 1, FREE_AUDIO_STUDY_LIMIT), guestQuotaState!.usage.guestQuotaSource);
       }
-      responseUsage = await getFreeAudioStudyUsage(admin, userId, false);
     }
 
-    await incrementAudioUsage(admin, userId);
+    if (!isGuest) {
+      await incrementAudioUsage(admin, userId);
+    }
 
-    await trackProductEvent({
-      eventType: "audio_study_script_generated",
-      userId,
-      sourceType: analysisInput.sourceType ?? null,
-      intelligenceMode: analysisInput.intelligenceMode ?? null,
-      plan: planId,
-      metadata: {
-        mobile: true,
-        provider: "aws-polly",
-        voice_id: voice.voiceId,
-        voice_fallback: voice.voiceFallback,
-        output_language: outputLanguage,
-        idempotent: Boolean(idempotencyKey),
-      },
-      insertViaServiceRole: true,
-    });
+    if (!isGuest) {
+      await trackProductEvent({
+        eventType: "audio_study_script_generated",
+        userId,
+        sourceType: analysisInput.sourceType ?? null,
+        intelligenceMode: analysisInput.intelligenceMode ?? null,
+        plan: planId,
+        metadata: {
+          mobile: true,
+          provider: "aws-polly",
+          voice_id: voice.voiceId,
+          voice_fallback: voice.voiceFallback,
+          output_language: outputLanguage,
+          idempotent: Boolean(idempotencyKey),
+        },
+        insertViaServiceRole: true,
+      });
+    }
+
+    if (isGuest) {
+      devLog("[mobile-audio-study] guest_audio_generation_completed", {
+        userId,
+        freeUsed: responseUsage.freeUsed,
+        freeLimit: responseUsage.freeLimit,
+        freeRemaining: responseUsage.freeRemaining,
+      });
+    }
 
     return NextResponse.json({
       ok: true,
