@@ -521,7 +521,7 @@ export async function POST(request: Request) {
     });
 
     if (idempotencyKey) {
-      const recorded = isPremium ? null : await getRecordedAudioStudyGeneration(admin, auth.user.id, idempotencyKey);
+      const recorded = isPremium ? null : await getRecordedAudioStudyGeneration(admin, userId, idempotencyKey);
       const existing = recorded
         ? await createSignedAudioUrl(admin, recorded.storagePath)
         : await getExistingStoredAudio(admin, storagePath);
