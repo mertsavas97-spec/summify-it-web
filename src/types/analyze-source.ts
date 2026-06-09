@@ -29,9 +29,16 @@ export type PresentationAnalyzeSourceContext = {
   slideOutline: PresentationSlideOutlineHint[];
 };
 
+export type FileAnalyzeSourceContext = {
+  sourceKind: "file";
+  fileName?: string;
+  fileType?: string | null;
+};
+
 export type AnalyzeSourceContext =
   | YoutubeAnalyzeSourceContext
-  | PresentationAnalyzeSourceContext;
+  | PresentationAnalyzeSourceContext
+  | FileAnalyzeSourceContext;
 
 import type {
   PresentationExtractionMetadata,

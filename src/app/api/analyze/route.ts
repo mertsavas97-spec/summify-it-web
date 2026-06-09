@@ -106,6 +106,64 @@ function attachAnonymousSessionCookie(
   return response;
 }
 
+const INTERNAL_SOURCE_TITLE_FIELDS = [
+  "fileName",
+  "filename",
+  "originalFilename",
+  "sourceFileName",
+  "title",
+  "sourceTitle",
+  "name",
+  "url",
+] as const;
+
+function getSourceContextRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function getTrimmedStringField(
+  context: Record<string, unknown> | null,
+  key: string,
+): string | null {
+  const value = context?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function resolveInternalSourceTitle(
+  sourceHint: AnalysisSourceHint | undefined,
+  sourceContext: AnalyzeSourceContext | undefined,
+  rawSourceContext: unknown,
+): string {
+  const context = getSourceContextRecord(rawSourceContext) ?? getSourceContextRecord(sourceContext);
+  const sourceKind = getTrimmedStringField(context, "sourceKind") ?? sourceContext?.sourceKind;
+
+  if (sourceKind === "presentation") {
+    return getTrimmedStringField(context, "fileName") ?? "Uploaded file";
+  }
+
+  if (sourceKind === "youtube") {
+    const title = getTrimmedStringField(context, "title");
+    if (title) return title;
+
+    const videoId = getTrimmedStringField(context, "videoId");
+    return videoId ? `YouTube · ${videoId}` : "YouTube";
+  }
+
+  for (const key of INTERNAL_SOURCE_TITLE_FIELDS) {
+    const value = getTrimmedStringField(context, key);
+    if (value) return value;
+  }
+
+  if (sourceHint === "url") {
+    return getTrimmedStringField(context, "url") ?? "URL";
+  }
+  if (sourceHint === "file") return "Uploaded file";
+  if (sourceHint === "youtube") return "YouTube";
+
+  return "Pasted text";
+}
+
 function buildSuccessDebug(
   mode: string,
   intelligence: AnalysisIntelligenceContext,
@@ -371,12 +429,11 @@ export async function POST(request: Request) {
               : "Text"
         : null;
 
-      const sourceTitle =
-        sourceContext?.sourceKind === "presentation"
-          ? sourceContext.fileName
-          : sourceContext?.sourceKind === "youtube"
-            ? (sourceContext.title?.trim() || `YouTube · ${sourceContext.videoId}`)
-            : null;
+      const sourceTitle = resolveInternalSourceTitle(
+        sourceHint,
+        sourceContext,
+        body.sourceContext,
+      );
 
       const intelligenceModeLabel = getIntelligenceModeById(intelligenceModeId)?.label;
       const characterCount =

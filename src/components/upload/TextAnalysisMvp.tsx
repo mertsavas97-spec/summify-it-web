@@ -964,7 +964,13 @@ export function TextAnalysisMvp({
         ? buildYoutubeSourceContext(extractionMeta)
         : extractionMeta?.sourceKind === "presentation"
           ? buildPresentationSourceContext(extractionMeta)
-          : undefined;
+          : extractionMeta?.sourceKind === "file"
+            ? {
+                sourceKind: "file" as const,
+                fileName: extractionMeta.fileName,
+                fileType: extractionMeta.fileType ?? null,
+              }
+            : undefined;
 
     try {
       const analysis = await runTextAnalysis({
