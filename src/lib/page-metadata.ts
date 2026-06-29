@@ -5,17 +5,19 @@ import { buildPageMetadata } from "@/lib/seo";
 
 export const pageSeo = {
   home: buildPageMetadata({
-    title: "AI Learning Platform — Audio Lessons, Study Cards & Quizzes",
+    title: "Free AI Summarizer — PDFs, Videos, Articles",
     description:
-      "Summify turns PDFs, videos, and articles into teacher-style audio lessons, smart study cards, and quizzes. Learn without a screen — free in beta.",
+      "Summarize PDFs, YouTube videos, web articles & podcasts with AI. Instant summaries, audio lessons & study cards. Free, no signup required. Try now →",
     path: "/",
     keywords: [
-      "AI learning platform",
-      "audio learning",
-      "learn by listening",
-      "PDF to audio",
+      "pdf summarizer",
+      "ai summarizer",
+      "summarize pdf",
+      "youtube summarizer",
+      "article summarizer",
+      "free ai summarizer",
       "study cards",
-      "quiz from PDF",
+      "audio lessons",
     ],
   }),
 
@@ -76,11 +78,31 @@ export const pageSeo = {
   }),
 
   pdfSummarizer: buildPageMetadata({
-    title: "PDF to Audio Study System — Learn Without a Screen",
+    title: "Free AI PDF Summarizer — Summarize PDF Online",
     description:
-      "Turn long PDFs into audio lessons, study cards, quizzes, and memory-friendly review in one workspace.",
+      "Summarize PDF free with AI. Instant summaries, audio lessons & flashcards. No credit card, no account needed for first analysis. Start now →",
     path: "/pdf-summarizer",
-    keywords: ["PDF to audio", "PDF study system", "PDF learning"],
+    keywords: [
+      "pdf summarizer",
+      "summarize pdf",
+      "ai pdf summarizer",
+      "pdf summary generator",
+      "free pdf summarizer",
+    ],
+  }),
+
+  videoSummarizer: buildPageMetadata({
+    title: "Free YouTube Video Summarizer AI — Instant Summaries",
+    description:
+      "Summarize YouTube videos instantly with AI. Get transcripts, key points & study quizzes from any video. Free tool, no signup needed. Start now →",
+    path: "/video-summarizer",
+    keywords: [
+      "youtube summarizer",
+      "video summarizer",
+      "summarize youtube video",
+      "ai video summary",
+      "youtube transcript summary",
+    ],
   }),
 
   bestAiForStudying: buildPageMetadata({

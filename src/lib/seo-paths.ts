@@ -24,6 +24,7 @@ const STATIC_MARKETING_PATHS = [
   "/summarize-docx",
   "/summarize-mp3",
   "/pdf-summarizer",
+  "/video-summarizer",
   "/best-ai-for-studying",
   "/pdf-to-podcast",
   "/youtube-video-summarizer",

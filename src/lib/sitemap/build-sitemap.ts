@@ -33,6 +33,7 @@ const CORE_STATIC_PATHS = [
   "/turn-notes-into-podcast",
   "/ai-study-workflow",
   "/pdf-summarizer",
+  "/video-summarizer",
   "/best-ai-for-studying",
   "/pdf-to-podcast",
   "/youtube-video-summarizer",

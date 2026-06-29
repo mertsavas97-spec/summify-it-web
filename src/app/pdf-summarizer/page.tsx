@@ -25,9 +25,9 @@ export default function PdfSummarizerPage() {
       <JsonLd
         data={seoLandingPageJsonLd({
           path: "/pdf-summarizer",
-          pageTitle: "PDF Summarizer",
+          pageTitle: "Free AI PDF Summarizer",
           description:
-            "Turn long PDFs into structured study systems with summaries, Learn cards, audio lessons, and podcast-style discussion.",
+            "Summarize PDF free with AI. Instant summaries, audio lessons, study cards, and quizzes in one workspace.",
           faqs: FAQS,
           howToSteps: [
             { name: "Upload your PDF", text: "Drop lecture notes, reports, or papers into the workspace." },
@@ -39,10 +39,20 @@ export default function PdfSummarizerPage() {
       />
       <SeoBreadcrumbs items={[{ name: "Home", href: "/" }, { name: "PDF Summarizer", href: "/pdf-summarizer" }]} />
       <PublicHero
-        badge="Study-focused PDF workflow"
-        title="Summarize PDFs into a study system, not a text dump"
-        description="Move from dense reading to structured understanding with summaries, Learn cards, and podcast-style lesson outputs in one calm workspace."
-        primaryCta={{ href: "/upload", label: "Start with a PDF" }}
+        badge="Free PDF summarizer"
+        title="Free PDF Summarizer — Turn Any PDF Into Quick Study Notes"
+        description={
+          <>
+            <span className="block text-base font-medium text-zinc-200">
+              Upload any PDF and get an instant summary in seconds. Audio lessons, study cards, and
+              quizzes included.
+            </span>
+            <span className="mt-3 block text-sm text-zinc-500">
+              Free forever · 1 analysis without an account · Private and secure
+            </span>
+          </>
+        }
+        primaryCta={{ href: "/upload", label: "Upload PDF Now" }}
         secondaryCta={{ href: "/pdf-to-podcast", label: "See PDF to podcast" }}
       />
       <SeoContentSection

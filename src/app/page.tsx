@@ -15,6 +15,7 @@ import { HomeTrustBar } from "@/components/public/HomeTrustBar";
 import { VoiceStudyPromo } from "@/components/marketing/VoiceStudyPromo";
 import { HOME_FAQS, RELATED_LINKS } from "@/data/landing-seo";
 import { HomePricingPreview } from "@/components/public/HomePricingPreview";
+import { SummarizeFormatGrid } from "@/components/public/SummarizeFormatGrid";
 import Link from "next/link";
 
 export const metadata = pageSeo.home;
@@ -75,7 +76,10 @@ export default function HomePage() {
       {/* 2. Trust Bar (Moved directly below hero) */}
       <HomeTrustBar />
 
-      {/* 3. Audio Spotlight Section */}
+      {/* 3. Format-specific summarizer links (SEO + user navigation) */}
+      <SummarizeFormatGrid />
+
+      {/* 4. Audio Spotlight Section */}
       <section className="border-b border-slate-200/70 px-4 py-8 sm:px-6 sm:py-10 lg:px-8 dark:border-white/[0.04]">
         <div className="mx-auto max-w-6xl">
           <div className="mb-8 text-center sm:text-left">
