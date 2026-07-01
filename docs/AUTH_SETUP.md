@@ -31,14 +31,14 @@ Never commit `.env.local`. Use the **anon** key only in the Next.js app (public)
 
 | Setting | Local | Production |
 |---------|-------|--------------|
-| **Site URL** | `http://localhost:3000` | `https://summify.app` |
-| **Redirect URLs** | `http://localhost:3000/auth/callback` | `https://summify.app/auth/callback` |
+| **Site URL** | `http://localhost:3000` | `https://www.summify.app` |
+| **Redirect URLs** | `http://localhost:3000/auth/callback` | `https://www.summify.app/auth/callback` |
 
 Add both URLs if you test locally and deploy to production:
 
 ```
 http://localhost:3000/auth/callback
-https://summify.app/auth/callback
+https://www.summify.app/auth/callback
 ```
 
 Optional wildcards (Supabase dashboard): `http://localhost:3000/**` for local dev.
@@ -53,7 +53,7 @@ Optional wildcards (Supabase dashboard): `http://localhost:3000/**` for local de
 
 ```
 http://localhost:3000
-https://summify.app
+https://www.summify.app
 ```
 
 4. **Authorized redirect URIs** — use the callback URL shown in Supabase (**Authentication → Providers → Google**). It looks like:
@@ -134,14 +134,14 @@ If the user cancels Google sign-in, Supabase redirects with `?error=access_denie
 1. Env vars in Netlify (Build + Runtime):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_SITE_URL=https://summify.app` (no trailing slash)
+   - `NEXT_PUBLIC_SITE_URL=https://www.summify.app` (no trailing slash)
    - `NEXT_PUBLIC_AUTH_GOOGLE_ENABLED=true`
-2. Supabase **Site URL**: `https://summify.app`
-3. Supabase **Redirect URLs**: `https://summify.app/auth/callback`
-4. Google OAuth **Authorized JavaScript origins**: `https://summify.app`
+2. Supabase **Site URL**: `https://www.summify.app`
+3. Supabase **Redirect URLs**: `https://www.summify.app/auth/callback`
+4. Google OAuth **Authorized JavaScript origins**: `https://www.summify.app`
 5. Google **Authorized redirect URIs**: Supabase callback (`https://YOUR_PROJECT.supabase.co/auth/v1/callback`)
-6. Deploy; visit `https://summify.app/login` → **Continue with Google** → `/account`
-7. Test `https://summify.app/login?next=/dashboard` — should return to dashboard after sign-in.
+6. Deploy; visit `https://www.summify.app/login` → **Continue with Google** → `/account`
+7. Test `https://www.summify.app/login?next=/dashboard` — should return to dashboard after sign-in.
 
 ## Security notes
 

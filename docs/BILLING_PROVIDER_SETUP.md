@@ -41,7 +41,7 @@ PADDLE_TEAM_YEARLY_CHECKOUT_URL=
 Future webhook placeholder:
 
 ```text
-https://summify.app/api/billing/webhook/paddle
+https://www.summify.app/api/billing/webhook/paddle
 ```
 
 ## Lemon Squeezy Path
@@ -61,7 +61,7 @@ LEMON_TEAM_YEARLY_CHECKOUT_URL=
 Future webhook placeholder:
 
 ```text
-https://summify.app/api/billing/webhook/lemon
+https://www.summify.app/api/billing/webhook/lemon
 ```
 
 ## Current Safety Rules

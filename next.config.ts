@@ -7,6 +7,16 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "12mb",
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "summify.app" }],
+        destination: "https://www.summify.app/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -82,7 +82,7 @@ After the first successful deploy:
 | `RAPIDAPI_KEY` | For YouTube | Transcript API authentication |
 | `RAPIDAPI_HOST` | For YouTube | RapidAPI host (e.g. `youtube-transcript3.p.rapidapi.com`) |
 | `RAPIDAPI_YOUTUBE_PATH` | No | Override transcript API path |
-| `NEXT_PUBLIC_SITE_URL` | Production | Canonical URLs, `/sitemap.xml`, Open Graph, and JSON-LD (`https://summify.app`) |
+| `NEXT_PUBLIC_SITE_URL` | Production | Canonical URLs, `/sitemap.xml`, Open Graph, and JSON-LD (`https://www.summify.app`) |
 
 All API keys are **server-only**. They must not be prefixed with `NEXT_PUBLIC_`.
 

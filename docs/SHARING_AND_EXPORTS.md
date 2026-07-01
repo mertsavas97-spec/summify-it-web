@@ -92,7 +92,7 @@ Invalid or private share IDs return `noIndex` metadata and 404 page.
 
 1. Apply migration on production Supabase.
 2. Deploy with existing env vars (`NEXT_PUBLIC_SITE_URL` drives share URLs).
-3. Enable share on a saved analysis → copy `https://summify.app/share/{uuid}`.
+3. Enable share on a saved analysis → copy `https://www.summify.app/share/{uuid}`.
 4. Verify OG tags with a link preview debugger (Slack, iMessage, etc.).
 5. Confirm disabled/private shares return 404.
 

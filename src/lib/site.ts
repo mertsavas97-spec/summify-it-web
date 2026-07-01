@@ -1,4 +1,6 @@
 const FALLBACK_SITE_URL = "https://www.summify.app";
+const APEX_HOST = "summify.app";
+const CANONICAL_WWW_HOST = "www.summify.app";
 
 function normalizeSiteUrl(raw: string): string | null {
   const trimmed = raw.trim();
@@ -13,6 +15,9 @@ function normalizeSiteUrl(raw: string): string | null {
 
   try {
     const parsed = new URL(unquoted.includes("://") ? unquoted : `https://${unquoted}`);
+    if (parsed.hostname === APEX_HOST) {
+      parsed.hostname = CANONICAL_WWW_HOST;
+    }
     return parsed.origin.replace(/\/$/, "");
   } catch {
     return null;

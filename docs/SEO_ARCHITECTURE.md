@@ -55,7 +55,7 @@ Rendered via `src/components/seo/JsonLd.tsx` — server-safe `<script type="appl
 
 - Every indexable page sets `alternates.canonical` via `buildPageMetadata({ path })`.
 - `metadataBase` is set in root layout from `siteConfig.url` (`NEXT_PUBLIC_SITE_URL`).
-- Production canonical host: `https://summify.app`
+- Production canonical host: `https://www.summify.app`
 
 ## Mode SEO philosophy
 

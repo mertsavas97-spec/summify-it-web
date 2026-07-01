@@ -5,9 +5,9 @@ Use this checklist before launch and after major marketing or blog changes.
 ## Brand & domain
 
 - [ ] No **Summify.it** leftovers in public UI, metadata, or docs (server prompts may still reference legacy name — out of scope for SEO)
-- [ ] `NEXT_PUBLIC_SITE_URL` set to `https://summify.app` in production builds
+- [ ] `NEXT_PUBLIC_SITE_URL` set to `https://www.summify.app` in production builds
 - [ ] No Netlify preview URLs in canonicals, sitemap, or JSON-LD
-- [ ] Canonical URLs use `https://summify.app` via `absoluteUrl()` / `buildCanonicalUrl()`
+- [ ] Canonical URLs use `https://www.summify.app` via `absoluteUrl()` / `buildCanonicalUrl()`
 
 ## Metadata
 
@@ -20,7 +20,7 @@ Use this checklist before launch and after major marketing or blog changes.
 ## Open Graph & Twitter
 
 - [ ] Default OG image: `public/og-default.png` at **1200×630**
-- [ ] Absolute OG URL: `https://summify.app/og-default.png` (via `siteConfig.ogImage` + `absoluteUrl`)
+- [ ] Absolute OG URL: `https://www.summify.app/og/summify-og-v1.png` (via `siteConfig.ogImage` + `absoluteUrl`)
 - [ ] `twitter:card` = `summary_large_image`
 - [ ] `twitter:site` and `twitter:creator` set (`@summifyapp` in `src/lib/seo.ts` — update when handle is confirmed)
 - [ ] Regenerate OG after brand changes: `npm run generate:og`
@@ -62,7 +62,7 @@ npm run generate:og
 
 1. Open `public/og-default.png` — confirm 1200×630 and readable text.
 2. Or: `file public/og-default.png` / Preview dimensions.
-3. Share debugger: [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or [Twitter Card Validator](https://cards-dev.twitter.com/validator) with `https://summify.app/og-default.png`.
+3. Share debugger: [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or [Twitter Card Validator](https://cards-dev.twitter.com/validator) with `https://www.summify.app/og/summify-og-v1.png`.
 
 ### Verify schema
 
@@ -73,7 +73,7 @@ npm run generate:og
 ### Verify sitemap
 
 1. Local: `npm run build && npm run start` → open `/sitemap.xml`
-2. Confirm `/blog` and `/blog/best-ai-pdf-summarizers-2026` (and other slugs) appear with `https://summify.app` origin.
+2. Confirm `/blog` and `/blog/best-ai-pdf-summarizers-2026` (and other slugs) appear with `https://www.summify.app` origin.
 3. Confirm `/status` and `/dashboard` are **not** listed.
 
 ## Blog routes (Phase 6E.3)

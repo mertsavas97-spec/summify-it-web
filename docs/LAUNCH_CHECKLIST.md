@@ -6,7 +6,7 @@ Use this before the first Netlify production deploy.
 
 - [ ] `GROQ_API_KEY` and/or `GEMINI_API_KEY` set in Netlify
 - [ ] `RAPIDAPI_KEY` + `RAPIDAPI_HOST` set if YouTube analysis is required
-- [ ] `NEXT_PUBLIC_SITE_URL` set to production domain (`https://summify.app`)
+- [ ] `NEXT_PUBLIC_SITE_URL` set to production domain (`https://www.summify.app`)
 - [ ] `.env.local` not committed; `.env.example` matches required keys
 
 ## SEO & trust

@@ -1,5 +1,5 @@
-/** Production hosts that should be indexed by search engines. */
-const INDEXABLE_HOSTS = new Set(["summify.app", "www.summify.app"]);
+/** Production host that should be indexed by search engines. */
+const INDEXABLE_HOSTS = new Set(["www.summify.app"]);
 
 /** Patterns that indicate non-production/preview environments. */
 const NON_PRODUCTION_PATTERNS = [

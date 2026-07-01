@@ -133,7 +133,7 @@ Debug (serverless-safe): run [`docs/SUPABASE_MIGRATION_POLAR_WEBHOOK_DEBUG.sql`]
 
 1. Run migration SQL on your Supabase project.
 2. Set env vars in `.env.local` (use Polar **sandbox** + `POLAR_MODE=sandbox`).
-3. Set **`NEXT_PUBLIC_SITE_URL=http://localhost:3000`** in `.env.local` and restart `npm run dev`. If this points at production (`https://summify.app`), Polar success URLs and OAuth redirects will leave localhost.
+3. Set **`NEXT_PUBLIC_SITE_URL=http://localhost:3000`** in `.env.local` and restart `npm run dev`. If this points at production (`https://www.summify.app`), Polar success URLs and OAuth redirects will leave localhost.
 4. `npm run dev`
 5. **Sign in with email and password** on `/login` for local checkout tests. Magic links are unreliable on localhost; prefer password sign-in.
 6. Logged out, click **Start Pro** on `/pricing` → `/login?next=/pricing` → sign in with password → you return to `/pricing` and can open Polar checkout.
@@ -159,7 +159,7 @@ See also [`docs/AUTH_SETUP.md`](./AUTH_SETUP.md) for Supabase auth providers.
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_DEBUG_TOKEN" \
-  "https://summify.app/api/admin/test-service-role"
+  "https://www.summify.app/api/admin/test-service-role"
 ```
 
 Expect `serviceRoleConfigured: true`, `writeAccessWorking: true`. New **Secret** keys (`sb_secret_...`) report `jwtRole: "unknown"` and `keyFormat: "sb_secret"` — that is normal. Success is determined by `sdk.writeOk` / `rest.writeOk`, not JWT decode. If both fail with `permission denied`, confirm the secret matches the project URL and grant `service_role` access on `public.profiles`.
