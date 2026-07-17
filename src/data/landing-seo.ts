@@ -4,23 +4,27 @@ import type { RelatedLinkItem } from "@/components/public/RelatedLinksSection";
 export const HOME_FAQS: FaqItem[] = [
   {
     q: "What is Summify?",
-    a: "Summify is an audio-first learning platform that transforms complex sources like PDFs, videos, and articles into teacher-style audio lessons, interactive study cards, and quizzes.",
+    a: "Summify is an AI summarizer for PDFs, PowerPoint decks, YouTube videos, and web articles. You get a structured summary and key insights — then flashcards, quizzes, and optional audio lessons so you can actually study what you summarize.",
+  },
+  {
+    q: "Is Summify a PDF summarizer?",
+    a: "Yes. Upload a PDF and get an AI summary with insights, flashcards, and a quiz. It also works with PowerPoint, YouTube transcripts, Word docs, and article URLs.",
   },
   {
     q: "Can Summify summarize YouTube videos?",
     a: "Yes. Paste a YouTube URL and Summify extracts the transcript, then runs analysis. Videos need available captions or transcripts.",
   },
   {
-    q: "Does Summify create AI study notes?",
-    a: "Yes. Modes like The Student emphasize concepts, quizzes, and recall-friendly Learn cards from PDFs, lectures, and videos.",
+    q: "Does Summify create study notes and flashcards?",
+    a: "Yes. After the summary, you can open Learn cards and quizzes — especially with study-focused modes like The Student.",
   },
   {
-    q: "Can I listen to my analysis as an audio lesson?",
+    q: "Can I listen to my summary as audio?",
     a: "Pro plans include Audio Study Mode — teacher-style spoken lessons generated from your analysis, with natural voice audio and full playback controls.",
   },
   {
-    q: "Is Summify free during public beta?",
-    a: "Yes. The full workspace is free during public beta. Checkout and paid tiers are not enabled yet.",
+    q: "Is Summify free?",
+    a: "Yes. You can try analysis free during public beta. Checkout and paid tiers unlock higher limits and audio features.",
   },
   {
     q: "Are uploaded documents stored permanently?",
@@ -446,17 +450,27 @@ export const RELATED_LINKS = {
     {
       href: "/summarize-pdf",
       label: "AI PDF summarizer",
-      description: "Summarize PDF online with Learn cards.",
-    },
-    {
-      href: "/summarize-youtube-video",
-      label: "YouTube summarizer",
-      description: "Transcript-based video intelligence.",
+      description: "Summarize PDF online with flashcards & quiz.",
     },
     {
       href: "/summarize-powerpoint",
       label: "PowerPoint summarizer",
-      description: "PPTX slide deck analysis.",
+      description: "AI summary for PPTX decks.",
+    },
+    {
+      href: "/summarize-youtube-video",
+      label: "YouTube summarizer",
+      description: "Transcript-based video summaries.",
+    },
+    {
+      href: "/compare/notebooklm",
+      label: "NotebookLM alternative",
+      description: "Summify vs NotebookLM for study.",
+    },
+    {
+      href: "/modes/contract-analyzer",
+      label: "Contract summary AI",
+      description: "First-pass clause overviews.",
     },
     {
       href: "/for-students",
@@ -464,24 +478,14 @@ export const RELATED_LINKS = {
       description: "Exam prep from lectures and readings.",
     },
     {
-      href: "/for-creators",
-      label: "Creator workflows",
-      description: "Repurpose long-form content.",
-    },
-    {
       href: "/modes",
       label: "Intelligence modes",
-      description: "Browse all 29 lenses.",
+      description: "Browse summarizer lenses.",
     },
     {
-      href: "/audio-study",
-      label: "Audio Study Mode",
-      description: "Teacher-style voice lessons from analyses.",
-    },
-    {
-      href: "/learn-by-listening",
-      label: "Learn by listening",
-      description: "Passive study workflows with AI audio.",
+      href: "/upload",
+      label: "Open workspace",
+      description: "Start your next AI summary.",
     },
   ] satisfies RelatedLinkItem[],
 };

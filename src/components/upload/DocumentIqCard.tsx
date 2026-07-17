@@ -2,11 +2,12 @@
 
 import type { ReactNode } from "react";
 import { useMemo } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, FileSearch2, Gauge } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { calculateDocumentIq } from "@/lib/documentIq/calculateDocumentIq";
 import { getIntelligenceModeById } from "@/config/modes";
+import type { ExtractionMetadata } from "@/types/extraction";
 
 type MetricTone = {
   label: string;
@@ -80,6 +81,25 @@ function ProgressRing({ value }: { value: number }) {
   );
 }
 
+function getConfidencePresentation(confidence: number) {
+  if (confidence >= 75) {
+    return {
+      label: "High confidence",
+      className: "border-emerald-400/20 bg-emerald-500/10 text-emerald-200",
+    };
+  }
+  if (confidence >= 50) {
+    return {
+      label: "Medium confidence",
+      className: "border-sky-400/20 bg-sky-500/10 text-sky-200",
+    };
+  }
+  return {
+    label: "Low confidence",
+    className: "border-amber-400/20 bg-amber-500/10 text-amber-200",
+  };
+}
+
 function MetricBar({ label, value, tone }: { label: string; value: number; tone: MetricTone }) {
   const pct = clamp(value);
   return (
@@ -138,22 +158,30 @@ function Accordion({
 
 export function DocumentIqCard({
   extractedText,
+  metadata,
   guestSimplified = false,
+  compact = false,
 }: {
   extractedText: string;
+  metadata?: ExtractionMetadata | null;
   guestSimplified?: boolean;
+  /** Sidebar variant — hides recommendations footer and share CTA. */
+  compact?: boolean;
 }) {
   const trimmed = extractedText.trim();
   const isTooShort = trimmed.length < 220;
 
   const iq = useMemo(() => {
     if (isTooShort) return null;
-    return calculateDocumentIq({ extractedText: trimmed });
-  }, [isTooShort, trimmed]);
+    return calculateDocumentIq({ extractedText: trimmed, metadata });
+  }, [isTooShort, metadata, trimmed]);
+  const confidence = iq
+    ? getConfidencePresentation(iq.detectedDocumentType.confidence)
+    : null;
 
   return (
     <section
-      className="relative overflow-visible rounded-2xl border border-white/[0.07] bg-[#0d1018]/70 shadow-sm shadow-black/20 backdrop-blur"
+      className="relative overflow-hidden rounded-2xl border border-violet-400/[0.12] bg-[#0d1018]/85 shadow-[0_18px_45px_rgba(0,0,0,0.22)] backdrop-blur"
       data-document-iq-card
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-violet-600/[0.08] to-transparent" aria-hidden />
@@ -161,12 +189,17 @@ export function DocumentIqCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-zinc-200">Document IQ</h2>
+              <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-100">
+                <Gauge className="h-4 w-4 text-violet-300" aria-hidden />
+                Document IQ
+              </h2>
               <Badge variant="muted" className="border-violet-400/25 bg-violet-500/10 text-violet-200">
                 beta
               </Badge>
             </div>
-            <p className="mt-1 text-xs text-zinc-500">Intelligence profile of your document</p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Content profile and analysis readiness
+            </p>
           </div>
         </div>
       </div>
@@ -178,14 +211,16 @@ export function DocumentIqCard({
           </p>
         ) : iq ? (
           <>
-            <div className="rounded-2xl border border-violet-400/18 bg-gradient-to-b from-violet-950/45 via-[#11141d]/70 to-[#0b0e15] p-3.5 shadow-[0_0_30px_rgba(139,92,246,0.18)]">
+            <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-br from-violet-950/55 via-[#11141d]/80 to-[#0b0e15] p-3.5 shadow-[0_0_34px_rgba(139,92,246,0.16)]">
               <div className="flex items-center gap-3">
                 <ProgressRing value={iq.iqScore} />
                 <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-violet-200/80">IQ Score</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-200/75">
+                    Analysis readiness
+                  </p>
                   <p className="mt-1 text-sm font-semibold text-white">{iq.iqLabel}</p>
                   <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                    Lightweight heuristic beta score.
+                    {iq.label} · heuristic profile
                   </p>
                 </div>
               </div>
@@ -208,15 +243,30 @@ export function DocumentIqCard({
 
             {!guestSimplified ? (
               <>
-                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">Detected document type</p>
-                  <div className="mt-2 flex items-baseline justify-between gap-3">
-                    <p className="text-sm font-semibold text-white">{iq.detectedDocumentType.type}</p>
-                    <p className="text-xs font-medium text-zinc-500">Low confidence match</p>
+                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] px-3.5 py-3">
+                  <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
+                    <FileSearch2 className="h-3.5 w-3.5" aria-hidden />
+                    Detected source type
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-white">
+                      {iq.detectedDocumentType.type}
+                    </p>
+                    {confidence ? (
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${confidence.className}`}
+                      >
+                        {confidence.label}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full border border-white/[0.06] bg-white/[0.03]">
+                  <div
+                    className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.05]"
+                    aria-label={`Source type confidence ${iq.detectedDocumentType.confidence} out of 100`}
+                    role="img"
+                  >
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-violet-500/70 to-fuchsia-400/70 shadow-[0_0_18px_rgba(139,92,246,0.18)]"
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500/80 to-fuchsia-400/80 shadow-[0_0_18px_rgba(139,92,246,0.18)]"
                       style={{ width: `${clamp(iq.detectedDocumentType.confidence)}%` }}
                     />
                   </div>
@@ -250,6 +300,7 @@ export function DocumentIqCard({
                   </ul>
                 </Accordion>
 
+                {!compact ? (
                 <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
                     Recommended intelligence modes
@@ -293,11 +344,13 @@ export function DocumentIqCard({
                     })}
                   </div>
                 </div>
+                ) : null}
               </>
             ) : null}
           </>
         ) : null}
 
+        {!compact ? (
         <div className="flex flex-col gap-2">
           <Button
             type="button"
@@ -312,9 +365,16 @@ export function DocumentIqCard({
             </span>
           </Button>
           <p className="text-[11px] leading-relaxed text-zinc-600">
-            Beta score based on structure, density, readability, and action signals.
+            Heuristic profile based on structure, density, readability, and action signals — not
+            a quality grade.
           </p>
         </div>
+        ) : (
+          <p className="text-[11px] leading-relaxed text-zinc-600">
+            Heuristic profile based on structure, density, readability, and action signals — not
+            a quality grade.
+          </p>
+        )}
       </div>
     </section>
   );

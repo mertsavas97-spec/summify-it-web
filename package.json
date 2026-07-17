@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "tsx --tsconfig tsconfig.json --test tests/unit/guest-auth-dashboard.test.ts",
+    "test:e2e": "playwright test",
+    "test:qa": "npm run test:unit && npm run test:e2e",
     "generate:og": "node scripts/generate-og-image.mjs"
   },
   "dependencies": {
@@ -34,6 +38,7 @@
     "unpdf": "^1.6.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -42,6 +47,7 @@
     "eslint-config-next": "16.2.6",
     "sharp": "^0.34.2",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

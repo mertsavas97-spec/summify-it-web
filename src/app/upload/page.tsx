@@ -15,7 +15,7 @@ export default function UploadPage() {
           workspaceSoftwareApplicationSchema(),
           breadcrumbSchema([
             { name: "Home", path: "/" },
-            { name: "Workspace", path: "/upload" },
+            { name: "AI Summarizer", path: "/upload" },
           ]),
         ]}
       />

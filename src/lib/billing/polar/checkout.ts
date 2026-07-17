@@ -1,3 +1,4 @@
+import { getAppOrigin } from "@/lib/app-origin";
 import { siteConfig } from "@/lib/site";
 import type { BillingCheckoutPlanId } from "@/types/billing";
 import type { BillingInterval } from "@/types/plan";
@@ -16,6 +17,8 @@ type CreatePolarCheckoutInput = {
   email: string | null;
   planId: BillingCheckoutPlanId;
   interval: BillingInterval;
+  /** Pass the request origin in API routes so localhost never uses production URLs. */
+  requestOrigin?: string;
 };
 
 export type PolarCheckoutDebugContext = {
@@ -34,7 +37,7 @@ export async function createPolarCheckout(
   const catalog = await resolvePolarProductForCheckout(input.planId, input.interval);
   const priceId = catalog.priceId ?? getPolarPriceId(input.planId, input.interval);
 
-  const baseUrl = siteConfig.url.replace(/\/$/, "");
+  const baseUrl = getAppOrigin(input.requestOrigin ?? siteConfig.url).replace(/\/$/, "");
   const successUrl = `${baseUrl}/billing/success?checkout_id={CHECKOUT_ID}`;
   const returnUrl = `${baseUrl}/pricing`;
 

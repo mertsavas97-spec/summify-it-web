@@ -113,6 +113,29 @@ export function clearPendingAnalysis(): void {
   sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
 }
 
+/**
+ * Restore a pending upload workspace only when the user is returning from auth
+ * (matching returnTo or a just-returned auth handoff flag). Otherwise discard
+ * stale snapshots so /upload refresh stays clean.
+ */
+export function consumePendingAnalysisForAuthReturn(
+  options?: { justReturned?: boolean },
+): PendingAnalysisSnapshot | null {
+  const pending = readPendingAnalysis();
+  if (!pending?.returnTo.startsWith("/upload")) {
+    return null;
+  }
+
+  const authReturn = readAuthReturnTo();
+  const justReturned = options?.justReturned === true;
+  if ((authReturn && authReturn === pending.returnTo) || justReturned) {
+    return pending;
+  }
+
+  clearPendingAnalysis();
+  return null;
+}
+
 export function resolveAuthReturnTo(options: {
   query?: string | null;
   cookie?: string | null;

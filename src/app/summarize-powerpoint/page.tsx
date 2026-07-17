@@ -30,10 +30,10 @@ export default function SummarizePowerpointPage() {
         ]}
       />
       <PublicHero
-        badge="PowerPoint summarizer"
-        title="Summarize PowerPoint with AI — PPTX deck intelligence"
-        description="Upload a .pptx deck for presentation analysis: slide narrative, themes, logic gaps, and Learn cards. A PowerPoint summarizer built for pitch decks, training, and client reviews."
-        primaryCta={{ href: "/upload", label: "Try Summify free" }}
+        badge="PowerPoint / PPTX summarizer"
+        title="PowerPoint summarizer AI — summarize PPTX decks online"
+        description="Upload a .pptx deck for an AI presentation summary: slide narrative, themes, key insights, and study cards. Built for pitch decks, training, and client reviews."
+        primaryCta={{ href: "/upload", label: "Summarize PowerPoint free" }}
         secondaryCta={{ href: "/modes/executive-brief", label: "Executive Brief" }}
       >
         <ProductMockCard />

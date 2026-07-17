@@ -426,7 +426,7 @@ export function PodcastWorkspaceCtas({
 
   const podcastStatus =
     podcastState === "pending"
-      ? "Run analysis to check podcast readiness"
+      ? "Summarize first to check podcast readiness"
       : podcastState === "eligible"
         ? "Podcast-ready"
         : "Better as quick audio lesson";
@@ -679,15 +679,27 @@ export function PodcastWorkspaceCtas({
                         setAudioStudyState("error");
                       }
                     }}
-                      className="w-full rounded-lg bg-gradient-to-r from-violet-500/20 to-violet-500/10 px-4 py-2.5 text-xs font-semibold text-violet-200 transition-all hover:from-violet-500/30 hover:to-violet-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="group/audio-cta w-full rounded-xl border border-violet-300/30 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(139,92,246,0.28)] transition-all hover:-translate-y-0.5 hover:border-violet-200/50 hover:from-violet-500 hover:via-fuchsia-500 hover:to-violet-500 hover:shadow-[0_14px_36px_rgba(139,92,246,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/80 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:translate-y-0 disabled:cursor-not-allowed disabled:border-white/[0.08] disabled:bg-none disabled:bg-white/[0.04] disabled:text-zinc-600 disabled:shadow-none"
                     >
-                      {!isGuest && audioLimitReached
-                        ? "Daily limit reached — resets tomorrow"
-                        : audioStudyState === "generating"
-                          ? "Generating audio lesson..."
-                          : hasAnalysis
-                            ? "Generate audio lesson"
-                            : "Analyze source first"}
+                      <span className="flex items-center justify-center gap-2">
+                        {audioStudyState === "generating" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Headphones
+                            className="h-4 w-4 transition-transform group-hover/audio-cta:scale-110"
+                            aria-hidden
+                          />
+                        )}
+                        <span>
+                          {!isGuest && audioLimitReached
+                            ? "Daily limit reached — resets tomorrow"
+                            : audioStudyState === "generating"
+                              ? "Generating audio lesson..."
+                              : hasAnalysis
+                                ? "Generate audio lesson"
+                                : "Analyze source first"}
+                        </span>
+                      </span>
                     </button>
                     {isGuest ? (
                       <p className="text-[11px] text-violet-200/80">
@@ -1000,7 +1012,7 @@ export function PodcastWorkspaceCtas({
 
                 // Save functionality - call API to persist analysis
                 if (!analysisId) {
-                  alert("Sign in to save to your workspace");
+                  onAuthRequired?.("podcast", "/upload");
                   return;
                 }
 
@@ -1013,7 +1025,11 @@ export function PodcastWorkspaceCtas({
                   const data = await res.json();
 
                   if (res.ok && data.success) {
-                    alert("Podcast saved to your workspace!");
+                    alert(
+                      data.alreadySaved
+                        ? "Already in your workspace — podcast is linked to this analysis."
+                        : "Podcast saved to your workspace!",
+                    );
                   } else {
                     alert(data.error ?? "Failed to save. Please try again.");
                   }

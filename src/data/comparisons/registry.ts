@@ -2,8 +2,80 @@ import type { ComparisonPageConfig } from "./types";
 import { ChatPdfComparisonBody } from "@/components/comparisons/chatpdf";
 import { QuillbotComparisonBody } from "@/components/comparisons/quillbot";
 import { NottaComparisonBody } from "@/components/comparisons/notta";
+import { NotebookLmComparisonBody } from "@/components/comparisons/notebooklm";
 
 export const COMPARISONS: ComparisonPageConfig[] = [
+  {
+    slug: "notebooklm",
+    competitorName: "NotebookLM",
+    title: "Best NotebookLM Alternatives 2026 — Summify vs NotebookLM",
+    description:
+      "Compare NotebookLM alternatives for PDF and lecture study: Summify’s AI summarizer, flashcards, and quizzes vs Google NotebookLM’s chat-with-sources notebook.",
+    date: "2026-07-17",
+    idealUsers: [
+      "Students who want summaries that become flashcards and quizzes",
+      "Users summarizing PDFs, PowerPoint, and YouTube in one workspace",
+      "Teams that prefer mode-tuned briefs over open-ended chat",
+    ],
+    summifyStrengths: [
+      "Structured AI summaries with intelligence modes (Student, Executive, Contract)",
+      "Flashcards and quizzes after every analysis",
+      "PDF, PPTX, YouTube, and web articles in one flow",
+      "Optional audio study lessons on Pro",
+    ],
+    summifyLimitations: [
+      "Smaller brand than Google NotebookLM",
+      "Chat-style freeform Q&A is not the primary UX",
+      "Team collaboration features still on roadmap",
+    ],
+    competitorStrengths: [
+      "Strong chat-with-sources UX inside Google’s ecosystem",
+      "Familiar notebook metaphor for research collections",
+      "Rapid iteration and brand trust from Google",
+    ],
+    competitorLimitations: [
+      "Study outputs (quiz/flashcards) depend on how you prompt",
+      "Less emphasis on PowerPoint/YouTube summarizer landing workflows",
+      "Feature availability can vary by region and account type",
+    ],
+    tableRows: [
+      { feature: "PDF summarizer workflow", summify: true, competitor: true },
+      { feature: "PowerPoint / PPTX", summify: true, competitor: "Varies" },
+      { feature: "YouTube transcript summary", summify: true, competitor: "Varies" },
+      { feature: "Flashcards & quiz after summary", summify: true, competitor: "Prompt-based" },
+      { feature: "Chat with sources", summify: "Modes + re-run", competitor: true },
+      { feature: "Audio study lessons", summify: "Pro", competitor: "Audio Overview" },
+    ],
+    faqs: [
+      {
+        q: "What are the best NotebookLM alternatives for studying?",
+        a: "It depends on the job. For chat-with-PDFs, NotebookLM is excellent. For an AI summarizer that produces flashcards and quizzes by default, Summify is a strong NotebookLM alternative.",
+      },
+      {
+        q: "Is Summify a NotebookLM alternative?",
+        a: "Yes, for users who want structured summaries and a study loop across PDFs, decks, and videos — not only a notebook chat.",
+      },
+      {
+        q: "Does Summify replace NotebookLM Audio Overview?",
+        a: "Summify offers optional teacher-style audio lessons from your analysis on Pro. NotebookLM’s Audio Overview is a different product surface — compare both if audio is your main need.",
+      },
+      {
+        q: "Which is better for exam prep?",
+        a: "Try The Student mode in Summify on a lecture PDF, and NotebookLM chat on the same file. Keep the tool that produces usable flashcards and quiz prompts with less prompting.",
+      },
+    ],
+    relatedLinks: [
+      { href: "/summarize-pdf", label: "AI PDF summarizer", description: "Primary PDF workflow." },
+      {
+        href: "/blog/best-notebooklm-alternatives",
+        label: "NotebookLM alternatives guide",
+        description: "Longer editorial comparison.",
+      },
+      { href: "/modes/the-student", label: "The Student mode", description: "Study-focused lens." },
+      { href: "/upload", label: "Try Summify", description: "Free to try." },
+    ],
+    Content: NotebookLmComparisonBody,
+  },
   {
     slug: "chatpdf",
     competitorName: "ChatPDF",

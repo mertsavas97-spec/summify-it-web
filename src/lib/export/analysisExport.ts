@@ -1,8 +1,13 @@
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
+import type { IntelligenceModeId } from "@/types/modes";
+import { getModeResultSectionLabels } from "@/lib/mode-result-presentation";
 
 export type AnalysisExportContext = {
   sourceKind?: string | null;
   intelligenceMode?: string | null;
+  intelligenceModeId?: IntelligenceModeId | null;
+  uiSectionLabels?: PersonaUiSectionLabels;
   sourceLabel?: string | null;
   exportedAt?: string;
 };
@@ -12,6 +17,7 @@ export type AnalysisExportJson = {
   exportedAt: string;
   sourceKind: string | null;
   intelligenceMode: string | null;
+  sectionLabels?: ReturnType<typeof getModeResultSectionLabels>;
   title: string;
   summary: string;
   keyInsights: string[];
@@ -39,26 +45,34 @@ export function buildMarkdownExport(
   result: AnalysisResult,
   ctx: AnalysisExportContext = {},
 ): string {
+  const labels = ctx.intelligenceModeId
+    ? getModeResultSectionLabels(ctx.intelligenceModeId, ctx.uiSectionLabels)
+    : {
+        summary: "Summary",
+        keyInsights: "Key insights",
+        risks: "Risks & warnings",
+        actions: "Action items",
+      };
   const lines = [
     `# ${result.title}`,
     "",
     ctx.sourceKind ? `**Source:** ${ctx.sourceKind}` : null,
     ctx.intelligenceMode ? `**Mode:** ${ctx.intelligenceMode}` : null,
     "",
-    "## Summary",
+    `## ${labels.summary}`,
     "",
     result.summary,
     "",
-    "## Key insights",
+    `## ${labels.keyInsights}`,
     "",
     ...result.keyInsights.map((i) => `- ${i}`),
   ].filter((line): line is string => line != null);
 
   if (result.risksOrWarnings.length > 0) {
-    lines.push("", "## Risks & warnings", "", ...result.risksOrWarnings.map((i) => `- ${i}`));
+    lines.push("", `## ${labels.risks}`, "", ...result.risksOrWarnings.map((i) => `- ${i}`));
   }
   if (result.actionItems.length > 0) {
-    lines.push("", "## Action items", "", ...result.actionItems.map((i) => `- ${i}`));
+    lines.push("", `## ${labels.actions}`, "", ...result.actionItems.map((i) => `- ${i}`));
   }
 
   lines.push(...learnCardSection(result.learnCards));
@@ -82,11 +96,15 @@ export function buildJsonExport(
   result: AnalysisResult,
   ctx: AnalysisExportContext = {},
 ): string {
+  const sectionLabels = ctx.intelligenceModeId
+    ? getModeResultSectionLabels(ctx.intelligenceModeId, ctx.uiSectionLabels)
+    : undefined;
   const payload: AnalysisExportJson = {
     format: "summify-analysis-v1",
     exportedAt: ctx.exportedAt ?? new Date().toISOString(),
     sourceKind: ctx.sourceKind ?? null,
     intelligenceMode: ctx.intelligenceMode ?? null,
+    sectionLabels,
     title: result.title,
     summary: result.summary,
     keyInsights: result.keyInsights,

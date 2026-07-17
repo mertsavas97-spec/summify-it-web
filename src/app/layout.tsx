@@ -34,9 +34,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const defaultTitle = "Summify — AI Learning Platform";
+const defaultTitle = "Summify — Free AI Summarizer";
 const defaultDescription =
-  "Turn PDFs, YouTube videos, audio, and web articles into teacher-style audio lessons, study cards, quizzes, and memory-friendly review.";
+  "Summarize PDFs, PowerPoint, YouTube, and web articles with AI — then study with flashcards, quizzes, and optional audio lessons.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
@@ -57,11 +57,13 @@ export async function generateMetadata(): Promise<Metadata> {
     description: siteConfig.description,
 
     keywords: [
-      "AI learning platform",
-      "PDF to audio lessons",
-      "study cards",
-      "AI quizzes",
-      "learn by listening",
+      "AI summarizer",
+      "PDF summarizer",
+      "summarize PDF",
+      "PowerPoint summarizer",
+      "YouTube summarizer",
+      "document summarizer",
+      "AI study notes",
     ],
 
     authors: [{ name: SEO_BRAND }],

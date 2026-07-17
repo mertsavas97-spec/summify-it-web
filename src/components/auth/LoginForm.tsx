@@ -11,6 +11,7 @@ import {
   resolveAuthReturnTo,
   saveAuthReturnTo,
 } from "@/lib/auth/return-to";
+import { markAuthJustReturned } from "@/lib/auth/auth-return-flags";
 import { trackEvent } from "@/lib/analytics/events";
 import { trackMetaEvent } from "@/lib/metaPixel";
 import { mapAuthError } from "@/lib/auth-errors";
@@ -75,6 +76,9 @@ export function LoginForm({
       sessionStorageValue: readAuthReturnTo(),
       fallback: pendingAnalysis?.returnTo ?? "/account",
     });
+    // Mark auth handoff before clearing returnTo so /upload can restore
+    // pending workspace snapshots after password sign-in/sign-up.
+    markAuthJustReturned();
     clearAuthReturnTo();
     trackEvent("auth_signin_success_redirect" as never, {
       returnTo: resolved.returnTo,
@@ -415,11 +419,12 @@ export function LoginForm({
       )}
 
       <p className="text-[11px] leading-relaxed text-zinc-600">
-        Analysis stays free without an account. Open the{" "}
+        Guests get 1 free AI summary. Create a free account for 5 summaries per day and
+        a saved dashboard. Open the{" "}
         <a href="/upload" className="text-violet-400/80 hover:text-violet-300">
-          workspace
+          AI summarizer
         </a>{" "}
-        anytime — sign in to save analyses to your dashboard.
+        anytime.
       </p>
     </div>
   );

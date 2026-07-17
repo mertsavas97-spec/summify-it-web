@@ -7,14 +7,14 @@ import { SEO_BRAND } from "@/lib/seo";
 
 const footerSections = [
   {
-    title: "Learning",
+    title: "Summarizers",
     links: [
-      { href: "/summarize-pdf", label: "Learn from PDF" },
-      { href: "/summarize-youtube-video", label: "YouTube Lessons" },
-      { href: "/summarize-powerpoint", label: "PowerPoint Guides" },
-      { href: "/summarize-web-articles", label: "Web Articles" },
-      { href: "/summarize-docx", label: "Word Documents" },
-      { href: "/summarize-mp3", label: "Audio & MP3" },
+      { href: "/summarize-pdf", label: "PDF Summarizer" },
+      { href: "/summarize-powerpoint", label: "PowerPoint Summarizer" },
+      { href: "/summarize-youtube-video", label: "YouTube Summarizer" },
+      { href: "/summarize-web-articles", label: "Article Summarizer" },
+      { href: "/summarize-docx", label: "DOCX Summarizer" },
+      { href: "/modes/contract-analyzer", label: "Contract Summary" },
     ],
   },
   {
@@ -30,9 +30,9 @@ const footerSections = [
   {
     title: "Resources",
     links: [
-      { href: "/guides/best-ai-pdf-summarizers-2026", label: "Guides" },
-      { href: "/compare/chatpdf", label: "Compare" },
-      { href: "/use-cases/research-papers-students", label: "Use cases" },
+      { href: "/guides/best-ai-pdf-summarizers-2026", label: "PDF Summarizer Guide" },
+      { href: "/compare/notebooklm", label: "NotebookLM Alternative" },
+      { href: "/compare/chatpdf", label: "vs ChatPDF" },
       { href: "/blog", label: "Blog" },
     ],
   },
@@ -40,10 +40,10 @@ const footerSections = [
     title: "Intelligence",
     links: [
       { href: "/modes", label: "All modes" },
+      { href: "/modes/general-summary", label: "General Summary" },
       { href: "/modes/executive-brief", label: "Executive Brief" },
       { href: "/modes/the-student", label: "The Student" },
       { href: "/modes/the-creator", label: "The Creator" },
-      { href: "/modes/contract-analyzer", label: "Contract Summary" },
     ],
   },
   {
@@ -75,8 +75,8 @@ export function PublicFooter() {
           <div className="sm:col-span-2 lg:col-span-1">
             <BrandMark href="/" size="footer" className="opacity-95" />
             <p className="mt-3 max-w-xs text-xs leading-relaxed text-zinc-400">
-              Audio-first learning platform for students, researchers, and creators. Master any
-              topic with teacher-style lessons and smart cards.
+              Free AI summarizer for PDFs, PowerPoint, YouTube, and articles — with flashcards,
+              quizzes, and optional audio lessons.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <a

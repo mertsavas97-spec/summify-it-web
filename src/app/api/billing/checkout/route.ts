@@ -91,6 +91,7 @@ export async function POST(request: Request) {
         email: user.email ?? null,
         planId,
         interval,
+        requestOrigin: new URL(request.url).origin,
       });
 
       const profile = await getProfile(user.id);

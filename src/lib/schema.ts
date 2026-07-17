@@ -27,21 +27,19 @@ export const SCHEMA_CONTEXT = "https://schema.org";
 const ORGANIZATION_LOGO = "/brand-icon.png";
 
 export const SUMMIFY_SOFTWARE_FEATURE_LIST = [
-  "PDF summaries",
-  "PPTX analysis",
-  "YouTube summaries",
-  "Web article summaries",
-  "Learn cards",
-  "Practice sessions",
+  "AI PDF summarizer",
+  "PowerPoint / PPTX summarizer",
+  "YouTube video summarizer",
+  "Web article summarizer",
+  "Contract summary mode",
+  "Flashcards & Learn cards",
   "Quiz workflows",
-  "Audio Study Mode",
-  "Voice study lessons",
-  "Teacher-style audio learning",
-  "Source-first learning intelligence",
+  "Optional audio study lessons",
+  "Source-grounded document intelligence",
 ] as const;
 
 const DEFAULT_SOFTWARE_DESCRIPTION =
-  "AI learning platform for PDFs, YouTube, PowerPoint, web articles, DOCX, and TXT — with audio lessons, study cards, quizzes, and memory-friendly review.";
+  "Free AI summarizer for PDFs, PowerPoint, YouTube, and web articles — with structured summaries, flashcards, quizzes, and optional audio lessons.";
 
 export type HowToStepInput = {
   name: string;
@@ -179,7 +177,7 @@ export function workspaceSoftwareApplicationSchema(): JsonLdObject {
   return softwareApplicationSchema({
     path: "/upload",
     description:
-      "Upload and analyze PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT with intelligence modes, Learn cards, and quizzes.",
+      "AI summarizer workspace — upload PDFs, PowerPoint, YouTube, or articles for structured summaries, flashcards, quizzes, and optional audio.",
   });
 }
 

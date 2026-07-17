@@ -9,9 +9,6 @@ const LIMITS = {
   learnCards: 8,
 } as const;
 
-const DEFAULT_RISK_MESSAGE =
-  "The source does not provide enough clear risk signals.";
-
 const GENERIC_PHRASE_PATTERNS = [
   /engaging experience/i,
   /enhance productivity/i,
@@ -168,36 +165,6 @@ function deriveKeyInsights(
   return deduped.slice(0, 3);
 }
 
-function deriveActionItems(
-  result: AnalysisResult,
-  mode?: TextAnalysisMode,
-): string[] {
-  const fromSummary = splitSentences(result.summary).slice(0, 2);
-  if (fromSummary.length > 0) {
-    return fromSummary.map(
-      (s) => `Follow up on: ${s.charAt(0).toLowerCase()}${s.slice(1)}`,
-    );
-  }
-
-  if (mode === "creator") {
-    return [
-      "Pull 1–2 hooks from the summary for short-form posts.",
-      "Map one story angle from the source into a thread or carousel outline.",
-    ];
-  }
-  if (mode === "executive") {
-    return ["Review the summary for decisions that need owner assignment."];
-  }
-  if (mode === "academic") {
-    return ["Re-read the summary and note claims that need citation checks."];
-  }
-  if (mode === "legal") {
-    return ["Flag any obligations in the summary that may need qualified review."];
-  }
-
-  return ["Review the summary and note follow-ups mentioned in the source."];
-}
-
 function repairLearnCards(result: AnalysisResult): LearnCardOutput[] {
   const relaxed = normalizeLearnCards(result.learnCards, result.summary, false);
   if (relaxed.length > 0) return relaxed.slice(0, LIMITS.learnCards);
@@ -226,7 +193,6 @@ function repairLearnCards(result: AnalysisResult): LearnCardOutput[] {
 function repairEmptySections(
   result: AnalysisResult,
   raw: AnalysisResult,
-  options?: NormalizeOptions,
 ): AnalysisResult {
   let keyInsights = result.keyInsights;
   if (keyInsights.length === 0) {
@@ -240,16 +206,10 @@ function repairEmptySections(
   if (risksOrWarnings.length === 0) {
     risksOrWarnings = dedupeStringList(raw.risksOrWarnings);
   }
-  if (risksOrWarnings.length === 0) {
-    risksOrWarnings = [DEFAULT_RISK_MESSAGE];
-  }
 
   let actionItems = result.actionItems;
   if (actionItems.length === 0) {
     actionItems = dedupeStringList(raw.actionItems);
-  }
-  if (actionItems.length === 0) {
-    actionItems = deriveActionItems(result, options?.mode);
   }
 
   let learnCards = result.learnCards;
@@ -315,8 +275,11 @@ function crossSectionDedupe(
  */
 export function normalizeAnalysisResult(
   result: AnalysisResult,
-  options?: NormalizeOptions,
+  _options?: NormalizeOptions,
 ): AnalysisResult {
+  // Keep the options parameter for the validator's public API; normalization no
+  // longer invents mode-specific risks/actions when the provider returns [].
+  void _options;
   const raw: AnalysisResult = {
     title: result.title.trim(),
     summary: result.summary.trim(),
@@ -327,7 +290,7 @@ export function normalizeAnalysisResult(
   };
 
   const deduped = crossSectionDedupe(raw, raw);
-  return repairEmptySections(deduped, raw, options);
+  return repairEmptySections(deduped, raw);
 }
 
 export function isUsableAnalysisCore(result: AnalysisResult): boolean {

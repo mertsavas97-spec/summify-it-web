@@ -16,6 +16,7 @@ type UploadZoneProps = {
   planId: PlanId;
   limitNotice?: string | null;
   onFileSelected: (file: File) => void;
+  variant?: "default" | "compact";
 };
 
 const STATUS_LABELS: Record<UploadExtractStatus, string> = {
@@ -45,8 +46,10 @@ export function UploadZone({
   planId,
   limitNotice,
   onFileSelected,
+  variant = "default",
 }: UploadZoneProps) {
   const copy = getUploadZoneCopy(planId);
+  const compact = variant === "compact";
   const isDraggingAllowed = status === "idle" || status === "ready" || status === "failed";
   const isBusy = status === "uploading" || status === "extracting";
   const showEmptyDropState = !fileName && status === "idle";
@@ -70,7 +73,7 @@ export function UploadZone({
   };
 
   return (
-    <div className="space-y-3">
+    <div className={compact ? "space-y-2" : "space-y-3"}>
       {!showEmptyDropState && (
         <div className="flex items-center justify-between gap-2">
           <label className="text-xs font-medium text-zinc-300">
@@ -108,7 +111,9 @@ export function UploadZone({
         <div
           className={
             showEmptyDropState
-              ? "flex min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center sm:min-h-[300px]"
+              ? compact
+                ? "flex min-h-[108px] flex-col items-center justify-center px-4 py-5 text-center sm:min-h-[116px] sm:flex-row sm:gap-3 sm:text-left"
+                : "flex min-h-[260px] flex-col items-center justify-center px-6 py-10 text-center sm:min-h-[300px]"
               : "flex items-center gap-4 px-4 py-5 sm:px-5"
           }
         >
@@ -117,18 +122,38 @@ export function UploadZone({
               status === "ready"
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                 : "border-violet-400/20 bg-violet-500/10 text-violet-200"
-            } ${showEmptyDropState ? "h-14 w-14" : "h-11 w-11"}`}
+            } ${showEmptyDropState ? (compact ? "h-10 w-10" : "h-14 w-14") : "h-11 w-11"}`}
           >
-            <UploadCloudIcon className={showEmptyDropState ? "h-6 w-6" : "h-5 w-5"} />
+            <UploadCloudIcon className={showEmptyDropState ? (compact ? "h-4 w-4" : "h-6 w-6") : "h-5 w-5"} />
           </span>
-          <div className={showEmptyDropState ? "mt-5" : "min-w-0 flex-1 text-left"}>
-            <p className={showEmptyDropState ? "text-lg font-semibold text-white" : "truncate text-sm font-medium text-white"}>
-              {fileName ?? "Drag & drop your file here"}
+          <div className={showEmptyDropState ? (compact ? "sm:min-w-0 sm:flex-1" : "mt-5") : "min-w-0 flex-1 text-left"}>
+            <p
+              className={
+                showEmptyDropState
+                  ? compact
+                    ? "text-sm font-semibold text-white"
+                    : "text-lg font-semibold text-white"
+                  : "truncate text-sm font-medium text-white"
+              }
+            >
+              {fileName ?? (compact ? "Drop file or click to browse" : "Drag & drop your file here")}
             </p>
-            <p className={showEmptyDropState ? "mt-1 text-sm text-violet-200/80" : "mt-0.5 text-xs text-zinc-500"}>
-              {showEmptyDropState ? "or click to browse" : copy.limitLine}
+            <p
+              className={
+                showEmptyDropState
+                  ? compact
+                    ? "mt-0.5 text-xs text-zinc-500"
+                    : "mt-1 text-sm text-violet-200/80"
+                  : "mt-0.5 text-xs text-zinc-500"
+              }
+            >
+              {showEmptyDropState
+                ? compact
+                  ? "PDF · DOCX · PPTX · TXT"
+                  : "or click to browse"
+                : copy.limitLine}
             </p>
-            {showEmptyDropState && (
+            {showEmptyDropState && !compact && (
               <>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {EMPTY_FORMATS.map((format) => (
@@ -158,10 +183,11 @@ export function UploadZone({
           {error}
         </p>
       )}
-      <p className="text-[11px] text-zinc-600">
-        Files are processed on the server for text extraction only — nothing is
-        stored.
-      </p>
+      {!compact ? (
+        <p className="text-[11px] text-zinc-600">
+          Files are processed on the server for text extraction only — nothing is stored.
+        </p>
+      ) : null}
     </div>
   );
 }

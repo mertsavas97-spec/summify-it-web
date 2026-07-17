@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { trackEvent } from "@/lib/analytics/events";
 import { buildPublicShareUrl } from "@/lib/share-url";
+import { siteConfig } from "@/lib/site";
 import { Button } from "@/components/ui/Button";
+import { ShareSocialActions } from "@/components/share/ShareSocialActions";
 
 type ShareControlsProps = {
   analysisId: string;
   initialIsPublic: boolean;
   initialShareId: string | null;
+  title?: string;
 };
 
 type ShareState = {
@@ -20,6 +23,7 @@ export function ShareControls({
   analysisId,
   initialIsPublic,
   initialShareId,
+  title = "Summify analysis",
 }: ShareControlsProps) {
   const [share, setShare] = useState<ShareState>({
     isPublic: initialIsPublic,
@@ -61,6 +65,18 @@ export function ShareControls({
       isPublic: data.isPublic ?? false,
       shareId: data.shareId ?? null,
     });
+
+    if (enabled && data.shareId) {
+      trackEvent("share_enabled", { analysis_id: analysisId });
+      const url = buildPublicShareUrl(data.shareId);
+      try {
+        await navigator.clipboard.writeText(url);
+        setMessage("Public link is live and copied to your clipboard.");
+      } catch {
+        setMessage("Public analysis link is live. Anyone with the link can view this insight.");
+      }
+      return;
+    }
 
     if (enabled) {
       trackEvent("share_enabled", { analysis_id: analysisId });
@@ -153,8 +169,17 @@ export function ShareControls({
         )}
       </div>
 
+      {share.isPublic && share.shareId ? (
+        <div className="mt-4">
+          <ShareSocialActions shareId={share.shareId} title={title} />
+        </div>
+      ) : null}
+
       {message ? <p className="mt-3 text-xs text-emerald-400/90">{message}</p> : null}
       {error ? <p className="mt-3 text-xs text-red-400/90">{error}</p> : null}
+      <p className="mt-3 text-[11px] text-zinc-600">
+        Share links include summary and Learn content only. Raw uploads stay private.
+      </p>
     </section>
   );
 }

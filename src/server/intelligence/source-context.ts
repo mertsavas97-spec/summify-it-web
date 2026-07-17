@@ -4,12 +4,22 @@
 
 import type {
   AnalyzeSourceContext,
+  FileSourceContext,
   PresentationSourceContext,
+  TextSourceContext,
   TranscriptMomentHint,
+  UrlSourceContext,
   YoutubeSourceContext,
 } from "./types";
 
-export type { TranscriptMomentHint, YoutubeSourceContext, PresentationSourceContext };
+export type {
+  TranscriptMomentHint,
+  YoutubeSourceContext,
+  PresentationSourceContext,
+  FileSourceContext,
+  UrlSourceContext,
+  TextSourceContext,
+};
 
 const VIDEO_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
 
@@ -104,6 +114,41 @@ function parsePresentationContextFromObj(
   };
 }
 
+function parseFileContextFromObj(obj: Record<string, unknown>): FileSourceContext | undefined {
+  if (obj.sourceKind !== "file") return undefined;
+  const ctx: FileSourceContext = { sourceKind: "file" };
+  if (typeof obj.fileName === "string" && obj.fileName.trim()) {
+    ctx.fileName = obj.fileName.trim().slice(0, 200);
+  }
+  if (typeof obj.fileType === "string" && obj.fileType.trim()) {
+    ctx.fileType = obj.fileType.trim().slice(0, 32);
+  } else if (obj.fileType === null) {
+    ctx.fileType = null;
+  }
+  return ctx;
+}
+
+function parseUrlContextFromObj(obj: Record<string, unknown>): UrlSourceContext | undefined {
+  if (obj.sourceKind !== "url") return undefined;
+  const ctx: UrlSourceContext = { sourceKind: "url" };
+  if (typeof obj.url === "string" && obj.url.trim()) {
+    ctx.url = obj.url.trim().slice(0, 500);
+  }
+  if (typeof obj.title === "string" && obj.title.trim()) {
+    ctx.title = obj.title.trim().slice(0, 200);
+  }
+  return ctx;
+}
+
+function parseTextContextFromObj(obj: Record<string, unknown>): TextSourceContext | undefined {
+  if (obj.sourceKind !== "text") return undefined;
+  const ctx: TextSourceContext = { sourceKind: "text" };
+  if (typeof obj.label === "string" && obj.label.trim()) {
+    ctx.label = obj.label.trim().slice(0, 120);
+  }
+  return ctx;
+}
+
 export function parseAnalyzeSourceContext(
   value: unknown,
   sourceHint?: string,
@@ -117,6 +162,18 @@ export function parseAnalyzeSourceContext(
 
   if (sourceHint === "presentation" || obj.sourceKind === "presentation") {
     return parsePresentationContextFromObj(obj);
+  }
+
+  if (sourceHint === "file" || obj.sourceKind === "file") {
+    return parseFileContextFromObj(obj);
+  }
+
+  if (sourceHint === "url" || obj.sourceKind === "url") {
+    return parseUrlContextFromObj(obj);
+  }
+
+  if (sourceHint === "text" || obj.sourceKind === "text") {
+    return parseTextContextFromObj(obj);
   }
 
   return undefined;

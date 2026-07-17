@@ -68,6 +68,8 @@ type AnalysisPracticeSessionProps = {
   showQuizUnlockHint?: boolean;
   isPaidActive?: boolean;
   audioStudyInput?: AudioStudyAnalysisInput;
+  /** Hide dashboard/back links when embedded in upload workspace. */
+  hideWorkspaceLinks?: boolean;
 };
 
 type OutcomeMap = Record<string, PracticeCardOutcome>;
@@ -90,6 +92,7 @@ export function AnalysisPracticeSession({
   showQuizUnlockHint = false,
   isPaidActive = false,
   audioStudyInput,
+  hideWorkspaceLinks = false,
 }: AnalysisPracticeSessionProps) {
   const router = useRouter();
   const sortedCards = useMemo(() => sortPracticeSessionCards(initialCards), [initialCards]);
@@ -356,10 +359,12 @@ export function AnalysisPracticeSession({
           <Button type="button" size="sm" onClick={() => startSession()}>
             Start practice
           </Button>
-          <Button href={`/dashboard/${analysisId}`} size="sm" variant="secondary">
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            Back to analysis
-          </Button>
+          {!hideWorkspaceLinks ? (
+            <Button href={`/dashboard/${analysisId}`} size="sm" variant="secondary">
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              Back to analysis
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"
@@ -557,14 +562,16 @@ export function AnalysisPracticeSession({
         </Button>
       )}
 
-      <div className="mt-4">
-        <Link
-          href={`/dashboard/${analysisId}`}
-          className="text-[11px] text-zinc-500 transition-colors hover:text-violet-300"
-        >
-          ← Back to analysis
-        </Link>
-      </div>
+      {!hideWorkspaceLinks ? (
+        <div className="mt-4">
+          <Link
+            href={`/dashboard/${analysisId}`}
+            className="text-[11px] text-zinc-500 transition-colors hover:text-violet-300"
+          >
+            ← Back to analysis
+          </Link>
+        </div>
+      ) : null}
     </section>
     </>
   );

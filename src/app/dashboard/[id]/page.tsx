@@ -136,10 +136,12 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
             exportContext={{
               sourceKind: saved.source_kind,
               intelligenceMode: getIntelligenceModeLabel(saved.intelligence_mode),
+              intelligenceModeId: modeId,
             }}
             analysisId={saved.id}
             isPublic={saved.is_public ?? false}
             shareId={saved.share_id ?? null}
+            title={saved.title ?? result.title}
           />
 
           <AnalysisMemoryActions analysisId={saved.id} />
@@ -154,6 +156,8 @@ export default async function SavedAnalysisDetailPage({ params }: PageProps) {
               fallbackUsed={saved.metadata?.fallbackUsed ?? false}
               documentTypeGuess={saved.document_type ?? saved.metadata?.documentTypeGuess}
               sourceKind={saved.source_kind}
+              sourceLabel={saved.source_label}
+              metadata={saved.metadata}
               podcastDiscussion={saved.metadata?.podcastDiscussion}
             />
           </div>

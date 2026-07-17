@@ -11,9 +11,11 @@ import {
   getIntelligenceModeLabel,
   getSourceKindLabel,
 } from "@/lib/saved-analysis-labels";
+import { getIntelligenceModeById } from "@/config/modes";
 import { formatStableDate } from "@/lib/format-date";
 import type { PublicSharedAnalysis } from "@/types/saved-analysis";
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { IntelligenceModeId } from "@/types/modes";
 
 type PublicShareViewProps = {
   shared: PublicSharedAnalysis;
@@ -31,6 +33,11 @@ export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
   };
 
   const sharedDate = shared.shared_at ? formatStableDate(shared.shared_at) : null;
+  const sharedModeId =
+    shared.intelligence_mode &&
+    getIntelligenceModeById(shared.intelligence_mode as IntelligenceModeId)
+      ? (shared.intelligence_mode as IntelligenceModeId)
+      : null;
 
   return (
     <article className="print-share-article pb-24">
@@ -96,6 +103,7 @@ export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
         <div className="mt-10">
           <PublicAnalysisWorkspace
             result={result}
+            modeId={sharedModeId}
             mindMapInput={{
               title: result.title,
               summary: result.summary,

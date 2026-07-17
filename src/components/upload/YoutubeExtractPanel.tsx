@@ -62,7 +62,7 @@ export function YoutubeExtractPanel({
         size="sm"
         disabled={disabled || isBusy || urlInput.trim().length < 8}
       >
-        {isBusy ? "Analyzing video…" : "Analyze YouTube Video"}
+        {isBusy ? "Fetching transcript…" : "Add YouTube video"}
       </Button>
 
       {pipelineActive && (

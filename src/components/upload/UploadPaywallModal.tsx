@@ -132,12 +132,12 @@ export function UploadPaywallModal({
       >
         <header className="text-center">
           <h2 id="upload-paywall-title" className="text-xl font-semibold text-white sm:text-2xl">
-            {guestMode ? "Save your study session" : "You’ve reached your free daily limit."}
+            {guestMode ? "Save your AI summary" : "You’ve reached your free daily limit."}
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
             {guestMode
-              ? "Create a free account to keep your Learn Cards, continue listening, and build your memory library."
-              : "Upgrade to continue analyzing, listening, and practicing today."}
+              ? "Create a free account to keep your summaries, flashcards, listening options, and saved history."
+              : "Upgrade to keep summarizing, listening, and practicing today."}
           </p>
           {guestMode ? <p className="mt-2 text-xs text-zinc-500">No credit card required.</p> : null}
         </header>
@@ -251,6 +251,7 @@ export function UploadPaywallModal({
                             variant={isPro && !guestMode ? "primary" : "secondary"}
                           billing={billing}
                           allowScholarCheckout
+                          autoResumeCheckout={false}
                         />
                       ) : (
                         <Button
@@ -269,6 +270,7 @@ export function UploadPaywallModal({
                         label={plan.cta.label}
                           variant={isPro && !guestMode ? "primary" : "secondary"}
                         billing={billing}
+                        autoResumeCheckout={false}
                       />
                     )}
                   </div>

@@ -49,8 +49,10 @@ export async function POST(request: Request) {
       Date.now() - DUPLICATE_WINDOW_MINUTES * 60 * 1000,
     ).toISOString();
 
-    const recoveredSourceLabel = "Recovered guest analysis";
+    const recoveredSourceLabel = body.sourceLabel?.trim() || "Recovered guest analysis";
     const title = body.analysisResult.title?.trim() || "Untitled Analysis";
+    const intelligenceMode = body.intelligenceModeId?.trim() || "general-summary";
+    const sourceKind = body.sourceKind?.trim() || "text";
 
     const { data: duplicateRecent } = await supabase
       .from("saved_analyses")
@@ -79,10 +81,10 @@ export async function POST(request: Request) {
     const payload: SaveAnalysisInsertPayload = {
       user_id: user.id,
       title,
-      source_kind: "text",
+      source_kind: sourceKind,
       source_label: recoveredSourceLabel,
-      document_type: null,
-      intelligence_mode: "general-summary",
+      document_type: body.intelligenceMetadata.profile?.documentTypeGuess ?? null,
+      intelligence_mode: intelligenceMode,
       provider_used: body.providerUsed,
       summary: {
         title,

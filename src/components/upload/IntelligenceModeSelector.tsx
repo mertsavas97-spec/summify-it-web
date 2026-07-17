@@ -17,6 +17,7 @@ import {
   formatPlanBadgeLabel,
   getModeAccessState,
 } from "@/lib/mode-access";
+import { isModeIncludedInPlan } from "@/lib/plan-features";
 import { getCategoryColors } from "@/lib/mode-category-colors";
 import { canRunAnalysis, getModeLabel } from "@/lib/mode-resolver";
 import type { PlanId } from "@/types/plan";
@@ -177,10 +178,10 @@ export function IntelligenceModeSelector({
         {selectedMode && <ModeIcon name={selectedMode.icon} />}
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-violet-300/85">
               Intelligence mode
             </span>
-            <span className="text-[11px] text-zinc-600 group-hover:text-violet-300/70">
+            <span className="text-[11px] font-medium text-zinc-500 group-hover:text-violet-300/70">
               · Click to change
             </span>
             {selectedAccess?.effectiveAvailability === "locked" &&
@@ -194,8 +195,17 @@ export function IntelligenceModeSelector({
                 Soon
               </span>
             )}
+            {selectedAccess?.canAccess && isModeIncludedInPlan(value, "free") ? (
+              <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[9px] font-semibold uppercase text-emerald-300/90">
+                Free
+              </span>
+            ) : selectedAccess?.canAccess ? (
+              <span className="rounded border border-violet-500/25 bg-violet-950/30 px-1 py-px text-[9px] font-semibold uppercase text-violet-300/90">
+                Included
+              </span>
+            ) : null}
           </span>
-          <span className="mt-0.5 block text-sm font-medium text-zinc-100">
+          <span className="mt-0.5 block text-sm font-semibold text-white">
             {getModeLabel(value)}
           </span>
           {selectedMode && (
@@ -307,7 +317,7 @@ export function IntelligenceModeSelector({
                                     </span>
                                     {access.canAccess && (
                                       <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[9px] font-medium uppercase text-emerald-400/90">
-                                        Available
+                                        {isModeIncludedInPlan(mode.id, "free") ? "Free" : "Included"}
                                       </span>
                                     )}
                                     {isLocked && access.upgradePlanId && (

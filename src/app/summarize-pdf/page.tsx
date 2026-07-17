@@ -22,48 +22,54 @@ export default function SummarizePdfPage() {
         data={[
           ...productPageJsonLd({
             path: "/summarize-pdf",
-            pageTitle: "AI PDF Summarizer",
+            pageTitle: "Free AI PDF Summarizer",
             description:
-              "Upload research papers, reports, and ebooks for structured AI PDF summaries, Learn cards, and quizzes.",
+              "Summarize PDF online with AI. Structured summaries, key insights, flashcards, and quizzes for research papers, textbooks, and reports.",
           }),
           faqPageSchema(PDF_FAQS),
         ]}
       />
       <PublicHero
-        badge="AI PDF summarizer"
-        title="Summarize PDF online with structured intelligence"
-        description="Upload research papers, reports, and ebooks to our AI PDF summarizer. Get mode-specific analysis, AI study notes, quiz-ready Learn cards, and insights — not just bullet summaries."
-        primaryCta={{ href: "/upload", label: "Try Summify free" }}
-        secondaryCta={{ href: "/for-students", label: "AI study notes" }}
+        badge="Free AI PDF summarizer"
+        title="Free AI PDF summarizer — summarize PDF online"
+        description="Upload research papers, textbooks, reports, and ebooks. Get a structured AI PDF summary, key insights, flashcards, and a quiz — not just bullet lists."
+        primaryCta={{ href: "/upload", label: "Summarize PDF free" }}
+        secondaryCta={{ href: "/for-students", label: "For students" }}
       >
         <ProductMockCard />
       </PublicHero>
 
       <SeoContentSection
         eyebrow="Why Summify for PDFs"
-        title="An AI PDF summarizer built for depth"
+        title="An AI PDF summarizer built for depth — and study"
         blocks={[
           {
             body: (
               <>
-                Summify is a document summary tool that goes beyond extracting bullets. When you
-                summarize PDF online in the{" "}
-                <InternalTextLink href="/upload">document analysis workspace</InternalTextLink>,
-                you choose an intelligence mode — study, executive, creator, or document — and receive
-                structured outputs grounded in the source.
+                Looking for a{" "}
+                <strong className="font-semibold text-zinc-200">PDF summarizer</strong> that goes
+                beyond extracting bullets? When you{" "}
+                <strong className="font-semibold text-zinc-200">summarize PDF</strong> online in the{" "}
+                <InternalTextLink href="/upload">Summify workspace</InternalTextLink>, you choose an
+                intelligence mode — study, executive, creator, or contract — and receive structured
+                outputs grounded in the source.
               </>
             ),
           },
           {
-            heading: "What you get",
+            heading: "What you get from every PDF",
             body: (
               <>
-                Expect a structured summary, key insights, risks, and next actions, plus Learn cards
-                for concepts and self-quiz review. Students use it to build{" "}
+                Expect a structured summary, key insights, risks, and next actions, plus flashcards
+                and a quiz for recall. Students use it to build{" "}
                 <InternalTextLink href="/for-students">AI study notes</InternalTextLink>; teams pair
                 it with our{" "}
+                <InternalTextLink href="/summarize-powerpoint">
+                  PowerPoint summarizer
+                </InternalTextLink>{" "}
+                and{" "}
                 <InternalTextLink href="/summarize-youtube-video">
-                  YouTube transcript summarizer
+                  YouTube summarizer
                 </InternalTextLink>{" "}
                 for mixed-media research.
               </>

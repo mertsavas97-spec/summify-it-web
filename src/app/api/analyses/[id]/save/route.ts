@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOptionalUser } from "@/lib/auth";
 import { getAnalysisById } from "@/server/analyses/getAnalysisById";
-import { saveAnalysis } from "@/server/analyses/saveAnalysis";
-import type { SaveAnalysisInsertPayload } from "@/server/analyses/buildSavePayload";
-import type { SavedAnalysisMetadata } from "@/types/saved-analysis";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -12,8 +9,9 @@ type RouteContext = {
 /**
  * POST /api/analyses/[id]/save
  *
- * Save an existing analysis to the user's workspace.
- * This is used when a user wants to persist a live analysis or re-save an existing one.
+ * Idempotent "already in workspace" confirmation for an existing owned analysis.
+ * Does not insert a duplicate row — podcast/audio metadata merges use dedicated
+ * merge helpers instead.
  */
 export async function POST(_request: Request, context: RouteContext) {
   const user = await getOptionalUser();
@@ -27,7 +25,6 @@ export async function POST(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    // First check if the analysis exists and belongs to this user
     const existing = await getAnalysisById(id, user.id);
     if (!existing) {
       return NextResponse.json(
@@ -36,48 +33,11 @@ export async function POST(_request: Request, context: RouteContext) {
       );
     }
 
-    // Build metadata from existing or create defaults
-    const metadata: SavedAnalysisMetadata = {
-      fallbackUsed: existing.metadata?.fallbackUsed ?? false,
-      pipelineType: existing.metadata?.pipelineType,
-      tokenRisk: existing.metadata?.tokenRisk,
-      documentTypeGuess: existing.metadata?.documentTypeGuess,
-      knowledgeTitleGuess: existing.metadata?.knowledgeTitleGuess,
-      structureFamily: existing.metadata?.structureFamily,
-      estimatedPages: existing.metadata?.estimatedPages,
-      extractedCharacterCount: existing.metadata?.extractedCharacterCount,
-      youtubeDurationMinutes: existing.metadata?.youtubeDurationMinutes,
-      sourceType: existing.metadata?.sourceType ?? existing.source_kind ?? undefined,
-      sourceLabel: existing.metadata?.sourceLabel ?? existing.source_label,
-    };
-
-    const payload: SaveAnalysisInsertPayload = {
-      user_id: user.id,
-      title: existing.title ?? existing.summary?.title ?? "Untitled Analysis",
-      source_kind: existing.source_kind,
-      intelligence_mode: existing.intelligence_mode ?? "standard",
-      provider_used: existing.provider_used ?? "cached",
-      document_type: existing.document_type,
-      source_label: existing.source_label,
-      summary: existing.summary,
-      learn_cards: existing.learn_cards ?? [],
-      metadata,
-    };
-
-    // Save the analysis
-    const savedId = await saveAnalysis(payload);
-
-    if (!savedId) {
-      return NextResponse.json(
-        { success: false, error: "Failed to save analysis" },
-        { status: 500 },
-      );
-    }
-
     return NextResponse.json({
       success: true,
-      analysisId: savedId,
-      message: "Analysis saved to workspace",
+      analysisId: existing.id,
+      alreadySaved: true,
+      message: "Analysis is already in your workspace",
     });
   } catch (error) {
     console.error("[analyses-save] error", error);

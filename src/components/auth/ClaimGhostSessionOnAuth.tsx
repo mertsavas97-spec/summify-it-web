@@ -41,6 +41,8 @@ export function ClaimGhostSessionOnAuth({ enabled = true }: ClaimGhostSessionOnA
         return;
       }
 
+      hasAttemptedRef.current = false;
+
       if (process.env.NODE_ENV !== "production") {
         console.log("[ghost-claim] claim failed");
       }

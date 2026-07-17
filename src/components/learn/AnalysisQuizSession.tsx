@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
 import {
@@ -29,6 +29,8 @@ type AnalysisQuizSessionProps = {
   isPaidActive?: boolean;
   audioStudyInput?: AudioStudyAnalysisInput;
   onRestartLearn?: () => void;
+  /** Skip intro screen and begin on the first question. */
+  initialPhase?: QuizPhase;
 };
 
 export function AnalysisQuizSession({
@@ -43,12 +45,27 @@ export function AnalysisQuizSession({
   isPaidActive = false,
   audioStudyInput,
   onRestartLearn,
+  initialPhase = "intro",
 }: AnalysisQuizSessionProps) {
-  const [phase, setPhase] = useState<QuizPhase>("intro");
+  const [phase, setPhase] = useState<QuizPhase>(initialPhase);
   const [index, setIndex] = useState(0);
   const [selectedKey, setSelectedKey] = useState<QuizOptionKey | null>(null);
   const [answers, setAnswers] = useState<QuizResult["answers"]>([]);
-  const [trackedStart, setTrackedStart] = useState(false);
+  const trackedStartRef = useRef(initialPhase === "question");
+
+  useEffect(() => {
+    if (initialPhase !== "question" || trackedStartRef.current) return;
+    trackedStartRef.current = true;
+    trackProductEventClient({
+      eventType: "quiz_started",
+      sourceType: "quiz",
+      metadata: {
+        analysis_id: analysisId,
+        question_count: questions.length,
+        plan: entitlementPlanId,
+      },
+    });
+  }, [analysisId, entitlementPlanId, initialPhase, questions.length]);
 
   const active = questions[index] ?? null;
   const quizResult = useMemo(
@@ -69,7 +86,7 @@ export function AnalysisQuizSession({
   );
 
   function startQuiz() {
-    if (!trackedStart) {
+    if (!trackedStartRef.current) {
       trackProductEventClient({
         eventType: "quiz_started",
         sourceType: "quiz",
@@ -79,7 +96,7 @@ export function AnalysisQuizSession({
           plan: entitlementPlanId,
         },
       });
-      setTrackedStart(true);
+      trackedStartRef.current = true;
     }
     setPhase("question");
     setIndex(0);

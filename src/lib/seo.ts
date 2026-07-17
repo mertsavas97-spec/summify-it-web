@@ -10,7 +10,7 @@ export const TWITTER_SITE = "@summifyapp";
 export const TWITTER_CREATOR = "@summifyapp";
 
 export const SEO_DEFAULT_POSITIONING =
-  "AI learning platform for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT — audio lessons, study cards, quizzes, and memory-friendly review.";
+  "AI summarizer for PDFs, PowerPoint, YouTube, and web articles — with flashcards, quizzes, and optional audio lessons so you can study what you summarize.";
 
 /** Open Graph / Twitter card image dimensions (public/og-default.png). */
 export const OG_IMAGE_WIDTH = 1200;

@@ -4,6 +4,7 @@ import {
   getIntelligenceModeById,
 } from "@/config/modes";
 import { buildPageMetadata } from "@/lib/seo";
+import { modePageSeo } from "@/lib/page-metadata";
 import { modePageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ModeDetailSections } from "@/components/public/ModeDetailSections";
@@ -29,11 +30,19 @@ export async function generateMetadata({ params }: PageProps) {
     });
   }
 
+  const seoOverride = modePageSeo[mode.id];
   return buildPageMetadata({
-    title: `${mode.label} AI Mode`,
-    description: `${mode.shortDescription} ${mode.intelligenceLens}`,
+    title: seoOverride?.title ?? `${mode.label} AI Mode`,
+    description:
+      seoOverride?.description ??
+      `${mode.shortDescription} ${mode.intelligenceLens}`,
     path: `/modes/${mode.id}`,
-    keywords: [mode.label, "Summify intelligence mode", mode.category],
+    keywords: seoOverride?.keywords ?? [
+      mode.label,
+      "Summify intelligence mode",
+      mode.category,
+      "AI summarizer",
+    ],
   });
 }
 
@@ -44,14 +53,15 @@ export default async function ModeDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const seoOverride = modePageSeo[mode.id];
+  const pageDescription =
+    seoOverride?.description ??
+    `${mode.shortDescription} ${mode.intelligenceLens}`;
+
   return (
     <>
       <JsonLd
-        data={modePageJsonLd(
-          mode.label,
-          mode.id,
-          `${mode.shortDescription} ${mode.intelligenceLens}`,
-        )}
+        data={modePageJsonLd(mode.label, mode.id, pageDescription)}
       />
       <ModeDetailSections modeId={mode.id} />
     </>

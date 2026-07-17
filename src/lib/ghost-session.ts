@@ -5,13 +5,19 @@ const GHOST_SESSION_STORAGE_KEY = "summify:ghost-session:v1";
 const GHOST_SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const GHOST_SESSION_CLAIM_IN_FLIGHT_KEY = "summify:ghost-session:claim-in-flight:v1";
 
+export type GhostSessionCaptureContext = {
+  intelligenceModeId?: string;
+  sourceKind?: string | null;
+  sourceLabel?: string | null;
+};
+
 export type GhostSessionPayload = {
   analysisResult: AnalysisResult;
   providerUsed: string;
   fallbackUsed: boolean;
   intelligenceMetadata: AnalysisIntelligenceMetadata;
   timestamp: number;
-};
+} & GhostSessionCaptureContext;
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -21,6 +27,8 @@ function clearGhostSession(): void {
   if (!isBrowser()) return;
   window.localStorage.removeItem(GHOST_SESSION_STORAGE_KEY);
 }
+
+export { clearGhostSession };
 
 export function saveGhostSession(
   payload: Omit<GhostSessionPayload, "timestamp">,

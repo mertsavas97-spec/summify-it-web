@@ -13,7 +13,7 @@ const navItems = [
   },
   {
     href: "/upload",
-    label: "New summary",
+    label: "New session",
     icon: "↑",
     match: (p: string) => p.startsWith("/upload"),
   },

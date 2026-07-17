@@ -35,10 +35,23 @@ export type FileAnalyzeSourceContext = {
   fileType?: string | null;
 };
 
+export type UrlAnalyzeSourceContext = {
+  sourceKind: "url";
+  url?: string;
+  title?: string;
+};
+
+export type TextAnalyzeSourceContext = {
+  sourceKind: "text";
+  label?: string;
+};
+
 export type AnalyzeSourceContext =
   | YoutubeAnalyzeSourceContext
   | PresentationAnalyzeSourceContext
-  | FileAnalyzeSourceContext;
+  | FileAnalyzeSourceContext
+  | UrlAnalyzeSourceContext
+  | TextAnalyzeSourceContext;
 
 import type {
   PresentationExtractionMetadata,

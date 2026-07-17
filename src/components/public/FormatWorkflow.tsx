@@ -14,10 +14,18 @@ export function FormatWorkflow({
   title = "How it works",
   steps,
 }: FormatWorkflowProps) {
-  const desktopColsClass = steps.length >= 5 ? "lg:grid-cols-5" : "lg:grid-cols-4";
+  const desktopColsClass =
+    steps.length >= 5
+      ? "lg:grid-cols-5"
+      : steps.length === 3
+        ? "lg:grid-cols-3"
+        : "lg:grid-cols-4";
 
   return (
-    <section id={id} className="border-b border-slate-200/70 px-4 py-10 sm:px-6 sm:py-12 lg:px-8 dark:border-white/[0.04]">
+    <section
+      id={id}
+      className={`border-b border-slate-200/70 px-4 py-10 sm:px-6 sm:py-12 lg:px-8 dark:border-white/[0.04]${id ? " scroll-mt-24" : ""}`}
+    >
       <div className="mx-auto max-w-6xl">
         <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
         <div className="relative mt-10">

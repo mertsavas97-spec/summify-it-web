@@ -44,6 +44,16 @@ export function ShareSocialActions({ shareId, title }: ShareSocialActionsProps) 
 
   const buttonClass =
     "inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-violet-500/25 hover:text-violet-200";
+  const shareMessage = encodeURIComponent(`Check out this analysis on ${siteConfig.name}: ${title}\n${url}`);
+
+  async function nativeShare() {
+    if (!navigator.share) return;
+    try {
+      await navigator.share({ title, text: `Shared analysis on ${siteConfig.name}`, url });
+    } catch {
+      // User dismissed share sheet.
+    }
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="Share this analysis">
@@ -65,10 +75,23 @@ export function ShareSocialActions({ shareId, title }: ShareSocialActionsProps) 
         <LinkedInIcon className="h-3.5 w-3.5" />
         LinkedIn
       </a>
+      <a
+        href={`https://wa.me/?text=${shareMessage}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={buttonClass}
+      >
+        WhatsApp
+      </a>
       <button type="button" onClick={copyLink} className={buttonClass}>
         <Link2 className="h-3.5 w-3.5" />
         {copied ? "Copied" : "Copy link"}
       </button>
+      {typeof navigator !== "undefined" && "share" in navigator ? (
+        <button type="button" onClick={() => void nativeShare()} className={buttonClass}>
+          Share
+        </button>
+      ) : null}
     </div>
   );
 }

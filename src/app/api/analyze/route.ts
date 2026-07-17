@@ -45,6 +45,11 @@ import {
 } from "@/server/internalNotifications";
 import { devError, devLog, logServerError } from "@/server/logging";
 import { analyzeLimiter } from "@/lib/rateLimit";
+import {
+  ANALYSIS_QUOTA_ERROR_CODES,
+  FREE_DAILY_ANALYSIS_LIMIT_MESSAGE,
+  GUEST_ANALYSIS_LIMIT_MESSAGE,
+} from "@/lib/analysis-quota";
 
 const ANONYMOUS_USAGE_COOKIE = "summify_anon_usage";
 // Guest plan: 1 analysis total (per browser via cookie).
@@ -292,16 +297,26 @@ export async function POST(request: Request) {
       );
 
       if (anonymousUsage.count >= ANONYMOUS_TOTAL_ANALYSIS_LIMIT) {
+        devLog("[summify.analyze] quota_denied_guest", {
+          count: anonymousUsage.count,
+          limit: ANONYMOUS_TOTAL_ANALYSIS_LIMIT,
+        });
         const payload: AnalyzeApiErrorResponse = {
           success: false,
-          error: "Create a free account and get 5 analyses per day.",
+          error: GUEST_ANALYSIS_LIMIT_MESSAGE,
+          errorCode: ANALYSIS_QUOTA_ERROR_CODES.GUEST_LIMIT,
         };
         return NextResponse.json(payload, { status: 429 });
       }
     } else if (!quota.allowed) {
+      devLog("[summify.analyze] quota_denied_free_daily", {
+        userId: currentUser.id,
+        warning: quota.warning ?? null,
+      });
       const payload: AnalyzeApiErrorResponse = {
         success: false,
-        error: quota.warning ?? "You’ve used today’s free analyses.",
+        error: quota.warning ?? FREE_DAILY_ANALYSIS_LIMIT_MESSAGE,
+        errorCode: ANALYSIS_QUOTA_ERROR_CODES.FREE_DAILY_LIMIT,
       };
       return NextResponse.json(payload, { status: 429 });
     }

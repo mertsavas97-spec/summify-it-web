@@ -260,6 +260,7 @@ function detectDocumentType({
   tableSignalCount,
   headingSignalCount,
   citationCount,
+  metadata,
 }: {
   text: string;
   paragraphs: string[];
@@ -268,8 +269,11 @@ function detectDocumentType({
   tableSignalCount: number;
   headingSignalCount: number;
   citationCount: number;
+  metadata?: Record<string, unknown> | null;
 }): { type: string; confidence: number } {
   const lower = text.toLowerCase();
+  const sourceKind = typeof metadata?.sourceKind === "string" ? metadata.sourceKind : null;
+  const fileType = typeof metadata?.fileType === "string" ? metadata.fileType : null;
 
   const legalKeywords = [
     "hereby",
@@ -345,7 +349,11 @@ function detectDocumentType({
     },
     {
       type: "Presentation",
-      score: (hasSlides ? 26 : 0) + (hasManyBullets ? 14 : 0) + (paragraphs.length >= 10 ? 6 : 0),
+      score:
+        (sourceKind === "presentation" || fileType === "pptx" ? 48 : 0) +
+        (hasSlides ? 26 : 0) +
+        (hasManyBullets ? 14 : 0) +
+        (paragraphs.length >= 10 ? 6 : 0),
     },
     {
       type: "Technical Documentation",
@@ -368,9 +376,16 @@ function detectDocumentType({
     {
       type: "Article",
       score:
+        (sourceKind === "url" ? 36 : 0) +
         (headingSignalCount >= 4 ? 8 : 0) +
         (hasShortParagraphs ? 10 : 0) +
         (citationCount === 0 ? 6 : 0),
+    },
+    {
+      type: "Video Transcript",
+      score:
+        (sourceKind === "youtube" ? 52 : 0) +
+        (countRegexMatches(text, /\b(?:speaker|host|guest|transcript)\b/gi) >= 3 ? 10 : 0),
     },
     {
       type: "Book Chapter",
@@ -386,7 +401,12 @@ function detectDocumentType({
   const second = scores[1] ?? { type: best.type, score: 0 };
   const total = scores.reduce((sum, s) => sum + Math.max(0, s.score), 0) || 1;
   const margin = Math.max(0, best.score - second.score);
-  const baseConfidence = clamp((best.score / total) * 140, 30, 96);
+  const hasExplicitSourceHint =
+    sourceKind === "url" ||
+    sourceKind === "youtube" ||
+    sourceKind === "presentation" ||
+    fileType === "pptx";
+  const baseConfidence = clamp((best.score / total) * 140, hasExplicitSourceHint ? 52 : 30, 96);
   const marginBoost = clamp(margin * 1.8, 0, 18);
   const confidence = roundScore(baseConfidence + marginBoost);
 
@@ -484,6 +504,8 @@ function recommendIntelligenceModes({
     base.push("executive-brief", "key-points", "general-summary");
   } else if (detectedType === "Meeting Notes") {
     base.push("executive-brief", "key-points", "general-summary");
+  } else if (detectedType === "Video Transcript") {
+    base.push("the-creator", "the-student", "general-summary");
   } else {
     base.push("general-summary", "deep-dive", "the-student");
   }
@@ -501,7 +523,10 @@ function recommendIntelligenceModes({
   return Array.from(new Set(base)).slice(0, 3);
 }
 
-export function calculateDocumentIq({ extractedText }: DocumentIqInput): DocumentIqResult {
+export function calculateDocumentIq({
+  extractedText,
+  metadata,
+}: DocumentIqInput): DocumentIqResult {
   const text = normalizeText(extractedText);
   const charCount = text.length;
 
@@ -561,7 +586,15 @@ export function calculateDocumentIq({ extractedText }: DocumentIqInput): Documen
   const paragraphBonus = clamp(Math.log2(paragraphCount + 1) * 12, 0, 24);
   const lineBreakBonus = clamp(Math.log2(lineBreaks + 1) * 6, 0, 18);
   const denseBlockPenalty = paragraphs.length <= 1 && lineBreaks < 2 ? 18 : 0;
-  const readabilityRaw = 72 + paragraphBonus + lineBreakBonus - sentenceLenPenalty - wordLenPenalty - denseBlockPenalty;
+  // Structural whitespace from extractors can inflate readability. Keep bonuses
+  // useful but bounded so scraped articles do not routinely score a perfect 100.
+  const readabilityRaw =
+    60 +
+    Math.min(paragraphBonus, 18) +
+    Math.min(lineBreakBonus, 10) -
+    sentenceLenPenalty -
+    wordLenPenalty -
+    denseBlockPenalty;
   const readability = roundScore(readabilityRaw);
 
   // --- Complexity (higher = more complex)
@@ -614,11 +647,19 @@ export function calculateDocumentIq({ extractedText }: DocumentIqInput): Documen
     tableSignalCount,
     headingSignalCount,
     citationCount,
+    metadata,
   });
 
   const whyThisScore = buildWhyThisScore({ readability, complexity, density, actionability });
   const iqLabel = mapIqScoreToBetterLabel({ readability, complexity, density, actionability });
-  const estimatedReadingMinutes = estimateReadingMinutesFromCharCount(charCount);
+  const metadataReadingMinutes =
+    typeof metadata?.estimatedReadingTimeMinutes === "number"
+      ? metadata.estimatedReadingTimeMinutes
+      : null;
+  const estimatedReadingMinutes =
+    metadataReadingMinutes && metadataReadingMinutes > 0
+      ? Math.max(1, Math.round(metadataReadingMinutes))
+      : estimateReadingMinutesFromCharCount(charCount);
   const recommendedIntelligenceModeIds = recommendIntelligenceModes({
     detectedType: detectedDocumentType.type,
     actionability,

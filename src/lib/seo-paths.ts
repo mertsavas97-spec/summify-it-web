@@ -23,7 +23,7 @@ const STATIC_MARKETING_PATHS = [
   "/summarize-web-articles",
   "/summarize-docx",
   "/summarize-mp3",
-  "/pdf-summarizer",
+  // /pdf-summarizer 301 → /summarize-pdf (do not list both)
   "/video-summarizer",
   "/best-ai-for-studying",
   "/pdf-to-podcast",

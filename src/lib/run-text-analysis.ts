@@ -9,7 +9,7 @@ export type RunTextAnalysisParams = {
   rawText: string;
   /** Intelligence mode id (e.g. `executive-brief`) or legacy family (`executive`). */
   mode: IntelligenceModeId | string;
-  sourceHint?: "youtube" | "presentation" | "url" | "file";
+  sourceHint?: "youtube" | "presentation" | "url" | "file" | "text";
   sourceContext?: AnalyzeSourceContext;
   /** Upload file type for analytics (`pdf`, `docx`, `txt`, `pptx`). */
   fileType?: string | null;
@@ -29,6 +29,7 @@ export type RunTextAnalysisSuccess = {
 export type RunTextAnalysisFailure = {
   success: false;
   error: string;
+  errorCode?: string;
 };
 
 export type RunTextAnalysisResult = RunTextAnalysisSuccess | RunTextAnalysisFailure;
@@ -63,6 +64,7 @@ export async function runTextAnalysis(
     return {
       success: false,
       error: data.error,
+      ...(data.errorCode ? { errorCode: data.errorCode } : {}),
     };
   }
 

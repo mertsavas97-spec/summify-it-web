@@ -15,6 +15,24 @@ const nextConfig: NextConfig = {
         destination: "https://www.summify.app/:path*",
         permanent: true,
       },
+      // Production Vercel alias → canonical www (preview *-git-* hosts stay open)
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "summify-it-web.vercel.app" }],
+        destination: "https://www.summify.app/:path*",
+        permanent: true,
+      },
+      // Consolidate PDF summarizer cannibalization → primary head-term URL
+      {
+        source: "/pdf-summarizer",
+        destination: "/summarize-pdf",
+        permanent: true,
+      },
+      {
+        source: "/pdf-summarizer/",
+        destination: "/summarize-pdf",
+        permanent: true,
+      },
     ];
   },
   async headers() {

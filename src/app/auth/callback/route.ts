@@ -66,5 +66,13 @@ export async function GET(request: Request) {
   });
   const response = NextResponse.redirect(`${origin}${safeNext}`);
   response.cookies.set("summify_auth_next", "", { path: "/", maxAge: 0 });
+  // Non-httpOnly handoff flag so /upload can restore pending workspace after OAuth.
+  response.cookies.set("summify_auth_just_returned", "1", {
+    path: "/",
+    maxAge: 120,
+    sameSite: "lax",
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+  });
   return response;
 }

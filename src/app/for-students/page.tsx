@@ -16,10 +16,10 @@ export default function ForStudentsPage() {
   return (
     <>
       <PublicHero
-        badge="AI study notes"
-        title="Your AI Study Companion for Lectures, PDFs & Research Papers"
-        description="Create structured notes, Learn cards, audio lessons, and podcast-style study sessions from your class materials in one workflow."
-        primaryCta={{ href: "/upload", label: "Try Summify free" }}
+        badge="AI summarizer for students"
+        title="AI summarizer for students — notes, flashcards & quizzes"
+        description="Summarize lecture PDFs, YouTube classes, and readings into structured study notes, flashcards, and quizzes — then optional audio when you want hands-free review."
+        primaryCta={{ href: "/upload", label: "Summarize for free" }}
         secondaryCta={{ href: "/modes/the-student", label: "The Student mode" }}
       >
         <ProductMockCard variant="learn" />

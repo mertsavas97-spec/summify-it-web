@@ -1,18 +1,16 @@
-import { Sparkles, ShieldCheck, Lock, Headphones, GraduationCap, Heart } from "lucide-react";
+import type { ComponentType } from "react";
+import { Sparkles, Lock, FileText } from "lucide-react";
 
 type TrustItem = {
   label: string;
   value: string;
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 };
 
 const ITEMS: TrustItem[] = [
-  { icon: Lock, value: "Private by design", label: "No AI training on data" },
-  { icon: Sparkles, value: "Try your first lesson free", label: "No account required" },
-  { icon: ShieldCheck, value: "Secure processing", label: "Enterprise-grade" },
-  { icon: Heart, value: "Loved by learners", label: "Students & researchers" },
-  { icon: Headphones, value: "Audio lessons", label: "Listen anywhere" },
-  { icon: GraduationCap, value: "Exam ready", label: "Quiz generation" },
+  { icon: Sparkles, value: "Free to try", label: "No account required" },
+  { icon: Lock, value: "Private by design", label: "No AI training on your uploads" },
+  { icon: FileText, value: "PDF · PPTX · YouTube · Web", label: "One workspace for every source" },
 ];
 
 export function HomeTrustBar() {
@@ -20,7 +18,7 @@ export function HomeTrustBar() {
     <section className="border-b border-white/[0.04] px-4 pb-6 pt-0 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <ul
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6"
+          className="grid gap-3 sm:grid-cols-3"
           aria-label="Product trust highlights"
         >
           {ITEMS.map((item) => (

@@ -19,8 +19,6 @@ import { getUserPlanLimits } from "@/lib/plan-limits";
 import { MemoryDashboardPanel } from "@/components/memory/MemoryDashboardPanel";
 import { DashboardUsagePanel } from "@/components/dashboard/DashboardUsagePanel";
 import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
-import { ClaimGhostSessionOnAuth } from "@/components/auth/ClaimGhostSessionOnAuth";
-
 export const metadata: Metadata = createPageMetadata({
   title: "Dashboard",
   description: "Your learning command center with sessions, reviews, and weekly progress.",
@@ -61,7 +59,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
-      <ClaimGhostSessionOnAuth />
       <DashboardSidebar
         savedCount={savedCount}
         dailyCount={limits?.daily_analysis_count ?? 0}
@@ -79,7 +76,7 @@ export default async function DashboardPage() {
                   Welcome back, {welcomeName(profile?.email ?? user.email)}
                 </h1>
                 <p className="mt-2 max-w-lg text-sm leading-relaxed text-slate-600 dark:text-zinc-400">
-                  Focus on what to learn next, what is due for review, and where your study momentum is heading.
+                  Your saved analyses, study cards, and shareable summaries live here.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -117,22 +114,16 @@ export default async function DashboardPage() {
           </header>
 
           <MemoryDashboardPanel stats={memoryStats} dailyTarget={planUsage.dailyReviewTarget} />
-          <DashboardUsagePanel usage={planUsage} />
 
           <div className="mt-10">
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Recent Learning Sessions</h2>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Recent analyses</h2>
             <p className="mt-1 text-xs text-slate-500 dark:text-zinc-500">
-              Pick up where you left off or review past insights.
+              Reopen summaries, Learn cards, audio, and shared links from one place.
             </p>
             <DashboardAnalysesExplorer analyses={analyses} />
           </div>
 
-          <section className="mt-10 rounded-xl border border-slate-200 bg-white px-4 py-3.5 dark:border-white/[0.06] dark:bg-zinc-950/40">
-            <p className="text-sm font-medium text-slate-800 dark:text-zinc-300">Saved Library</p>
-            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-600">
-              Your full learning history stays searchable and filterable below.
-            </p>
-          </section>
+          <DashboardUsagePanel usage={planUsage} />
         </div>
       </div>
     </div>

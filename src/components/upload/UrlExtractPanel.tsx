@@ -62,7 +62,7 @@ export function UrlExtractPanel({
         size="sm"
         disabled={disabled || isBusy || urlInput.trim().length < 8}
       >
-        {isBusy ? "Analyzing article…" : "Analyze Web Article"}
+        {isBusy ? "Fetching article…" : "Add article"}
       </Button>
 
       {pipelineActive && (

@@ -15,7 +15,8 @@ export type UploadZoneCopy = {
 export function getUploadZoneCopy(planId: PlanId): UploadZoneCopy {
   const limits = getPlanLimits(planId);
 
-  const dropLabel = "Drop PDF, DOCX, PPTX, or TXT — or click to browse";
+  const dropLabel =
+    "Drop a PDF, DOCX, PPTX, or TXT to summarize — or click to browse";
 
   let limitLine: string;
   if (planId === "team") {

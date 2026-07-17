@@ -7,6 +7,8 @@ import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { LearnCardItem } from "@/components/upload/LearnCardItem";
 import type { MindMapGenerationInput } from "@/types/mindmap";
 import type { AnalysisResult, LearnCardOutput } from "@/types/text-analysis";
+import type { IntelligenceModeId } from "@/types/modes";
+import { getModeResultSectionLabels } from "@/lib/mode-result-presentation";
 
 const MindMapPanel = dynamic(
   () => import("@/components/mindmap/MindMapPanel").then((m) => m.MindMapPanel),
@@ -18,6 +20,7 @@ type Tab = "summary" | "learn" | "mindmap";
 type PublicAnalysisWorkspaceProps = {
   result: AnalysisResult;
   mindMapInput: MindMapGenerationInput;
+  modeId?: IntelligenceModeId | null;
 };
 
 const TABS: { id: Tab; label: string }[] = [
@@ -26,8 +29,20 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "mindmap", label: "Mind Map" },
 ];
 
-export function PublicAnalysisWorkspace({ result, mindMapInput }: PublicAnalysisWorkspaceProps) {
+export function PublicAnalysisWorkspace({
+  result,
+  mindMapInput,
+  modeId,
+}: PublicAnalysisWorkspaceProps) {
   const [tab, setTab] = useState<Tab>("summary");
+  const labels = modeId
+    ? getModeResultSectionLabels(modeId)
+    : {
+        summary: "Summary",
+        keyInsights: "Key insights",
+        risks: "Risks & warnings",
+        actions: "Action items",
+      };
 
   return (
     <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-950/60">
@@ -55,19 +70,19 @@ export function PublicAnalysisWorkspace({ result, mindMapInput }: PublicAnalysis
       <div className="p-4 sm:p-5" role="tabpanel">
         {tab === "summary" && (
           <div className="divide-y divide-white/[0.04]">
-            <CollapsibleSection title="Summary" defaultOpen>
+            <CollapsibleSection title={labels.summary} defaultOpen>
               <p className="max-w-prose text-sm leading-[1.7] text-zinc-300">{result.summary}</p>
             </CollapsibleSection>
-            <CollapsibleSection title="Key insights" count={result.keyInsights.length} defaultOpen>
+            <CollapsibleSection title={labels.keyInsights} count={result.keyInsights.length} defaultOpen>
               <InsightList items={result.keyInsights} />
             </CollapsibleSection>
             {result.risksOrWarnings.length > 0 ? (
-              <CollapsibleSection title="Risks & warnings" count={result.risksOrWarnings.length}>
+              <CollapsibleSection title={labels.risks} count={result.risksOrWarnings.length}>
                 <InsightList items={result.risksOrWarnings} />
               </CollapsibleSection>
             ) : null}
             {result.actionItems.length > 0 ? (
-              <CollapsibleSection title="Action items" count={result.actionItems.length}>
+              <CollapsibleSection title={labels.actions} count={result.actionItems.length}>
                 <InsightList items={result.actionItems} />
               </CollapsibleSection>
             ) : null}

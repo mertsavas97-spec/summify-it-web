@@ -58,7 +58,29 @@ export type PresentationSourceContext = {
   slideOutline: PresentationSlideOutlineHint[];
 };
 
-export type AnalyzeSourceContext = YoutubeSourceContext | PresentationSourceContext;
+export type FileSourceContext = {
+  sourceKind: "file";
+  fileName?: string;
+  fileType?: string | null;
+};
+
+export type UrlSourceContext = {
+  sourceKind: "url";
+  url?: string;
+  title?: string;
+};
+
+export type TextSourceContext = {
+  sourceKind: "text";
+  label?: string;
+};
+
+export type AnalyzeSourceContext =
+  | YoutubeSourceContext
+  | PresentationSourceContext
+  | FileSourceContext
+  | UrlSourceContext
+  | TextSourceContext;
 
 export type SourceQualityFlag = "ok" | "thin" | "fragmented";
 

@@ -30,10 +30,10 @@ export default function SummarizeYoutubePage() {
         ]}
       />
       <PublicHero
-        badge="YouTube summarizer"
-        title="Summarize YouTube videos with AI from transcript to notes"
-        description="Paste a video URL for YouTube transcript summarizer workflows — structured analysis, study notes from videos, key themes, and Learn cards for creators and students."
-        primaryCta={{ href: "/upload", label: "Try Summify free" }}
+        badge="YouTube video summarizer"
+        title="YouTube summarizer AI — instant transcript summaries"
+        description="Paste a YouTube URL for an AI summary from the transcript — key points, study notes, flashcards, and quiz. Works with captioned lectures and long-form video."
+        primaryCta={{ href: "/upload", label: "Summarize YouTube free" }}
         secondaryCta={{ href: "/for-creators", label: "For creators" }}
       >
         <ProductMockCard variant="learn" />

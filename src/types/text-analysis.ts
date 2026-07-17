@@ -100,6 +100,8 @@ export type AnalyzeApiSuccessResponse = {
 export type AnalyzeApiErrorResponse = {
   success: false;
   error: string;
+  /** Machine-readable quota / access code when applicable. */
+  errorCode?: string;
   debug?: AnalyzeApiDebugMetadata;
 };
 

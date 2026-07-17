@@ -105,7 +105,15 @@ export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
               {getCategoryLabelForMode(modeId)} · Active mode
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {mode.label}
+              {mode.id === "general-summary"
+                ? "AI Document Summarizer — General Summary"
+                : mode.id === "contract-analyzer"
+                  ? "AI Contract Summary — Clauses & Obligations"
+                  : mode.id === "the-student"
+                    ? "AI Study Notes — The Student Mode"
+                    : mode.id === "executive-brief"
+                      ? "AI Executive Brief — Decision-Ready Summary"
+                      : mode.label}
             </h1>
             <p className="mt-4 text-base leading-relaxed text-zinc-400">
               {mode.intelligenceLens}

@@ -2,26 +2,38 @@
 
 import { useState } from "react";
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { IntelligenceModeId } from "@/types/modes";
+import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
+import {
+  getModeResultSectionLabels,
+  type ModeResultSectionLabels,
+} from "@/lib/mode-result-presentation";
 
 type AnalysisToolbarProps = {
   result: AnalysisResult;
+  modeId: IntelligenceModeId;
+  uiSectionLabels?: PersonaUiSectionLabels;
 };
 
-function buildCopyText(result: AnalysisResult): string {
+function buildCopyText(
+  result: AnalysisResult,
+  labels: ModeResultSectionLabels,
+): string {
   const lines = [
     result.title,
     "",
+    labels.summary,
     result.summary,
     "",
-    "Key insights",
+    labels.keyInsights,
     ...result.keyInsights.map((i) => `• ${i}`),
   ];
 
   if (result.risksOrWarnings.length > 0) {
-    lines.push("", "Risks & warnings", ...result.risksOrWarnings.map((i) => `• ${i}`));
+    lines.push("", labels.risks, ...result.risksOrWarnings.map((i) => `• ${i}`));
   }
   if (result.actionItems.length > 0) {
-    lines.push("", "Action items", ...result.actionItems.map((i) => `• ${i}`));
+    lines.push("", labels.actions, ...result.actionItems.map((i) => `• ${i}`));
   }
 
   return lines.join("\n");
@@ -36,12 +48,17 @@ type ToolbarAction = {
   title?: string;
 };
 
-export function AnalysisToolbar({ result }: AnalysisToolbarProps) {
+export function AnalysisToolbar({
+  result,
+  modeId,
+  uiSectionLabels,
+}: AnalysisToolbarProps) {
   const [copied, setCopied] = useState(false);
+  const labels = getModeResultSectionLabels(modeId, uiSectionLabels);
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(buildCopyText(result));
+      await navigator.clipboard.writeText(buildCopyText(result, labels));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -54,25 +71,6 @@ export function AnalysisToolbar({ result }: AnalysisToolbarProps) {
       id: "copy",
       label: copied ? "Copied" : "Copy summary",
       onClick: handleCopy,
-    },
-    {
-      id: "export",
-      label: "Export",
-      disabled: true,
-      title: "Export coming soon",
-    },
-    {
-      id: "save",
-      label: "Save to workspace",
-      disabled: true,
-      locked: true,
-      title: "Pro — workspace persistence coming soon",
-    },
-    {
-      id: "compare",
-      label: "Compare",
-      disabled: true,
-      title: "Compare mode coming soon",
     },
   ];
 

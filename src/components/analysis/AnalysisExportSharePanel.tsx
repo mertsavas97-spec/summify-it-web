@@ -11,6 +11,7 @@ type AnalysisExportSharePanelProps = {
   analysisId: string;
   isPublic: boolean;
   shareId: string | null;
+  title?: string;
 };
 
 export function AnalysisExportSharePanel({
@@ -19,6 +20,7 @@ export function AnalysisExportSharePanel({
   analysisId,
   isPublic,
   shareId,
+  title,
 }: AnalysisExportSharePanelProps) {
   return (
     <div className="mt-6 space-y-4 print-hide" data-export-share-panel>
@@ -27,6 +29,7 @@ export function AnalysisExportSharePanel({
         analysisId={analysisId}
         initialIsPublic={isPublic}
         initialShareId={shareId}
+        title={title ?? result.title}
       />
     </div>
   );

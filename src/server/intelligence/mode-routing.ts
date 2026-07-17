@@ -17,6 +17,7 @@ import type {
 } from "@/types/modes";
 import type { TextAnalysisMode } from "@/server/ai/schemas";
 import type { LearnCardKind } from "@/server/learn/types";
+import { getModeResultPromptGuidance } from "@/lib/mode-result-presentation";
 
 export type ModeRoutingResult = {
   intelligenceModeId: IntelligenceModeId;
@@ -66,7 +67,9 @@ export function resolveModeRouting(modeInput: string): ModeRoutingResult {
     intelligenceModeId: def.id,
     label: def.label,
     backendFamily: def.intelligenceFamily,
-    promptAdjunct: def.promptAdjunct ?? "",
+    promptAdjunct: [def.promptAdjunct, getModeResultPromptGuidance(def.id)]
+      .filter(Boolean)
+      .join("\n\n"),
     learnWeighting: def.learnWeighting,
     outputTone: def.outputTone,
     outputDepthHint: def.outputDepth,

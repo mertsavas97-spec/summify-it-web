@@ -1,5 +1,9 @@
-/** Production host that should be indexed by search engines. */
+/** Production host that should be indexed by search engines (canonical: www). */
 const INDEXABLE_HOSTS = new Set(["www.summify.app"]);
+
+/** Apex must never be indexed — always 301 to www. */
+export const APEX_PRODUCTION_HOST = "summify.app";
+export const WWW_PRODUCTION_HOST = "www.summify.app";
 
 /** Patterns that indicate non-production/preview environments. */
 const NON_PRODUCTION_PATTERNS = [

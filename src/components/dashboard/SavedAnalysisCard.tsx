@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DeleteAnalysisButton } from "@/components/dashboard/DeleteAnalysisButton";
-import { learnDashboardHref } from "@/lib/learn/paths";
 import { formatStableDate, formatStableDateTime } from "@/lib/format-date";
+import { learnPracticeStartHref } from "@/lib/learn/paths";
 import {
   getIntelligenceModeLabel,
   getSavedAnalysisPreview,
@@ -83,17 +83,24 @@ export function SavedAnalysisCard({ analysis, showDelete = true }: SavedAnalysis
           </p>
           <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-zinc-500">{preview}</p>
           <p className="mt-3 text-[11px] font-medium text-violet-400/80 group-hover:text-violet-300">
-            {hasAudio ? "Listen to lesson →" : "Continue learning →"}
+            Open summary →
           </p>
         </div>
       </Link>
       <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-white/[0.04] dark:bg-zinc-950/30">
         <Link
-          href={learnDashboardHref(analysis.id)}
+          href={learnPracticeStartHref(analysis.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="rounded-md px-2 py-1 text-[11px] font-medium text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-300"
+        >
+          Practice
+        </Link>
+        <Link
+          href={`/dashboard/${analysis.id}`}
           onClick={(e) => e.stopPropagation()}
           className="rounded-md px-2 py-1 text-[11px] font-medium text-violet-400/90 transition-colors hover:bg-violet-500/10 hover:text-violet-300"
         >
-          Review
+          Open
         </Link>
         {showDelete ? (
           <DeleteAnalysisButton analysisId={analysis.id} redirectTo="/dashboard" />

@@ -24,6 +24,8 @@ type CheckoutButtonProps = {
   billing: BillingStatusCopy;
   /** Pricing page: Scholar checkout for verified .edu accounts only. */
   allowScholarCheckout?: boolean;
+  /** Pricing page only — avoid resuming checkout when this button mounts inside modals. */
+  autoResumeCheckout?: boolean;
 };
 
 function isCheckoutPlanAllowed(
@@ -60,6 +62,7 @@ export function CheckoutButton({
   className,
   billing,
   allowScholarCheckout = false,
+  autoResumeCheckout = true,
 }: CheckoutButtonProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +183,7 @@ export function CheckoutButton({
   }, [billing]);
 
   useEffect(() => {
-    if (resumedRef.current || !shouldCallCheckoutApi(billing)) return;
+    if (!autoResumeCheckout || resumedRef.current || !shouldCallCheckoutApi(billing)) return;
 
     const intent = consumeCheckoutIntent();
     if (!intent || !isCheckoutPlanAllowed(intent.planId, allowScholarCheckout)) return;
@@ -192,7 +195,7 @@ export function CheckoutButton({
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [billing, allowScholarCheckout, runCheckout]);
+  }, [autoResumeCheckout, billing, allowScholarCheckout, runCheckout]);
 
   return (
     <div className={className}>

@@ -42,9 +42,9 @@ export function getSiteUrl(): string {
  */
 export const siteConfig = {
   name: "Summify",
-  tagline: "Learn anything with audio-first AI study workflows.",
+  tagline: "AI summarizer for PDFs, decks, videos & articles — then study what matters.",
   description:
-    "AI learning platform for PDFs, PowerPoint decks, YouTube videos, web articles, DOCX, and TXT — audio lessons, study cards, quizzes, and memory-friendly review.",
+    "Free AI summarizer for PDFs, PowerPoint, YouTube, and web articles. Get structured summaries, key insights, flashcards, quizzes, and optional audio lessons in one workspace.",
   url: getSiteUrl(),
   ogImage: "https://www.summify.app/og/summify-og-v1.png",
 } as const;

@@ -10,6 +10,7 @@ import type { PlanId } from "@/types/plan";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { AnalysisToolbar } from "./AnalysisToolbar";
 import { LearnSection } from "./LearnSection";
+import { getModeResultSectionLabels } from "@/lib/mode-result-presentation";
 
 type AnalysisResultViewProps = {
   result: AnalysisResult;
@@ -17,7 +18,7 @@ type AnalysisResultViewProps = {
   providerUsed: string;
   fallbackUsed: boolean;
   embedded?: boolean;
-  sections?: "all" | "summary" | "deep";
+  sections?: "all" | "summary" | "insights" | "deep" | "overview";
   showToolbar?: boolean;
   showHeader?: boolean;
   /** Phase 11C — adaptive headings from persona plan (optional). */
@@ -40,8 +41,9 @@ export function AnalysisResultView({
   collapseDeepSecondarySections = false,
 }: AnalysisResultViewProps) {
   const showLearn = sections === "all" && result.learnCards.length > 0;
-  const showSummary = sections !== "deep";
-  const showInsights = sections !== "summary";
+  const showSummary = sections !== "deep" && sections !== "insights";
+  const showInsights =
+    sections === "all" || sections === "overview" || sections === "insights" || sections === "deep";
   const showRisks = sections !== "summary" && result.risksOrWarnings.length > 0;
   const showActions = sections !== "summary" && result.actionItems.length > 0;
   const insightTracked = useRef(false);
@@ -56,10 +58,7 @@ export function AnalysisResultView({
     });
   }, [sections, result.keyInsights.length]);
 
-  const summaryTitle = uiSectionLabels?.summary ?? "Summary";
-  const insightsTitle = uiSectionLabels?.keyInsights ?? "Key insights";
-  const risksTitle = uiSectionLabels?.risks ?? "Risks & warnings";
-  const actionsTitle = uiSectionLabels?.actions ?? "Action items";
+  const sectionLabels = getModeResultSectionLabels(modeId, uiSectionLabels);
 
   const body = (
     <>
@@ -79,7 +78,11 @@ export function AnalysisResultView({
           </div>
           {showToolbar ? (
             <div className="mt-3">
-              <AnalysisToolbar result={result} />
+              <AnalysisToolbar
+                result={result}
+                modeId={modeId}
+                uiSectionLabels={uiSectionLabels}
+              />
             </div>
           ) : null}
         </header>
@@ -87,14 +90,14 @@ export function AnalysisResultView({
 
       <div className={embedded ? "" : "divide-y divide-white/[0.04] px-4"}>
         {showSummary ? (
-          <CollapsibleSection title={summaryTitle} defaultOpen>
+          <CollapsibleSection title={sectionLabels.summary} defaultOpen>
             <p className="max-w-prose text-sm leading-[1.7] text-zinc-400">{result.summary}</p>
           </CollapsibleSection>
         ) : null}
 
         {showInsights ? (
           <CollapsibleSection
-            title={insightsTitle}
+            title={sectionLabels.keyInsights}
             count={result.keyInsights.length}
             defaultOpen
           >
@@ -104,7 +107,7 @@ export function AnalysisResultView({
 
         {showRisks ? (
           <CollapsibleSection
-            title={risksTitle}
+            title={sectionLabels.risks}
             count={result.risksOrWarnings.length}
             defaultOpen={!collapseDeepSecondarySections}
           >
@@ -114,7 +117,7 @@ export function AnalysisResultView({
 
         {showActions ? (
           <CollapsibleSection
-            title={actionsTitle}
+            title={sectionLabels.actions}
             count={result.actionItems.length}
             defaultOpen={!collapseDeepSecondarySections}
           >
