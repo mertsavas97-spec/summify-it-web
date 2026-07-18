@@ -68,3 +68,32 @@ export const uploadLimiter = rateLimit({
   max: 30,
 });
 
+/** Public share Play — audio lesson (per IP + share + kind). */
+export const shareAudioPlayLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 2,
+});
+
+/** Public share Play — podcast is heavier (per IP + share + kind). */
+export const sharePodcastPlayLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 1,
+});
+
+/** Cap how many share Play calls one IP can make across all shares. */
+export const sharePlayIpGlobalLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 6,
+});
+
+/** Cap Polly burn on a single viral share (all visitors). */
+export const shareAudioShareGlobalLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 24,
+});
+
+export const sharePodcastShareGlobalLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 12,
+});
+

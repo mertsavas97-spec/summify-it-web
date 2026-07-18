@@ -260,8 +260,13 @@ export function AnalysisPracticeSession({
         throw new Error(payload.error ?? "Couldn't create a practice set. Try again.");
       }
       if (startAfter) {
-        router.push(learnPracticeStartHref(analysisId));
-        router.refresh();
+        // Never route live (unsaved) upload sessions away from the results workspace.
+        if (practicePersisted && analysisId !== "live-analysis") {
+          router.push(learnPracticeStartHref(analysisId));
+          router.refresh();
+        } else if (accessibleCards.length > 0) {
+          startSession(accessibleCards, true);
+        }
       } else {
         router.refresh();
       }
@@ -456,9 +461,9 @@ export function AnalysisPracticeSession({
 
   return (
     <>
-    <section className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-4 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-3 sm:p-6">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
             {isWeakPass ? "Review weak cards" : "Practice session"}
           </p>
@@ -474,7 +479,7 @@ export function AnalysisPracticeSession({
         </p>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-zinc-500">
+      <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
         <span>
           Got it <strong className="text-emerald-300/90">{passGotIt}</strong>
         </span>
@@ -493,7 +498,7 @@ export function AnalysisPracticeSession({
 
       <article
         key={active.id}
-        className="mt-6 min-h-[280px] rounded-xl border border-violet-500/15 bg-zinc-950/70 p-4 sm:min-h-[300px] sm:p-5"
+        className="mt-6 min-h-[220px] min-w-0 rounded-xl border border-violet-500/15 bg-zinc-950/70 p-3 sm:min-h-[300px] sm:p-5"
       >
         <PracticeProgressionBadges
           recallDifficulty={active.recallDifficulty}
@@ -501,18 +506,22 @@ export function AnalysisPracticeSession({
           cognitiveLevel={active.cognitiveLevel}
         />
 
-        <p className="mt-4 text-lg font-semibold leading-snug text-white sm:text-xl">{active.prompt}</p>
+        <p className="mt-4 break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere] sm:text-xl">
+          {active.prompt}
+        </p>
 
-        <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4">
+        <div className="mt-5 min-w-0 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 sm:p-4">
           {revealed ? (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">{active.answer}</p>
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-300 [overflow-wrap:anywhere]">
+              {active.answer}
+            </p>
           ) : (
             <button
               type="button"
               onClick={() => setRevealed(true)}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-4 py-10 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200"
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-white/[0.08] px-3 py-8 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200 sm:px-4 sm:py-10"
             >
-              <Eye className="h-5 w-5" aria-hidden />
+              <Eye className="h-5 w-5 shrink-0" aria-hidden />
               Reveal answer
             </button>
           )}

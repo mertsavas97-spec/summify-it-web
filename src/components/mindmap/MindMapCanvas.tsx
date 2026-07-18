@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type MouseEvent } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -43,7 +43,7 @@ function MindMapCanvasInner({ graph }: MindMapCanvasInnerProps) {
   );
 
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node<MindMapFlowNodeData>) => {
+    (_: MouseEvent, node: Node<MindMapFlowNodeData>) => {
       setFocusedId(node.id);
       setCenter(node.position.x + 110, node.position.y + 40, {
         zoom: 1.1,

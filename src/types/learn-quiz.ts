@@ -47,4 +47,6 @@ export type AnalysisQuizInput = {
   actionItems: string[];
   learnCards: LearnCardOutput[];
   maxQuestions?: number;
+  /** Optional seed so Learn/Quiz versions produce a different order. */
+  variantSeed?: string;
 };

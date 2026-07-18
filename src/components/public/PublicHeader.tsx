@@ -93,14 +93,23 @@ export function PublicHeader() {
           <div className="shrink-0">
             <MobilePublicNav />
           </div>
-          <Button
-            href="/upload"
-            size="sm"
-            className="shrink-0 whitespace-nowrap px-3 py-1.5 text-xs sm:px-4"
-          >
-            <span className="hidden min-[390px]:inline">Start summarizing</span>
-            <span className="min-[390px]:hidden">Start</span>
-          </Button>
+          {pathname === "/upload" ? (
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("workspace:request-new-analysis"));
+              }}
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-1.5 text-xs font-medium text-white shadow-lg shadow-violet-500/20 transition-all hover:from-violet-400 hover:to-indigo-400 sm:px-4"
+            >
+              <span className="hidden min-[390px]:inline">New analysis</span>
+              <span className="min-[390px]:hidden">New</span>
+            </button>
+          ) : (
+            <Button href="/upload" size="sm" className="shrink-0 whitespace-nowrap px-3 py-1.5 text-xs sm:px-4">
+              <span className="hidden min-[390px]:inline">Start summarizing</span>
+              <span className="min-[390px]:hidden">Start</span>
+            </Button>
+          )}
         </div>
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
@@ -129,9 +138,21 @@ export function PublicHeader() {
           <div className="hidden md:block">
             <HeaderAuth />
           </div>
-          <Button href="/upload" size="sm" className="hidden sm:inline-flex">
-            Start summarizing
-          </Button>
+          {pathname === "/upload" ? (
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("workspace:request-new-analysis"));
+              }}
+              className="hidden items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/20 transition-all hover:from-violet-400 hover:to-indigo-400 sm:inline-flex"
+            >
+              New analysis
+            </button>
+          ) : (
+            <Button href="/upload" size="sm" className="hidden sm:inline-flex">
+              Start summarizing
+            </Button>
+          )}
         </div>
       </div>
     </header>

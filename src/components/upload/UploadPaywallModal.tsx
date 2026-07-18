@@ -13,6 +13,10 @@ type UploadPaywallModalProps = {
   scholarCheckoutEligible: boolean;
   isAuthenticated: boolean;
   onClose: () => void;
+  /** Snapshot guest analysis before free-account auth. */
+  onAuthIntent?: () => void;
+  /** Where free-account login should return (defaults to /upload). */
+  authReturnTo?: string;
 };
 
 export function UploadPaywallModal({
@@ -21,15 +25,15 @@ export function UploadPaywallModal({
   scholarCheckoutEligible,
   isAuthenticated,
   onClose,
+  onAuthIntent,
+  authReturnTo = "/upload",
 }: UploadPaywallModalProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [interval, setInterval] = useState<BillingInterval>("monthly");
 
   const freeAuthHref = useMemo(() => {
-    // Ensure this modal never routes users back to /upload.
-    // We only open auth and then send them to pricing/account flows.
-    return `/login?next=${encodeURIComponent("/pricing")}`;
-  }, []);
+    return `/login?returnTo=${encodeURIComponent(authReturnTo)}`;
+  }, [authReturnTo]);
 
   const plans = useMemo(
     () => [
@@ -89,7 +93,7 @@ export function UploadPaywallModal({
         cta: { label: "Start Team", kind: "checkout" as const, plan: "team" as const },
       },
     ],
-    [interval],
+    [freeAuthHref, interval],
   );
 
   useEffect(() => {
@@ -127,16 +131,15 @@ export function UploadPaywallModal({
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative w-full max-w-6xl overflow-x-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-b from-zinc-900 to-zinc-950 p-5 shadow-2xl shadow-violet-500/10 outline-none sm:p-6"
-        style={{ maxHeight: "85vh" }}
+        className="relative max-h-[min(85vh,100dvh-2rem)] w-full max-w-6xl overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-violet-500/20 bg-gradient-to-b from-zinc-900 to-zinc-950 p-4 shadow-2xl shadow-violet-500/10 outline-none sm:p-6"
       >
         <header className="text-center">
           <h2 id="upload-paywall-title" className="text-xl font-semibold text-white sm:text-2xl">
-            {guestMode ? "Save your AI summary" : "You’ve reached your free daily limit."}
+            {guestMode ? "Keep going with a free account" : "You’ve reached your free daily limit."}
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
             {guestMode
-              ? "Create a free account to keep your summaries, flashcards, listening options, and saved history."
+              ? "Your guest analysis is used. Create a free account to save your last result and unlock 5 analyses per day."
               : "Upgrade to keep summarizing, listening, and practicing today."}
           </p>
           {guestMode ? <p className="mt-2 text-xs text-zinc-500">No credit card required.</p> : null}
@@ -145,13 +148,21 @@ export function UploadPaywallModal({
         {guestMode ? (
           <div className="mx-auto mt-5 max-w-xl rounded-2xl border border-violet-400/20 bg-violet-950/20 p-4">
             <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-center">
-              <Button href={freeAuthHref} size="md" className="sm:min-w-[220px]">
+              <Button
+                href={freeAuthHref}
+                size="md"
+                className="sm:min-w-[220px]"
+                onClick={() => onAuthIntent?.()}
+              >
                 Create free account
               </Button>
               <Button href="/pricing" variant="secondary" size="md" className="sm:min-w-[160px]">
                 View plans
               </Button>
             </div>
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-zinc-500">
+              After you sign up, we’ll take you back to your analysis.
+            </p>
           </div>
         ) : null}
 
@@ -239,7 +250,13 @@ export function UploadPaywallModal({
                         {plan.cta.label}
                       </Button>
                     ) : plan.cta.kind === "href" ? (
-                        <Button href={plan.cta.href} variant={isPro && !guestMode ? "primary" : "secondary"} className="w-full" size="md">
+                        <Button
+                          href={plan.cta.href}
+                          variant={isPro && !guestMode ? "primary" : "secondary"}
+                          className="w-full"
+                          size="md"
+                          onClick={() => onAuthIntent?.()}
+                        >
                         {plan.cta.label}
                       </Button>
                     ) : plan.cta.kind === "scholar" ? (

@@ -63,6 +63,10 @@ export type PublicSharedAnalysis = {
   learn_cards: LearnCardOutput[];
   shared_at: string | null;
   created_at: string;
+  /** Present when the owner generated an Audio lesson script for this analysis. */
+  audioStudy?: AudioStudyMetadata | null;
+  /** Present when the owner generated a Podcast discussion script for this analysis. */
+  podcastDiscussion?: PodcastDiscussionMetadata | null;
 };
 
 /** List/card shape — same columns, used on dashboard. */

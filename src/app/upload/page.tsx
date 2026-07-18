@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { UploadWorkspace } from "@/components/upload/UploadWorkspace";
 import { ProductEventTracker } from "@/components/analytics/ProductEventTracker";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -19,7 +20,9 @@ export default function UploadPage() {
           ]),
         ]}
       />
-      <UploadWorkspace />
+      <Suspense fallback={<div className="min-h-[40vh]" aria-hidden />}>
+        <UploadWorkspace />
+      </Suspense>
     </>
   );
 }

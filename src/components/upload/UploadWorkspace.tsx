@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { uploadPresigned } from "@vercel/blob/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Check,
   FileText,
@@ -411,11 +412,13 @@ function GeneratingAnalysisState({
   sourceTitle,
   experienceLabel,
   modeLabel,
+  modeDescription,
 }: {
   experienceId: LearningExperienceId;
   sourceTitle?: string | null;
   experienceLabel?: string | null;
   modeLabel?: string | null;
+  modeDescription?: string | null;
 }) {
   const copy = getGeneratingExperienceCopy(experienceId);
   const Icon = copy.Icon;
@@ -423,17 +426,25 @@ function GeneratingAnalysisState({
 
   return (
     <section
-      className={`mx-auto w-full max-w-xl rounded-3xl border p-6 sm:p-8 ${copy.shell}`}
+      className={`relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border p-6 sm:p-8 ${copy.shell}`}
       data-workspace-analysis-generating
       data-experience={experienceId}
+      aria-busy="true"
+      aria-live="polite"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div
+        className="pointer-events-none absolute inset-0 generating-surface-shimmer opacity-40"
+        aria-hidden
+      />
+
+      <div className="relative flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <span
-            className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${copy.iconWrap}`}
+            className={`relative mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${copy.iconWrap}`}
             aria-hidden
           >
-            <Icon className="h-5 w-5" />
+            <span className="absolute inset-0 animate-ping rounded-2xl bg-current opacity-10" />
+            <Icon className="relative h-5 w-5 animate-[generating-icon-breathe_2s_ease-in-out_infinite]" />
           </span>
           <div className="min-w-0">
             <p
@@ -454,13 +465,13 @@ function GeneratingAnalysisState({
             className={`h-1.5 w-1.5 animate-pulse rounded-full ${copy.badgeDot}`}
             aria-hidden
           />
-          Working
+          <span className="generating-working-label">Working</span>
         </span>
       </div>
 
       {(sourceTitle || experienceLabel || modeLabel) && (
         <dl
-          className={`mt-5 grid gap-2 rounded-2xl border border-white/[0.06] bg-black/25 p-3 text-xs ${
+          className={`relative mt-5 grid gap-2 rounded-2xl border border-white/[0.06] bg-black/25 p-3 text-xs ${
             modeLabel ? "sm:grid-cols-3" : "sm:grid-cols-2"
           }`}
         >
@@ -471,21 +482,28 @@ function GeneratingAnalysisState({
             </div>
           ) : null}
           {experienceLabel ? (
-            <div>
+            <div className="min-w-0">
               <dt className="text-zinc-600">Experience</dt>
               <dd className="mt-0.5 font-medium text-zinc-200">{experienceLabel}</dd>
             </div>
           ) : null}
           {modeLabel ? (
-            <div>
-              <dt className="text-zinc-600">Mode</dt>
-              <dd className="mt-0.5 font-medium text-zinc-200">{modeLabel}</dd>
+            <div className="min-w-0 sm:col-span-1">
+              <dt className="text-zinc-600">Intelligence mode</dt>
+              <dd className="mt-0.5 font-medium text-violet-100">{modeLabel}</dd>
+              {modeDescription ? (
+                <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{modeDescription}</p>
+              ) : (
+                <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                  Shapes how the AI summary is written for this source.
+                </p>
+              )}
             </div>
           ) : null}
         </dl>
       )}
 
-      <ol className="mt-6 space-y-3" aria-label="Analysis progress">
+      <ol className="relative mt-6 space-y-3" aria-label="Analysis progress">
         {copy.stages.map((stage, index) => {
           const isActive = Boolean(stage.active);
           return (
@@ -495,11 +513,17 @@ function GeneratingAnalysisState({
                   stage.done
                     ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
                     : isActive
-                      ? copy.activeRing
+                      ? `${copy.activeRing} generating-step-glow`
                       : "border-white/[0.08] bg-white/[0.03] text-zinc-600"
                 }`}
               >
-                {stage.done ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                {stage.done ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : isActive ? (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  index + 1
+                )}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
@@ -532,11 +556,11 @@ function GeneratingAnalysisState({
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
                   <div
-                    className={`h-full rounded-full transition-all ${
+                    className={`h-full rounded-full ${
                       stage.done
                         ? "w-full bg-emerald-400/80"
                         : isActive
-                          ? `w-2/3 animate-pulse ${copy.progressBar}`
+                          ? `generating-progress-indeterminate ${copy.progressBar}`
                           : "w-0"
                     }`}
                   />
@@ -549,7 +573,7 @@ function GeneratingAnalysisState({
 
       {isListenPath ? (
         <p
-          className={`mt-5 rounded-xl border border-white/[0.06] bg-black/20 px-3.5 py-2.5 text-xs leading-relaxed ${copy.activeBg}`}
+          className={`relative mt-5 rounded-xl border border-white/[0.06] bg-black/20 px-3.5 py-2.5 text-xs leading-relaxed ${copy.activeBg}`}
         >
           <span className="font-semibold text-white/90">{copy.nextHint}.</span>{" "}
           This step only prepares your source — generation starts when you tap the button on the
@@ -817,8 +841,12 @@ export function UploadWorkspace() {
     (restoredPendingAnalysis?.analysisMode as IntelligenceModeId | undefined) ??
       getDefaultIntelligenceModeId(),
   );
-  const [learningExperience, setLearningExperience] =
-    useState<LearningExperienceId>("summary-learn");
+  const searchParams = useSearchParams();
+  const [learningExperience, setLearningExperience] = useState<LearningExperienceId>(() => {
+    const intent = searchParams.get("intent");
+    if (intent === "audio" || intent === "podcast") return intent;
+    return "summary-learn";
+  });
   const [modeAutoSuggested, setModeAutoSuggested] = useState(false);
   const [showTextComposer, setShowTextComposer] = useState(
     () => (restoredPendingAnalysis?.inputMode ?? "file") === "text" || Boolean(restoredPendingAnalysis?.rawText?.trim()),
@@ -842,10 +870,29 @@ export function UploadWorkspace() {
   const [urlPipelineActive, setUrlPipelineActive] = useState(false);
   const [urlAnalysisError, setUrlAnalysisError] = useState<string | null>(null);
   const [injectedAnalysis, setInjectedAnalysis] =
-    useState<InjectedAnalysisPayload | null>(
-      (restoredPendingAnalysis?.injectedAnalysis as InjectedAnalysisPayload | null | undefined) ??
-        null,
-    );
+    useState<InjectedAnalysisPayload | null>(() => {
+      const fromPending =
+        (restoredPendingAnalysis?.injectedAnalysis as InjectedAnalysisPayload | null | undefined) ??
+        null;
+      if (fromPending) return fromPending;
+
+      const result =
+        (restoredPendingAnalysis?.analysisResult as AnalysisResult | null | undefined) ?? null;
+      const intelligence =
+        (restoredPendingAnalysis?.analysisIntelligence as
+          | AnalysisIntelligenceMetadata
+          | null
+          | undefined) ?? null;
+      if (!result || !intelligence) return null;
+
+      return {
+        result,
+        providerUsed: "guest-session",
+        fallbackUsed: false,
+        intelligence,
+        savedAnalysisId: restoredPendingAnalysis?.analysisId ?? null,
+      };
+    });
   const [latestAnalysisResult, setLatestAnalysisResult] =
     useState<AnalysisResult | null>(
       (restoredPendingAnalysis?.analysisResult as AnalysisResult | null | undefined) ?? null,
@@ -910,10 +957,6 @@ export function UploadWorkspace() {
         handleRecommendation as EventListener,
       );
     };
-  }, []);
-
-  const persistGuestSaveHandoff = useCallback(() => {
-    saveAuthReturnTo("/upload");
   }, []);
 
   const persistPendingAnalysis = useCallback(
@@ -984,6 +1027,60 @@ export function UploadWorkspace() {
     [analysisMode, extractionMeta, fileName, getSourceType, inputMode, sourceUrl],
   );
 
+  const persistGuestSaveHandoff = useCallback(() => {
+    const safeReturnTo = saveAuthReturnTo("/upload");
+
+    const injected =
+      injectedAnalysis ??
+      (latestAnalysisResult && analysisIntelligence
+        ? {
+            result: latestAnalysisResult,
+            providerUsed: "guest-session",
+            fallbackUsed: false,
+            intelligence: analysisIntelligence,
+            savedAnalysisId: latestSavedAnalysisId,
+          }
+        : null);
+
+    if (latestAnalysisResult && analysisIntelligence) {
+      saveGhostSession({
+        analysisResult: latestAnalysisResult,
+        providerUsed: injected?.providerUsed ?? "guest-session",
+        fallbackUsed: injected?.fallbackUsed ?? false,
+        intelligenceMetadata: analysisIntelligence,
+        ...buildGhostCaptureContext(),
+      });
+    }
+
+    savePendingAnalysis({
+      analysisId: latestSavedAnalysisId,
+      returnTo: safeReturnTo,
+      inputMode,
+      fileName,
+      sourceUrl,
+      rawText,
+      extractStatus,
+      extractionMeta,
+      analysisMode,
+      analysisResult: latestAnalysisResult,
+      injectedAnalysis: injected,
+      analysisIntelligence,
+    });
+  }, [
+    analysisIntelligence,
+    analysisMode,
+    buildGhostCaptureContext,
+    extractStatus,
+    extractionMeta,
+    fileName,
+    injectedAnalysis,
+    inputMode,
+    latestAnalysisResult,
+    latestSavedAnalysisId,
+    rawText,
+    sourceUrl,
+  ]);
+
   const fireUploadStarted = useCallback(
     (mode: WorkspaceInputMode, meta: ExtractionMetadata | null, sessionKey: string) => {
       if (uploadStartedRef.current.has(sessionKey)) return;
@@ -1046,6 +1143,20 @@ export function UploadWorkspace() {
     resetAnalysisState();
   }, [resetAnalysisState]);
 
+  useEffect(() => {
+    function handleRequestNewAnalysis() {
+      const confirmed = window.confirm(
+        "Start a new analysis? Your current results stay available only if you’ve saved them.",
+      );
+      if (!confirmed) return;
+      handleReplaceSource();
+    }
+
+    window.addEventListener("workspace:request-new-analysis", handleRequestNewAnalysis);
+    return () => {
+      window.removeEventListener("workspace:request-new-analysis", handleRequestNewAnalysis);
+    };
+  }, [handleReplaceSource]);
 
   const runYoutubeAnalysis = useCallback(
     async (text: string, meta: YoutubeExtractionMetadata) => {
@@ -1603,6 +1714,8 @@ export function UploadWorkspace() {
         scholarCheckoutEligible={scholarCheckoutEligible}
         isAuthenticated={workspaceEntitlement.isAuthenticated}
         onClose={() => setShowAnalysisPaywall(false)}
+        onAuthIntent={persistGuestSaveHandoff}
+        authReturnTo="/upload"
       />
       <div
         className={`mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8 ${
@@ -1660,6 +1773,7 @@ export function UploadWorkspace() {
           exhausted={guestBannerExhausted}
           className={isEmptyWorkspace ? "mb-3" : "mb-5"}
           compact={isEmptyWorkspace}
+          onCreateAccountClick={persistGuestSaveHandoff}
         />
       ) : null}
 
@@ -1850,6 +1964,11 @@ export function UploadWorkspace() {
               modeLabel={
                 learningExperience === "summary-learn"
                   ? getIntelligenceModeById(analysisMode)?.label ?? analysisMode
+                  : null
+              }
+              modeDescription={
+                learningExperience === "summary-learn"
+                  ? getIntelligenceModeById(analysisMode)?.shortDescription ?? null
                   : null
               }
             />

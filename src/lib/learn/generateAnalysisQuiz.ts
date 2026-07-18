@@ -206,5 +206,9 @@ export function generateAnalysisQuiz(input: AnalysisQuizInput): QuizQuestion[] {
     }
   }
 
-  return questions.slice(0, maxQuestions);
+  const ordered = input.variantSeed
+    ? shuffleWithSeed(questions, `quiz-variant-${input.variantSeed}`)
+    : questions;
+
+  return ordered.slice(0, maxQuestions);
 }

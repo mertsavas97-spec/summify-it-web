@@ -223,7 +223,7 @@ export function LearningExperienceSelector({
         </div>
       ) : null}
 
-      <div className={`grid gap-2 sm:gap-3 ${compact ? "grid-cols-3" : "gap-4 md:grid-cols-3"}`}>
+      <div className="grid min-w-0 grid-cols-3 gap-2 sm:gap-3">
         {LEARNING_EXPERIENCE_OPTIONS.map((option) => {
           const Icon = ICONS[option.id];
           const visual = EXPERIENCE_VISUALS[option.id];
@@ -237,10 +237,14 @@ export function LearningExperienceSelector({
               disabled={disabled}
               aria-pressed={selected}
               onClick={() => onChange(option.id)}
-              className={`group relative flex flex-col overflow-hidden rounded-2xl border text-left transition-all duration-300 ${
-                compact ? "min-h-[138px] p-3" : "min-h-[220px] p-5"
+              className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border text-left transition-all duration-300 ${
+                compact
+                  ? "min-h-[120px] p-2.5 sm:min-h-[138px] sm:p-3"
+                  : "min-h-[148px] p-3 sm:min-h-[220px] sm:p-5"
               } ${palette.border} ${palette.bg} ${
-                selected ? `${visual.selected.glow} scale-[1.02]` : "hover:scale-[1.01]"
+                selected
+                  ? `${visual.selected.glow} sm:scale-[1.02]`
+                  : "sm:hover:scale-[1.01]"
               } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
             >
               <span
@@ -255,11 +259,11 @@ export function LearningExperienceSelector({
                 aria-hidden
               />
 
-              <div className="relative flex items-start justify-between gap-2">
+              <div className="relative flex min-w-0 items-start justify-between gap-1.5">
                 <div className="min-w-0">
                   {!compact ? (
                     <p
-                      className={`text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                      className={`hidden text-[10px] font-semibold uppercase tracking-[0.12em] sm:block ${
                         selected
                           ? option.id === "summary-learn"
                             ? "text-violet-300/90"
@@ -273,12 +277,12 @@ export function LearningExperienceSelector({
                     </p>
                   ) : null}
                   <span
-                    className={`mt-1.5 inline-flex items-center justify-center rounded-xl ring-1 transition-all ${
-                      compact ? "h-9 w-9" : "h-11 w-11"
+                    className={`mt-0.5 inline-flex items-center justify-center rounded-xl ring-1 transition-all sm:mt-1.5 ${
+                      compact ? "h-8 w-8 sm:h-9 sm:w-9" : "h-9 w-9 sm:h-11 sm:w-11"
                     } ${palette.iconWrap}`}
                   >
                     <Icon
-                      className={`${compact ? "h-4 w-4" : "h-5 w-5"} ${palette.icon}`}
+                      className={`${compact ? "h-3.5 w-3.5 sm:h-4 sm:w-4" : "h-4 w-4 sm:h-5 sm:w-5"} ${palette.icon}`}
                       strokeWidth={1.75}
                     />
                   </span>
@@ -287,54 +291,74 @@ export function LearningExperienceSelector({
                 {selected ? (
                   <span
                     className={`inline-flex shrink-0 items-center gap-1 rounded-full border font-semibold uppercase tracking-wide backdrop-blur-sm ${
-                      compact ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"
+                      compact
+                        ? "px-1.5 py-0.5 text-[8px] sm:px-2 sm:text-[9px]"
+                        : "px-1.5 py-0.5 text-[8px] sm:px-2.5 sm:py-1 sm:text-[10px]"
                     } ${visual.selected.badge}`}
                   >
-                    {!compact ? <Sparkles className="h-3 w-3 opacity-90" /> : null}
+                    {!compact ? (
+                      <Sparkles className="hidden h-3 w-3 opacity-90 sm:inline" />
+                    ) : null}
                     Selected
                   </span>
                 ) : !compact ? (
                   <span
-                    className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${palette.chip}`}
+                    className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium sm:inline ${palette.chip}`}
                   >
                     {visual.formatLabel}
                   </span>
                 ) : null}
               </div>
 
-              <div className={`relative flex-1 ${compact ? "mt-2.5" : "mt-4"}`}>
+              <div className={`relative min-w-0 flex-1 ${compact ? "mt-2" : "mt-2.5 sm:mt-4"}`}>
                 <h3
-                  className={`font-semibold tracking-tight ${compact ? "text-sm" : "text-base"} ${
-                    selected ? visual.selected.title : visual.idle.title
-                  }`}
+                  className={`break-words font-semibold tracking-tight [overflow-wrap:anywhere] ${
+                    compact ? "text-xs leading-snug sm:text-sm" : "text-sm leading-snug sm:text-base"
+                  } ${selected ? visual.selected.title : visual.idle.title}`}
                 >
                   {option.title}
                 </h3>
                 {!compact ? (
-                  <p className="mt-1.5 max-w-[18rem] text-xs leading-relaxed text-zinc-500">
+                  <p className="mt-1.5 hidden max-w-[18rem] text-xs leading-relaxed text-zinc-500 sm:block">
                     {option.description}
                   </p>
                 ) : null}
               </div>
 
-              <div className={`relative flex flex-wrap gap-1 ${compact ? "mt-2" : "mt-4"}`}>
-                {option.chips.map((chip) => (
+              <div
+                className={`relative flex min-w-0 flex-wrap gap-1 ${
+                  compact ? "mt-2" : "mt-2.5 sm:mt-4"
+                }`}
+              >
+                {(compact ? option.chips.slice(0, 1) : option.chips.slice(0, 2)).map((chip) => (
                   <span
                     key={chip}
-                    className={`rounded-full border font-medium ${
-                      compact ? "px-1.5 py-0.5 text-[9px]" : "px-2.5 py-0.5 text-[10px]"
+                    className={`max-w-full truncate rounded-full border font-medium sm:max-w-none ${
+                      compact
+                        ? "px-1.5 py-0.5 text-[8px] sm:text-[9px]"
+                        : "px-1.5 py-0.5 text-[8px] sm:px-2.5 sm:text-[10px]"
                     } ${palette.chip}`}
                   >
                     {chip}
                   </span>
                 ))}
+                {!compact
+                  ? option.chips.slice(2).map((chip) => (
+                      <span
+                        key={chip}
+                        className={`hidden rounded-full border px-2.5 py-0.5 text-[10px] font-medium sm:inline ${palette.chip}`}
+                      >
+                        {chip}
+                      </span>
+                    ))
+                  : null}
               </div>
 
               <ExperienceDecor id={option.id} selected={selected} compact={compact} />
 
               {selected && !compact ? (
                 <span
-                  className={`absolute bottom-4 right-4 flex h-6 w-6 items-center justify-center rounded-full shadow-lg ${visual.selected.check}`}
+                  className={`absolute bottom-3 right-3 hidden h-6 w-6 items-center justify-center rounded-full shadow-lg sm:bottom-4 sm:right-4 sm:flex ${visual.selected.check}`}
                 >
                   <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </span>

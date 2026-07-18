@@ -29,16 +29,20 @@ export function MindMapPanel({
 }: MindMapPanelProps) {
   const result = useMemo(() => {
     if (!active) return null;
-    return analysisToMindMap({
-      title,
-      summary,
-      keyInsights,
-      risksOrWarnings,
-      actionItems,
-      learnCards,
-      documentTypeGuess,
-      sourceKind,
-    });
+    try {
+      return analysisToMindMap({
+        title,
+        summary,
+        keyInsights,
+        risksOrWarnings,
+        actionItems,
+        learnCards,
+        documentTypeGuess,
+        sourceKind,
+      });
+    } catch {
+      return { ok: false as const, reason: "Mind map generation failed" };
+    }
   }, [
     active,
     title,

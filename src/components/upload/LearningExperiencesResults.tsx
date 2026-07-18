@@ -6,6 +6,7 @@ import type { LearningExperienceId } from "@/types/learning-experience";
 import { ListeningExperienceSuggestions } from "./ListeningExperienceSuggestions";
 import { SummaryLearnResultsPanel } from "./SummaryLearnResultsPanel";
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { DocumentProfileMetadata } from "@/types/intelligence";
 import type { IntelligenceModeId } from "@/types/modes";
 import type { PlanId } from "@/types/plan";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
@@ -24,6 +25,11 @@ type LearningExperiencesResultsProps = {
   modeLabel: string;
   sourceKindLabel: string;
   savedAnalysisId?: string | null;
+  extractedCharacters?: number | null;
+  estimatedPages?: number | null;
+  slideCount?: number | null;
+  sourceQuality?: DocumentProfileMetadata["sourceQuality"] | null;
+  sourceQualityNote?: string | null;
   audioContent: ReactNode;
   podcastContent: ReactNode;
   onTryAudio?: () => void;
@@ -67,6 +73,11 @@ export function LearningExperiencesResults({
   modeLabel,
   sourceKindLabel,
   savedAnalysisId,
+  extractedCharacters,
+  estimatedPages,
+  slideCount,
+  sourceQuality,
+  sourceQualityNote,
   audioContent,
   podcastContent,
   onTryAudio,
@@ -125,6 +136,11 @@ export function LearningExperiencesResults({
       sourceType={sourceType}
       sourceLabel={sourceLabel}
       savedAnalysisId={savedAnalysisId}
+      extractedCharacters={extractedCharacters}
+      estimatedPages={estimatedPages}
+      slideCount={slideCount}
+      sourceQuality={sourceQuality}
+      sourceQualityNote={sourceQualityNote}
       onTryAudio={onTryAudio}
       onTryPodcast={onTryPodcast}
       footerContent={footerContent}

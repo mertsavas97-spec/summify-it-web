@@ -18,8 +18,9 @@ function slugId(prefix: string, index: number): string {
   return `${prefix}-${index}`;
 }
 
-function truncate(text: string, max: number): string {
-  const t = text.trim();
+function truncate(text: string | null | undefined, max: number): string {
+  const t = typeof text === "string" ? text.trim() : "";
+  if (!t) return "";
   if (t.length <= max) return t;
   return `${t.slice(0, max - 1).trimEnd()}…`;
 }
@@ -88,7 +89,9 @@ function addLearnBranch(
   rootId: string,
   learnCards: MindMapGenerationInput["learnCards"],
 ): void {
-  const cards = learnCards.slice(0, MAX_LEARN_NODES);
+  const cards = learnCards
+    .filter((card) => Boolean(card?.title?.trim() || card?.content?.trim()))
+    .slice(0, MAX_LEARN_NODES);
   if (cards.length === 0) return;
 
   const groupId = "group-learn";
@@ -106,10 +109,12 @@ function addLearnBranch(
 
   cards.forEach((card, i) => {
     const nodeId = slugId("learn", i);
+    const title = truncate(card.title, 64) || truncate(card.content, 64) || `Concept ${i + 1}`;
+    const insight = truncate(card.content, 120) || truncate(card.title, 120);
     nodes.push({
       id: nodeId,
-      title: truncate(card.title, 64),
-      insight: truncate(card.content, 120),
+      title,
+      insight: insight || undefined,
       groupId,
       parentId: groupId,
       metadata: {
@@ -283,21 +288,63 @@ function splitNarrativeBeats(summary: string): string[] {
 export function analysisToMindMap(
   input: MindMapGenerationInput,
 ): MindMapGenerationResult {
+  const title = typeof input.title === "string" ? input.title : "";
+  const summary = typeof input.summary === "string" ? input.summary : "";
+  const keyInsights = Array.isArray(input.keyInsights)
+    ? input.keyInsights.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const risksOrWarnings = Array.isArray(input.risksOrWarnings)
+    ? input.risksOrWarnings.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const actionItems = Array.isArray(input.actionItems)
+    ? input.actionItems.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const learnCards = Array.isArray(input.learnCards)
+    ? input.learnCards
+        .filter((card) => card && typeof card === "object")
+        .map((card) => ({
+          type: typeof card.type === "string" ? card.type : "concept",
+          title: typeof card.title === "string" ? card.title : "",
+          content: typeof card.content === "string" ? card.content : "",
+        }))
+        .filter((card) => card.title.trim().length > 0 || card.content.trim().length > 0)
+    : [];
+
+  const normalized: MindMapGenerationInput = {
+    ...input,
+    title: title || "Shared analysis",
+    summary,
+    keyInsights,
+    risksOrWarnings,
+    actionItems,
+    learnCards,
+  };
+
   const hasContent =
-    input.summary.trim().length > 0 ||
-    input.keyInsights.length > 0 ||
-    input.learnCards.length > 0;
+    normalized.summary.trim().length > 0 ||
+    normalized.keyInsights.length > 0 ||
+    normalized.learnCards.length > 0;
 
   if (!hasContent) {
     return { ok: false, reason: "Insufficient analysis content" };
   }
 
-  const profile = resolveMindMapProfile(input.documentTypeGuess, input.sourceKind);
-  const graph = buildProfileGraph(input, profile);
+  try {
+    const profile = resolveMindMapProfile(
+      normalized.documentTypeGuess,
+      normalized.sourceKind,
+    );
+    const graph = buildProfileGraph(normalized, profile);
 
-  if (graph.nodes.length < 2) {
-    return { ok: false, reason: "Could not build graph" };
+    if (graph.nodes.length < 2) {
+      return { ok: false, reason: "Could not build graph" };
+    }
+
+    return { ok: true, graph };
+  } catch (error) {
+    console.error("[mindmap] analysisToMindMap_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { ok: false, reason: "Mind map generation failed" };
   }
-
-  return { ok: true, graph };
 }

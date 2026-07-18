@@ -18,6 +18,7 @@ export type ResultsSectionId =
 
 type TabMeta = {
   label: string;
+  shortLabel: string;
   Icon: LucideIcon;
   idle: string;
   active: string;
@@ -27,6 +28,7 @@ type TabMeta = {
 const TAB_META: Record<ResultsSectionId, TabMeta> = {
   learn: {
     label: "Learn",
+    shortLabel: "Learn",
     Icon: Brain,
     idle: "border-sky-500/15 bg-sky-500/[0.04] text-sky-200/70 hover:border-sky-400/30 hover:text-sky-100",
     active:
@@ -35,6 +37,7 @@ const TAB_META: Record<ResultsSectionId, TabMeta> = {
   },
   quiz: {
     label: "Quiz",
+    shortLabel: "Quiz",
     Icon: HelpCircle,
     idle: "border-violet-500/15 bg-violet-500/[0.04] text-violet-200/70 hover:border-violet-400/30 hover:text-violet-100",
     active:
@@ -43,6 +46,7 @@ const TAB_META: Record<ResultsSectionId, TabMeta> = {
   },
   summary: {
     label: "Summary",
+    shortLabel: "Summary",
     Icon: BookOpen,
     idle: "border-emerald-500/15 bg-emerald-500/[0.04] text-emerald-200/70 hover:border-emerald-400/30 hover:text-emerald-100",
     active:
@@ -51,6 +55,7 @@ const TAB_META: Record<ResultsSectionId, TabMeta> = {
   },
   insights: {
     label: "Key insights",
+    shortLabel: "Insights",
     Icon: Lightbulb,
     idle: "border-amber-500/15 bg-amber-500/[0.04] text-amber-200/70 hover:border-amber-400/30 hover:text-amber-100",
     active:
@@ -59,6 +64,7 @@ const TAB_META: Record<ResultsSectionId, TabMeta> = {
   },
   flashcards: {
     label: "Flashcards",
+    shortLabel: "Cards",
     Icon: Layers,
     idle: "border-fuchsia-500/15 bg-fuchsia-500/[0.04] text-fuchsia-200/70 hover:border-fuchsia-400/30 hover:text-fuchsia-100",
     active:
@@ -73,6 +79,10 @@ type ResultsSectionTabsProps = {
   onNavigate: (id: ResultsSectionId) => void;
 };
 
+/**
+ * In-flow results section nav. Wraps to multiple rows on mobile so tabs never
+ * overflow horizontally or float over CTAs. Sticky only from `lg` up.
+ */
 export function ResultsSectionTabs({
   sections,
   activeId,
@@ -82,11 +92,11 @@ export function ResultsSectionTabs({
 
   return (
     <nav
-      className="sticky top-[4.25rem] z-20 overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#0d1018]/95 p-1.5 backdrop-blur-md"
+      className="relative z-10 max-w-full rounded-2xl border border-white/[0.08] bg-[#0d1018]/95 p-1.5 backdrop-blur-md lg:sticky lg:top-[4.5rem] lg:z-20"
       aria-label="Results sections"
       data-results-section-tabs
     >
-      <div className="flex min-w-max gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-3 md:grid-cols-5 lg:flex lg:flex-wrap lg:gap-1.5">
         {sections.map((id) => {
           const meta = TAB_META[id];
           const Icon = meta.Icon;
@@ -96,15 +106,16 @@ export function ResultsSectionTabs({
               key={id}
               type="button"
               onClick={() => onNavigate(id)}
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
+              className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-all sm:px-3 sm:text-xs ${
                 active ? meta.active : meta.idle
               }`}
             >
               <Icon
-                className={`h-3.5 w-3.5 ${active ? meta.iconActive : "opacity-80"}`}
+                className={`h-3.5 w-3.5 shrink-0 ${active ? meta.iconActive : "opacity-80"}`}
                 aria-hidden
               />
-              {meta.label}
+              <span className="truncate sm:hidden">{meta.shortLabel}</span>
+              <span className="hidden truncate sm:inline">{meta.label}</span>
             </button>
           );
         })}
@@ -116,6 +127,6 @@ export function ResultsSectionTabs({
 export function scrollToResultsSection(id: ResultsSectionId) {
   const el = document.getElementById(`result-section-${id}`);
   if (!el) return;
-  const top = el.getBoundingClientRect().top + window.scrollY - 120;
+  const top = el.getBoundingClientRect().top + window.scrollY - 88;
   window.scrollTo({ top, behavior: "smooth" });
 }

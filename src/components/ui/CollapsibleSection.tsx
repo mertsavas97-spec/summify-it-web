@@ -9,7 +9,17 @@ type CollapsibleSectionProps = {
   children: React.ReactNode;
   className?: string;
   variant?: "default" | "learn";
+  /** Small semantic badge shown before the title (e.g. "Summary"). */
+  badge?: string;
+  badgeTone?: "emerald" | "violet" | "amber" | "zinc";
 };
+
+const BADGE_TONES = {
+  emerald: "border-emerald-400/25 bg-emerald-500/15 text-emerald-200",
+  violet: "border-violet-400/25 bg-violet-500/15 text-violet-200",
+  amber: "border-amber-400/25 bg-amber-500/15 text-amber-200",
+  zinc: "border-white/10 bg-white/[0.04] text-zinc-300",
+} as const;
 
 export function CollapsibleSection({
   title,
@@ -18,6 +28,8 @@ export function CollapsibleSection({
   children,
   className = "",
   variant = "default",
+  badge,
+  badgeTone = "emerald",
 }: CollapsibleSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
@@ -32,11 +44,18 @@ export function CollapsibleSection({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((prev) => !prev)}
-        className="group flex w-full items-center justify-between gap-3 py-3 text-left transition-colors hover:text-zinc-200"
+        className="group flex w-full min-w-0 items-center justify-between gap-3 py-3 text-left transition-colors hover:text-zinc-200"
       >
-        <span className="flex items-center gap-2">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          {badge ? (
+            <span
+              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${BADGE_TONES[badgeTone]}`}
+            >
+              {badge}
+            </span>
+          ) : null}
           <span
-            className={`text-xs font-semibold tracking-wide uppercase ${
+            className={`min-w-0 break-words text-xs font-semibold tracking-wide uppercase ${
               variant === "learn" ? "text-violet-300/90" : "text-zinc-400"
             }`}
           >

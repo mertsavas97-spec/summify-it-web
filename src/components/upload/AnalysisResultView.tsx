@@ -11,6 +11,7 @@ import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { AnalysisToolbar } from "./AnalysisToolbar";
 import { LearnSection } from "./LearnSection";
 import { getModeResultSectionLabels } from "@/lib/mode-result-presentation";
+import { getIntelligenceModeById } from "@/config/modes";
 
 type AnalysisResultViewProps = {
   result: AnalysisResult;
@@ -47,6 +48,7 @@ export function AnalysisResultView({
   const showRisks = sections !== "summary" && result.risksOrWarnings.length > 0;
   const showActions = sections !== "summary" && result.actionItems.length > 0;
   const insightTracked = useRef(false);
+  const mode = getIntelligenceModeById(modeId);
 
   useEffect(() => {
     if (insightTracked.current) return;
@@ -66,7 +68,9 @@ export function AnalysisResultView({
         <header className="border-b border-white/[0.06] px-4 py-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0 max-w-prose">
-              <h3 className="text-base font-semibold leading-snug text-white">{result.title}</h3>
+              <h3 className="break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere]">
+                {result.title}
+              </h3>
               <p className="mt-1 text-[10px] text-zinc-600">
                 Provider:{" "}
                 <span className="font-mono text-zinc-500">{providerUsed}</span>
@@ -88,11 +92,42 @@ export function AnalysisResultView({
         </header>
       ) : null}
 
-      <div className={embedded ? "" : "divide-y divide-white/[0.04] px-4"}>
+      <div className={embedded ? "min-w-0" : "min-w-0 divide-y divide-white/[0.04] px-4"}>
         {showSummary ? (
-          <CollapsibleSection title={sectionLabels.summary} defaultOpen>
-            <p className="max-w-prose text-sm leading-[1.7] text-zinc-400">{result.summary}</p>
-          </CollapsibleSection>
+          <>
+            {mode ? (
+              <div
+                className="mb-1 rounded-xl border border-emerald-400/20 bg-emerald-950/25 px-3 py-2.5"
+                data-mode-summary-context
+              >
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span className="rounded-md border border-emerald-400/30 bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">
+                    AI Summary
+                  </span>
+                  <p className="min-w-0 break-words text-xs leading-snug text-zinc-300 [overflow-wrap:anywhere]">
+                    Shaped by intelligence mode:{" "}
+                    <span className="font-semibold text-violet-200">{mode.label}</span>
+                  </p>
+                </div>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+                  This is the structured AI summary of your source.{" "}
+                  <span className="text-zinc-400">{mode.label}</span> is an intelligence mode —{" "}
+                  {mode.shortDescription.replace(/\.$/, "")}. The heading below is that mode’s
+                  summary label, not a separate document type.
+                </p>
+              </div>
+            ) : null}
+            <CollapsibleSection
+              title={sectionLabels.summary}
+              badge="Summary"
+              badgeTone="emerald"
+              defaultOpen
+            >
+              <p className="max-w-prose break-words text-sm leading-[1.7] text-zinc-400 [overflow-wrap:anywhere]">
+                {result.summary}
+              </p>
+            </CollapsibleSection>
+          </>
         ) : null}
 
         {showInsights ? (
@@ -145,12 +180,16 @@ export function AnalysisResultView({
   );
 
   if (embedded) {
-    return <div data-workspace-analysis-output>{body}</div>;
+    return (
+      <div className="min-w-0" data-workspace-analysis-output>
+        {body}
+      </div>
+    );
   }
 
   return (
     <article
-      className="overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-950/60"
+      className="min-w-0 overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-950/60"
       data-workspace-analysis-output
     >
       {body}
@@ -175,9 +214,9 @@ function InsightList({
   return (
     <ul className="max-w-prose space-y-2.5">
       {items.map((item) => (
-        <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-zinc-400">
+        <li key={item} className="flex min-w-0 gap-2.5 text-sm leading-relaxed text-zinc-400">
           <span className={`mt-2 h-1 w-1 shrink-0 rounded-full ${bulletClass}`} aria-hidden />
-          <span>{item}</span>
+          <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item}</span>
         </li>
       ))}
     </ul>

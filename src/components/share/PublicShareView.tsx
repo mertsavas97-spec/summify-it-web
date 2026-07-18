@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { PublicAnalysisWorkspace } from "@/components/share/PublicAnalysisWorkspace";
 import { ShareConversionSection } from "@/components/share/ShareConversionSection";
+import { ShareListeningUpsell } from "@/components/share/ShareListeningUpsell";
 import { SharePageTracker } from "@/components/share/SharePageTracker";
 import { ShareSocialActions } from "@/components/share/ShareSocialActions";
 import { ShareStickyCta } from "@/components/share/ShareStickyCta";
@@ -39,6 +40,18 @@ export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
       ? (shared.intelligence_mode as IntelligenceModeId)
       : null;
 
+  const hasAudio = Boolean(shared.audioStudy?.script?.trim());
+  const hasPodcast = Boolean(shared.podcastDiscussion?.script?.length);
+
+  const listeningBlurb =
+    hasAudio && hasPodcast
+      ? "Structured summary, Learn cards, and ready-to-play Audio & Podcast scripts — no raw uploads or private files."
+      : hasAudio
+        ? "Structured summary, Learn cards, and an Audio lesson — no raw uploads or private files."
+        : hasPodcast
+          ? "Structured summary, Learn cards, and a Podcast discussion — no raw uploads or private files."
+          : "Structured summary and Learn cards — no raw uploads or private files are included on this page.";
+
   return (
     <article className="print-share-article pb-24">
       <SharePageTracker
@@ -69,12 +82,11 @@ export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
           <MetaChip label="Source" value={getSourceKindLabel(shared.source_kind)} />
           <MetaChip label="Mode" value={getIntelligenceModeLabel(shared.intelligence_mode)} />
           {sharedDate ? <MetaChip label="Shared" value={sharedDate} /> : null}
+          {hasAudio ? <MetaChip label="Audio" value="Included" /> : null}
+          {hasPodcast ? <MetaChip label="Podcast" value="Included" /> : null}
         </dl>
 
-        <p className="mt-4 text-sm leading-relaxed text-zinc-500">
-          Structured summary and Learn cards — no raw uploads or private files are included on
-          this page.
-        </p>
+        <p className="mt-4 text-sm leading-relaxed text-zinc-500">{listeningBlurb}</p>
 
         {shareId ? (
           <div className="print-hide mt-5">
@@ -100,17 +112,30 @@ export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
           </p>
         </aside>
 
+        <div className="print-hide mt-6">
+          <ShareListeningUpsell hasAudio={hasAudio} hasPodcast={hasPodcast} />
+        </div>
+
         <div className="mt-10">
           <PublicAnalysisWorkspace
+            shareId={shareId}
             result={result}
             modeId={sharedModeId}
+            audioStudy={shared.audioStudy ?? null}
+            podcastDiscussion={shared.podcastDiscussion ?? null}
             mindMapInput={{
               title: result.title,
               summary: result.summary,
               keyInsights: result.keyInsights,
               risksOrWarnings: result.risksOrWarnings,
               actionItems: result.actionItems,
-              learnCards: result.learnCards,
+              learnCards: result.learnCards
+                .filter((card) => !card.isLockedPreview)
+                .map((card) => ({
+                  type: card.type,
+                  title: card.title ?? "",
+                  content: card.content ?? "",
+                })),
               sourceKind: shared.source_kind,
             }}
           />

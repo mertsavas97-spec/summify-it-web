@@ -8,6 +8,10 @@ type ClaimGhostSessionOnAuthProps = {
   enabled?: boolean;
 };
 
+/**
+ * After sign-in/sign-up, claim a guest ghost session into the dashboard and
+ * route the user to that saved analysis when possible.
+ */
 export function ClaimGhostSessionOnAuth({ enabled = true }: ClaimGhostSessionOnAuthProps) {
   const hasAttemptedRef = useRef(false);
   const router = useRouter();
@@ -37,7 +41,7 @@ export function ClaimGhostSessionOnAuth({ enabled = true }: ClaimGhostSessionOnA
         if (process.env.NODE_ENV !== "production") {
           console.log("[ghost-claim] claim succeeded", { savedAnalysisId });
         }
-        router.refresh();
+        router.replace(`/dashboard/${savedAnalysisId}`);
         return;
       }
 

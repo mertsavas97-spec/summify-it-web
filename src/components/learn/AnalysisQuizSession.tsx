@@ -3,10 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { trackProductEventClient } from "@/lib/analytics/trackProductEventClient";
-import {
-  buildCombinedLearningSummary,
-  buildQuizResult,
-} from "@/lib/learn/buildQuizOutcomeSummary";
+import { buildQuizResult } from "@/lib/learn/buildQuizOutcomeSummary";
 import type { PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
 import type { QuizOptionKey, QuizQuestion, QuizResult } from "@/types/learn-quiz";
 import { AudioStudyCard } from "@/components/audio-study/AudioStudyCard";
@@ -14,6 +11,7 @@ import type { AudioStudyAnalysisInput } from "@/types/audio-study";
 import type { PlanId } from "@/types/plan";
 import { Button } from "@/components/ui/Button";
 import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
+import { QuizCompletionPanel } from "@/components/learn/QuizCompletionPanel";
 
 type QuizPhase = "intro" | "question" | "feedback" | "complete";
 
@@ -29,7 +27,10 @@ type AnalysisQuizSessionProps = {
   isPaidActive?: boolean;
   audioStudyInput?: AudioStudyAnalysisInput;
   onRestartLearn?: () => void;
-  /** Skip intro screen and begin on the first question. */
+  onStartFocusedLearn?: (weakConcepts: string[]) => void;
+  canCreateLearnVersion?: boolean;
+  learnCapacityNote?: string | null;
+  hideWorkspaceLinks?: boolean;
   initialPhase?: QuizPhase;
 };
 
@@ -37,7 +38,6 @@ export function AnalysisQuizSession({
   analysisId,
   documentTitle,
   questions,
-  retentionSummary,
   gotItCount,
   reviewAgainCount,
   lockedQuizCount = 0,
@@ -45,6 +45,10 @@ export function AnalysisQuizSession({
   isPaidActive = false,
   audioStudyInput,
   onRestartLearn,
+  onStartFocusedLearn,
+  canCreateLearnVersion = true,
+  learnCapacityNote = null,
+  hideWorkspaceLinks = false,
   initialPhase = "intro",
 }: AnalysisQuizSessionProps) {
   const [phase, setPhase] = useState<QuizPhase>(initialPhase);
@@ -71,18 +75,6 @@ export function AnalysisQuizSession({
   const quizResult = useMemo(
     () => buildQuizResult(questions, answers),
     [questions, answers],
-  );
-
-  const combinedSummary = useMemo(
-    () =>
-      buildCombinedLearningSummary({
-        documentTitle,
-        quizResult,
-        retentionSummary,
-        gotItCount,
-        reviewAgainCount,
-      }),
-    [documentTitle, quizResult, retentionSummary, gotItCount, reviewAgainCount],
   );
 
   function startQuiz() {
@@ -176,10 +168,12 @@ export function AnalysisQuizSession({
               Restart session
             </Button>
           ) : null}
-          <Button href={`/dashboard/${analysisId}`} size="sm" variant="ghost">
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-            Back to analysis
-          </Button>
+          {analysisId === "live-analysis" || hideWorkspaceLinks ? null : (
+            <Button href={`/dashboard/${analysisId}`} size="sm" variant="ghost">
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              Back to analysis
+            </Button>
+          )}
         </div>
       </section>
     );
@@ -187,80 +181,43 @@ export function AnalysisQuizSession({
 
   if (phase === "complete") {
     return (
-      <section className="rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-6 sm:p-8">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-violet-400/25 bg-violet-400/10 text-violet-200">
-            <span className="text-xl font-semibold tabular-nums">{quizResult.scorePercent}%</span>
-          </div>
-          <h2 className="text-lg font-semibold text-white">Learning path complete</h2>
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-zinc-400">
-            {combinedSummary}
-          </p>
-        </div>
-
-        <div className="mx-auto mt-6 grid max-w-md grid-cols-2 gap-3 text-left">
-          <Stat label="Quiz correct" value={`${quizResult.correctCount}/${quizResult.totalQuestions}`} />
-          <Stat label="Quiz missed" value={String(quizResult.incorrectCount)} />
-          <Stat label="Got it (Learn)" value={String(gotItCount)} />
-          <Stat label="Review again" value={String(reviewAgainCount)} />
-        </div>
-
-        {quizResult.strongConcepts.length > 0 ? (
-          <div className="mx-auto mt-5 max-w-lg rounded-xl border border-emerald-500/15 bg-emerald-950/20 px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-300/80">
-              Understood well
-            </p>
-            <ul className="mt-2 space-y-1 text-xs text-zinc-300">
-              {quizResult.strongConcepts.map((c) => (
-                <li key={c}>· {c}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        {quizResult.weakConcepts.length > 0 ? (
-          <div className="mx-auto mt-3 max-w-lg rounded-xl border border-amber-500/15 bg-amber-950/15 px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">
-              Review next
-            </p>
-            <ul className="mt-2 space-y-1 text-xs text-zinc-300">
-              {quizResult.weakConcepts.map((c) => (
-                <li key={c}>· {c}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-
-        <p className="mx-auto mt-5 max-w-md text-center text-xs text-zinc-500">
-          Summify helped you extract structured intelligence from the source. Revisit weak themes in
-          Learn, then run the quiz again after a break.
-        </p>
-
-        {audioStudyInput ? (
-          <div className="mx-auto mt-6 max-w-lg text-left">
-            <AudioStudyCard
-              variant="compact"
-              analysisId={analysisId}
-              entitlementPlanId={entitlementPlanId as PlanId}
-              isPaidActive={isPaidActive}
-              analysisInput={audioStudyInput}
-            />
-          </div>
-        ) : null}
-
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
-          <Button type="button" size="sm" variant="secondary" onClick={startQuiz}>
-            Retake quiz
-          </Button>
-          {onRestartLearn ? (
-            <Button type="button" size="sm" variant="ghost" onClick={onRestartLearn}>
-              Restart Learn session
-            </Button>
-          ) : null}
-          <Button href={`/dashboard/${analysisId}`} size="sm" variant="ghost">
-            Back to analysis
-          </Button>
-        </div>
+      <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-950/60 p-4 sm:p-8">
+        <QuizCompletionPanel
+          documentTitle={documentTitle}
+          quizResult={quizResult}
+          gotItCount={gotItCount}
+          reviewAgainCount={reviewAgainCount}
+          onRetakeQuiz={startQuiz}
+          onRestartLearn={onRestartLearn}
+          onStartFocusedLearn={onStartFocusedLearn}
+          canCreateLearnVersion={canCreateLearnVersion}
+          learnCapacityNote={learnCapacityNote}
+          analysisId={analysisId}
+          entitlementPlanId={entitlementPlanId}
+          isPaidActive={isPaidActive}
+          audioSlot={
+            audioStudyInput ? (
+              <div className="text-left">
+                <AudioStudyCard
+                  variant="compact"
+                  analysisId={analysisId}
+                  entitlementPlanId={entitlementPlanId as PlanId}
+                  isPaidActive={isPaidActive}
+                  analysisInput={audioStudyInput}
+                />
+              </div>
+            ) : null
+          }
+          backSlot={
+            hideWorkspaceLinks || analysisId === "live-analysis" ? null : (
+              <div className="flex justify-center">
+                <Button href={`/dashboard/${analysisId}`} size="sm" variant="ghost">
+                  Back to analysis
+                </Button>
+              </div>
+            )
+          }
+        />
       </section>
     );
   }
@@ -270,35 +227,37 @@ export function AnalysisQuizSession({
   const wasCorrect = selectedKey === active.correctOptionKey;
 
   return (
-    <section className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
-        <span className="font-semibold uppercase tracking-wider text-violet-300/80">Quiz</span>
-        <span>
+    <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-3 sm:p-6">
+      <div className="flex min-w-0 items-center justify-between gap-3 text-xs text-zinc-500">
+        <span className="shrink-0 font-semibold uppercase tracking-wider text-violet-300/80">
+          Quiz
+        </span>
+        <span className="min-w-0 truncate tabular-nums">
           Question {index + 1} of {questions.length}
         </span>
       </div>
 
       {phase === "question" ? (
         <>
-          <p className="mt-4 text-lg font-semibold leading-snug text-white sm:text-xl">
+          <p className="mt-4 break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere] sm:text-xl">
             {active.question}
           </p>
-          <div className="mt-5 grid gap-2">
+          <div className="mt-5 grid min-w-0 gap-2">
             {active.options.map((opt) => (
               <button
                 key={opt.key}
                 type="button"
                 onClick={() => selectOption(opt.key)}
-                className="rounded-xl border border-white/[0.08] bg-zinc-950/70 px-4 py-3 text-left text-sm text-zinc-200 transition-colors hover:border-violet-500/35 hover:bg-violet-950/20"
+                className="flex min-w-0 items-start gap-2 rounded-xl border border-white/[0.08] bg-zinc-950/70 px-3 py-3 text-left text-sm text-zinc-200 transition-colors hover:border-violet-500/35 hover:bg-violet-950/20 sm:px-4"
               >
-                <span className="mr-2 font-semibold text-violet-300/90">{opt.key}.</span>
-                {opt.text}
+                <span className="shrink-0 font-semibold text-violet-300/90">{opt.key}.</span>
+                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{opt.text}</span>
               </button>
             ))}
           </div>
         </>
       ) : (
-        <div className="mt-4 space-y-4" data-quiz-feedback>
+        <div className="mt-4 min-w-0 space-y-4" data-quiz-feedback>
           <div
             className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
               wasCorrect
@@ -314,11 +273,11 @@ export function AnalysisQuizSession({
             {wasCorrect ? "Correct" : "Not quite"}
           </div>
 
-          <div className="rounded-xl border border-white/[0.07] bg-black/25 p-4">
+          <div className="min-w-0 rounded-xl border border-white/[0.07] bg-black/25 p-3 sm:p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
               Correct answer
             </p>
-            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-200">
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-200 [overflow-wrap:anywhere]">
               <span className="font-semibold text-zinc-50">{active.correctOptionKey}. </span>
               {active.options.find((o) => o.key === active.correctOptionKey)?.text}
             </p>
@@ -340,22 +299,13 @@ export function AnalysisQuizSession({
             <LearnSourceTracePanel trace={active.sourceTrace} className="mt-4" />
           ) : null}
 
-          <div className="sticky bottom-0 -mx-4 mt-2 border-t border-white/[0.06] bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent px-4 pb-1 pt-3 sm:-mx-6 sm:px-6">
-            <Button type="button" size="sm" onClick={goNext}>
+          <div className="sticky bottom-0 mt-2 border-t border-white/[0.06] bg-gradient-to-t from-zinc-950/95 via-zinc-950/70 to-transparent pb-1 pt-3">
+            <Button type="button" size="sm" onClick={goNext} className="w-full sm:w-auto">
               {index + 1 >= questions.length ? "See results" : "Next question"}
             </Button>
           </div>
         </div>
       )}
     </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2.5">
-      <p className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold tabular-nums text-white">{value}</p>
-    </div>
   );
 }

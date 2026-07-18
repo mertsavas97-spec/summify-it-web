@@ -13,7 +13,7 @@ export function SiteShell({ children }: SiteShellProps) {
       <GlobalGhostSessionClaim />
       <Header />
       <AnnouncementBanner />
-      <main className="flex-1">{children}</main>
+      <main className="min-w-0 flex-1 overflow-x-hidden">{children}</main>
       <Footer />
     </div>
   );

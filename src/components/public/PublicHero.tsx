@@ -53,7 +53,7 @@ export function PublicHero({
         <div
           className={
             isHome
-              ? "grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16"
+              ? "grid items-center gap-6 sm:gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16"
               : "grid items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14"
           }
         >

@@ -14,7 +14,7 @@ import {
   type UploadExtractStatus,
   type WorkspaceInputMode,
 } from "@/types/extraction";
-import type { AnalysisIntelligenceMetadata } from "@/types/intelligence";
+import type { AnalysisIntelligenceMetadata, DocumentProfileMetadata } from "@/types/intelligence";
 import {
   buildPresentationSourceContext,
   buildYoutubeSourceContext,
@@ -317,6 +317,9 @@ function PostAnalysisResultShell({
   savedToWorkspace,
   savedAnalysisId,
   learningExperience = "summary-learn",
+  sourceQuality = null,
+  sourceQualityNote = null,
+  fallbackCharacterCount = null,
   onGuestSaveClick,
   mediaModules,
   onExperienceChange,
@@ -335,6 +338,9 @@ function PostAnalysisResultShell({
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;
   learningExperience?: LearningExperienceId;
+  sourceQuality?: DocumentProfileMetadata["sourceQuality"] | null;
+  sourceQualityNote?: string | null;
+  fallbackCharacterCount?: number | null;
   onGuestSaveClick?: () => void;
   mediaModules?: (view: "audio" | "podcast") => ReactNode;
   onExperienceChange?: (experience: LearningExperienceId) => void;
@@ -357,6 +363,12 @@ function PostAnalysisResultShell({
     complexity,
     extractionMeta,
   });
+  const extractedCharacters =
+    extractionMeta?.extractedCharacters ?? fallbackCharacterCount ?? null;
+  const estimatedPages =
+    extractionMeta?.sourceKind === "file" ? extractionMeta.estimatedPages : null;
+  const slideCount =
+    extractionMeta?.sourceKind === "presentation" ? extractionMeta.slideCount : null;
   return (
     <div className="space-y-4" data-workspace-analysis-result-shell>
       <header className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-4 shadow-sm shadow-black/20 backdrop-blur sm:p-5">
@@ -382,7 +394,13 @@ function PostAnalysisResultShell({
               {onNewAnalysis ? (
                 <button
                   type="button"
-                  onClick={onNewAnalysis}
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      "Start a new analysis? Your current results stay available only if you’ve saved them.",
+                    );
+                    if (!confirmed) return;
+                    onNewAnalysis();
+                  }}
                   className="inline-flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-violet-400/25 hover:text-violet-100"
                 >
                   New analysis
@@ -424,6 +442,11 @@ function PostAnalysisResultShell({
         savedAnalysisId={savedAnalysisId}
         modeLabel={modeLabel}
         sourceKindLabel={sourceKindLabel}
+        extractedCharacters={extractedCharacters}
+        estimatedPages={estimatedPages}
+        slideCount={slideCount}
+        sourceQuality={sourceQuality}
+        sourceQualityNote={sourceQualityNote}
         audioContent={
           mediaModules?.("audio") ?? (
             <p className="text-xs text-zinc-500">Audio lesson generation is not available for this analysis yet.</p>
@@ -762,6 +785,9 @@ export function TextAnalysisMvp({
           savedToWorkspace={displaySavedToWorkspace}
           savedAnalysisId={savedAnalysisId}
           learningExperience={learningExperience}
+          sourceQuality={injectedAnalysis?.intelligence.profile.sourceQuality ?? null}
+          sourceQualityNote={injectedAnalysis?.intelligence.profile.sourceQualityNote ?? null}
+          fallbackCharacterCount={rawText.trim().length}
           onGuestSaveClick={onGuestSaveClick}
           mediaModules={mediaModules}
           onExperienceChange={onExperienceChange}

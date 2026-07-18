@@ -1,8 +1,6 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { MindMapSkeleton } from "@/components/mindmap/MindMapSkeleton";
 import { PodcastPlayer } from "@/components/podcast/PodcastPlayer";
 import {
   countPodcastAnalysisCandidates,
@@ -19,11 +17,6 @@ import type { IntelligenceModeId } from "@/types/modes";
 import type { PlanId } from "@/types/plan";
 import type { SavedAnalysisMetadata } from "@/types/saved-analysis";
 import type { AnalysisResult } from "@/types/text-analysis";
-
-const MindMapPanel = dynamic(
-  () => import("@/components/mindmap/MindMapPanel").then((m) => m.MindMapPanel),
-  { ssr: false, loading: () => <MindMapSkeleton /> },
-);
 
 type SavedAnalysisWorkspaceProps = {
   analysisId: string;
@@ -154,7 +147,6 @@ export function SavedAnalysisWorkspace({
   documentTypeGuess,
   sourceKind,
   sourceLabel,
-  showProviderMeta = true,
   entitlementPlanId = "free",
   metadata,
   podcastDiscussion,
@@ -210,6 +202,11 @@ export function SavedAnalysisWorkspace({
       modeLabel={modeLabel}
       sourceKindLabel={sourceKindLabel}
       savedAnalysisId={analysisId}
+      extractedCharacters={metadata?.extractedCharacterCount ?? null}
+      estimatedPages={metadata?.estimatedPages ?? null}
+      slideCount={null}
+      sourceQuality={null}
+      sourceQualityNote={null}
       audioContent={<PodcastWorkspaceCtas {...mediaProps} view="audio" />}
       podcastContent={
         podcastDiscussion ? (
