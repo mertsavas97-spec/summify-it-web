@@ -77,23 +77,30 @@ type ResultsSectionTabsProps = {
   sections: ResultsSectionId[];
   activeId?: ResultsSectionId;
   onNavigate: (id: ResultsSectionId) => void;
+  /** Accessible name for the nav landmark. */
+  ariaLabel?: string;
+  /** Stick under the site header on large screens. */
+  sticky?: boolean;
 };
 
 /**
- * Single cohesive results nav — equal columns so the last tab never orphans
- * into a separate visual “box” on the right/next row.
+ * Equal-width labeled tabs. Labels always visible (mobile + desktop).
  */
 export function ResultsSectionTabs({
   sections,
   activeId,
   onNavigate,
+  ariaLabel = "Results sections",
+  sticky = false,
 }: ResultsSectionTabsProps) {
   if (sections.length === 0) return null;
 
   return (
     <nav
-      className="relative z-10 max-w-full rounded-2xl border border-white/[0.08] bg-[#0d1018]/95 p-1.5 backdrop-blur-md lg:sticky lg:top-[4.5rem] lg:z-20"
-      aria-label="Results sections"
+      className={`relative z-10 max-w-full rounded-2xl border border-white/[0.08] bg-[#0d1018]/95 p-1.5 backdrop-blur-md ${
+        sticky ? "lg:sticky lg:top-[4.5rem] lg:z-20" : ""
+      }`}
+      aria-label={ariaLabel}
       data-results-section-tabs
     >
       <div
@@ -111,7 +118,7 @@ export function ResultsSectionTabs({
               key={id}
               type="button"
               onClick={() => onNavigate(id)}
-              className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] font-semibold transition-all sm:gap-1.5 sm:px-2.5 sm:text-xs ${
+              className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] font-semibold leading-tight transition-all sm:gap-1.5 sm:px-2.5 sm:text-xs ${
                 active ? meta.active : meta.idle
               }`}
             >
@@ -119,8 +126,9 @@ export function ResultsSectionTabs({
                 className={`h-3.5 w-3.5 shrink-0 ${active ? meta.iconActive : "opacity-80"}`}
                 aria-hidden
               />
-              <span className="truncate max-[420px]:hidden sm:hidden">{meta.shortLabel}</span>
-              <span className="hidden truncate min-[421px]:inline sm:inline">{meta.label}</span>
+              {/* Always show a label — short on narrow, full from sm up */}
+              <span className="min-w-0 truncate sm:hidden">{meta.shortLabel}</span>
+              <span className="hidden min-w-0 truncate sm:inline">{meta.label}</span>
             </button>
           );
         })}

@@ -369,6 +369,19 @@ export function SummaryLearnResultsPanel({
     return tabs;
   }, [hasFlashcards, hasInsights, hasLearn]);
 
+  const practiceTabs = useMemo(
+    () => sectionTabs.filter((id) => id === "learn" || id === "quiz"),
+    [sectionTabs],
+  );
+
+  const readingTabs = useMemo(
+    () =>
+      sectionTabs.filter(
+        (id) => id === "summary" || id === "insights" || id === "flashcards",
+      ),
+    [sectionTabs],
+  );
+
   function handleNavigate(id: ResultsSectionId) {
     setActiveSection(id);
     if (id === "learn") setLearnCollapsed(false);
@@ -449,10 +462,14 @@ export function SummaryLearnResultsPanel({
 
   return (
     <section className="min-w-0 max-w-full space-y-4 overflow-x-hidden" data-summary-learn-results>
+      {/* Practice tabs sit only above Learn | Quiz — same width as the 2 cards */}
       <ResultsSectionTabs
-        sections={sectionTabs}
-        activeId={activeSection}
+        sections={practiceTabs}
+        activeId={
+          activeSection === "learn" || activeSection === "quiz" ? activeSection : undefined
+        }
         onNavigate={handleNavigate}
+        ariaLabel="Practice sections"
       />
 
       <div
@@ -618,9 +635,26 @@ export function SummaryLearnResultsPanel({
         </section>
       </div>
 
+      {/* Reading tabs sit above Summary / Insights / Flashcards — fills that band, no orphan void */}
+      {readingTabs.length > 0 ? (
+        <ResultsSectionTabs
+          sections={readingTabs}
+          activeId={
+            activeSection === "summary" ||
+            activeSection === "insights" ||
+            activeSection === "flashcards"
+              ? activeSection
+              : "summary"
+          }
+          onNavigate={handleNavigate}
+          ariaLabel="Reading sections"
+          sticky
+        />
+      ) : null}
+
       <div
         id="result-section-summary"
-        className="min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#11141d]/75 p-3 sm:p-5"
+        className="min-w-0 scroll-mt-28 overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#11141d]/75 p-3 sm:p-5"
       >
         <AnalysisResultView
           result={result}
@@ -639,7 +673,7 @@ export function SummaryLearnResultsPanel({
       {hasInsights ? (
         <div
           id="result-section-insights"
-          className="min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-amber-400/15 bg-[#11141d]/75 p-3 sm:p-5"
+          className="min-w-0 scroll-mt-28 overflow-hidden rounded-2xl border border-amber-400/15 bg-[#11141d]/75 p-3 sm:p-5"
         >
           <AnalysisResultView
             result={result}
@@ -659,7 +693,7 @@ export function SummaryLearnResultsPanel({
       {hasFlashcards ? (
         <div
           id="result-section-flashcards"
-          className="min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-fuchsia-400/15 bg-[#11141d]/75 p-3 sm:p-5"
+          className="min-w-0 scroll-mt-28 overflow-hidden rounded-2xl border border-fuchsia-400/15 bg-[#11141d]/75 p-3 sm:p-5"
         >
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
