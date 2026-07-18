@@ -80,8 +80,8 @@ type ResultsSectionTabsProps = {
 };
 
 /**
- * In-flow results section nav. Wraps to multiple rows on mobile so tabs never
- * overflow horizontally or float over CTAs. Sticky only from `lg` up.
+ * Single cohesive results nav — equal columns so the last tab never orphans
+ * into a separate visual “box” on the right/next row.
  */
 export function ResultsSectionTabs({
   sections,
@@ -96,7 +96,12 @@ export function ResultsSectionTabs({
       aria-label="Results sections"
       data-results-section-tabs
     >
-      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-3 md:grid-cols-5 lg:flex lg:flex-wrap lg:gap-1.5">
+      <div
+        className="grid gap-1.5"
+        style={{
+          gridTemplateColumns: `repeat(${sections.length}, minmax(0, 1fr))`,
+        }}
+      >
         {sections.map((id) => {
           const meta = TAB_META[id];
           const Icon = meta.Icon;
@@ -106,7 +111,7 @@ export function ResultsSectionTabs({
               key={id}
               type="button"
               onClick={() => onNavigate(id)}
-              className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-all sm:px-3 sm:text-xs ${
+              className={`inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border px-1.5 py-2 text-[10px] font-semibold transition-all sm:gap-1.5 sm:px-2.5 sm:text-xs ${
                 active ? meta.active : meta.idle
               }`}
             >
@@ -114,8 +119,8 @@ export function ResultsSectionTabs({
                 className={`h-3.5 w-3.5 shrink-0 ${active ? meta.iconActive : "opacity-80"}`}
                 aria-hidden
               />
-              <span className="truncate sm:hidden">{meta.shortLabel}</span>
-              <span className="hidden truncate sm:inline">{meta.label}</span>
+              <span className="truncate max-[420px]:hidden sm:hidden">{meta.shortLabel}</span>
+              <span className="hidden truncate min-[421px]:inline sm:inline">{meta.label}</span>
             </button>
           );
         })}
@@ -127,6 +132,6 @@ export function ResultsSectionTabs({
 export function scrollToResultsSection(id: ResultsSectionId) {
   const el = document.getElementById(`result-section-${id}`);
   if (!el) return;
-  const top = el.getBoundingClientRect().top + window.scrollY - 88;
+  const top = el.getBoundingClientRect().top + window.scrollY - 112;
   window.scrollTo({ top, behavior: "smooth" });
 }

@@ -89,15 +89,15 @@ function SessionModuleToolbar({
 }) {
   const toneClass =
     tone === "sky"
-      ? "border-sky-400/20 bg-sky-500/10 text-sky-100 hover:bg-sky-500/15"
-      : "border-violet-400/20 bg-violet-500/10 text-violet-100 hover:bg-violet-500/15";
+      ? "border-sky-400/25 bg-sky-500/15 text-sky-50 hover:bg-sky-500/25"
+      : "border-violet-400/25 bg-violet-500/15 text-violet-50 hover:bg-violet-500/25";
 
   return (
     <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
       <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
         {title}
       </p>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-1.5">
         {onRestart ? (
           <button
             type="button"
@@ -106,12 +106,12 @@ function SessionModuleToolbar({
               event.stopPropagation();
               onRestart();
             }}
-            className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-colors ${toneClass}`}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${toneClass}`}
             title={restartLabel ?? "Restart"}
             aria-label={restartLabel ?? "Restart"}
           >
-            <RotateCcw className="h-3 w-3" aria-hidden />
-            <span className="hidden sm:inline">Restart</span>
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+            Restart
           </button>
         ) : null}
         <button
@@ -121,17 +121,17 @@ function SessionModuleToolbar({
             event.stopPropagation();
             onToggleCollapse();
           }}
-          className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-colors ${toneClass}`}
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${toneClass}`}
           title={collapsed ? "Show module" : "Hide module"}
           aria-expanded={!collapsed}
           aria-label={collapsed ? "Show module" : "Hide module"}
         >
           {collapsed ? (
-            <Eye className="h-3 w-3" aria-hidden />
+            <Eye className="h-3.5 w-3.5" aria-hidden />
           ) : (
-            <EyeOff className="h-3 w-3" aria-hidden />
+            <EyeOff className="h-3.5 w-3.5" aria-hidden />
           )}
-          <span className="hidden sm:inline">{collapsed ? "Show" : "Hide"}</span>
+          {collapsed ? "Show" : "Hide"}
         </button>
       </div>
     </div>
@@ -144,19 +144,25 @@ function LearnVersionTabs({
   canAdd,
   capacityNote,
   maxVersions,
+  collapsed,
   onSelect,
   onAdd,
+  onRestart,
+  onToggleCollapse,
 }: {
   versions: LearnVersionRecord[];
   activeVersion: number;
   canAdd: boolean;
   capacityNote: string | null;
   maxVersions: number;
+  collapsed: boolean;
   onSelect: (version: number) => void;
   onAdd: () => void;
+  onRestart: () => void;
+  onToggleCollapse: () => void;
 }) {
   return (
-    <div className="mb-3 min-w-0 space-y-2">
+    <div className="mb-3 min-w-0 space-y-2" data-learn-version-tabs>
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         {versions.map((entry) => {
           const active = entry.version === activeVersion;
@@ -165,7 +171,7 @@ function LearnVersionTabs({
               key={entry.version}
               type="button"
               onClick={() => onSelect(entry.version)}
-              className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                 active
                   ? "border-sky-400/35 bg-sky-500/20 text-sky-50"
                   : "border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:border-sky-400/20 hover:text-sky-100"
@@ -183,15 +189,43 @@ function LearnVersionTabs({
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-sky-400/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-medium text-sky-100 transition-colors hover:bg-sky-500/15"
+            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-sky-400/30 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-medium text-sky-100 transition-colors hover:bg-sky-500/15"
           >
             <Plus className="h-3 w-3" aria-hidden />
             Learn {versions.length + 1}
           </button>
         ) : null}
-        <span className="ml-auto text-[10px] tabular-nums text-zinc-600">
-          {versions.length}/{Math.min(maxVersions, MAX_LEARN_SESSION_VERSIONS)}
-        </span>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <span className="hidden text-[10px] tabular-nums text-zinc-600 sm:inline">
+            {versions.length}/{Math.min(maxVersions, MAX_LEARN_SESSION_VERSIONS)}
+          </span>
+          <button
+            type="button"
+            onClick={onRestart}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-500/15 px-2.5 py-1.5 text-[11px] font-medium text-sky-50 transition-colors hover:bg-sky-500/25"
+            title="Restart this Learn version"
+            aria-label="Restart this Learn version"
+          >
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+            Restart
+          </button>
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/25 bg-sky-500/15 px-2.5 py-1.5 text-[11px] font-medium text-sky-50 transition-colors hover:bg-sky-500/25"
+            title={collapsed ? "Show Learn session" : "Hide Learn session"}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? "Show Learn session" : "Hide Learn session"}
+          >
+            {collapsed ? (
+              <Eye className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <EyeOff className="h-3.5 w-3.5" aria-hidden />
+            )}
+            {collapsed ? "Show" : "Hide"}
+          </button>
+        </div>
       </div>
       {capacityNote && versions.length >= maxVersions ? (
         <p className="text-[11px] leading-relaxed text-zinc-500">{capacityNote}</p>
@@ -430,21 +464,10 @@ export function SummaryLearnResultsPanel({
       >
         <section
           id="result-section-learn"
-          className={`min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-950/40 via-[#0f1520]/95 to-zinc-950 ${
-            learnStarted ? "p-2 sm:p-5" : "p-3 sm:p-5"
+          className={`min-w-0 scroll-mt-28 overflow-visible rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-950/40 via-[#0f1520]/95 to-zinc-950 ${
+            learnStarted ? "p-3 sm:p-5" : "p-3 sm:p-5"
           }`}
         >
-          {learnStarted ? (
-            <SessionModuleToolbar
-              title={`Learn session · v${activeLearnVersion}`}
-              tone="sky"
-              collapsed={learnCollapsed}
-              onToggleCollapse={() => setLearnCollapsed((value) => !value)}
-              onRestart={handleRestartLearn}
-              restartLabel="Restart this Learn version"
-            />
-          ) : null}
-
           {learnStarted ? (
             <LearnVersionTabs
               versions={learnVersions}
@@ -452,11 +475,14 @@ export function SummaryLearnResultsPanel({
               canAdd={canAddLearnVersion}
               capacityNote={capacity.reason}
               maxVersions={capacity.maxVersions}
+              collapsed={learnCollapsed}
               onSelect={(version) => {
                 setActiveLearnVersion(version);
                 setLearnCollapsed(false);
               }}
               onAdd={() => createLearnVersion([])}
+              onRestart={() => handleRestartLearn()}
+              onToggleCollapse={() => setLearnCollapsed((value) => !value)}
             />
           ) : null}
 
@@ -522,8 +548,8 @@ export function SummaryLearnResultsPanel({
 
         <section
           id="result-section-quiz"
-          className={`min-w-0 scroll-mt-24 overflow-hidden rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 via-[#14101f]/90 to-zinc-950 ${
-            quizActive ? "p-2 sm:p-5" : "p-3 sm:p-5"
+          className={`min-w-0 scroll-mt-28 overflow-visible rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 via-[#14101f]/90 to-zinc-950 ${
+            quizActive ? "p-3 sm:p-5" : "p-3 sm:p-5"
           }`}
         >
           {quizActive ? (
