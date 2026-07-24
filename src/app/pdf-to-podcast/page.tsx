@@ -80,9 +80,9 @@ export default function PdfToPodcastPage() {
       <FAQSection items={FAQS} />
       <RelatedLinksSection
         links={[
-          { href: "/pdf-summarizer", label: "PDF summarizer", description: "Start from structured summaries." },
+          { href: "/summarize-pdf", label: "PDF summarizer", description: "Start from structured summaries." },
           { href: "/ai-note-tool", label: "AI note tool", description: "Organize what you listened to." },
-          { href: "/youtube-video-summarizer", label: "YouTube summarizer", description: "Blend lecture video with PDF reading." },
+          { href: "/summarize-youtube-video", label: "YouTube summarizer", description: "Blend lecture video with PDF reading." },
         ]}
       />
       <CTASection title="Listen to your next chapter" description="Convert long reading into a practical audio study session." primaryLabel="Start PDF to podcast" />

@@ -74,8 +74,8 @@ export default function AiNoteToolPage() {
       <FAQSection items={FAQS} />
       <RelatedLinksSection
         links={[
-          { href: "/pdf-summarizer", label: "PDF summarizer", description: "Generate high-signal source inputs." },
-          { href: "/youtube-video-summarizer", label: "YouTube summarizer", description: "Turn lectures into note-ready structure." },
+          { href: "/summarize-pdf", label: "PDF summarizer", description: "Generate high-signal source inputs." },
+          { href: "/summarize-youtube-video", label: "YouTube summarizer", description: "Turn lectures into note-ready structure." },
           { href: "/pdf-to-podcast", label: "PDF to podcast", description: "Convert notes into listening sessions." },
         ]}
       />

@@ -228,10 +228,10 @@ export default function IosAppPage() {
                     <InternalTextLink href="/upload">Upload workspace</InternalTextLink>
                   </li>
                   <li>
-                    <InternalTextLink href="/pdf-summarizer">PDF summarizer</InternalTextLink>
+                    <InternalTextLink href="/summarize-pdf">PDF summarizer</InternalTextLink>
                   </li>
                   <li>
-                    <InternalTextLink href="/youtube-video-summarizer">
+                    <InternalTextLink href="/summarize-youtube-video">
                       YouTube video summarizer
                     </InternalTextLink>
                   </li>

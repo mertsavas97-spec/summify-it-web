@@ -83,9 +83,9 @@ export default function BestAiForStudyingPage() {
       <FAQSection items={FAQS} />
       <RelatedLinksSection
         links={[
-          { href: "/pdf-summarizer", label: "PDF summarizer", description: "Process long readings with structure." },
+          { href: "/summarize-pdf", label: "PDF summarizer", description: "Process long readings with structure." },
           { href: "/pdf-to-podcast", label: "PDF to podcast", description: "Convert reading into listening sessions." },
-          { href: "/youtube-video-summarizer", label: "YouTube summarizer", description: "Capture educational video insights." },
+          { href: "/summarize-youtube-video", label: "YouTube summarizer", description: "Capture educational video insights." },
         ]}
       />
       <CTASection title="Build your study system in one workspace" description="From deep reading to audio review, keep one calm workflow." primaryLabel="Open Summify" />

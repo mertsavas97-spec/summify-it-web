@@ -42,14 +42,50 @@ export const PDF_FAQS: FaqItem[] = [
     a: "Yes. Summify runs in the browser. Upload your PDF to the document analysis workspace and analyze in one flow.",
   },
   {
+    q: "What is a PDF summary generator vs a basic highlighter?",
+    a: "A PDF summary generator produces a structured overview plus key insights. Summify also adds flashcards and a quiz so you can study the same source — not only skim highlighted sentences.",
+  },
+  {
     q: "Does Summify generate a quiz from PDF content?",
     a: "Learn cards can include quiz-style prompts when using study-focused modes like The Student. Outputs are for review, not a formal LMS.",
+  },
+  {
+    q: "Is this free AI PDF summarizer limited during beta?",
+    a: "You can try analysis free during public beta. Fair-use limits apply; paid plans unlock higher volume and audio study features.",
   },
   {
     q: "What is the maximum PDF size?",
     a: "Standard upload limits apply during beta. Very long PDFs may be compacted for analysis while preserving structure.",
   },
+  {
+    q: "Can I summarize research papers and textbooks?",
+    a: "Yes. Students and researchers use Summify on papers, chapters, and reports. Always verify names, numbers, and citations against the original PDF.",
+  },
+  {
+    q: "How is Summify different from ChatPDF-style chatbots?",
+    a: "Chatbots answer questions in a thread. Summify turns the PDF into a structured summary and a study workspace (Learn cards + quiz) you can revisit.",
+  },
 ];
+
+/** Visible HowTo steps for /summarize-pdf — keep in sync with FormatWorkflow on that page. */
+export const PDF_HOW_TO_STEPS = [
+  {
+    name: "Upload PDF",
+    text: "Drop your PDF (or DOCX/TXT) in the Summify workspace — no install required.",
+  },
+  {
+    name: "Pick a lens",
+    text: "Choose Student, Executive, Creator, or Contract Summary so the AI PDF summarizer matches your goal.",
+  },
+  {
+    name: "Get structure",
+    text: "Receive a structured summary, key insights, and next actions grounded in the document.",
+  },
+  {
+    name: "Study with Learn",
+    text: "Open flashcards and a quiz from the same PDF so you can recall what you summarized.",
+  },
+] as const;
 
 export const YOUTUBE_FAQS: FaqItem[] = [
   {

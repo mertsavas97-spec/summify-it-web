@@ -32,11 +32,9 @@ const CORE_STATIC_PATHS = [
   "/study-podcast-generator",
   "/turn-notes-into-podcast",
   "/ai-study-workflow",
-  "/pdf-summarizer",
-  "/video-summarizer",
+  // /pdf-summarizer, /video-summarizer, /youtube-video-summarizer → 301 to format landings
   "/best-ai-for-studying",
   "/pdf-to-podcast",
-  "/youtube-video-summarizer",
   "/ai-note-tool",
   "/blog",
   "/about",

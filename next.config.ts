@@ -33,6 +33,27 @@ const nextConfig: NextConfig = {
         destination: "/summarize-pdf",
         permanent: true,
       },
+      // Consolidate YouTube summarizer cannibalization → primary format landing
+      {
+        source: "/video-summarizer",
+        destination: "/summarize-youtube-video",
+        permanent: true,
+      },
+      {
+        source: "/video-summarizer/",
+        destination: "/summarize-youtube-video",
+        permanent: true,
+      },
+      {
+        source: "/youtube-video-summarizer",
+        destination: "/summarize-youtube-video",
+        permanent: true,
+      },
+      {
+        source: "/youtube-video-summarizer/",
+        destination: "/summarize-youtube-video",
+        permanent: true,
+      },
     ];
   },
   async headers() {

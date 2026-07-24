@@ -45,5 +45,6 @@ Sprint veya anlamlı task bitmeden:
 | `docs/agent/TEAM_ROSTER.md` | Ekip / skill map |
 | `docs/agent/COORDINATOR.md` | Koordinatör protokolü |
 | `docs/agent/OPENING_PROMPT.md` | İlk chat prompt |
+| `docs/agent/SEO_GSC_ACTION_BRIEF.md` | GSC/GA SEO action brief (US) — P0 iş listesi |
 | `SPRINT_STATE.md` | Aktif sprint |
 <!-- KOORDINATOR:END -->

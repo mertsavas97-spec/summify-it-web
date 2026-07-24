@@ -10,15 +10,14 @@ export const pageSeo = {
     description:
       "Summarize PDFs, PowerPoint decks, YouTube videos, and web articles with AI. Get structured summaries, key insights, flashcards, and quizzes — free to try. Start now →",
     path: "/",
+    // Head PDF terms live on /summarize-pdf only (avoid home cannibalization).
     keywords: [
-      "pdf summarizer",
       "ai summarizer",
-      "summarize pdf",
-      "ai pdf summarizer",
+      "document summarizer",
       "powerpoint summarizer",
       "youtube summarizer",
-      "document summarizer",
       "free ai summarizer",
+      "ai study notes",
     ],
   }),
 
@@ -36,7 +35,7 @@ export const pageSeo = {
   }),
 
   summarizePdf: buildPageMetadata({
-    title: "Free AI PDF Summarizer — Summarize PDF Online",
+    title: "AI PDF Summarizer — Summarize PDFs Instantly",
     description:
       "Summarize any PDF with AI in seconds. Structured summary, key insights, flashcards, and quiz — no install required. Free to try. Upload your PDF →",
     path: "/summarize-pdf",
@@ -108,9 +107,9 @@ export const pageSeo = {
     keywords: ["podcast summarizer", "audio summarizer", "summarize mp3"],
   }),
 
-  /** @deprecated Redirects to /summarize-pdf — kept for typed imports during transition. */
+  /** @deprecated Alias 301 → /summarize-pdf — do not use for new pages. */
   pdfSummarizer: buildPageMetadata({
-    title: "Free AI PDF Summarizer — Summarize PDF Online",
+    title: "AI PDF Summarizer — Summarize PDFs Instantly",
     description:
       "Summarize any PDF with AI in seconds. Structured summary, key insights, flashcards, and quiz — no install required. Free to try. Upload your PDF →",
     path: "/summarize-pdf",
@@ -123,11 +122,12 @@ export const pageSeo = {
     ],
   }),
 
+  /** @deprecated Alias 301 → /summarize-youtube-video — do not use for new pages. */
   videoSummarizer: buildPageMetadata({
-    title: "Free YouTube Video Summarizer AI — Instant Summaries",
+    title: "YouTube Video Summarizer AI — Instant Transcript Summary",
     description:
-      "Summarize YouTube videos with AI. Get transcript-based key points, study notes, and quizzes from any captioned video. Free to try.",
-    path: "/video-summarizer",
+      "Paste a YouTube link and get an AI summary from the transcript — key points, study notes, flashcards, and quiz. Free to try.",
+    path: "/summarize-youtube-video",
     keywords: [
       "youtube summarizer",
       "video summarizer",
@@ -156,11 +156,12 @@ export const pageSeo = {
     keywords: ["pdf to podcast", "pdf to audio", "study while commuting"],
   }),
 
+  /** @deprecated Alias 301 → /summarize-youtube-video — do not use for new pages. */
   youtubeVideoSummarizer: buildPageMetadata({
-    title: "YouTube Lecture Summarizer — Notes From Educational Videos",
+    title: "YouTube Video Summarizer AI — Instant Transcript Summary",
     description:
-      "Summarize long YouTube lectures into clear notes, insights, flashcards, and quizzes — then continue with audio study tools if you want.",
-    path: "/youtube-video-summarizer",
+      "Paste a YouTube link and get an AI summary from the transcript — key points, study notes, flashcards, and quiz. Free to try.",
+    path: "/summarize-youtube-video",
     keywords: [
       "youtube lecture summarizer",
       "educational video summarizer",
@@ -234,6 +235,7 @@ export const pageSeo = {
   }),
 
   pricing: buildPageMetadata({
+    // Conscious decision (SEO brief): keep indexed for US commercial/plan queries + Product schema.
     title: "Pricing — AI Summarizer Plans",
     description:
       "Compare Free, Scholar, Pro, and Team plans for AI summaries, flashcards, quizzes, audio lessons, and memory review.",

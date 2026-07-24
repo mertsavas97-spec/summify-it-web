@@ -73,9 +73,28 @@ Inactive/preview modes remain `noindex` until `availability === "active"`.
 
 `/summarize-pdf`, `/summarize-youtube-video`, `/summarize-powerpoint`:
 
-- Rich hero + `SeoContentSection` + workflow + features + use cases
-- FAQ block aligned with `FAQPage` schema
+- Rich hero + keyword H2s (PDF) / `SeoContentSection` + workflow + features + use cases
+- FAQ block aligned with `FAQPage` schema (**one FAQ graph per URL** — emit via `FAQSection` or page `JsonLd`, not both)
+- HowTo on `/summarize-pdf` via `seoLandingPageJsonLd({ howToSteps })`
 - `BreadcrumbList` + internal links to modes and audience pages
+
+### Canonical URL consolidations (no dual indexables)
+
+| Alias | 301 → |
+|-------|--------|
+| `/pdf-summarizer` | `/summarize-pdf` |
+| `/video-summarizer` | `/summarize-youtube-video` |
+| `/youtube-video-summarizer` | `/summarize-youtube-video` |
+
+Alias route folders are removed; redirects live in `next.config.ts`. Do **not** re-list aliases in `build-sitemap.ts` or `seo-paths.ts`.
+
+### Pricing index decision
+
+`/pricing` **stays indexable** (conscious): Product/Offer schema + plan education for US commercial queries. Not a noindex soft-404. Revisit only if GSC shows thin/duplicate conflict with home.
+
+### PDF vs home keyword split
+
+Head PDF terms (`pdf summarizer`, `summarize pdf`, `ai pdf summarizer`) target **`/summarize-pdf` only**. Home keeps broader `ai summarizer` / format-agnostic terms to avoid cannibalization.
 
 ## Internal linking
 
