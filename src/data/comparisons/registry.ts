@@ -89,7 +89,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
       "Users who want mode-specific outputs without prompt engineering",
     ],
     summifyStrengths: [
-      "29 intelligence modes (five active in beta) with consistent structure",
+      "6 core intelligence lenses (four free; Contract & Exam on paid)",
       "Learn cards for concepts, quizzes, and review",
       "PDF, YouTube, PPTX, web articles, DOCX, and TXT in one workspace",
       "Mind maps and memory review on saved analyses",
@@ -112,7 +112,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
     tableRows: [
       { feature: "PDF upload", summify: true, competitor: true },
       { feature: "YouTube / transcript", summify: true, competitor: "Varies" },
-      { feature: "Intelligence modes", summify: "29 (5 active)", competitor: "Chat-first" },
+      { feature: "Intelligence modes", summify: "6 core (4 free)", competitor: "Chat-first" },
       { feature: "Learn / study cards", summify: true, competitor: false },
       { feature: "Mind maps", summify: true, competitor: false },
       { feature: "Public beta pricing", summify: "Free", competitor: "Freemium" },
@@ -170,7 +170,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
     ],
     competitorLimitations: [
       "Less depth on multi-format document intelligence",
-      "No equivalent to 29 intelligence modes",
+      "No equivalent to Summify’s 6 core intelligence lenses",
       "Summarizer output style differs from mode-tuned analysis",
     ],
     tableRows: [

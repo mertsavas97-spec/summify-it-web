@@ -27,7 +27,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What are intelligence modes?",
-    a: "Intelligence modes are analysis lenses tuned for different workflows — executive briefs, study notes, creator repurposing, contracts, and more. Five modes are active in public beta; additional Pro modes appear in the browser as previews.",
+    a: "Intelligence modes are analysis lenses for different workflows — study notes, executive briefs, creator repurposing, contracts, and exam prep. Four core lenses are free (including Study); Contract Summary and Exam Prep unlock on paid plans. Extra catalog previews are not separate engines.",
   },
   {
     q: "Does Summify support mind maps and memory review?",
@@ -39,7 +39,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Is Summify free?",
-    a: "The workspace is available during public beta with generous access. Paid tiers (Free, Scholar, Pro, Team) are shown on the pricing page as a preview — checkout may not be live until billing is enabled.",
+    a: "Guests get 1 analysis; Free accounts get 5 analyses/day with 8 Learn cards and quizzes (Audio Study and Podcast are Pro). Scholar is coming soon; Pro and Team checkout are available when billing is enabled.",
   },
   {
     q: "How should I verify AI output?",

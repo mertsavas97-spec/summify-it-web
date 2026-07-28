@@ -73,7 +73,8 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
 
       {!usage.isBeta ? (
         <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-          Free includes 3 analyses per day, 20MB uploads, 5 modes, 8 Learn cards, and your last 3 saved analyses.{" "}
+          Free includes 5 analyses per day, 20MB uploads, 4 core modes, 8 Learn cards, and up to 10
+          saved analyses. Audio Study and Podcast are on Pro.{" "}
           <Link href="/account" className="text-violet-400/70 hover:text-violet-300">
             Account
           </Link>

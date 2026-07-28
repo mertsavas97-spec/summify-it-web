@@ -2,10 +2,8 @@
 
 import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import {
-  Brain,
   Eye,
   EyeOff,
-  HelpCircle,
   Layers,
   Plus,
   RotateCcw,
@@ -30,7 +28,6 @@ import type { PlanId } from "@/types/plan";
 import type { AnalysisResult } from "@/types/text-analysis";
 import { AnalysisResultView } from "./AnalysisResultView";
 import { LearnSection } from "./LearnSection";
-import { ListeningExperienceSuggestions } from "./ListeningExperienceSuggestions";
 import {
   ResultsSectionTabs,
   scrollToResultsSection,
@@ -67,8 +64,6 @@ type SummaryLearnResultsPanelProps = {
   slideCount?: number | null;
   sourceQuality?: DocumentProfileMetadata["sourceQuality"] | null;
   sourceQualityNote?: string | null;
-  onTryAudio?: () => void;
-  onTryPodcast?: () => void;
   footerContent?: ReactNode;
 };
 
@@ -252,8 +247,6 @@ export function SummaryLearnResultsPanel({
   slideCount = null,
   sourceQuality = null,
   sourceQualityNote = null,
-  onTryAudio,
-  onTryPodcast,
   footerContent,
 }: SummaryLearnResultsPanelProps) {
   const [quizActive, setQuizActive] = useState(false);
@@ -261,7 +254,7 @@ export function SummaryLearnResultsPanel({
   const [learnCollapsed, setLearnCollapsed] = useState(false);
   const [quizCollapsed, setQuizCollapsed] = useState(false);
   const [quizSessionKey, setQuizSessionKey] = useState(0);
-  const [activeSection, setActiveSection] = useState<ResultsSectionId>("learn");
+  const [activeSection, setActiveSection] = useState<ResultsSectionId>("summary");
   const [learnVersions, setLearnVersions] = useState<LearnVersionRecord[]>([
     { version: 1, focusThemes: [], remountKey: 0 },
   ]);
@@ -328,6 +321,7 @@ export function SummaryLearnResultsPanel({
         learnCards: cardAccess.accessibleCards,
         maxQuestions: cardAccess.isLimited ? 5 : 6,
         variantSeed: `learn-v${activeLearnVersion}-quiz-${quizSessionKey}`,
+        intelligenceModeId: modeId,
       }),
     [
       activeLearnVersion,
@@ -335,6 +329,7 @@ export function SummaryLearnResultsPanel({
       cardAccess.isLimited,
       quizSessionKey,
       result,
+      modeId,
     ],
   );
 
@@ -360,19 +355,18 @@ export function SummaryLearnResultsPanel({
   const activeLearnStats = learnStatsByVersion[activeLearnVersion];
 
   const sectionTabs = useMemo(() => {
-    const tabs: ResultsSectionId[] = [];
-    if (hasLearn) tabs.push("learn");
-    tabs.push("quiz");
-    tabs.push("summary");
+    const tabs: ResultsSectionId[] = ["summary"];
     if (hasInsights) tabs.push("insights");
     if (hasFlashcards) tabs.push("flashcards");
     return tabs;
-  }, [hasFlashcards, hasInsights, hasLearn]);
+  }, [hasFlashcards, hasInsights]);
 
-  const practiceTabs = useMemo(
-    () => sectionTabs.filter((id) => id === "learn" || id === "quiz"),
-    [sectionTabs],
-  );
+  const practiceTabs = useMemo((): ResultsSectionId[] => {
+    const tabs: ResultsSectionId[] = [];
+    if (hasLearn) tabs.push("learn");
+    tabs.push("quiz");
+    return tabs;
+  }, [hasLearn]);
 
   const readingTabs = useMemo(
     () =>
@@ -461,258 +455,242 @@ export function SummaryLearnResultsPanel({
   const bothReady = !learnStarted && !quizActive;
 
   return (
-    <section className="min-w-0 max-w-full space-y-4 overflow-x-hidden" data-summary-learn-results>
-      {/* Practice tabs sit only above Learn | Quiz — same width as the 2 cards */}
-      <ResultsSectionTabs
-        sections={practiceTabs}
-        activeId={
-          activeSection === "learn" || activeSection === "quiz" ? activeSection : undefined
-        }
-        onNavigate={handleNavigate}
-        ariaLabel="Practice sections"
-      />
-
-      <div
-        className={
-          bothReady
-            ? "grid min-w-0 grid-cols-2 gap-2 sm:gap-3"
-            : "grid min-w-0 grid-cols-1 gap-3"
-        }
-      >
-        <section
-          id="result-section-learn"
-          className={`min-w-0 scroll-mt-28 overflow-visible rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-950/40 via-[#0f1520]/95 to-zinc-950 ${
-            learnStarted ? "p-3 sm:p-5" : "p-3 sm:p-5"
-          }`}
-        >
-          {learnStarted ? (
-            <LearnVersionTabs
-              versions={learnVersions}
-              activeVersion={activeLearnVersion}
-              canAdd={canAddLearnVersion}
-              capacityNote={capacity.reason}
-              maxVersions={capacity.maxVersions}
-              collapsed={learnCollapsed}
-              onSelect={(version) => {
-                setActiveLearnVersion(version);
-                setLearnCollapsed(false);
-              }}
-              onAdd={() => createLearnVersion([])}
-              onRestart={() => handleRestartLearn()}
-              onToggleCollapse={() => setLearnCollapsed((value) => !value)}
-            />
-          ) : null}
-
-          {learnCollapsed && learnStarted ? (
-            <p className="text-xs text-zinc-500">
-              Learn session hidden. Tap Show to continue where you left off, or Restart for a fresh
-              pass on this version.
-            </p>
-          ) : learnStarted && hasLearn ? (
-            <AnalysisPracticeSession
-              key={`learn-v${activeVersionRecord.version}-r${activeVersionRecord.remountKey}`}
-              analysisId={analysisId}
-              documentTitle={result.title}
-              sourceLabel={sourceLabel}
-              modeLabel={modeLabel}
-              sourceKindLabel={sourceKindLabel}
-              cards={practiceCards}
-              cardAccess={cardAccess}
-              hasLearnCards
-              practicePersisted={Boolean(savedAnalysisId)}
-              entitlementPlanId={entitlementPlanId}
-              isPaidActive={isPaidActive}
-              autoStart
-              hideWorkspaceLinks
-              audioStudyInput={audioStudyInput}
-              onLearnComplete={handleLearnComplete}
-              onStartQuiz={handleStartQuiz}
-            />
-          ) : (
-            <div className="flex h-full min-w-0 flex-col justify-between gap-3 sm:gap-4">
-              <div className="min-w-0">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-sky-400/25 bg-sky-500/15 text-sky-200 sm:h-9 sm:w-9">
-                  <Brain className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
-                </span>
-                <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-sky-300/80 sm:mt-3 sm:text-[10px]">
-                  Learn ready
-                </p>
-                <h3 className="mt-1 text-sm font-semibold text-white sm:text-lg">
-                  Practice with cards
-                </h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-zinc-400 sm:mt-1.5 sm:text-sm">
-                  {hasLearn
-                    ? `${basePracticeCards.length} recall prompts — up to ${capacity.maxVersions} Learn version${
-                        capacity.maxVersions === 1 ? "" : "s"
-                      }.`
-                    : "No Learn cards were generated for this analysis."}
-                </p>
-                {capacity.reason && capacity.maxVersions < MAX_LEARN_SESSION_VERSIONS ? (
-                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">{capacity.reason}</p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                disabled={!hasLearn}
-                onClick={handleStartLearn}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/20 transition-colors hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm"
-              >
-                Start Learn
-              </button>
-            </div>
-          )}
-        </section>
-
-        <section
-          id="result-section-quiz"
-          className={`min-w-0 scroll-mt-28 overflow-visible rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 via-[#14101f]/90 to-zinc-950 ${
-            quizActive ? "p-3 sm:p-5" : "p-3 sm:p-5"
-          }`}
-        >
-          {quizActive ? (
-            <SessionModuleToolbar
-              title="Quiz session"
-              tone="violet"
-              collapsed={quizCollapsed}
-              onToggleCollapse={() => setQuizCollapsed((value) => !value)}
-              onRestart={handleRestartQuiz}
-              restartLabel="Restart quiz from the first question"
-            />
-          ) : null}
-
-          {quizCollapsed && quizActive ? (
-            <p className="text-xs text-zinc-500">
-              Quiz hidden. Tap Show to continue, or Restart to begin from question 1.
-            </p>
-          ) : quizActive ? (
-            <AnalysisQuizSession
-              key={`quiz-${quizSessionKey}-v${activeLearnVersion}`}
-              analysisId={analysisId}
-              documentTitle={result.title}
-              questions={quizQuestions}
-              retentionSummary={activeLearnStats?.summary ?? null}
-              gotItCount={activeLearnStats?.gotItCount ?? 0}
-              reviewAgainCount={activeLearnStats?.reviewAgainCount ?? 0}
-              lockedQuizCount={cardAccess.lockedCount}
-              entitlementPlanId={entitlementPlanId}
-              isPaidActive={isPaidActive}
-              audioStudyInput={audioStudyInput}
-              initialPhase="question"
-              hideWorkspaceLinks
-              onRestartLearn={handleRestartLearn}
-              onStartFocusedLearn={handleStartFocusedLearn}
-              canCreateLearnVersion={canAddLearnVersion}
-              learnCapacityNote={capacity.reason}
-            />
-          ) : (
-            <div className="flex h-full min-w-0 flex-col justify-between gap-3 sm:gap-4">
-              <div className="min-w-0">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/15 text-violet-200 sm:h-9 sm:w-9">
-                  <HelpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
-                </span>
-                <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-violet-300/80 sm:mt-3 sm:text-[10px]">
-                  Quiz ready
-                </p>
-                <h3 className="mt-1 text-sm font-semibold text-white sm:text-lg">
-                  Test your recall
-                </h3>
-                <p className="mt-1 text-[11px] leading-relaxed text-zinc-400 sm:mt-1.5 sm:text-sm">
-                  {hasQuiz
-                    ? `${quizQuestions.length} multiple-choice questions — start anytime.`
-                    : "Not enough content to generate a quiz."}
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={!hasQuiz}
-                onClick={handleStartQuiz}
-                className="inline-flex w-full items-center justify-center rounded-xl bg-violet-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-500/25 transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2.5 sm:text-sm"
-              >
-                Start quiz
-              </button>
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* Reading tabs sit above Summary / Insights / Flashcards — fills that band, no orphan void */}
+    <section className="min-w-0 max-w-full space-y-4" data-summary-learn-results>
+      {/* Single card: tabs + active panel (no floating tab strip). */}
       {readingTabs.length > 0 ? (
-        <ResultsSectionTabs
-          sections={readingTabs}
-          activeId={
-            activeSection === "summary" ||
-            activeSection === "insights" ||
-            activeSection === "flashcards"
-              ? activeSection
-              : "summary"
-          }
-          onNavigate={handleNavigate}
-          ariaLabel="Reading sections"
-          sticky
-        />
-      ) : null}
-
-      <div
-        id="result-section-summary"
-        className="min-w-0 scroll-mt-28 overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#11141d]/75 p-3 sm:p-5"
-      >
-        <AnalysisResultView
-          result={result}
-          modeId={modeId}
-          providerUsed={providerUsed}
-          fallbackUsed={fallbackUsed}
-          uiSectionLabels={uiSectionLabels}
-          entitlementPlanId={entitlementPlanId}
-          sections="summary"
-          embedded
-          showHeader={false}
-          showToolbar={false}
-        />
-      </div>
-
-      {hasInsights ? (
-        <div
-          id="result-section-insights"
-          className="min-w-0 scroll-mt-28 overflow-hidden rounded-2xl border border-amber-400/15 bg-[#11141d]/75 p-3 sm:p-5"
-        >
-          <AnalysisResultView
-            result={result}
-            modeId={modeId}
-            providerUsed={providerUsed}
-            fallbackUsed={fallbackUsed}
-            uiSectionLabels={uiSectionLabels}
-            entitlementPlanId={entitlementPlanId}
-            sections="insights"
-            embedded
-            showHeader={false}
-            showToolbar={false}
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#11141d]/80">
+          <ResultsSectionTabs
+            sections={readingTabs}
+            activeId={
+              activeSection === "summary" ||
+              activeSection === "insights" ||
+              activeSection === "flashcards"
+                ? activeSection
+                : "summary"
+            }
+          onNavigate={(id) => {
+            setActiveSection(id);
+            if (id === "summary" || id === "insights" || id === "flashcards") {
+              setLearnStarted(false);
+              setQuizActive(false);
+            }
+          }}
+            ariaLabel="Reading sections"
           />
-        </div>
-      ) : null}
 
-      {hasFlashcards ? (
-        <div
-          id="result-section-flashcards"
-          className="min-w-0 scroll-mt-28 overflow-hidden rounded-2xl border border-fuchsia-400/15 bg-[#11141d]/75 p-3 sm:p-5"
-        >
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-fuchsia-300" aria-hidden />
-              <h3 className="text-sm font-semibold text-white">Flashcards</h3>
+          {activeSection === "summary" && readingTabs.includes("summary") ? (
+            <div
+              id="result-section-summary"
+              className="min-w-0 p-3 sm:p-5"
+              role="tabpanel"
+            >
+              <AnalysisResultView
+                result={result}
+                modeId={modeId}
+                providerUsed={providerUsed}
+                fallbackUsed={fallbackUsed}
+                uiSectionLabels={uiSectionLabels}
+                entitlementPlanId={entitlementPlanId}
+                sections="summary"
+                extractedCharacters={extractedCharacters}
+                embedded
+                showHeader={false}
+                showToolbar={false}
+              />
             </div>
-            <span className="text-[11px] text-zinc-500">
-              {flashcardCount} card{flashcardCount === 1 ? "" : "s"}
-            </span>
-          </div>
-          <LearnSection
-            cards={result.learnCards}
-            modeId={modeId}
-            entitlementPlanId={entitlementPlanId}
-          />
+          ) : null}
+
+          {activeSection === "insights" && hasInsights ? (
+            <div
+              id="result-section-insights"
+              className="min-w-0 p-3 sm:p-5"
+              role="tabpanel"
+            >
+              <AnalysisResultView
+                result={result}
+                modeId={modeId}
+                providerUsed={providerUsed}
+                fallbackUsed={fallbackUsed}
+                uiSectionLabels={uiSectionLabels}
+                entitlementPlanId={entitlementPlanId}
+                sections="insights"
+                embedded
+                showHeader={false}
+                showToolbar={false}
+              />
+            </div>
+          ) : null}
+
+          {activeSection === "flashcards" && hasFlashcards ? (
+            <div
+              id="result-section-flashcards"
+              className="min-w-0 p-3 sm:p-5"
+              role="tabpanel"
+            >
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-fuchsia-300" aria-hidden />
+                  <h3 className="text-sm font-semibold text-white">Study cards</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-zinc-500">
+                    {flashcardCount} card{flashcardCount === 1 ? "" : "s"}
+                  </span>
+                  {hasLearn ? (
+                    <button
+                      type="button"
+                      onClick={handleStartLearn}
+                      className="rounded-lg bg-violet-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-violet-400"
+                    >
+                      Practice
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              <LearnSection
+                cards={result.learnCards}
+                modeId={modeId}
+                entitlementPlanId={entitlementPlanId}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
 
-      <ListeningExperienceSuggestions onTryAudio={onTryAudio} onTryPodcast={onTryPodcast} />
+      {bothReady ? (
+        <div
+          className="flex flex-col gap-3 border-t border-white/[0.06] pt-4 sm:flex-row sm:items-center sm:justify-between"
+          data-results-practice-cta
+        >
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-white">Practice these ideas</h3>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {hasLearn
+                ? `${basePracticeCards.length} recall prompts from this analysis.`
+                : "No Learn cards were generated for this analysis."}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              disabled={!hasLearn}
+              onClick={handleStartLearn}
+              className="inline-flex items-center justify-center rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Practice
+            </button>
+            <button
+              type="button"
+              disabled={!hasQuiz}
+              onClick={handleStartQuiz}
+              className="inline-flex items-center justify-center rounded-xl border border-white/[0.1] bg-transparent px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white/[0.18] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Take quiz
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <ResultsSectionTabs
+            sections={practiceTabs}
+            activeId={
+              activeSection === "learn" || activeSection === "quiz" ? activeSection : undefined
+            }
+            onNavigate={handleNavigate}
+            ariaLabel="Practice sections"
+          />
+          <div className="grid min-w-0 grid-cols-1 gap-3">
+            {learnStarted ? (
+              <section
+                id="result-section-learn"
+                className="min-w-0 overflow-visible rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-950/40 via-[#0f1520]/95 to-zinc-950 p-3 sm:p-5"
+              >
+                <LearnVersionTabs
+                  versions={learnVersions}
+                  activeVersion={activeLearnVersion}
+                  canAdd={canAddLearnVersion}
+                  capacityNote={capacity.reason}
+                  maxVersions={capacity.maxVersions}
+                  collapsed={learnCollapsed}
+                  onSelect={(version) => {
+                    setActiveLearnVersion(version);
+                    setLearnCollapsed(false);
+                  }}
+                  onAdd={() => createLearnVersion([])}
+                  onRestart={() => handleRestartLearn()}
+                  onToggleCollapse={() => setLearnCollapsed((value) => !value)}
+                />
+                {learnCollapsed ? (
+                  <p className="text-xs text-zinc-500">
+                    Learn session hidden. Tap Show to continue where you left off.
+                  </p>
+                ) : hasLearn ? (
+                  <AnalysisPracticeSession
+                    key={`learn-v${activeVersionRecord.version}-r${activeVersionRecord.remountKey}`}
+                    analysisId={analysisId}
+                    documentTitle={result.title}
+                    sourceLabel={sourceLabel}
+                    modeLabel={modeLabel}
+                    sourceKindLabel={sourceKindLabel}
+                    cards={practiceCards}
+                    cardAccess={cardAccess}
+                    hasLearnCards
+                    practicePersisted={Boolean(savedAnalysisId)}
+                    entitlementPlanId={entitlementPlanId}
+                    isPaidActive={isPaidActive}
+                    autoStart
+                    hideWorkspaceLinks
+                    audioStudyInput={audioStudyInput}
+                    onLearnComplete={handleLearnComplete}
+                    onStartQuiz={handleStartQuiz}
+                  />
+                ) : null}
+              </section>
+            ) : null}
+
+            {quizActive ? (
+              <section
+                id="result-section-quiz"
+                className="min-w-0 overflow-visible rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 via-[#14101f]/90 to-zinc-950 p-3 sm:p-5"
+              >
+                <SessionModuleToolbar
+                  title="Quiz session"
+                  tone="violet"
+                  collapsed={quizCollapsed}
+                  onToggleCollapse={() => setQuizCollapsed((value) => !value)}
+                  onRestart={handleRestartQuiz}
+                  restartLabel="Restart quiz from the first question"
+                />
+                {quizCollapsed ? (
+                  <p className="text-xs text-zinc-500">
+                    Quiz hidden. Tap Show to continue, or Restart to begin from question 1.
+                  </p>
+                ) : (
+                  <AnalysisQuizSession
+                    key={`quiz-${quizSessionKey}-v${activeLearnVersion}`}
+                    analysisId={analysisId}
+                    documentTitle={result.title}
+                    questions={quizQuestions}
+                    retentionSummary={activeLearnStats?.summary ?? null}
+                    gotItCount={activeLearnStats?.gotItCount ?? 0}
+                    reviewAgainCount={activeLearnStats?.reviewAgainCount ?? 0}
+                    lockedQuizCount={cardAccess.lockedCount}
+                    entitlementPlanId={entitlementPlanId}
+                    isPaidActive={isPaidActive}
+                    audioStudyInput={audioStudyInput}
+                    initialPhase="question"
+                    hideWorkspaceLinks
+                    onRestartLearn={handleRestartLearn}
+                    onStartFocusedLearn={handleStartFocusedLearn}
+                    canCreateLearnVersion={canAddLearnVersion}
+                    learnCapacityNote={capacity.reason}
+                  />
+                )}
+              </section>
+            ) : null}
+          </div>
+        </>
+      )}
 
       {footerContent}
     </section>

@@ -131,7 +131,7 @@ export default function SummarizePdfPage() {
 
       <CTASection
         title="Summarize your next PDF"
-        description="Four intelligence modes are live. Open the workspace and upload in seconds."
+        description="Four free core lenses are live (including Study). Open the workspace and upload in seconds."
         primaryLabel="Start summarizing"
       />
     </>

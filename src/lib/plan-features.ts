@@ -1,23 +1,61 @@
-import { ACTIVE_INTELLIGENCE_MODE_IDS, INTELLIGENCE_MODES } from "@/config/modes";
+import {
+  CORE_PRODUCT_LENS_MODE_IDS,
+  FREE_CORE_MODE_IDS,
+  INTELLIGENCE_MODES,
+  PAID_PRIMARY_LENS_MODE_IDS,
+} from "@/config/modes";
 import { getPlanDefinition } from "@/data/pricingPlans";
 import { getMaxUploadBytes, getPlanLimits } from "@/lib/plans/planLimits";
 import type { PlanId } from "@/types/plan";
 import type { IntelligenceModeDefinition, IntelligenceModeId } from "@/types/modes";
 
 const MODE_RUN_ORDER: IntelligenceModeId[] = [
-  ...ACTIVE_INTELLIGENCE_MODE_IDS,
-  ...INTELLIGENCE_MODES.filter((m) => m.availability !== "active").map((m) => m.id),
+  ...FREE_CORE_MODE_IDS,
+  ...PAID_PRIMARY_LENS_MODE_IDS,
+  ...INTELLIGENCE_MODES.filter(
+    (m) =>
+      !(FREE_CORE_MODE_IDS as readonly string[]).includes(m.id) &&
+      !(PAID_PRIMARY_LENS_MODE_IDS as readonly string[]).includes(m.id),
+  ).map((m) => m.id),
 ];
 
+/** Scholar: 4 free cores + Contract/Exam + adjacent study lenses. */
+const SCHOLAR_MODE_IDS: readonly IntelligenceModeId[] = [
+  ...FREE_CORE_MODE_IDS,
+  ...PAID_PRIMARY_LENS_MODE_IDS,
+  "flashcard-builder",
+  "quiz-generator",
+  "the-researcher",
+  "concept-explainer",
+  "key-points",
+  "deep-dive",
+];
+
+function uniqueModeIds(ids: readonly IntelligenceModeId[]): IntelligenceModeId[] {
+  return [...new Set(ids)];
+}
+
 /**
- * Modes a plan may run (architecture only — workspace still uses availability flags for UI).
- * Beta: active modes only at runtime; Pro/Scholar expand the catalog per config.
+ * Modes a plan may run.
+ * Free/beta: 4 core lenses (Study included).
+ * Scholar: cores + Contract/Exam + study-adjacent.
+ * Pro/Team: full runnable catalog.
  */
 export function getAllowedModeIdsForPlan(planId: PlanId): IntelligenceModeId[] {
-  const { intelligenceModesIncluded } = getPlanDefinition(planId).limits;
+  if (planId === "free" || planId === "beta") {
+    return [...FREE_CORE_MODE_IDS];
+  }
 
+  if (planId === "scholar") {
+    return uniqueModeIds(SCHOLAR_MODE_IDS);
+  }
+
+  const { intelligenceModesIncluded } = getPlanDefinition(planId).limits;
   if (intelligenceModesIncluded === "all") {
-    return MODE_RUN_ORDER;
+    return MODE_RUN_ORDER.filter((id) => {
+      const mode = INTELLIGENCE_MODES.find((m) => m.id === id);
+      return mode?.availability !== "coming_soon";
+    });
   }
 
   return MODE_RUN_ORDER.slice(0, intelligenceModesIncluded);
@@ -27,12 +65,15 @@ export function isModeIncludedInPlan(
   modeId: IntelligenceModeId,
   planId: PlanId,
 ): boolean {
-  if (planId === "beta") {
-    return ACTIVE_INTELLIGENCE_MODE_IDS.includes(
-      modeId as (typeof ACTIVE_INTELLIGENCE_MODE_IDS)[number],
-    );
-  }
   return getAllowedModeIdsForPlan(planId).includes(modeId);
+}
+
+export function isFreeCoreMode(modeId: IntelligenceModeId): boolean {
+  return (FREE_CORE_MODE_IDS as readonly string[]).includes(modeId);
+}
+
+export function isCoreProductLens(modeId: IntelligenceModeId): boolean {
+  return (CORE_PRODUCT_LENS_MODE_IDS as readonly string[]).includes(modeId);
 }
 
 /** Minimum paid tier required to run a mode (for badges and upgrade CTAs). */
@@ -57,7 +98,6 @@ export function getMinimumUpgradePlanForMode(modeId: IntelligenceModeId): PlanId
 export function getUpgradePlanForMode(
   mode: IntelligenceModeDefinition,
 ): PlanId {
-  if (mode.availability === "active") return "free";
   return getMinimumUpgradePlanForMode(mode.id);
 }
 
@@ -104,3 +144,5 @@ export function planHasFeature(
 }
 
 export const TOTAL_INTELLIGENCE_MODE_COUNT = INTELLIGENCE_MODES.length;
+export const CORE_PRODUCT_LENS_COUNT = CORE_PRODUCT_LENS_MODE_IDS.length;
+export const FREE_CORE_MODE_COUNT = FREE_CORE_MODE_IDS.length;

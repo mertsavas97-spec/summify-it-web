@@ -188,6 +188,10 @@ type LearningExperienceSelectorProps = {
   disabled?: boolean;
   compact?: boolean;
   showHeader?: boolean;
+  /** Override or hide the "Step N · Output" eyebrow. Pass null to hide. */
+  stepLabel?: string | null;
+  title?: string;
+  description?: string;
 };
 
 export function LearningExperienceSelector({
@@ -196,30 +200,41 @@ export function LearningExperienceSelector({
   disabled = false,
   compact = false,
   showHeader = true,
+  stepLabel = "Step 2 · Output",
+  title = "Choose your summarizer output",
+  description,
 }: LearningExperienceSelectorProps) {
+  const resolvedDescription =
+    description ??
+    (compact
+      ? "AI summary, audio lesson, or podcast."
+      : "Start with an AI summary — then learn with flashcards and quiz, or listen as audio.");
+
   return (
     <section className={compact ? "space-y-3" : "space-y-5"} data-learning-experience-selector>
       {showHeader ? (
         <div>
-          {!compact ? (
+          {!compact && stepLabel ? (
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-300/70">
-              Step 2 · Output
+              {stepLabel}
             </p>
           ) : null}
           <h2
             className={`font-semibold tracking-tight text-white ${
-              compact ? "text-sm sm:text-base" : "mt-1 text-lg sm:text-xl"
+              compact ? "text-sm sm:text-base" : stepLabel ? "mt-1 text-lg sm:text-xl" : "text-lg sm:text-xl"
             }`}
           >
-            Choose your summarizer output
+            {title}
           </h2>
-          {!compact ? (
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-zinc-500">
-              Start with an AI summary — then learn with flashcards and quiz, or listen as audio.
-            </p>
-          ) : (
-            <p className="mt-0.5 text-xs text-zinc-500">AI summary, audio lesson, or podcast.</p>
-          )}
+          <p
+            className={
+              compact
+                ? "mt-0.5 text-xs text-zinc-500"
+                : "mt-1.5 max-w-2xl text-sm leading-relaxed text-zinc-500"
+            }
+          >
+            {resolvedDescription}
+          </p>
         </div>
       ) : null}
 

@@ -51,6 +51,14 @@ const DOMAIN_PRIMARY: Partial<Record<CognitionDocumentProfile["domain"], Cogniti
   creative: ["themes", "narrative_structure", "content_angles", "creator_hooks"],
 };
 
+const STUDY_MEDIA_PRIMARY: CognitiveDimension[] = [
+  "definitions",
+  "mechanisms",
+  "formulas",
+  "key_concepts",
+  "review_questions",
+];
+
 const FAMILY_PRIMARY: Partial<Record<PersonaBrain["family"], CognitiveDimension[]>> = {
   learning: ["definitions", "key_concepts", "review_questions", "memory_hooks"],
   research: ["evidence_quality", "methodology", "limitations", "key_concepts"],
@@ -84,6 +92,13 @@ const PAIR_BOOST: Array<{
     rationale: "Student + literary → narrative elements",
   },
   {
+    when: (p, d) =>
+      (p.family === "learning" || p.id === "the-student" || p.id === "exam-prep") &&
+      (d.domain === "media_transcript" || d.domain === "educational" || d.domain === "academic"),
+    add: ["definitions", "mechanisms", "formulas", "review_questions"],
+    rationale: "Study persona on lecture/transcript → STEM study dimensions, not creator hooks",
+  },
+  {
     when: (p, d) => p.id === "the-creator" && d.domain === "media_transcript",
     add: ["creator_hooks", "content_angles", "audience_takeaways"],
     rationale: "Creator + transcript → repurposing angles",
@@ -104,12 +119,25 @@ function unique(list: CognitiveDimension[]): CognitiveDimension[] {
   return [...new Set(list)];
 }
 
+function isLearningPersona(personaBrain: PersonaBrain): boolean {
+  return (
+    personaBrain.family === "learning" ||
+    personaBrain.id === "the-student" ||
+    personaBrain.id === "exam-prep"
+  );
+}
+
 export function resolveCognitiveDimensions(
   personaBrain: PersonaBrain,
   documentProfile: CognitionDocumentProfile,
 ): ResolvedCognitiveDimensions {
+  const domainPrimary =
+    isLearningPersona(personaBrain) && documentProfile.domain === "media_transcript"
+      ? STUDY_MEDIA_PRIMARY
+      : (DOMAIN_PRIMARY[documentProfile.domain] ?? ["key_concepts"]);
+
   const primary = unique([
-    ...(DOMAIN_PRIMARY[documentProfile.domain] ?? ["key_concepts"]),
+    ...domainPrimary,
     ...(FAMILY_PRIMARY[personaBrain.family] ?? []),
   ]).slice(0, 8);
 

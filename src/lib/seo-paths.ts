@@ -1,4 +1,4 @@
-import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
+import { CORE_PRODUCT_LENS_MODE_IDS } from "@/config/modes";
 import { BLOG_POSTS } from "@/data/blog-posts";
 import { getAllBlogCategorySlugs } from "@/data/blog-categories";
 import { FORMAT_LANDINGS } from "@/data/format-landings";
@@ -46,7 +46,7 @@ const SEGMENT_PATHS = [
   "/for-researchers",
 ] as const;
 
-const MODE_PATHS = ACTIVE_INTELLIGENCE_MODE_IDS.map((id) => `/modes/${id}`);
+const MODE_PATHS = CORE_PRODUCT_LENS_MODE_IDS.map((id) => `/modes/${id}`);
 
 const GUIDE_PATHS = GUIDE_SLUGS.map((slug) => `/guides/${slug}`);
 

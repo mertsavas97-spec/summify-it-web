@@ -1,13 +1,20 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin, isServiceRoleConfigured } from "@/lib/supabase/admin";
 import { createClientIfConfigured } from "@/lib/supabase/server";
 import { devLog, devWarn } from "@/server/logging";
 import type { SaveAnalysisInsertPayload } from "./buildSavePayload";
 
 export type SaveAnalysisOptions = {
   maxSavedAnalyses?: number | null;
+  /**
+   * User id already verified by the caller (e.g. getOptionalUser in /api/analyze).
+   * Enables a service-role insert fallback when the cookie/JWT client cannot write.
+   */
+  authVerifiedUserId?: string;
 };
 
 async function trimSavedAnalysesForUser(
-  supabase: NonNullable<Awaited<ReturnType<typeof createClientIfConfigured>>>,
+  supabase: SupabaseClient,
   userId: string,
   maxSavedAnalyses: number,
 ): Promise<void> {
@@ -45,6 +52,52 @@ async function trimSavedAnalysesForUser(
   }
 }
 
+function buildInsertRow(payload: SaveAnalysisInsertPayload, userId: string) {
+  return {
+    user_id: userId,
+    title: payload.title,
+    source_kind: payload.source_kind,
+    intelligence_mode: payload.intelligence_mode,
+    provider_used: payload.provider_used,
+    document_type: payload.document_type,
+    source_label: payload.source_label,
+    summary: payload.summary,
+    learn_cards: payload.learn_cards,
+    metadata: payload.metadata,
+  };
+}
+
+async function insertSavedAnalysis(
+  supabase: SupabaseClient,
+  payload: SaveAnalysisInsertPayload,
+  userId: string,
+  via: "user_session" | "service_role",
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("saved_analyses")
+    .insert(buildInsertRow(payload, userId))
+    .select("id")
+    .single();
+
+  if (error) {
+    devWarn("[summify.save] saved_analysis_insert_failed", {
+      via,
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    return null;
+  }
+
+  devLog("[summify.save] saved_analysis_insert_success", {
+    via,
+    id: data.id,
+    userId,
+  });
+  return data.id;
+}
+
 /** Insert a saved analysis for the authenticated user. Never throws. */
 export async function saveAnalysis(
   payload: SaveAnalysisInsertPayload,
@@ -53,6 +106,20 @@ export async function saveAnalysis(
   try {
     const supabase = await createClientIfConfigured();
     if (!supabase) {
+      // Cookie client unavailable — still try service-role when the caller verified auth.
+      if (
+        options.authVerifiedUserId &&
+        options.authVerifiedUserId === payload.user_id &&
+        isServiceRoleConfigured()
+      ) {
+        const admin = getSupabaseAdmin();
+        const id = await insertSavedAnalysis(admin, payload, payload.user_id, "service_role");
+        if (id && options.maxSavedAnalyses != null) {
+          await trimSavedAnalysesForUser(admin, payload.user_id, options.maxSavedAnalyses);
+        }
+        return id;
+      }
+
       devWarn("[summify.save] saved_analysis_insert_failed", {
         reason: "supabase_not_configured",
       });
@@ -61,58 +128,62 @@ export async function saveAnalysis(
 
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    // Prefer getUser() (validated) over getSession().access_token — the latter is often
+    // missing in App Router route handlers even when the user is authenticated.
+    if (!user || user.id !== payload.user_id) {
+      if (
+        options.authVerifiedUserId &&
+        options.authVerifiedUserId === payload.user_id &&
+        isServiceRoleConfigured()
+      ) {
+        devWarn("[summify.save] falling_back_to_service_role", {
+          reason: userError?.message ?? (user ? "session_user_mismatch" : "no_session_user"),
+          userId: payload.user_id,
+        });
+        const admin = getSupabaseAdmin();
+        const id = await insertSavedAnalysis(admin, payload, payload.user_id, "service_role");
+        if (id && options.maxSavedAnalyses != null) {
+          await trimSavedAnalysesForUser(admin, payload.user_id, options.maxSavedAnalyses);
+        }
+        return id;
+      }
 
-    if (!user || user.id !== payload.user_id || !session?.access_token) {
       devLog("[summify.save] saved_analysis_skipped_no_user", {
-        reason: !session?.access_token
-          ? "no_session_access_token"
-          : user
-            ? "session_user_mismatch"
-            : "no_session_user",
+        reason: user ? "session_user_mismatch" : "no_session_user",
+        message: userError?.message,
       });
       return null;
     }
 
-    const { data, error } = await supabase
-      .from("saved_analyses")
-      .insert({
-        user_id: user.id,
-        title: payload.title,
-        source_kind: payload.source_kind,
-        intelligence_mode: payload.intelligence_mode,
-        provider_used: payload.provider_used,
-        document_type: payload.document_type,
-        source_label: payload.source_label,
-        summary: payload.summary,
-        learn_cards: payload.learn_cards,
-        metadata: payload.metadata,
-      })
-      .select("id")
-      .single();
+    const sessionId = await insertSavedAnalysis(supabase, payload, user.id, "user_session");
+    if (sessionId) {
+      if (options.maxSavedAnalyses != null) {
+        await trimSavedAnalysesForUser(supabase, user.id, options.maxSavedAnalyses);
+      }
+      return sessionId;
+    }
 
-    if (error) {
-      devWarn("[summify.save] saved_analysis_insert_failed", {
-        message: error.message,
-        code: error.code,
+    // Cookie client authenticated but insert failed (RLS/grants). Retry with service role.
+    if (
+      options.authVerifiedUserId === user.id &&
+      isServiceRoleConfigured()
+    ) {
+      devWarn("[summify.save] falling_back_to_service_role", {
+        reason: "user_session_insert_failed",
+        userId: user.id,
       });
-      return null;
+      const admin = getSupabaseAdmin();
+      const id = await insertSavedAnalysis(admin, payload, user.id, "service_role");
+      if (id && options.maxSavedAnalyses != null) {
+        await trimSavedAnalysesForUser(admin, user.id, options.maxSavedAnalyses);
+      }
+      return id;
     }
 
-    devLog("[summify.save] saved_analysis_insert_success", {
-      id: data.id,
-      userId: user.id,
-    });
-
-    if (options.maxSavedAnalyses != null) {
-      await trimSavedAnalysesForUser(supabase, user.id, options.maxSavedAnalyses);
-    }
-
-    return data.id;
+    return null;
   } catch (err) {
     devWarn("[summify.save] saved_analysis_insert_failed", {
       message: err instanceof Error ? err.message : String(err),

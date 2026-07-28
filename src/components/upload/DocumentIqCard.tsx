@@ -64,19 +64,48 @@ function clamp(value: number, min = 0, max = 100) {
 
 function ProgressRing({ value }: { value: number }) {
   const pct = clamp(value);
-  // Use conic-gradient for a lightweight circular progress.
+  const size = 64;
+  const stroke = 5;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (pct / 100) * circumference;
+
   return (
     <div
-      className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/[0.07] bg-black/25"
-      style={{
-        background: `conic-gradient(rgba(167,139,250,0.95) ${pct}%, rgba(255,255,255,0.08) 0)`,
-      }}
+      className="relative h-16 w-16 shrink-0"
       aria-label={`Document IQ ${pct} out of 100`}
       role="img"
     >
-      <div className="flex h-[54px] w-[54px] items-center justify-center rounded-full bg-[#0b0e15]">
-        <span className="text-sm font-semibold text-violet-100 tabular-nums">{pct}</span>
-      </div>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+        aria-hidden
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(167,139,250,0.95)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-semibold tabular-nums text-violet-100">
+        {pct}
+      </span>
     </div>
   );
 }
@@ -161,12 +190,15 @@ export function DocumentIqCard({
   metadata,
   guestSimplified = false,
   compact = false,
+  resultsCollapsed = false,
 }: {
   extractedText: string;
   metadata?: ExtractionMetadata | null;
   guestSimplified?: boolean;
   /** Sidebar variant — hides recommendations footer and share CTA. */
   compact?: boolean;
+  /** Results rail: one-line readiness, expand for metrics. */
+  resultsCollapsed?: boolean;
 }) {
   const trimmed = extractedText.trim();
   const isTooShort = trimmed.length < 220;
@@ -178,6 +210,42 @@ export function DocumentIqCard({
   const confidence = iq
     ? getConfidencePresentation(iq.detectedDocumentType.confidence)
     : null;
+
+  if (resultsCollapsed && iq) {
+    return (
+      <details
+        open
+        className="group rounded-2xl border border-violet-400/[0.12] bg-[#0d1018]/85 open:shadow-[0_18px_45px_rgba(0,0,0,0.22)]"
+        data-document-iq-card
+        data-document-iq-collapsed
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 sm:px-5 [&::-webkit-details-marker]:hidden">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-zinc-100">
+              Ready to study · ~{iq.estimatedReadingMinutes} min
+            </p>
+            <p className="mt-0.5 text-[11px] text-zinc-500">
+              {iq.iqLabel} · tap for Document IQ details
+            </p>
+          </div>
+          <span className="shrink-0 text-[11px] font-medium text-violet-300 group-open:hidden">
+            Details
+          </span>
+          <span className="hidden shrink-0 text-[11px] font-medium text-zinc-500 group-open:inline">
+            Hide
+          </span>
+        </summary>
+        <div className="border-t border-white/[0.06] px-4 py-4 sm:px-5">
+          <DocumentIqCard
+            extractedText={extractedText}
+            metadata={metadata}
+            guestSimplified={guestSimplified}
+            compact
+          />
+        </div>
+      </details>
+    );
+  }
 
   return (
     <section

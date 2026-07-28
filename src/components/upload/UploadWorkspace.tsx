@@ -15,10 +15,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { UnifiedSourceComposer, detectLinkKind } from "./UnifiedSourceComposer";
-import { LearningExperienceSelector } from "./LearningExperienceSelector";
 import { WorkspaceEntitlementBanner } from "./WorkspaceEntitlementBanner";
 import { TextAnalysisMvp } from "./TextAnalysisMvp";
-import { Badge } from "@/components/ui/Badge";
 import { getPlanLimits } from "@/lib/plans/planLimits";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import {
@@ -53,7 +51,6 @@ import {
   saveAuthReturnTo,
   savePendingAnalysis,
 } from "@/lib/auth/return-to";
-import { TrustSignals } from "@/components/growth/TrustSignals";
 import {
   countPodcastAnalysisCandidates,
   PodcastWorkspaceCtas,
@@ -63,8 +60,11 @@ import type { PodcastSourceProfile } from "@/lib/podcast/eligibility";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { UploadPaywallModal } from "./UploadPaywallModal";
 import { GuestWorkspaceBanner } from "./GuestWorkspaceBanner";
-import { suggestIntelligenceModeForSource } from "@/lib/suggest-intelligence-mode";
-import { IntelligenceModeSelector } from "./IntelligenceModeSelector";
+import { suggestIntelligenceModeForSource, explainModeSuggestionReason } from "@/lib/suggest-intelligence-mode";
+import { getEducationalCreatorModeWarning } from "@/lib/educational-source";
+import {
+  WorkspaceLensPicker,
+} from "./WorkspaceLensPicker";
 import { DocumentIqCard } from "./DocumentIqCard";
 import { LEARNING_EXPERIENCE_OPTIONS } from "@/types/learning-experience";
 import { clearGhostSession, saveGhostSession } from "@/lib/ghost-session";
@@ -73,44 +73,13 @@ import {
   isAnalysisQuotaError,
   isGuestQuotaError,
 } from "@/lib/analysis-quota";
+import { analysisSessionResetForTrigger } from "@/lib/analysis-session-reset";
 import type { LearningExperienceId } from "@/types/learning-experience";
 
 const WORKSPACE_CARD =
   "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 shadow-sm shadow-black/20 backdrop-blur";
 const WORKSPACE_CARD_PADDING = "p-4 sm:p-5";
-const SETUP_STEPS = ["Source", "Output", "Summarize", "Results"] as const;
 const LARGE_FILE_DIRECT_UPLOAD_THRESHOLD_BYTES = 3.5 * 1024 * 1024;
-type SetupStep = (typeof SETUP_STEPS)[number];
-
-function SetupStepper({ activeStep, compact = false }: { activeStep: SetupStep; compact?: boolean }) {
-  const activeIndex = SETUP_STEPS.indexOf(activeStep);
-
-  return (
-    <ol className="grid grid-cols-4 gap-1.5 sm:gap-2" aria-label="Summarizer setup">
-      {SETUP_STEPS.map((step, index) => {
-        const isActive = index === activeIndex;
-        const isComplete = index < activeIndex;
-        return (
-          <li key={step} className="min-w-0">
-            <div
-              className={`flex items-center justify-center rounded-lg border px-1.5 font-medium transition-colors ${
-                compact ? "h-8 text-[10px] sm:text-xs" : "h-10 rounded-xl text-xs"
-              } ${
-                isActive
-                  ? "border-violet-400/35 bg-violet-500/10 text-violet-100 shadow-[0_0_18px_rgba(139,92,246,0.12)]"
-                  : isComplete
-                    ? "border-emerald-400/15 bg-emerald-500/10 text-emerald-300/80"
-                    : "border-white/[0.055] bg-white/[0.02] text-zinc-600"
-              }`}
-            >
-              {step}
-            </div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 function getSourceTypeLabel(inputMode: WorkspaceInputMode, metadata: ExtractionMetadata | null): string {
   if (inputMode === "text") return "Text";
@@ -186,22 +155,31 @@ function CompactSourceReadyCard({
   metadata,
   rawText,
   onReplace,
+  embedded = false,
 }: {
   inputMode: WorkspaceInputMode;
   sourceLabel: string | null;
   metadata: ExtractionMetadata | null;
   rawText: string;
   onReplace: () => void;
+  embedded?: boolean;
 }) {
   const sourceIcon = getSourceIconElement(inputMode, metadata);
   const title = getSourceTitle({ inputMode, sourceLabel, metadata });
   const facts = getSourceFacts({ inputMode, metadata, rawText });
 
   return (
-    <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`} data-workspace-source-ready-card>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <section
+      className={
+        embedded
+          ? "rounded-xl border border-emerald-400/15 bg-emerald-950/15 px-3 py-3"
+          : `${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`
+      }
+      data-workspace-source-ready-card
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300">
             {sourceIcon}
           </span>
           <div className="min-w-0">
@@ -209,11 +187,14 @@ function CompactSourceReadyCard({
               <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
                 Source ready
               </span>
-              <span className="text-xs text-zinc-500">{getSourceTypeLabel(inputMode, metadata)}</span>
             </div>
-            <h2 className="mt-1 truncate text-base font-semibold text-white">{title}</h2>
+            <h2 className="mt-1 break-words text-sm font-semibold text-white [overflow-wrap:anywhere] sm:truncate sm:text-base">
+              {title}
+            </h2>
             {facts.length > 0 && (
-              <p className="mt-1 text-xs text-zinc-500">{facts.join(" · ")}</p>
+              <p className="mt-0.5 break-words text-xs text-zinc-500 [overflow-wrap:anywhere]">
+                {facts.join(" · ")}
+              </p>
             )}
           </div>
         </div>
@@ -222,7 +203,7 @@ function CompactSourceReadyCard({
           onClick={onReplace}
           className="self-start rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:border-violet-400/25 hover:text-violet-200 sm:self-center"
         >
-          Replace source
+          Replace
         </button>
       </div>
     </section>
@@ -230,7 +211,6 @@ function CompactSourceReadyCard({
 }
 
 function SourceReadyActionBar({
-  selectedModeId,
   isAnalyzing,
   canRun,
   runAnalysisHelper,
@@ -242,9 +222,6 @@ function SourceReadyActionBar({
   runAnalysisHelper: string;
   onRunAnalysis: () => void;
 }) {
-  const selectedMode = getIntelligenceModeById(selectedModeId);
-  const selectedModeLabel = selectedMode?.label ?? selectedModeId;
-
   const isQuotaLimit =
     isGuestQuotaError(runAnalysisHelper) ||
     isAnalysisQuotaError(runAnalysisHelper) ||
@@ -255,44 +232,39 @@ function SourceReadyActionBar({
   const shouldShowDailyLimit = !canRun && isQuotaLimit;
 
   return (
-    <section
-      className="rounded-2xl border border-violet-400/15 bg-[#11141d]/75 p-3.5 shadow-[0_0_24px_rgba(139,92,246,0.08)] backdrop-blur sm:p-4"
+    <div
+      className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
       data-workspace-source-ready-action
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-white">Ready to summarize</p>
-          <p className="mt-0.5 text-xs text-zinc-500">
-            Source ready · {selectedModeLabel} selected
-          </p>
-        </div>
+      <p className="text-xs text-zinc-500">
+        {isAnalyzing ? "Summarizing…" : "We'll build your AI summary first."}
+      </p>
 
-        {!canRun && isQuotaLimit ? (
-          <Button
-            type="button"
-            size="md"
-            onClick={onRunAnalysis}
-            className="border border-amber-400/25 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 text-amber-50 shadow-[0_0_0_1px_rgba(245,158,11,0.10)] hover:border-amber-300/40 hover:bg-amber-950/55 sm:min-w-[168px]"
-          >
-            View plans
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="md"
-            disabled={!canRun || isAnalyzing}
-            onClick={onRunAnalysis}
-            className="shadow-violet-500/25 sm:min-w-[148px]"
-          >
-            {isAnalyzing ? "Summarizing..." : "Summarize"}
-          </Button>
-        )}
-      </div>
+      {!canRun && isQuotaLimit ? (
+        <Button
+          type="button"
+          size="md"
+          onClick={onRunAnalysis}
+          className="w-full border border-amber-400/25 bg-gradient-to-r from-amber-950/45 via-zinc-950/70 to-zinc-950 text-amber-50 shadow-[0_0_0_1px_rgba(245,158,11,0.10)] hover:border-amber-300/40 hover:bg-amber-950/55 sm:w-auto sm:min-w-[148px]"
+        >
+          View plans
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          size="md"
+          disabled={!canRun || isAnalyzing}
+          onClick={onRunAnalysis}
+          className="w-full shadow-violet-500/25 sm:w-auto sm:min-w-[160px]"
+        >
+          {isAnalyzing ? "Summarizing..." : "Summarize"}
+        </Button>
+      )}
 
       {!shouldShowDailyLimit && !canRun ? (
-        <p className="mt-2 text-[11px] text-zinc-600">{runAnalysisHelper}</p>
+        <p className="text-[11px] text-zinc-600 sm:order-last sm:basis-full">{runAnalysisHelper}</p>
       ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -326,16 +298,14 @@ function getGeneratingExperienceCopy(
 ): GeneratingExperienceCopy {
   if (experienceId === "audio") {
     return {
-      stepLabel: "Step 3 · Prepare audio",
+      stepLabel: "",
       title: "Preparing your audio lesson",
-      description:
-        "We're analyzing your source first. Audio is not generated yet — on the next screen you'll create your teacher-style lesson in one click.",
+      description: "Analyzing your source first — you’ll generate audio on the next screen.",
       nextHint: "Next: Generate audio lesson",
       stages: [
-        { id: "extract", label: "Extract source", done: true },
-        { id: "structure", label: "Structure content", done: true },
-        { id: "analyze", label: "Build listening brief", done: false, active: true },
-        { id: "ready", label: "Ready to generate audio", done: false },
+        { id: "extract", label: "Source ready", done: true },
+        { id: "analyze", label: "Writing brief", done: false, active: true },
+        { id: "ready", label: "Ready for audio", done: false },
       ],
       shell:
         "border-sky-400/25 bg-gradient-to-b from-sky-950/45 via-[#0d141c]/95 to-[#0a1016] shadow-[0_0_48px_rgba(56,189,248,0.16)]",
@@ -354,19 +324,17 @@ function getGeneratingExperienceCopy(
 
   if (experienceId === "podcast") {
     return {
-      stepLabel: "Step 3 · Prepare podcast",
-      title: "Preparing your podcast studio",
-      description:
-        "We're analyzing your source first. The two-host podcast isn't generated yet — on the next screen you'll start the conversation when you're ready.",
+      stepLabel: "",
+      title: "Preparing your podcast brief",
+      description: "Analyzing your source first — you’ll start the hosts on the next screen.",
       nextHint: "Next: Generate podcast",
       stages: [
-        { id: "extract", label: "Extract source", done: true },
-        { id: "structure", label: "Map talking points", done: true },
-        { id: "analyze", label: "Build discussion brief", done: false, active: true },
-        { id: "ready", label: "Ready to generate podcast", done: false },
+        { id: "extract", label: "Source ready", done: true },
+        { id: "analyze", label: "Writing brief", done: false, active: true },
+        { id: "ready", label: "Ready for podcast", done: false },
       ],
       shell:
-        "border-amber-400/25 bg-gradient-to-b from-amber-950/40 via-[#16120e]/95 to-[#100e0b] shadow-[0_0_48px_rgba(251,146,60,0.14)]",
+        "border-amber-400/25 bg-gradient-to-b from-amber-950/40 via-[#14100c]/95 to-[#0e0b08] shadow-[0_0_48px_rgba(251,146,60,0.14)]",
       stepTone: "text-amber-300/85",
       badge: "border-amber-400/30 bg-amber-500/15 text-amber-50",
       badgeDot: "bg-amber-300",
@@ -381,16 +349,14 @@ function getGeneratingExperienceCopy(
   }
 
   return {
-    stepLabel: "Step 3 · Summarize",
+    stepLabel: "",
     title: "Building your AI summary",
-    description:
-      "Creating a structured summary, key insights, flashcards, and quiz from your source.",
-    nextHint: "Next: Summary, flashcards & quiz",
+    description: "Summary, insights, and study cards from your source.",
+    nextHint: "",
     stages: [
-      { id: "extract", label: "Extract", done: true },
-      { id: "structure", label: "Structure", done: true },
-      { id: "analyze", label: "Summarize", done: false, active: true },
-      { id: "learn", label: "Flashcards & quiz", done: false },
+      { id: "extract", label: "Source ready", done: true },
+      { id: "analyze", label: "Writing summary", done: false, active: true },
+      { id: "learn", label: "Study cards", done: false },
     ],
     shell:
       "border-violet-400/20 bg-gradient-to-b from-violet-950/40 via-[#11141d]/90 to-[#0b0e15] shadow-[0_0_48px_rgba(139,92,246,0.14)]",
@@ -410,7 +376,6 @@ function getGeneratingExperienceCopy(
 function GeneratingAnalysisState({
   experienceId,
   sourceTitle,
-  experienceLabel,
   modeLabel,
   modeDescription,
 }: {
@@ -447,15 +412,17 @@ function GeneratingAnalysisState({
             <Icon className="relative h-5 w-5 animate-[generating-icon-breathe_2s_ease-in-out_infinite]" />
           </span>
           <div className="min-w-0">
-            <p
-              className={`text-[10px] font-semibold uppercase tracking-[0.16em] ${copy.stepTone}`}
-            >
-              {copy.stepLabel}
-            </p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+            <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
               {copy.title}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">{copy.description}</p>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+              {modeLabel
+                ? `${modeLabel}${modeDescription ? ` — ${modeDescription}` : ""}`
+                : copy.description}
+            </p>
+            {sourceTitle ? (
+              <p className="mt-1.5 truncate text-xs text-zinc-600">{sourceTitle}</p>
+            ) : null}
           </div>
         </div>
         <span
@@ -465,43 +432,9 @@ function GeneratingAnalysisState({
             className={`h-1.5 w-1.5 animate-pulse rounded-full ${copy.badgeDot}`}
             aria-hidden
           />
-          <span className="generating-working-label">Working</span>
+          Working
         </span>
       </div>
-
-      {(sourceTitle || experienceLabel || modeLabel) && (
-        <dl
-          className={`relative mt-5 grid gap-2 rounded-2xl border border-white/[0.06] bg-black/25 p-3 text-xs ${
-            modeLabel ? "sm:grid-cols-3" : "sm:grid-cols-2"
-          }`}
-        >
-          {sourceTitle ? (
-            <div className="min-w-0">
-              <dt className="text-zinc-600">Source</dt>
-              <dd className="mt-0.5 truncate font-medium text-zinc-200">{sourceTitle}</dd>
-            </div>
-          ) : null}
-          {experienceLabel ? (
-            <div className="min-w-0">
-              <dt className="text-zinc-600">Experience</dt>
-              <dd className="mt-0.5 font-medium text-zinc-200">{experienceLabel}</dd>
-            </div>
-          ) : null}
-          {modeLabel ? (
-            <div className="min-w-0 sm:col-span-1">
-              <dt className="text-zinc-600">Intelligence mode</dt>
-              <dd className="mt-0.5 font-medium text-violet-100">{modeLabel}</dd>
-              {modeDescription ? (
-                <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">{modeDescription}</p>
-              ) : (
-                <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                  Shapes how the AI summary is written for this source.
-                </p>
-              )}
-            </div>
-          ) : null}
-        </dl>
-      )}
 
       <ol className="relative mt-6 space-y-3" aria-label="Analysis progress">
         {copy.stages.map((stage, index) => {
@@ -576,8 +509,7 @@ function GeneratingAnalysisState({
           className={`relative mt-5 rounded-xl border border-white/[0.06] bg-black/20 px-3.5 py-2.5 text-xs leading-relaxed ${copy.activeBg}`}
         >
           <span className="font-semibold text-white/90">{copy.nextHint}.</span>{" "}
-          This step only prepares your source — generation starts when you tap the button on the
-          results screen.
+          Generation starts when you tap the button on the results screen.
         </p>
       ) : null}
     </section>
@@ -612,12 +544,8 @@ function AnalysisFailureBanner({
 type WorkspacePipelinePhase = "empty" | "ingesting" | "configure" | "analyzing" | "results";
 
 function PostAnalysisRail({
-  inputMode,
-  sourceLabel,
   metadata,
   rawText,
-  selectedModeId,
-  result,
   isAuthenticated,
 }: {
   inputMode: WorkspaceInputMode;
@@ -628,13 +556,8 @@ function PostAnalysisRail({
   result: AnalysisResult;
   isAuthenticated: boolean;
 }) {
-  const title = getSourceTitle({ inputMode, sourceLabel, metadata });
-  const facts = getSourceFacts({ inputMode, metadata, rawText });
-  const mode = getIntelligenceModeById(selectedModeId);
-  const excerpt = rawText.trim().slice(0, 220);
-
   return (
-    <aside className="space-y-4" data-workspace-post-analysis-rail>
+    <aside className="space-y-3" data-workspace-post-analysis-rail>
       {rawText.trim() ? (
         <DocumentIqCard
           extractedText={rawText}
@@ -642,53 +565,6 @@ function PostAnalysisRail({
           guestSimplified={!isAuthenticated}
           compact
         />
-      ) : null}
-
-      <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
-        <h2 className="text-xs font-semibold text-zinc-200">Source profile</h2>
-        <p className="mt-2 truncate text-sm font-medium text-white">{title}</p>
-        <dl className="mt-3 space-y-2 text-xs">
-          <div className="flex items-center justify-between gap-3">
-            <dt className="text-zinc-600">Type</dt>
-            <dd className="text-zinc-400">{getSourceTypeLabel(inputMode, metadata)}</dd>
-          </div>
-          {facts.slice(0, 3).map((fact) => (
-            <div key={fact} className="flex items-center justify-between gap-3">
-              <dt className="text-zinc-600">{fact.includes("characters") ? "Characters" : "Detail"}</dt>
-              <dd className="text-right text-zinc-400">{fact}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      {isAuthenticated ? (
-        <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
-          <h2 className="text-xs font-semibold text-zinc-200">Analysis profile</h2>
-          <p className="mt-2 text-sm font-medium text-white">{mode?.label ?? selectedModeId}</p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-            {mode?.shortDescription ?? "Structured Summify analysis."}
-          </p>
-          <dl className="mt-3 space-y-2 text-xs">
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-zinc-600">Insights</dt>
-              <dd className="text-zinc-400">{result.keyInsights.length}</dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt className="text-zinc-600">Learn cards</dt>
-              <dd className="text-zinc-400">{result.learnCards.length}</dd>
-            </div>
-          </dl>
-        </section>
-      ) : null}
-
-      {isAuthenticated && excerpt ? (
-        <section className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
-          <h2 className="text-xs font-semibold text-zinc-200">Source excerpt</h2>
-          <p className="mt-2 line-clamp-5 text-xs leading-relaxed text-zinc-500">
-            {excerpt}
-            {rawText.trim().length > excerpt.length ? "..." : ""}
-          </p>
-        </section>
       ) : null}
     </aside>
   );
@@ -841,13 +717,32 @@ export function UploadWorkspace() {
     (restoredPendingAnalysis?.analysisMode as IntelligenceModeId | undefined) ??
       getDefaultIntelligenceModeId(),
   );
+  /** Always the latest lens for analyze calls — avoids stale closure after setState. */
+  const analysisModeRef = useRef(analysisMode);
+  analysisModeRef.current = analysisMode;
   const searchParams = useSearchParams();
   const [learningExperience, setLearningExperience] = useState<LearningExperienceId>(() => {
     const intent = searchParams.get("intent");
     if (intent === "audio" || intent === "podcast") return intent;
+    if (intent === "summary") return "summary-learn";
     return "summary-learn";
   });
   const [modeAutoSuggested, setModeAutoSuggested] = useState(false);
+  /** Once the user picks a lens, never overwrite it with auto-suggest. */
+  const [modeUserOverride, setModeUserOverride] = useState(false);
+  const [suggestedModeId, setSuggestedModeId] = useState<IntelligenceModeId | null>(null);
+  const [suggestionReason, setSuggestionReason] = useState<string | null>(null);
+  const educationalCreatorWarning = useMemo(
+    () =>
+      getEducationalCreatorModeWarning({
+        modeId: analysisMode,
+        inputMode,
+        metadata: extractionMeta,
+        fileName,
+        textSnippet: rawText,
+      }),
+    [analysisMode, extractionMeta, fileName, inputMode, rawText],
+  );
   const [showTextComposer, setShowTextComposer] = useState(
     () => (restoredPendingAnalysis?.inputMode ?? "file") === "text" || Boolean(restoredPendingAnalysis?.rawText?.trim()),
   );
@@ -919,9 +814,8 @@ export function UploadWorkspace() {
   const guestBannerExhausted =
     !workspaceEntitlement.isAuthenticated && analysisQuotaExhausted;
 
-  // `useWorkspaceEntitlement` does not currently expose profile/email.
-  // Keep the same checkout surface but disable edu detection here.
-  const scholarCheckoutEligible = false;
+  // Scholar checkout: .edu (or equivalent school) email unlocks Start Scholar.
+  const scholarCheckoutEligible = workspaceEntitlement.isEduEligible;
 
   useEffect(() => {
     if (!restoredPendingAnalysis) return;
@@ -1112,19 +1006,68 @@ export function UploadWorkspace() {
     clearGhostSession();
   }, []);
 
+  /** Re-analyze / new URL-YouTube run: keep prior results + ghost so quota 429 does not wipe the handoff. */
+  const prepareForReanalyze = useCallback(() => {
+    setYoutubeAnalysisError(null);
+    setUrlAnalysisError(null);
+    setAnalysisQuotaExhausted(false);
+  }, []);
+
+  const beginAnalysisPipeline = useCallback(
+    (trigger: "url_analyze" | "youtube_analyze" | "retry_analyze") => {
+      if (analysisSessionResetForTrigger(trigger) === "abandon_session") {
+        resetAnalysisState();
+        return;
+      }
+      prepareForReanalyze();
+    },
+    [prepareForReanalyze, resetAnalysisState],
+  );
+
   const applySuggestedModeForSource = useCallback(
-    (meta: ExtractionMetadata | null, nextInputMode: WorkspaceInputMode, nextFileName?: string | null) => {
-      if (modeAutoSuggested) return;
+    (
+      meta: ExtractionMetadata | null,
+      nextInputMode: WorkspaceInputMode,
+      nextFileName?: string | null,
+      textSnippet?: string | null,
+    ) => {
       const suggested = suggestIntelligenceModeForSource({
         inputMode: nextInputMode,
         metadata: meta,
         fileName: nextFileName ?? fileName,
         entitlementPlanId: workspaceEntitlement.entitlementPlanId,
+        textSnippet,
       });
+      const reason = explainModeSuggestionReason({
+        modeId: suggested,
+        inputMode: nextInputMode,
+        metadata: meta,
+        fileName: nextFileName ?? fileName,
+        textSnippet,
+      });
+      setSuggestedModeId(suggested);
+      setSuggestionReason(reason);
+      // Never clobber a lens the user already chose.
+      if (modeUserOverride) {
+        setModeAutoSuggested(true);
+        return;
+      }
+      // Allow upgrade Creator → Student once transcript signals appear.
+      const upgradeToStudent =
+        modeAutoSuggested &&
+        suggested === "the-student" &&
+        analysisModeRef.current === "the-creator";
+      if (modeAutoSuggested && !upgradeToStudent) return;
       setAnalysisMode(suggested);
+      analysisModeRef.current = suggested;
       setModeAutoSuggested(true);
     },
-    [fileName, modeAutoSuggested, workspaceEntitlement.entitlementPlanId],
+    [
+      fileName,
+      modeAutoSuggested,
+      modeUserOverride,
+      workspaceEntitlement.entitlementPlanId,
+    ],
   );
 
   const handleReplaceSource = useCallback(() => {
@@ -1139,7 +1082,11 @@ export function UploadWorkspace() {
     setYoutubePipelineActive(false);
     setUrlPipelineActive(false);
     setModeAutoSuggested(false);
+    setModeUserOverride(false);
+    setSuggestedModeId(null);
+    setSuggestionReason(null);
     setAnalysisMode(getDefaultIntelligenceModeId());
+    analysisModeRef.current = getDefaultIntelligenceModeId();
     resetAnalysisState();
   }, [resetAnalysisState]);
 
@@ -1159,13 +1106,17 @@ export function UploadWorkspace() {
   }, [handleReplaceSource]);
 
   const runYoutubeAnalysis = useCallback(
-    async (text: string, meta: YoutubeExtractionMetadata) => {
+    async (
+      text: string,
+      meta: YoutubeExtractionMetadata,
+      modeId: IntelligenceModeId = analysisModeRef.current,
+    ) => {
       setYoutubeAnalysisError(null);
       setIsAnalyzing(true);
 
       const analysis = await runTextAnalysis({
         rawText: text,
-        mode: analysisMode,
+        mode: modeId,
         sourceHint: "youtube",
         sourceContext: buildYoutubeSourceContext(meta),
       });
@@ -1207,18 +1158,22 @@ export function UploadWorkspace() {
       }
       return true;
     },
-    [analysisMode, buildGhostCaptureContext, workspaceEntitlement.isAuthenticated],
+    [buildGhostCaptureContext, workspaceEntitlement.isAuthenticated],
   );
 
   const runUrlAnalysis = useCallback(
-    async (text: string, meta?: ExtractionMetadata | null) => {
+    async (
+      text: string,
+      meta?: ExtractionMetadata | null,
+      modeId: IntelligenceModeId = analysisModeRef.current,
+    ) => {
       setUrlAnalysisError(null);
       setIsAnalyzing(true);
 
       const urlMeta = meta?.sourceKind === "url" ? meta : null;
       const analysis = await runTextAnalysis({
         rawText: text,
-        mode: analysisMode,
+        mode: modeId,
         sourceHint: "url",
         sourceContext: {
           sourceKind: "url",
@@ -1264,7 +1219,7 @@ export function UploadWorkspace() {
       }
       return true;
     },
-    [analysisMode, buildGhostCaptureContext, workspaceEntitlement.isAuthenticated],
+    [buildGhostCaptureContext, workspaceEntitlement.isAuthenticated],
   );
 
   const planLimits = useMemo(
@@ -1354,7 +1309,7 @@ export function UploadWorkspace() {
       setLimitNotice(data.limitNotice ?? null);
       setExtractStatus("ready");
       setExtractStatusMessage("Source ready");
-      applySuggestedModeForSource(data.metadata, "file", file.name);
+      applySuggestedModeForSource(data.metadata, "file", file.name, data.extractedText);
     } catch (error) {
       const lowerMessage = error instanceof Error ? error.message.toLowerCase() : "";
       const message =
@@ -1376,8 +1331,7 @@ export function UploadWorkspace() {
       setSourceUrl(url);
       setExtractError(null);
       setUrlAnalysisError(null);
-      resetAnalysisState();
-      setUrlPipelineActive(true);
+      beginAnalysisPipeline(options?.analyzeOnly ? "retry_analyze" : "url_analyze");
       fireUploadStarted("url", extractionMeta, `url:${url}`);
 
       let text = rawText;
@@ -1385,6 +1339,7 @@ export function UploadWorkspace() {
         extractionMeta?.sourceKind === "url" ? extractionMeta : null;
 
       if (!options?.analyzeOnly) {
+        setUrlPipelineActive(true);
         setExtractStatus("extracting");
 
         try {
@@ -1409,7 +1364,10 @@ export function UploadWorkspace() {
           setExtractionMeta(data.metadata);
           setLimitNotice(data.limitNotice ?? null);
           setExtractStatus("ready");
-          applySuggestedModeForSource(data.metadata, "url");
+          applySuggestedModeForSource(data.metadata, "url", null, text);
+          // Stop at Lens configure — do not auto-analyze with a stale/wrong mode.
+          setUrlPipelineActive(false);
+          return;
         } catch {
           setExtractError(USER_MESSAGES.network);
           setExtractStatus("failed");
@@ -1420,23 +1378,22 @@ export function UploadWorkspace() {
 
       if (text.trim().length < 100) {
         setExtractError(USER_MESSAGES.urlTooShort);
-        setUrlPipelineActive(false);
         return;
       }
 
+      setUrlPipelineActive(true);
       if (readyMeta) {
-        applySuggestedModeForSource(readyMeta, "url");
+        applySuggestedModeForSource(readyMeta, "url", null, text);
       }
-
-      await runUrlAnalysis(text, readyMeta);
+      await runUrlAnalysis(text, readyMeta, analysisModeRef.current);
       setUrlPipelineActive(false);
     },
     [
       applySuggestedModeForSource,
+      beginAnalysisPipeline,
       extractionMeta,
       fireUploadStarted,
       rawText,
-      resetAnalysisState,
       runUrlAnalysis,
     ],
   );
@@ -1453,14 +1410,14 @@ export function UploadWorkspace() {
       setSourceUrl(url);
       setExtractError(null);
       setYoutubeAnalysisError(null);
-      resetAnalysisState();
-      setYoutubePipelineActive(true);
+      beginAnalysisPipeline(options?.analyzeOnly ? "retry_analyze" : "youtube_analyze");
       fireUploadStarted("youtube", extractionMeta, `youtube:${url}`);
 
       let meta = extractionMeta?.sourceKind === "youtube" ? extractionMeta : null;
       let text = rawText;
 
       if (!options?.analyzeOnly) {
+        setYoutubePipelineActive(true);
         setExtractStatus("extracting");
 
         try {
@@ -1485,7 +1442,10 @@ export function UploadWorkspace() {
           setExtractionMeta(meta);
           setLimitNotice(data.limitNotice ?? null);
           setExtractStatus("ready");
-          applySuggestedModeForSource(meta, "youtube");
+          applySuggestedModeForSource(meta, "youtube", null, text);
+          // Stop at Lens configure — analysis runs only on Summarize with the selected lens.
+          setYoutubePipelineActive(false);
+          return;
         } catch {
           setExtractError(USER_MESSAGES.network);
           setExtractStatus("failed");
@@ -1496,20 +1456,20 @@ export function UploadWorkspace() {
 
       if (!meta || meta.sourceKind !== "youtube" || text.trim().length < 100) {
         setExtractError(USER_MESSAGES.youtubeTranscriptShort);
-        setYoutubePipelineActive(false);
         return;
       }
 
-      applySuggestedModeForSource(meta, "youtube");
-      await runYoutubeAnalysis(text, meta);
+      setYoutubePipelineActive(true);
+      applySuggestedModeForSource(meta, "youtube", null, text);
+      await runYoutubeAnalysis(text, meta, analysisModeRef.current);
       setYoutubePipelineActive(false);
     },
     [
       applySuggestedModeForSource,
+      beginAnalysisPipeline,
       extractionMeta,
       fireUploadStarted,
       rawText,
-      resetAnalysisState,
       runYoutubeAnalysis,
     ],
   );
@@ -1543,9 +1503,10 @@ export function UploadWorkspace() {
       setFileName(null);
       setSourceUrl(null);
       if (ready) {
-        applySuggestedModeForSource(null, "text");
+        applySuggestedModeForSource(null, "text", null, text);
       } else {
         setModeAutoSuggested(false);
+        setModeUserOverride(false);
       }
     },
     [applySuggestedModeForSource, resetAnalysisState],
@@ -1553,7 +1514,7 @@ export function UploadWorkspace() {
 
   const handleAnalyzingChange = useCallback((analyzing: boolean) => {
     setIsAnalyzing(analyzing);
-    if (analyzing) setHasAnalysisResult(false);
+    // Keep prior results visible until a successful run replaces them (quota 429 must not wipe).
   }, []);
 
   const isDailyFreeLimitReached = useMemo(() => {
@@ -1638,23 +1599,12 @@ export function UploadWorkspace() {
     singleActionPipelineBusy,
   ]);
 
-  const setupStep: SetupStep = isAnalyzing
-    ? "Summarize"
-    : hasAnalysisResult
-      ? "Results"
-      : pipelineAnalysisFailed
-        ? "Summarize"
-        : isExtracting || singleActionPipelineBusy
-          ? "Source"
-          : isEmptyWorkspace
-            ? "Source"
-            : hasUsableSource
-              ? "Output"
-              : "Source";
   const isFileSourceReady = inputMode === "file" && extractStatus === "ready";
   const isTextSourceReady = inputMode === "text" && rawText.trim().length >= 100;
   const canRunSourceReadyAnalysis =
     hasUsableSource && !isAnalyzing && !isExtracting && !singleActionPipelineBusy;
+  const selectedModeLabel =
+    getIntelligenceModeById(analysisMode)?.label ?? analysisMode;
   const runAnalysisHelper = isAnalyzing
     ? "Building your AI summary."
     : isExtracting || singleActionPipelineBusy
@@ -1662,7 +1612,7 @@ export function UploadWorkspace() {
       : hasUsableSource
         ? pipelineAnalysisFailed
           ? "Retry summarize or replace your source."
-          : "Source ready — pick an output, then summarize."
+          : `Source ready · ${selectedModeLabel} · summarize when ready.`
         : inputMode === "file"
           ? isFileSourceReady
             ? "Source ready to summarize."
@@ -1672,6 +1622,25 @@ export function UploadWorkspace() {
               ? "Text ready to summarize."
               : "Enter at least 100 characters to start summarizing."
             : "Add a source to start summarizing.";
+  const handleLensChange = useCallback((modeId: IntelligenceModeId) => {
+    setModeUserOverride(true);
+    setAnalysisMode(modeId);
+    analysisModeRef.current = modeId;
+    // Keep suggestion chip only while the suggested mode is still selected.
+    if (suggestedModeId && modeId !== suggestedModeId) {
+      setSuggestionReason(null);
+    } else if (suggestedModeId && modeId === suggestedModeId) {
+      setSuggestionReason(
+        explainModeSuggestionReason({
+          modeId,
+          inputMode,
+          metadata: extractionMeta,
+          fileName,
+          textSnippet: rawText,
+        }),
+      );
+    }
+  }, [extractionMeta, fileName, inputMode, rawText, suggestedModeId]);
   const podcastSourceProfile = useMemo<PodcastSourceProfile>(() => {
     const extractedCharacterCount =
       extractionMeta?.extractedCharacters ?? rawText.trim().length;
@@ -1702,8 +1671,6 @@ export function UploadWorkspace() {
     workspacePhase === "configure" ||
     workspacePhase === "analyzing" ||
     workspacePhase === "results";
-  const showPipelineStepper =
-    workspacePhase !== "results" && workspacePhase !== "empty";
   const showSourceIntake = workspacePhase === "empty" || workspacePhase === "ingesting";
 
   return (
@@ -1718,41 +1685,24 @@ export function UploadWorkspace() {
         authReturnTo="/upload"
       />
       <div
-        className={`mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8 ${
+        className={`mx-auto w-full max-w-[1180px] overflow-x-hidden px-4 sm:px-6 lg:px-8 ${
           isEmptyWorkspace && !isCompletedResultWorkspace ? "py-4 sm:py-5" : "py-7 sm:py-9"
         } ${showAnalysisPaywall ? "blur-sm brightness-75" : ""}`}
         data-workspace-root
       >
-      {!isCompletedResultWorkspace && workspacePhase !== "analyzing" && (
-      <header className={isEmptyWorkspace ? "pb-3" : "pb-5"}>
+      {!isCompletedResultWorkspace && workspacePhase === "empty" && (
+      <header className="pb-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            {!isEmptyWorkspace && (
-              <Badge variant="muted" className="mb-3 border-white/[0.06] bg-white/[0.03] text-zinc-400">
-                AI Summarizer
-              </Badge>
-            )}
-            <h1
-              className={`font-semibold tracking-tight text-white ${
-                isEmptyWorkspace ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
-              }`}
-            >
-              Summarize any PDF, link, or text with AI
+            <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Add a source
             </h1>
-            <p
-              className={`max-w-2xl text-zinc-400 ${
-                isEmptyWorkspace
-                  ? "mt-1 text-xs leading-relaxed sm:text-sm"
-                  : "mt-2 text-sm leading-relaxed"
-              }`}
-            >
-              {isEmptyWorkspace
-                ? "Upload a PDF, PowerPoint, YouTube link, or article — get a structured AI summary, then optional flashcards, quiz, or audio."
-                : "One upload. AI summary first — then flashcards, quiz, audio lesson, or podcast."}
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-zinc-400 sm:text-sm">
+              File, link, or text — pick one. We’ll build your AI summary next.
             </p>
           </div>
           <div className="lg:text-right">
-            {!workspaceEntitlement.isAuthenticated ? (
+            {workspaceEntitlement.ready && !workspaceEntitlement.isAuthenticated ? (
               <Link
                 href="/login?returnTo=/upload"
                 className="text-xs font-medium text-violet-300/80 transition-colors hover:text-violet-200"
@@ -1760,49 +1710,49 @@ export function UploadWorkspace() {
                 Sign in to save analyses
               </Link>
             ) : null}
-            {!isEmptyWorkspace && (
-              <TrustSignals variant="compact" className="mt-3 lg:justify-end" />
-            )}
           </div>
         </div>
       </header>
       )}
 
-      {!workspaceEntitlement.isAuthenticated && !isCompletedResultWorkspace ? (
+      {workspaceEntitlement.ready &&
+      !workspaceEntitlement.isAuthenticated &&
+      !isCompletedResultWorkspace &&
+      workspacePhase !== "analyzing" ? (
         <GuestWorkspaceBanner
           exhausted={guestBannerExhausted}
-          className={isEmptyWorkspace ? "mb-3" : "mb-5"}
-          compact={isEmptyWorkspace}
+          className={isEmptyWorkspace ? "mb-3" : "mb-4"}
+          compact
           onCreateAccountClick={persistGuestSaveHandoff}
         />
       ) : null}
 
-      {!isCompletedResultWorkspace && workspacePhase !== "analyzing" && !isEmptyWorkspace && showPipelineStepper && (
-      <div className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING} mt-3`}>
-        <SetupStepper activeStep={setupStep} />
-      </div>
-      )}
+      {!isCompletedResultWorkspace &&
+      workspacePhase === "configure" ? (
+        <p className="mx-auto mt-2 mb-1 max-w-xl text-center text-[11px] font-medium tracking-wide text-zinc-600">
+          Source ready · choose lens if needed · summarize
+        </p>
+      ) : null}
 
       <div
-        className={`${isCompletedResultWorkspace ? "mt-0" : isEmptyWorkspace ? "mt-3" : "mt-5"} grid min-w-0 gap-3 sm:gap-4 ${
-          isEmptyWorkspace || workspacePhase === "analyzing"
-            ? ""
-            : "lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]"
+        className={`${isCompletedResultWorkspace ? "mt-0" : isEmptyWorkspace ? "mt-3" : "mt-4"} grid min-w-0 gap-3 sm:gap-4 ${
+          workspacePhase === "results"
+            ? "lg:grid-cols-[minmax(0,1fr)_280px] xl:grid-cols-[minmax(0,1fr)_300px]"
+            : ""
         } lg:items-start`}
         data-workspace-layout
         data-workspace-phase={workspacePhase}
       >
-        <div className="min-w-0 space-y-4 sm:space-y-5">
+        <div
+          className={`min-w-0 space-y-4 sm:space-y-5 ${
+            workspacePhase === "configure" || workspacePhase === "analyzing"
+              ? "mx-auto w-full max-w-xl"
+              : ""
+          }`}
+        >
           {showSourceIntake && (
             <section className={`${WORKSPACE_CARD} p-4 sm:p-5`}>
-              <div>
-                <h2 className="text-sm font-semibold text-white">Upload your source</h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  PDF, PowerPoint, DOCX, YouTube, web article, or pasted text.
-                </p>
-              </div>
-
-              <div className="mt-3">
+              <div className="mt-0">
                 <UnifiedSourceComposer
                   compact
                   fileName={fileName}
@@ -1829,55 +1779,18 @@ export function UploadWorkspace() {
                   }}
                 />
               </div>
-
-              {workspacePhase === "empty" ? (
-                <div className="mt-4 space-y-4 border-t border-white/[0.06] pt-4">
-                  <LearningExperienceSelector
-                    value={learningExperience}
-                    onChange={setLearningExperience}
-                    disabled={isAnalyzing || singleActionPipelineBusy}
-                  />
-                  {learningExperience === "summary-learn" ? (
-                    <div
-                      ref={modeSectionRef}
-                      className="rounded-xl border border-white/[0.07] bg-black/20 p-3.5 sm:p-4"
-                      data-workspace-intelligence-picker
-                    >
-                      <div className="mb-3">
-                        <h2 className="text-sm font-semibold text-white">Intelligence mode</h2>
-                        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                          How Summify should <span className="font-semibold text-zinc-300">summarize</span>{" "}
-                          your source.{" "}
-                          <span className="font-semibold text-emerald-300/90">Free</span> modes
-                          unlock automatically;{" "}
-                          <span className="font-semibold text-violet-300/90">Pro</span> modes need
-                          an upgrade.
-                        </p>
-                      </div>
-                      <IntelligenceModeSelector
-                        value={analysisMode}
-                        entitlementPlanId={workspaceEntitlement.entitlementPlanId}
-                        onChange={(modeId) => {
-                          setModeAutoSuggested(true);
-                          setAnalysisMode(modeId);
-                        }}
-                        onLockedSelect={setUpgradeMode}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
             </section>
           )}
 
           {workspacePhase === "configure" && (
-            <>
+            <section className={`${WORKSPACE_CARD} space-y-4 p-4 sm:p-5`} data-workspace-ready-compose>
               <CompactSourceReadyCard
                 inputMode={inputMode}
                 sourceLabel={sourceLabel}
                 metadata={extractionMeta}
                 rawText={rawText}
                 onReplace={handleReplaceSource}
+                embedded
               />
 
               {pipelineAnalysisFailed ? (
@@ -1901,40 +1814,32 @@ export function UploadWorkspace() {
                 />
               ) : null}
 
-              <div className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}>
-                <LearningExperienceSelector
-                  value={learningExperience}
-                  onChange={setLearningExperience}
-                  disabled={isAnalyzing}
+              <div ref={modeSectionRef} data-workspace-intelligence-picker>
+                <WorkspaceLensPicker
+                  value={analysisMode}
+                  entitlementPlanId={workspaceEntitlement.entitlementPlanId}
+                  suggestedModeId={suggestedModeId}
+                  suggestionReason={suggestionReason}
+                  onChange={handleLensChange}
+                  onLockedSelect={setUpgradeMode}
+                  compactFirst
                 />
+                {educationalCreatorWarning ? (
+                  <p
+                    className="mt-2 text-[11px] leading-relaxed text-amber-200/85"
+                    role="status"
+                  >
+                    {educationalCreatorWarning}{" "}
+                    <button
+                      type="button"
+                      className="font-semibold text-amber-50 underline underline-offset-2 hover:text-white"
+                      onClick={() => handleLensChange("the-student")}
+                    >
+                      Switch to The Student
+                    </button>
+                  </p>
+                ) : null}
               </div>
-
-              {learningExperience === "summary-learn" ? (
-                <div
-                  ref={modeSectionRef}
-                  className={`${WORKSPACE_CARD} ${WORKSPACE_CARD_PADDING}`}
-                  data-workspace-intelligence-picker
-                >
-                  <div className="mb-3">
-                    <h2 className="text-sm font-semibold text-white">Intelligence mode</h2>
-                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                      <span className="font-semibold text-sky-300/90">Auto-selected</span> for this
-                      source. Open the menu to browse{" "}
-                      <span className="font-semibold text-emerald-300/90">Free</span> and{" "}
-                      <span className="font-semibold text-violet-300/90">Pro</span> modes.
-                    </p>
-                  </div>
-                  <IntelligenceModeSelector
-                    value={analysisMode}
-                    entitlementPlanId={workspaceEntitlement.entitlementPlanId}
-                    onChange={(modeId) => {
-                      setModeAutoSuggested(true);
-                      setAnalysisMode(modeId);
-                    }}
-                    onLockedSelect={setUpgradeMode}
-                  />
-                </div>
-              ) : null}
 
               <SourceReadyActionBar
                 selectedModeId={analysisMode}
@@ -1946,7 +1851,7 @@ export function UploadWorkspace() {
                 runAnalysisHelper={runAnalysisHelper}
                 onRunAnalysis={handleRunAnalysis}
               />
-            </>
+            </section>
           )}
 
           {workspacePhase === "analyzing" && (
@@ -1992,7 +1897,7 @@ export function UploadWorkspace() {
                 }
               }}
               mode={analysisMode}
-              onModeChange={setAnalysisMode}
+              onModeChange={handleLensChange}
               extractStatus={extractStatus}
               extractionMeta={extractionMeta}
               analyzeDisabled={isExtracting || singleActionPipelineBusy}
@@ -2013,9 +1918,14 @@ export function UploadWorkspace() {
                   providerUsed,
                   fallbackUsed,
                   intelligence,
-                  savedToWorkspace: savedToWorkspace ?? false,
+                  ...(typeof savedToWorkspace === "boolean"
+                    ? { savedToWorkspace }
+                    : {}),
                   savedAnalysisId: savedAnalysisId ?? null,
                 });
+                if (savedAnalysisId) {
+                  setLatestSavedAnalysisId(savedAnalysisId);
+                }
                 if (!workspaceEntitlement.isAuthenticated) {
                   saveGhostSession({
                     analysisResult: result,
@@ -2099,11 +2009,20 @@ export function UploadWorkspace() {
           )}
 
 
-          {!isEmptyWorkspace &&
-            !isCompletedResultWorkspace &&
-            workspacePhase !== "analyzing" && (
+          {workspacePhase === "empty" ? (
             <WorkspaceEntitlementBanner entitlement={workspaceEntitlement} />
-          )}
+          ) : null}
+
+          {workspacePhase === "results" && completedAnalysisResult && rawText.trim() ? (
+            <div className="min-w-0 lg:hidden" data-workspace-document-iq-mobile>
+              <DocumentIqCard
+                extractedText={rawText}
+                metadata={extractionMeta}
+                guestSimplified={!workspaceEntitlement.isAuthenticated}
+                compact
+              />
+            </div>
+          ) : null}
 
         </div>
 

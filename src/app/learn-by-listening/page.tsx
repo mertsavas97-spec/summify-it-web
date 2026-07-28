@@ -56,7 +56,7 @@ const workflow = [
     step: "2",
     title: "Choose Audio Study Mode",
     description:
-      "Select from 29 intelligence modes, then click 'Generate audio lesson'. Summify creates a structured script optimized for listening.",
+      "Select an intelligence lens, then click 'Generate audio lesson'. Summify creates a structured script optimized for listening.",
   },
   {
     step: "3",

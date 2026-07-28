@@ -25,6 +25,24 @@ const EXTRACTION_TYPE_TO_PROVIDER: Record<string, LearnCardProviderType> = {
   consequence: "why",
   connection: "concept",
   number: "quiz",
+  // STEM / study inventory types (Phase-2 often emits these when strategyHint asks for them)
+  definition: "concept",
+  formula: "memory_hook",
+  steps: "concept",
+  step: "concept",
+  contrast: "why",
+  mechanism: "concept",
+  method: "concept",
+  quiz: "quiz",
+  review_question: "quiz",
+  misconception: "why",
+  theme: "concept",
+  character: "concept",
+  symbol: "memory_hook",
+  chronology: "memory_hook",
+  cause_effect: "why",
+  memory_hook: "memory_hook",
+  creator_hook: "memory_hook",
 };
 
 const QUESTION_MAX = 80;
@@ -67,6 +85,29 @@ function isAnswerIdenticalToQuestion(question: string, answer: string): boolean 
 function isQuizGenerationType(type: string): boolean {
   const key = type.trim().toLowerCase();
   return key === "quiz" || key === "number";
+}
+
+/** Math / symbolic answers (e.g. "2x", "1 + 2 = X") count as grounded anchors. */
+function hasMathOrSymbolAnchor(answer: string): boolean {
+  const t = answer.trim();
+  if (!t) return false;
+  if (/[=+\-×÷*/^≠≈≤≥]/.test(t)) return true;
+  if (/\b\d+[a-zA-Z]\b/.test(t)) return true; // 2x, 3y
+  if (/\b[a-zA-Z]\s*=\s*/.test(t)) return true;
+  if (/[α-ωΑ-Ω]/.test(t)) return true;
+  return false;
+}
+
+function isStemExtractionType(type: string): boolean {
+  const key = type.trim().toLowerCase();
+  return (
+    key === "definition" ||
+    key === "formula" ||
+    key === "steps" ||
+    key === "step" ||
+    key === "mechanism" ||
+    key === "method"
+  );
 }
 
 /** Shared token (>5 chars) in Q and A — non-English names, technical terms, etc. */
@@ -144,7 +185,10 @@ function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: stri
     /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/.test(answer) ||
     /\b(because|led to|resulted|therefore|due to|caused)\b/i.test(answer) ||
     hasSharedLongWordAnchor(question, answer) ||
-    hasLongWordInAnswer(answer);
+    hasLongWordInAnswer(answer) ||
+    hasMathOrSymbolAnchor(answer) ||
+    // STEM definitions/formulas/steps are inventory-grounded; don't drop short symbolic answers
+    (isStemExtractionType(card.type) && answer.length >= 2);
   if (!hasAnchor) {
     console.warn("[summify.parser] card_rejected", {
       question: card.question,

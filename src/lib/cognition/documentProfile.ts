@@ -10,6 +10,12 @@ import type {
   CognitionSourceKind,
 } from "@/types/cognition";
 import type { IntelligenceModeId } from "@/types/modes";
+import {
+  inferStudyDiscipline,
+  isStudyPersonaModeId,
+  looksLikeEducationalText,
+  type StudyDiscipline,
+} from "@/lib/educational-source";
 
 export type ClassifyDocumentProfileInput = {
   sourceKind?: CognitionSourceKind;
@@ -20,6 +26,12 @@ export type ClassifyDocumentProfileInput = {
   complexityHint?: CognitionComplexity;
 };
 
+const DISCIPLINE_DOMAINS: StudyDiscipline[] = [
+  "scientific",
+  "literary",
+  "historical",
+];
+
 const DOMAIN_KEYWORDS: Record<CognitionDomain, RegExp[]> = {
   general: [],
   academic: [
@@ -29,14 +41,16 @@ const DOMAIN_KEYWORDS: Record<CognitionDomain, RegExp[]> = {
   scientific: [
     /\b(hypothesis|methodology|experiment|dataset|peer[- ]review|abstract)\b/i,
     /\b(molecule|cell|genome|clinical trial|p[- ]value)\b/i,
+    /\b(algebra|calculus|geometry|equation|formula|theorem|physics|chemistry)\b/i,
   ],
   historical: [
     /\b(century|dynasty|empire|revolution|treaty|archaeolog)\b/i,
     /\b(world war|cold war|colonial)\b/i,
+    /\b(history|historical|chronology)\b/i,
   ],
   literary: [
     /\b(protagonist|metaphor|stanza|narrator|symbolism|chapter)\b/i,
-    /\b(novel|poem|playwright|literary)\b/i,
+    /\b(novel|poem|playwright|literary|literature|poetry)\b/i,
   ],
   business: [
     /\b(revenue|margin|go-to-market|stakeholder|okr|kpi|roadmap)\b/i,
@@ -64,7 +78,7 @@ const DOMAIN_KEYWORDS: Record<CognitionDomain, RegExp[]> = {
   ],
   educational: [
     /\b(lesson|learning objective|curriculum|module|quiz)\b/i,
-    /\b(instructor|student|worksheet)\b/i,
+    /\b(instructor|student|worksheet|basics|what is)\b/i,
   ],
   news: [
     /\b(breaking|reported|according to sources|correspondent)\b/i,
@@ -75,6 +89,29 @@ const DOMAIN_KEYWORDS: Record<CognitionDomain, RegExp[]> = {
   ],
   other: [],
 };
+
+function pickWinningDiscipline(
+  scores: Map<CognitionDomain, number>,
+): StudyDiscipline | null {
+  let best: StudyDiscipline | null = null;
+  let bestScore = 0;
+  for (const domain of DISCIPLINE_DOMAINS) {
+    const score = scores.get(domain) ?? 0;
+    if (score > bestScore) {
+      bestScore = score;
+      best = domain;
+    }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+function disciplineFromScoresOrText(
+  scores: Map<CognitionDomain, number>,
+  title: string,
+  snippet: string,
+): StudyDiscipline {
+  return pickWinningDiscipline(scores) ?? inferStudyDiscipline(title, snippet);
+}
 
 function scoreDomains(text: string, title: string): Map<CognitionDomain, number> {
   const haystack = `${title}\n${text}`.toLowerCase();
@@ -207,14 +244,9 @@ function modeDomainHint(modeId?: IntelligenceModeId): CognitionDomain | null {
   if (!modeId) return null;
   if (modeId === "contract-analyzer" || modeId === "technical-decoder") return "legal_document";
   if (modeId === "policy-interpreter") return "policy";
-  if (
-    modeId === "the-student" ||
-    modeId === "exam-prep" ||
-    modeId === "flashcard-builder" ||
-    modeId === "quiz-generator" ||
-    modeId === "concept-explainer"
-  ) {
-    return "academic";
+  // Study personas boost educational — discipline remap happens after scoring.
+  if (isStudyPersonaModeId(modeId)) {
+    return "educational";
   }
   if (
     modeId === "the-creator" ||
@@ -230,6 +262,15 @@ function modeDomainHint(modeId?: IntelligenceModeId): CognitionDomain | null {
   return null;
 }
 
+function isEducationalHeuristic(guess?: string): boolean {
+  return (
+    guess === "lecture_transcript" ||
+    guess === "tutorial_transcript" ||
+    guess === "educational_material" ||
+    guess === "lecture_deck"
+  );
+}
+
 /**
  * Deterministic document profiler (no extra LLM call).
  */
@@ -243,18 +284,39 @@ export function classifyDocumentProfile(
 
   const heuristicDomain = mapHeuristicTypeToDomain(input.heuristicTypeGuess);
   const modeHint = modeDomainHint(input.modeId);
+  const studyMode = isStudyPersonaModeId(input.modeId);
+  const educationalText = looksLikeEducationalText(title, snippet);
+  const educationalHeuristic = isEducationalHeuristic(input.heuristicTypeGuess);
+  const studyEducationalPath =
+    studyMode || educationalText || educationalHeuristic;
 
   if (sourceKind === "youtube") {
-    scores.set("media_transcript", (scores.get("media_transcript") ?? 0) + 3);
+    if (studyEducationalPath) {
+      // Soften creator-media bias so lecture YouTube can reach study packs.
+      scores.set("media_transcript", (scores.get("media_transcript") ?? 0) + 1);
+      scores.set("educational", (scores.get("educational") ?? 0) + 3);
+    } else {
+      scores.set("media_transcript", (scores.get("media_transcript") ?? 0) + 3);
+    }
   }
   if (sourceKind === "presentation") {
-    scores.set("business", (scores.get("business") ?? 0) + 2);
+    if (studyEducationalPath || educationalHeuristic) {
+      scores.set("educational", (scores.get("educational") ?? 0) + 2);
+    } else {
+      scores.set("business", (scores.get("business") ?? 0) + 2);
+    }
   }
   if (heuristicDomain) {
     scores.set(heuristicDomain, (scores.get(heuristicDomain) ?? 0) + 2);
   }
   if (modeHint) {
-    scores.set(modeHint, (scores.get(modeHint) ?? 0) + 1);
+    scores.set(modeHint, (scores.get(modeHint) ?? 0) + 2);
+  }
+
+  if (studyEducationalPath) {
+    const discipline = disciplineFromScoresOrText(scores, title, snippet);
+    scores.set(discipline, (scores.get(discipline) ?? 0) + 3);
+    scores.set("educational", (scores.get("educational") ?? 0) + 1);
   }
 
   let domain: CognitionDomain = "general";
@@ -264,6 +326,27 @@ export function classifyDocumentProfile(
       best = s;
       domain = d;
     }
+  }
+
+  // Study path: never leave educational/academic/media as the final domain —
+  // remap to the winning discipline so planner packs fire correctly.
+  if (
+    studyMode &&
+    (domain === "educational" ||
+      domain === "academic" ||
+      domain === "media_transcript" ||
+      domain === "general")
+  ) {
+    domain = disciplineFromScoresOrText(scores, title, snippet);
+    best = Math.max(best, 3);
+  } else if (
+    !studyMode &&
+    studyEducationalPath &&
+    (domain === "educational" || domain === "academic")
+  ) {
+    // Non-study modes keep educational signals but still expose discipline when clear.
+    const discipline = pickWinningDiscipline(scores);
+    if (discipline) domain = discipline;
   }
 
   const density = inferDensity(snippet.length);

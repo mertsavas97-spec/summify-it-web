@@ -8,6 +8,8 @@ type PublicHeroProps = {
   description: React.ReactNode;
   primaryCta?: { href: string; label: string };
   secondaryCta?: { href: string; label: string };
+  /** Replace default CTA row (e.g. homepage intent chips). */
+  actions?: React.ReactNode;
   /** Visual density + hierarchy. Use "home" for the homepage only. */
   variant?: "default" | "home";
   /** Homepage only — official Product Hunt featured badge under CTAs. */
@@ -21,6 +23,7 @@ export function PublicHero({
   description,
   primaryCta = { href: "/upload", label: "Start summarizing" },
   secondaryCta,
+  actions,
   variant = "default",
   showProductHuntBadge = false,
   children,
@@ -53,7 +56,7 @@ export function PublicHero({
         <div
           className={
             isHome
-              ? "grid items-center gap-6 sm:gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16"
+              ? "grid items-center gap-6 sm:gap-10 lg:grid-cols-[0.9fr_1.2fr] lg:gap-10"
               : "grid items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-14"
           }
         >
@@ -82,37 +85,35 @@ export function PublicHero({
             >
               {description}
             </div>
-            <div
-              className={
-                isHome
-                  ? "mt-10 flex flex-wrap items-center justify-center gap-3 sm:justify-start"
-                  : "mt-8 flex flex-wrap items-center justify-center gap-3 sm:justify-start"
-              }
-            >
-              <Button href={primaryCta.href} size={isHome ? "lg" : "md"}>
-                {primaryCta.label}
-              </Button>
-              {secondaryCta && (
-                <Button
-                  href={secondaryCta.href}
-                  variant="secondary"
-                  size={isHome ? "md" : "md"}
-                  className={isHome ? "opacity-90 hover:opacity-100" : undefined}
-                >
-                  {secondaryCta.label}
+            {actions ? (
+              actions
+            ) : (
+              <div
+                className={
+                  isHome
+                    ? "mt-10 flex flex-wrap items-center justify-center gap-3 sm:justify-start"
+                    : "mt-8 flex flex-wrap items-center justify-center gap-3 sm:justify-start"
+                }
+              >
+                <Button href={primaryCta.href} size={isHome ? "lg" : "md"}>
+                  {primaryCta.label}
                 </Button>
-              )}
-            </div>
+                {secondaryCta && (
+                  <Button
+                    href={secondaryCta.href}
+                    variant="secondary"
+                    size={isHome ? "md" : "md"}
+                    className={isHome ? "opacity-90 hover:opacity-100" : undefined}
+                  >
+                    {secondaryCta.label}
+                  </Button>
+                )}
+              </div>
+            )}
             {showProductHuntBadge && <ProductHuntBadge />}
           </div>
           {children && (
-            <div
-              className={
-                isHome
-                  ? "min-w-0 lg:scale-[1.06] lg:origin-center"
-                  : "min-w-0 lg:scale-[1.03] lg:origin-center"
-              }
-            >
+            <div className="min-w-0 overflow-hidden">
               {children}
             </div>
           )}

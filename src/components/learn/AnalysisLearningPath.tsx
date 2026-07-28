@@ -92,8 +92,9 @@ export function AnalysisLearningPath({
           recallDifficulty: c.recallDifficulty,
         })),
         maxQuestions: cardAccess.isLimited ? 5 : 6,
+        intelligenceModeId,
       }),
-    [analysisContent, cardAccess.accessibleCards, cardAccess.isLimited],
+    [analysisContent, cardAccess.accessibleCards, cardAccess.isLimited, intelligenceModeId],
   );
 
   const audioInput = useMemo(

@@ -17,7 +17,12 @@ const PLANS: PricingPreviewPlan[] = [
     name: "Guest",
     price: "$0",
     tagline: "Try the learning workflow once",
-    bullets: ["1 source to try", "Audio lesson preview", "3 study cards", "No account required"],
+    bullets: [
+      "1 analysis",
+      "Summary + Learn cards",
+      "30-second audio preview",
+      "No account required",
+    ],
     cta: { label: "Try once", href: "/upload", variant: "secondary" },
   },
   {
@@ -26,7 +31,12 @@ const PLANS: PricingPreviewPlan[] = [
     price: "$0",
     period: "/month",
     tagline: "Daily study, free forever",
-    bullets: ["1 source per day", "Summary + audio lesson", "Study cards + quick quiz", "Cloud history"],
+    bullets: [
+      "5 analyses per day",
+      "8 Learn cards + quiz",
+      "4 core lenses (incl. Study)",
+      "Up to 10 saved analyses",
+    ],
     cta: {
       label: "Create free account",
       href: `/login?next=${encodeURIComponent("/upload")}`,
@@ -40,10 +50,10 @@ const PLANS: PricingPreviewPlan[] = [
     period: "/month",
     tagline: "Audio lessons, study cards, quizzes, and memory reviews.",
     bullets: [
-      "Full Audio Lessons",
-      "Podcast mode enabled",
+      "Full Audio Study Mode",
+      "Podcast mode",
       "Unlimited history",
-      "All 29+ study modes",
+      "Contract, Exam Prep & full mode catalog",
     ],
     cta: { label: "Start Pro", href: "/pricing?plan=pro", variant: "primary" },
     highlighted: true,

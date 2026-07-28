@@ -188,8 +188,8 @@ function studentScientificPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePl
         "How processes work step by step",
         "mechanisms",
         "primary",
-        "keyInsights as mechanism bullets",
-        5,
+        "keyInsights MUST list 4–6 concrete mechanism bullets from the source (operations, how unknowns are solved, contrasts with arithmetic, worked examples). Never return only 1–2 thin bullets.",
+        6,
         "bullets",
       ),
       section(
@@ -198,7 +198,7 @@ function studentScientificPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePl
         "Vocabulary and notation",
         "definitions",
         "primary",
-        "Glossary bullets in keyInsights",
+        "Also fold glossary terms into keyInsights when useful (named terms from source only)",
         6,
         "glossary",
       ),
@@ -234,7 +234,8 @@ function studentScientificPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePl
       suppressMisconceptionUnlessExplicit: true,
       suppressRiskActionSynthesis: true,
     },
-    toneGuidance: "Clear science-study tone — precise terms, processes, and checks.",
+    toneGuidance:
+      "Clear science-study tone — precise terms, processes, and checks. keyInsights must be dense (multiple mechanism bullets), never a single vague sentence.",
     safetyGuidance: "",
     rationale: "Student + scientific/technical — concepts and mechanisms, not business filler.",
     adaptationLabel: formatAdaptationLabel(personaBrain.id, documentProfile.domain),
@@ -807,16 +808,49 @@ function isExecutivePersona(modeId: string, brain: PersonaBrain): boolean {
 /**
  * Deterministic persona-aware structure plan (Phase 11B). No extra LLM call.
  */
+/**
+ * Map Student × ambiguous domains (media_transcript, academic, educational)
+ * onto the correct discipline pack. Prefer literary/historical when those win;
+ * default scientific for STEM / unclear educational YouTube.
+ */
+function resolveStudentDisciplinePlan(
+  input: BuildAdaptivePlanInput,
+): PersonaAdaptivePlan | null {
+  const domain = input.documentProfile.domain;
+
+  if (domain === "historical") return studentHistoricalPlan(input);
+  if (domain === "literary" || domain === "creative") return studentLiteraryPlan(input);
+  if (
+    domain === "scientific" ||
+    domain === "technical" ||
+    domain === "educational" ||
+    domain === "academic" ||
+    domain === "media_transcript"
+  ) {
+    return studentScientificPlan(input);
+  }
+
+  // Ambiguous leftover domains on common study sources → scientific study default.
+  if (
+    (domain === "general" || domain === "other" || domain === "news") &&
+    (input.sourceKind === "youtube" ||
+      input.sourceKind === "file" ||
+      input.sourceKind === "url" ||
+      input.sourceKind === "presentation")
+  ) {
+    return studentScientificPlan(input);
+  }
+
+  return null;
+}
+
 export function buildAdaptiveAnalysisPlan(input: BuildAdaptivePlanInput): PersonaAdaptivePlan {
   const { personaBrain, documentProfile, modeId } = input;
   const domain = documentProfile.domain;
 
   if (isStudentPersona(modeId, personaBrain)) {
-    if (domain === "historical") return studentHistoricalPlan(input);
-    if (domain === "scientific" || domain === "technical" || domain === "educational") {
-      return studentScientificPlan(input);
-    }
-    if (domain === "literary" || domain === "creative") return studentLiteraryPlan(input);
+    const studentPlan = resolveStudentDisciplinePlan(input);
+    if (studentPlan) return studentPlan;
   }
 
   if (isCreatorPersona(modeId, personaBrain) && (domain === "media_transcript" || domain === "creative")) {

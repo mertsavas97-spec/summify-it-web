@@ -1,5 +1,5 @@
 /**
- * SERVER ONLY — maps 29 intelligence modes → backend families + learn/prompt hooks.
+ * SERVER ONLY — maps intelligence modes → backend families + learn/prompt hooks.
  */
 
 import {
@@ -79,18 +79,9 @@ export function resolveModeRouting(modeInput: string): ModeRoutingResult {
 
 export function assertModeIsRunnable(routing: ModeRoutingResult): void {
   if (routing.availability === "coming_soon") {
-    throw new Error(`"${routing.label}" is coming soon. Choose an active mode to run analysis.`);
+    throw new Error(`"${routing.label}" is coming soon. Choose an available lens to run analysis.`);
   }
-  if (routing.availability === "locked") {
-    throw new Error(
-      `"${routing.label}" is part of Pro Intelligence and isn't available yet. Choose an active mode to run analysis.`,
-    );
-  }
-  if (!isActiveIntelligenceModeId(routing.intelligenceModeId)) {
-    throw new Error(
-      "This intelligence mode isn't available for analysis. Choose an active mode from the lens selector.",
-    );
-  }
+  // Locked catalog lenses are runnable when the caller's plan unlocks them (canAccessMode).
 }
 
 /** Build learn card kind targets from family + per-mode weighting. */

@@ -139,7 +139,7 @@ export default async function RootLayout({
         {userEmail && <meta name="summify-user-email" content={userEmail} />}
         {isAdmin && <meta name="summify-is-admin" content="true" />}
       </head>
-      <body className="min-h-full bg-background text-foreground transition-colors">
+      <body className="min-h-dvh bg-background text-foreground transition-colors">
         <meta name="apple-itunes-app" content="app-id=6770321706" />
         <GoogleAnalytics />
         <Analytics />

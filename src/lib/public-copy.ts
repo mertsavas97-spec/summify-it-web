@@ -4,7 +4,7 @@ export const PUBLIC_BETA_LABEL = "Public beta";
 
 /** Shown after the “Public beta” label in the site bar. */
 export const PUBLIC_BETA_BANNER =
-  "Turn PDFs, decks, videos, and articles into audio lessons and study cards — free during beta.";
+  "Turn PDFs, decks, videos, and articles into structured summaries and Learn cards — free to try. Audio Study on Pro.";
 
 export const PRICING_BETA_NOTE =
   "Billing provider review is pending. Pricing is visible for transparency, and current beta access remains unchanged.";

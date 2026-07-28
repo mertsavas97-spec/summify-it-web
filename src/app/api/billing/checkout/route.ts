@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { getOptionalUser, getProfile } from "@/lib/auth";
+import { isEduEmail } from "@/lib/auth/edu-email";
 import { resolveEntitlementPlanIdFromProfile } from "@/lib/billing/entitlements";
 import { trackProductEvent } from "@/server/usage/trackProductEvent";
-import { isEduEmail } from "@/lib/auth/edu-email";
 import { createPolarCheckout } from "@/lib/billing/polar/checkout";
 import {
   isPlanCheckoutEnabled,
-  SCHOLAR_COMING_SOON_MESSAGE,
+  SCHOLAR_EDU_REQUIRED_MESSAGE,
 } from "@/lib/billing/plan-availability";
 import { polarErrorToResponse } from "@/lib/billing/polar/api-error";
 import { isPolarPlanConfigured } from "@/lib/billing/polar/prices";
@@ -57,17 +57,24 @@ export async function POST(request: Request) {
 
   const provider = getBillingProvider();
 
-  const scholarEduCheckout = planId === "scholar" && isEduEmail(user.email);
-
-  if (!isPlanCheckoutEnabled(planId) && !scholarEduCheckout) {
+  if (!isPlanCheckoutEnabled(planId)) {
     return NextResponse.json(
       {
         success: false,
         provider,
-        error:
-          planId === "scholar"
-            ? SCHOLAR_COMING_SOON_MESSAGE
-            : "Checkout is not available for this plan yet.",
+        error: "Checkout is not available for this plan yet.",
+      },
+      { status: 403 },
+    );
+  }
+
+  if (planId === "scholar" && !isEduEmail(user.email)) {
+    return NextResponse.json(
+      {
+        success: false,
+        provider,
+        error: SCHOLAR_EDU_REQUIRED_MESSAGE,
+        errorCode: "SCHOLAR_EDU_REQUIRED",
       },
       { status: 403 },
     );

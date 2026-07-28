@@ -49,4 +49,8 @@ export type AnalysisQuizInput = {
   maxQuestions?: number;
   /** Optional seed so Learn/Quiz versions produce a different order. */
   variantSeed?: string;
+  /** When true, use study-quality stems and ban generic distractor fillers. */
+  studyMode?: boolean;
+  /** Intelligence mode id — enables study quiz rules for Student / Exam / etc. */
+  intelligenceModeId?: string;
 };

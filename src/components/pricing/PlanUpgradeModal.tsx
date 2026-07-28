@@ -112,7 +112,8 @@ export function PlanUpgradeModal({
             {upgradePlan.id === "scholar" && (
               <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11px] text-zinc-600">
                 Pro adds all{" "}
-                {proPlan.featureBullets.find((f) => f.includes("29")) ?? "29 intelligence modes"},
+                {proPlan.featureBullets.find((f) => /lens|mode|Contract/i.test(f)) ??
+                  "6 core lenses + Contract & Exam Prep"},
                 export, mind map, and fair-use analysis.
               </p>
             )}

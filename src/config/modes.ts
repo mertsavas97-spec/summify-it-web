@@ -7,15 +7,34 @@ import type {
   RecommendedSourceKind,
 } from "@/types/modes";
 
-export const ACTIVE_INTELLIGENCE_MODE_IDS = [
+export const FREE_CORE_MODE_IDS = [
   "general-summary",
   "executive-brief",
   "the-student",
   "the-creator",
-  "contract-analyzer",
 ] as const satisfies readonly IntelligenceModeId[];
 
+/** Paid primary lenses that complete the ~6-lens product story. */
+export const PAID_PRIMARY_LENS_MODE_IDS = [
+  "contract-analyzer",
+  "exam-prep",
+] as const satisfies readonly IntelligenceModeId[];
+
+/**
+ * Product promise: six real lenses (4 free + Contract + Exam).
+ * Catalog may list more previews; these are the marketed runtimes.
+ */
+export const CORE_PRODUCT_LENS_MODE_IDS = [
+  ...FREE_CORE_MODE_IDS,
+  ...PAID_PRIMARY_LENS_MODE_IDS,
+] as const satisfies readonly IntelligenceModeId[];
+
+/** Free/beta runnable modes (Study included; Contract/Exam are paid). */
+export const ACTIVE_INTELLIGENCE_MODE_IDS = FREE_CORE_MODE_IDS;
+
 export type ActiveIntelligenceModeId = (typeof ACTIVE_INTELLIGENCE_MODE_IDS)[number];
+export type FreeCoreModeId = (typeof FREE_CORE_MODE_IDS)[number];
+export type CoreProductLensModeId = (typeof CORE_PRODUCT_LENS_MODE_IDS)[number];
 
 const SRC = {
   any: ["any"] as RecommendedSourceKind[],
@@ -162,9 +181,10 @@ export const INTELLIGENCE_MODES: IntelligenceModeDefinition[] = [
   m({
     id: "the-student",
     label: "The Student",
-    shortDescription: "Study-friendly concepts, definitions, and recall hooks.",
-    intelligenceLens: "Turns sources into teachable notes: concepts, definitions, and study questions.",
-    outputStylePreview: "Study notes · definitions · recall-friendly",
+    shortDescription: "STEM & study lens — formulas, definitions, and recall hooks.",
+    intelligenceLens:
+      "Study / STEM path: teachable notes with definitions, formulas when present, and study questions.",
+    outputStylePreview: "Study notes · definitions · formulas · recall-friendly",
     learnEmphasis: "Concept, quiz, and misconception cards",
     category: "academic_study",
     icon: "graduation-cap",
@@ -479,7 +499,7 @@ export const INTELLIGENCE_MODES: IntelligenceModeDefinition[] = [
     learnEmphasis: "Concept and misconception-oriented cards",
     category: "legal_technical",
     icon: "scale",
-    availability: "active",
+    availability: "locked",
     intelligenceFamily: "legal",
     learnWeighting: { concept: 1.3, misconception: 1.2, why_it_matters: 1.1 },
     outputTone: "precise",
@@ -570,7 +590,7 @@ export function isActiveIntelligenceModeId(id: string): id is ActiveIntelligence
 /** Legacy API mode strings → default intelligence mode id. */
 export const LEGACY_MODE_TO_INTELLIGENCE_ID: Record<
   IntelligenceModeFamily,
-  ActiveIntelligenceModeId
+  IntelligenceModeId
 > = {
   executive: "executive-brief",
   academic: "the-student",

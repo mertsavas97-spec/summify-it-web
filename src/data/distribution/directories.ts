@@ -40,7 +40,7 @@ export const DIRECTORY_LISTINGS: DirectoryListing[] = [
     positioningAngle:
       "Premium AI knowledge workspace — structured intelligence, Learn cards, and memory review beyond generic summarizers.",
     shortDescription:
-      "Turn PDFs, decks, and videos into structured summaries, mind maps, and review cards with 29+ intelligence modes.",
+      "Turn PDFs, decks, and videos into structured summaries, mind maps, and review cards with 6 core intelligence lenses.",
     ctaLabel: "Try free during public beta",
     ctaUrl: BASE_CTA,
     targetKeywords: [

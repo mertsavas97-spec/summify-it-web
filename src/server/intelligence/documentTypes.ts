@@ -197,6 +197,7 @@ const KEYWORD_SIGNALS: Record<Exclude<DocumentTypeGuess, "unknown">, string[]> =
   ],
   lecture_transcript: [
     "lecture",
+    "lesson",
     "syllabus",
     "professor",
     "students",
@@ -204,6 +205,19 @@ const KEYWORD_SIGNALS: Record<Exclude<DocumentTypeGuess, "unknown">, string[]> =
     "exam",
     "semester",
     "course",
+    "algebra",
+    "calculus",
+    "geometry",
+    "physics",
+    "chemistry",
+    "biology",
+    "math",
+    "mathematics",
+    "basics",
+    "what is",
+    "in this lesson",
+    "textbook",
+    "homework",
   ],
   interview_transcript: [
     "interview",
@@ -223,6 +237,8 @@ const KEYWORD_SIGNALS: Record<Exclude<DocumentTypeGuess, "unknown">, string[]> =
     "setup",
     "install",
     "guide",
+    "worked example",
+    "problem set",
   ],
 };
 

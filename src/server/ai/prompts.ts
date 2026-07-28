@@ -109,7 +109,7 @@ const PRESENTATION_MODE_LENSES: Record<TextAnalysisMode, string> = {
 const OUTPUT_FIELD_RULES = `Output field rules (same JSON shape for every mode):
 - All string fields must be ${DEFAULT_OUTPUT_LANGUAGE} (see output language rules).
 - title: specific to this document (names, parties, or topics); ${DEFAULT_OUTPUT_LANGUAGE} prose with preserved proper nouns
-- summary: 2–4 paragraphs, document-specific; open with the document's actual subject, not "this document discusses…"
+- summary: 2–4 paragraphs for typical sources; for long or dense sources (long transcripts, multi-page docs), write 4–6 paragraphs covering primary plan sections. Document-specific; open with the document's actual subject, not "this document discusses…"
 - keyInsights: 3–6 non-empty bullets with concrete details (numbers, names, dates, section references); never omit or leave empty
 - risksOrWarnings: follow risk grounding rules and adaptive plan (0–5 items; [] allowed)
 - actionItems: only when useful per adaptive plan (may be [] — no generic filler)

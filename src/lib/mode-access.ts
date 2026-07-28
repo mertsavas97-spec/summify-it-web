@@ -117,15 +117,20 @@ export function formatEntitlementModeCountLabel(
   const { intelligenceModesIncluded } =
     getPlanDefinition(entitlementPlanId).limits;
 
+  // Workspace picker only exposes the 6 core product lenses.
   if (intelligenceModesIncluded === "all" && counts.locked === 0) {
-    return `${counts.available} modes available`;
+    return "6 core lenses";
+  }
+
+  if (entitlementPlanId === "free" || entitlementPlanId === "beta") {
+    return "4 free · 6 total";
   }
 
   if (counts.locked === 0) {
-    return `${counts.available} active${counts.comingSoon > 0 ? ` · ${counts.comingSoon} coming soon` : ""}`;
+    return "6 core lenses";
   }
 
-  return `${counts.available} active · ${counts.locked} locked${counts.comingSoon > 0 ? ` · ${counts.comingSoon} coming soon` : ""}`;
+  return "4 free · 6 total";
 }
 
 export { formatPlanBadgeLabel };

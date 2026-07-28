@@ -296,7 +296,7 @@ export function PodcastWorkspaceCtas({
   const audioStudyAccess = audioStudyPaidAccess || (isGuest && guestAudioRemaining > 0);
   const podcastAccess = podcastPaidAccess || (isGuest && guestPodcastRemaining > 0);
   const showUsageIndicators = entitlementPlanId === "free" || entitlementPlanId === "scholar";
-  const dailyAudioLimit = entitlementPlanId === "free" ? 3 : entitlementPlanId === "scholar" ? 10 : 999;
+  const dailyAudioLimit = entitlementPlanId === "free" ? 2 : entitlementPlanId === "scholar" ? 10 : 999;
   const dailyPodcastLimit = entitlementPlanId === "free" ? 1 : entitlementPlanId === "scholar" ? 5 : 999;
   const audioLimitReached = showUsageIndicators && (audioUsage?.used ?? 0) >= dailyAudioLimit;
   const podcastLimitReached = showUsageIndicators && (podcastUsage?.used ?? 0) >= dailyPodcastLimit;

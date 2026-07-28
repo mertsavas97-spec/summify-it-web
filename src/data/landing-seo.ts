@@ -24,7 +24,7 @@ export const HOME_FAQS: FaqItem[] = [
   },
   {
     q: "Is Summify free?",
-    a: "Yes. You can try analysis free during public beta. Checkout and paid tiers unlock higher limits and audio features.",
+    a: "Guests get 1 analysis (with a short audio preview). Free accounts get 5 analyses/day, 8 Learn cards, quizzes, and saved history. Pro unlocks Audio Study Mode, Podcast, and higher limits.",
   },
   {
     q: "Are uploaded documents stored permanently?",
@@ -51,7 +51,7 @@ export const PDF_FAQS: FaqItem[] = [
   },
   {
     q: "Is this free AI PDF summarizer limited during beta?",
-    a: "You can try analysis free during public beta. Fair-use limits apply; paid plans unlock higher volume and audio study features.",
+    a: "Guests can try once; Free accounts get 5 analyses/day with Learn cards and quizzes. Pro unlocks Audio Study Mode and higher volume.",
   },
   {
     q: "What is the maximum PDF size?",
@@ -287,7 +287,7 @@ export const RELATED_LINKS = {
     {
       href: "/modes",
       label: "Intelligence modes",
-      description: "29 lenses — five active in public beta.",
+      description: "6 core lenses — 4 free, Contract & Exam on paid plans.",
     },
     {
       href: "/faq",

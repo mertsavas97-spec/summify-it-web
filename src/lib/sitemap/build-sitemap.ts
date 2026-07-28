@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
+import { CORE_PRODUCT_LENS_MODE_IDS } from "@/config/modes";
 import { getAllPublicBlogPosts } from "@/lib/blog/resolvePost";
 import { getAllBlogCategorySlugs } from "@/data/blog-categories";
 import { COMPARISON_SLUGS } from "@/data/comparisons/registry";
@@ -80,7 +80,7 @@ function entry(input: SitemapEntryInput): MetadataRoute.Sitemap[number] {
 }
 
 function collectStaticAndConfigPaths(): string[] {
-  const modePaths = ["/modes", ...ACTIVE_INTELLIGENCE_MODE_IDS.map((id) => `/modes/${id}`)];
+  const modePaths = ["/modes", ...CORE_PRODUCT_LENS_MODE_IDS.map((id) => `/modes/${id}`)];
   const blogCategoryPaths = getAllBlogCategorySlugs().map((slug) => `/blog/category/${slug}`);
   const guidePaths = GUIDE_SLUGS.map((slug) => `/guides/${slug}`);
   const comparisonPaths = COMPARISON_SLUGS.map((slug) => `/compare/${slug}`);

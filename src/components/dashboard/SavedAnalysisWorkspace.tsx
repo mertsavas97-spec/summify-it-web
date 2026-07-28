@@ -215,8 +215,7 @@ export function SavedAnalysisWorkspace({
           <PodcastWorkspaceCtas {...mediaProps} view="podcast" />
         )
       }
-      onTryAudio={() => setExperience("audio")}
-      onTryPodcast={() => setExperience("podcast")}
+      onExperienceChange={setExperience}
     />
   );
 }

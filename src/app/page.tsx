@@ -4,8 +4,9 @@ import { SUMMIFY_HOW_TO_STEPS } from "@/data/seo-howto";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ProductEventTracker } from "@/components/analytics/ProductEventTracker";
 import { PublicHero } from "@/components/public/PublicHero";
+import { HomeHeroActions } from "@/components/public/HomeHeroActions";
+import { HomeAfterSummarySection } from "@/components/public/HomeAfterSummarySection";
 import { FormatWorkflow } from "@/components/public/FormatWorkflow";
-import { CTASection } from "@/components/public/CTASection";
 import { FAQSection } from "@/components/public/FAQSection";
 import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { ProductMockCard } from "@/components/public/ProductMockCard";
@@ -13,7 +14,7 @@ import { HomeTrustBar } from "@/components/public/HomeTrustBar";
 import { HOME_FAQS, RELATED_LINKS } from "@/data/landing-seo";
 import { HomePricingPreview } from "@/components/public/HomePricingPreview";
 import { SummarizeFormatGrid } from "@/components/public/SummarizeFormatGrid";
-import Link from "next/link";
+import { HomeClosingCta } from "@/components/public/HomeClosingCta";
 
 export const metadata = pageSeo.home;
 
@@ -44,9 +45,8 @@ export default function HomePage() {
             .
           </>
         }
-        description="Upload a PDF, PowerPoint, YouTube link, or article — get a structured AI summary and key insights in seconds. Optional flashcards and quiz when you want to study further."
-        primaryCta={{ href: "/upload", label: "Summarize for free" }}
-        secondaryCta={{ href: "#how-it-works", label: "See how it works" }}
+        description="Upload a PDF, PowerPoint, YouTube link, or article — get a structured AI summary first. Then study cards, and optional audio or podcast from the same source."
+        actions={<HomeHeroActions />}
         variant="home"
       >
         <ProductMockCard variant="home" />
@@ -56,61 +56,7 @@ export default function HomePage() {
 
       <SummarizeFormatGrid />
 
-      <section className="border-b border-slate-200/70 px-4 py-10 sm:px-6 sm:py-12 lg:px-8 dark:border-white/[0.04]">
-        <div className="mx-auto max-w-6xl">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-              After the summary, keep going
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
-              Most summarizers stop at text. Summify can continue into flashcards, a quiz, and
-              optional audio — so the summary becomes something you can actually retain.
-            </p>
-          </div>
-          <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-            {[
-              {
-                title: "Flashcards",
-                body: "Turn key insights into Learn cards you can review one by one.",
-              },
-              {
-                title: "Quiz",
-                body: "Check recall with an auto-generated quiz from the same source.",
-              },
-              {
-                title: "Optional audio",
-                body: "Listen to a teacher-style lesson when you want hands-free review.",
-              },
-            ].map((item) => (
-              <li
-                key={item.title}
-                className="rounded-2xl border border-slate-200/80 bg-white p-5 dark:border-white/[0.06] dark:bg-zinc-950/40"
-              >
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
-                  {item.body}
-                </p>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-5 text-sm text-slate-500 dark:text-zinc-500">
-            Prefer a dedicated format page?{" "}
-            <Link
-              href="/for-students"
-              className="font-medium text-violet-700 underline-offset-2 hover:underline dark:text-violet-300"
-            >
-              For students
-            </Link>
-            {" · "}
-            <Link
-              href="/audio-study"
-              className="font-medium text-violet-700 underline-offset-2 hover:underline dark:text-violet-300"
-            >
-              Audio study
-            </Link>
-          </p>
-        </div>
-      </section>
+      <HomeAfterSummarySection />
 
       <FormatWorkflow
         id="how-it-works"
@@ -122,11 +68,11 @@ export default function HomePage() {
           },
           {
             title: "Get your AI summary",
-            description: "Structured overview and key insights, tuned by intelligence mode.",
+            description: "Structured overview and key insights, tuned by your lens.",
           },
           {
-            title: "Study if you want",
-            description: "Open flashcards and quiz — or generate optional audio later.",
+            title: "Study or listen next",
+            description: "Open study cards — or generate an audio lesson / podcast when you’re ready.",
           },
         ]}
       />
@@ -139,13 +85,7 @@ export default function HomePage() {
         items={HOME_FAQS}
       />
 
-      <CTASection
-        title="Ready to summarize?"
-        description="Try Summify free — structured AI summaries for PDFs, decks, videos, and articles. Flashcards and quiz when you need them."
-        primaryLabel="Summarize for free"
-        secondaryHref="#how-it-works"
-        secondaryLabel="See how it works"
-      />
+      <HomeClosingCta />
 
       <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
     </>

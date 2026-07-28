@@ -10,6 +10,8 @@ import { AI_CONFIG } from "./config";
 import {
   PHASE1_FACT_INVENTORY_SYSTEM,
   factInventoryItemCount,
+  groundFactInventoryToSource,
+  inferInventoryDomainHint,
   isFactInventoryUsable,
   parseFactInventoryResponse,
   type FactInventory,
@@ -23,6 +25,7 @@ import {
   countRawCardsInGenerationResponse,
   parseLearnCardsGenerationResponse,
 } from "./parseLearnCardsResponse";
+import { filterLearnCardsAgainstInventory } from "./groundLearnCardsToInventory";
 import type { LearnCardOutput } from "./schemas";
 import type { AnalysisProviderName } from "./analysis-failure";
 import { devLog, devWarn } from "@/server/logging";
@@ -113,7 +116,8 @@ async function extractFactInventory(
       userPrompt,
       PHASE1_MAX_TOKENS,
     );
-    return parseFactInventoryResponse(raw);
+    const parsed = parseFactInventoryResponse(raw);
+    return groundFactInventoryToSource(parsed, userContent);
   } catch (error) {
     devWarn("[summify.learnCards] phase1 inventory failed", {
       provider,
@@ -130,11 +134,14 @@ async function generateFlashcardsFromInventory(
   language: string,
   documentTitle?: string,
   maxCards?: number,
+  strategyHint?: string,
 ): Promise<LearnCardOutput[]> {
   const user = buildPhase2FlashcardUserPrompt({
     cardCount,
     language,
     inventory,
+    domainHint: inferInventoryDomainHint(inventory),
+    strategyHint,
   });
 
   const raw = await callProviderJson(
@@ -145,16 +152,19 @@ async function generateFlashcardsFromInventory(
   );
 
   const rawCardCount = countRawCardsInGenerationResponse(raw);
-  const cards = parseLearnCardsGenerationResponse(raw, {
+  const parsed = parseLearnCardsGenerationResponse(raw, {
     documentTitle,
     maxCards: maxCards ?? cardCount,
   });
+  const cards = filterLearnCardsAgainstInventory(parsed, inventory);
 
   devLog("[summify.learnCards] phase2 complete", {
     provider,
     requestedCardCount: cardCount,
     rawCardCount,
-    passedParserCount: cards.length,
+    passedParserCount: parsed.length,
+    groundedCardCount: cards.length,
+    domainHint: inferInventoryDomainHint(inventory),
   });
 
   return cards;
@@ -180,6 +190,9 @@ function logPhase1Inventory(
     events: inventory.events.length,
     causes: inventory.causes.length,
     contrasts: inventory.contrasts.length,
+    definitions: inventory.definitions.length,
+    formulas: inventory.formulas.length,
+    steps: inventory.steps.length,
     total: factInventoryItemCount(inventory),
   };
 
@@ -198,6 +211,7 @@ export type GenerateLearnCardsInput = {
   contentType: string;
   documentTitle?: string;
   maxCards?: number;
+  strategyHint?: string;
 };
 
 /**
@@ -224,6 +238,7 @@ export async function generateLearnCardsFromContent(
     language,
     input.documentTitle,
     input.maxCards ?? cardCount,
+    input.strategyHint,
   );
 }
 
@@ -236,12 +251,20 @@ export type GenerateLearnCardsContext = {
   isPresentation?: boolean;
   isWebArticle?: boolean;
   documentTypeGuess?: string;
+  analysisMode?: string;
+  /** Adaptive plan learn strategy — preferred over mode-only hint. */
+  strategyHint?: string;
 };
 
 export async function generateLearnCardsForAnalysis(
   ctx: GenerateLearnCardsContext,
 ): Promise<LearnCardOutput[]> {
   try {
+    const strategyHint =
+      ctx.strategyHint ??
+      (ctx.analysisMode
+        ? `Analysis mode: ${ctx.analysisMode}. Prefer cards that match this lens.`
+        : undefined);
     const cards = await generateLearnCardsFromContent({
       provider: ctx.provider,
       content: ctx.compactedContent,
@@ -254,6 +277,7 @@ export async function generateLearnCardsForAnalysis(
       }),
       documentTitle: ctx.documentTitle,
       maxCards: ctx.cardCount,
+      strategyHint,
     });
     return cards;
   } catch (error) {

@@ -29,7 +29,7 @@ export function buildAdaptivePlanPromptBlock(plan: PersonaAdaptivePlan): string 
     "",
     "JSON field mapping (required keys only):",
     "- title: reflect the document subject",
-    "- summary: weave PRIMARY sections (especially those marked primary) — not a generic template",
+    "- summary: weave PRIMARY sections (especially those marked primary) — not a generic template. Typical: 2–4 paragraphs. Long/dense sources (lectures, long articles, multi-page PDFs): 4–6 paragraphs that still stay source-grounded.",
     "- keyInsights: bullets for timeline, mechanisms, themes, hooks, obligations, etc. per plan",
     suppressRisks
       ? "- risksOrWarnings: use [] EMPTY unless the source explicitly discusses conflict, liability, danger, or material downside. Do NOT add generic study or bias warnings."
@@ -37,15 +37,9 @@ export function buildAdaptivePlanPromptBlock(plan: PersonaAdaptivePlan): string 
     suppressActions
       ? "- actionItems: use [] OR only review/verification/practice questions from the plan — NOT business to-dos or generic advice."
       : "- actionItems: only when the plan and source support concrete next steps (may be empty).",
-    "- learnCards: 3–5 cards following learn card strategy below",
+    "- learnCards: ALWAYS return [] — Learn/flashcards are generated in a separate pipeline. Do not invent cards here.",
     "",
-    `Learn card strategy: ${plan.learnCardStrategy.summary}`,
-    plan.learnCardStrategy.providerTypeEmphasis,
-    `Title style: ${plan.learnCardStrategy.titleStyle}`,
-    `Avoid card angles: ${plan.learnCardStrategy.avoidedAdaptiveTypes.join(", ") || "none"}.`,
-    plan.learnCardStrategy.suppressMisconceptionUnlessExplicit
-      ? "- Do NOT use misconception-style cards unless the source states a clear false belief or myth."
-      : "",
+    `Learn card strategy (for later Learn pass only — still leave learnCards: []): ${plan.learnCardStrategy.summary}`,
     "",
     `Tone: ${plan.toneGuidance}`,
     plan.safetyGuidance ? `Safety: ${plan.safetyGuidance}` : "",

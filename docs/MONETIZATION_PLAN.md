@@ -8,20 +8,23 @@ Architecture for plans, usage limits, and future provider-neutral billing. **No 
 |----|---------|
 | `beta` | All current users — `enforceLimits: false`, generous access |
 | `free` | Default after billing launch (planned) |
-| `scholar` | Student tier — verification later |
+| `scholar` | Student tier — **coming soon** (preview on pricing; checkout blocked) |
 | `pro` | Professional fair-use tier |
 | `team` | Seats + shared library (coming soon) |
 
 Source of truth: `src/data/pricingPlans.ts` → `PLAN_DEFINITIONS`.
 
-## Pricing model (preview)
+## Pricing model (source of truth: `pricingPlans.ts` + access gates)
 
-| Plan | Monthly | Yearly | Daily analyses | Max file | Modes | Learn cards | Saved |
-|------|---------|--------|----------------|----------|-------|-------------|-------|
-| Free | $0 | — | 3 | 10MB | 5 | 5 | Last 3 |
-| Scholar | $4.99 | $39.99 | 10 | 25MB | 15 | 12 | Unlimited |
-| Pro | $7.99 | $59.99 | Fair use | 50MB | All 29 | 15 | Unlimited |
-| Team | $24.99 | $199.99 | Fair use | 50MB | All | 15 | Shared library |
+| Plan | Monthly | Yearly | Daily analyses | Learn cards | Saved | Audio Study / Podcast |
+|------|---------|--------|----------------|-------------|-------|------------------------|
+| Guest | $0 | — | 1 (cookie) | 8 in result | Ghost claim | 30s preview only |
+| Free | $0 | — | 5 | 8 | Up to 10 | **Pro only** (not on Free) |
+| Scholar | $4.99 | $39.99 | 10 | 12 | Unlimited | Coming soon (checkout closed) |
+| Pro | $7.99 | $59.99 | Fair use | 15 | Unlimited | Yes |
+| Team | $24.99 | $199.99 | Fair use | 15 | Shared library | Yes |
+
+Free includes **4 core lenses** (Study included). Contract + Exam Prep are paid.
 
 ## Code map
 
@@ -72,9 +75,13 @@ billingPortalUrl: null
 
 ## Scholar verification (future)
 
-- Collect `.edu` email or document upload
+Scholar checkout is **closed** in app code (`isPlanCheckoutEnabled` excludes Scholar; `.edu` email is not a verify flow).
+
+When launching later:
+- Collect `.edu` email or document upload (real verification)
 - Set `profiles.plan = 'scholar'` after verification
 - Optional Supabase column `scholar_verified_at`
+- Flip `comingSoon` / enable checkout only after verify ships
 
 ## Public beta policy
 

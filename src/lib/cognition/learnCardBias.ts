@@ -22,6 +22,15 @@ const DOMAIN_PREFERRED: Partial<
   creative: ["creator_hook", "theme", "character"],
 };
 
+const STUDY_PERSONA_MEDIA_PREFERRED: AdaptiveLearnCardType[] = [
+  "definition",
+  "formula",
+  "mechanism",
+  "review_question",
+  "memory_hook",
+  "fact",
+];
+
 const DOMAIN_AVOIDED: Partial<
   Record<CognitionDocumentProfile["domain"], AdaptiveLearnCardType[]>
 > = {
@@ -29,7 +38,17 @@ const DOMAIN_AVOIDED: Partial<
   policy: ["creator_hook", "symbol"],
   scientific: ["creator_hook", "character"],
   historical: ["implementation", "metric"],
+  educational: ["creator_hook", "metric"],
+  academic: ["creator_hook", "metric"],
 };
+
+function isLearningPersona(personaBrain: PersonaBrain): boolean {
+  return (
+    personaBrain.family === "learning" ||
+    personaBrain.id === "the-student" ||
+    personaBrain.id === "exam-prep"
+  );
+}
 
 function mapAdaptiveToProviderGuidance(preferred: AdaptiveLearnCardType[]): string {
   const hints: string[] = [];
@@ -80,17 +99,33 @@ export function resolveLearnCardBias(
   documentProfile: CognitionDocumentProfile,
   dimensions: ResolvedCognitiveDimensions,
 ): LearnCardBiasResult {
+  const domainPreferred =
+    isLearningPersona(personaBrain) && documentProfile.domain === "media_transcript"
+      ? STUDY_PERSONA_MEDIA_PREFERRED
+      : (DOMAIN_PREFERRED[documentProfile.domain] ?? []);
+
   const preferred = [
     ...personaBrain.learnCardBias.map((s) => s as AdaptiveLearnCardType),
-    ...(DOMAIN_PREFERRED[documentProfile.domain] ?? []),
+    ...domainPreferred,
   ];
 
   if (dimensions.primaryDimensions.includes("chronology")) preferred.push("chronology");
   if (dimensions.primaryDimensions.includes("obligations")) preferred.push("obligation");
-  if (dimensions.primaryDimensions.includes("creator_hooks")) preferred.push("creator_hook");
+  // Creator hooks only when not on a Study persona (lecture YouTube must not skew creator).
+  if (
+    dimensions.primaryDimensions.includes("creator_hooks") &&
+    !isLearningPersona(personaBrain)
+  ) {
+    preferred.push("creator_hook");
+  }
 
   const preferredUnique = [...new Set(preferred)].slice(0, 10);
-  const avoided = [...new Set(DOMAIN_AVOIDED[documentProfile.domain] ?? [])];
+  const avoided = [
+    ...new Set([
+      ...(DOMAIN_AVOIDED[documentProfile.domain] ?? []),
+      ...(isLearningPersona(personaBrain) ? (["creator_hook", "metric"] as AdaptiveLearnCardType[]) : []),
+    ]),
+  ];
 
   const maxDensity: LearnCardBiasResult["maxDensity"] =
     documentProfile.density === "dense" || personaBrain.depthPreference === "deep"

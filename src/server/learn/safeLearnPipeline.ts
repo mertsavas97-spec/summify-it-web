@@ -82,6 +82,7 @@ export function runSafeLearnBuild(
       keyInsightCount: fallbackInput.result.keyInsights.length,
       isPresentation: fallbackInput.options.isPresentation,
       isYoutube: fallbackInput.options.isYoutubeTranscript,
+      structureFamily: fallbackInput.options.personaAdaptivePlan?.structureFamily,
     });
 
     const learnCards = fallbackLearnCards(fallbackInput.result, range.min);

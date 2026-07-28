@@ -26,7 +26,7 @@ export default function BestAiForStudyingPage() {
           path: "/best-ai-for-studying",
           pageTitle: "Best AI for Studying in 2026 — Turn Notes, PDFs & Videos into Study Systems",
           description:
-            "Summify turns your lecture notes, PDFs, and YouTube videos into structured study workflows: learn cards, audio lessons, and podcast-style discussions. Built for students.",
+            "Summify turns lecture notes, PDFs, and YouTube videos into structured study workflows: Learn cards and quizzes for free, with Audio Study and podcast-style discussions on Pro.",
           faqs: FAQS,
         })}
       />

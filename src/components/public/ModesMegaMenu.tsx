@@ -140,7 +140,7 @@ export function ModesMegaMenu({ isActive = false }: ModesMegaMenuProps) {
             ))}
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] bg-zinc-950/50 px-4 py-2.5">
-            <p className="text-[11px] text-zinc-500">29 intelligence modes · 5 active in beta</p>
+            <p className="text-[11px] text-zinc-500">6 core lenses · 4 free · Contract & Exam on Pro · Scholar soon</p>
             <Link
               href="/modes"
               onClick={close}

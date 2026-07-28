@@ -41,7 +41,7 @@ const WORKFLOW_LINKS: BlogProductLink[] = [
   { href: "/upload", label: "Document workspace", description: "Upload and analyze in one place." },
   { href: "/for-students", label: "Study & exam prep", description: "Learn cards and quizzes." },
   { href: "/for-researchers", label: "Research workflows", description: "Literature and paper skims." },
-  { href: "/modes", label: "Intelligence modes", description: "29 lenses for PDFs and video." },
+  { href: "/modes", label: "Intelligence modes", description: "6 core lenses for PDFs and video." },
 ];
 
 const COMPARISON_LINKS: BlogProductLink[] = COMPARISON_SLUGS.map((slug) => ({

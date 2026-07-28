@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/Badge";
 type UploadPaywallModalProps = {
   open: boolean;
   billing: BillingStatusCopy;
-  scholarCheckoutEligible: boolean;
+  /** True when signed-in user has a .edu school email — enables Scholar checkout. */
+  scholarCheckoutEligible?: boolean;
   isAuthenticated: boolean;
   onClose: () => void;
   /** Snapshot guest analysis before free-account auth. */
@@ -22,7 +23,7 @@ type UploadPaywallModalProps = {
 export function UploadPaywallModal({
   open,
   billing,
-  scholarCheckoutEligible,
+  scholarCheckoutEligible = false,
   isAuthenticated,
   onClose,
   onAuthIntent,
@@ -43,7 +44,7 @@ export function UploadPaywallModal({
         badge: "Try once",
         price: "$0",
         period: "",
-        bullets: ["1 analysis", "3 Learn Cards"],
+        bullets: ["1 analysis", "8 Learn Cards", "30s audio preview"],
         cta: { label: "Try once", kind: "close" as const },
       },
       {
@@ -52,7 +53,7 @@ export function UploadPaywallModal({
         badge: "Best to start",
         price: "$0",
         period: "",
-        bullets: ["5 analyses/day", "2 audio lessons/day", "1 podcast/day", "8 Learn Cards"],
+        bullets: ["5 analyses/day", "8 Learn Cards", "4 core lenses", "Up to 10 saved"],
         cta: {
           label: "Create free account",
           kind: "href" as const,
@@ -65,8 +66,14 @@ export function UploadPaywallModal({
         badge: "Students",
         price: interval === "yearly" ? "$39.99" : "$4.99",
         period: interval === "yearly" ? "/year" : "/month",
-        bullets: ["10 analyses/day", "10 audio/day", "5 podcasts/day"],
-        cta: { label: "Verify student", kind: "scholar" as const },
+        bullets: ["10 analyses/day", "10 audio/day", "5 podcasts/day", ".edu email required"],
+        cta: scholarCheckoutEligible
+          ? { label: "Start Scholar", kind: "checkout" as const, plan: "scholar" as const }
+          : {
+              label: "Sign in with .edu",
+              kind: "href" as const,
+              href: `/login?returnTo=${encodeURIComponent("/pricing")}`,
+            },
       },
       {
         id: "pro" as const,
@@ -93,7 +100,7 @@ export function UploadPaywallModal({
         cta: { label: "Start Team", kind: "checkout" as const, plan: "team" as const },
       },
     ],
-    [freeAuthHref, interval],
+    [freeAuthHref, interval, scholarCheckoutEligible],
   );
 
   useEffect(() => {
@@ -199,8 +206,6 @@ export function UploadPaywallModal({
           <div className={`grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-5 ${guestMode ? "opacity-85" : ""}`}>
             {plans.map((plan) => {
               const isPro = Boolean(plan.highlighted);
-              const showScholarCheckout =
-                plan.id === "scholar" && scholarCheckoutEligible && billing.enabled;
 
               return (
                 <article
@@ -246,47 +251,27 @@ export function UploadPaywallModal({
 
                   <div className="mt-3">
                     {plan.cta.kind === "close" ? (
-                        <Button type="button" variant={isPro && !guestMode ? "primary" : "secondary"} className="w-full" size="md" onClick={onClose}>
+                      <Button type="button" variant={isPro && !guestMode ? "primary" : "secondary"} className="w-full" size="md" onClick={onClose}>
                         {plan.cta.label}
                       </Button>
                     ) : plan.cta.kind === "href" ? (
-                        <Button
-                          href={plan.cta.href}
-                          variant={isPro && !guestMode ? "primary" : "secondary"}
-                          className="w-full"
-                          size="md"
-                          onClick={() => onAuthIntent?.()}
-                        >
+                      <Button
+                        href={plan.cta.href}
+                        variant={isPro && !guestMode ? "primary" : "secondary"}
+                        className="w-full"
+                        size="md"
+                        onClick={() => onAuthIntent?.()}
+                      >
                         {plan.cta.label}
                       </Button>
-                    ) : plan.cta.kind === "scholar" ? (
-                      showScholarCheckout ? (
-                        <CheckoutButton
-                          plan="scholar"
-                          interval={interval}
-                          label={plan.cta.label}
-                            variant={isPro && !guestMode ? "primary" : "secondary"}
-                          billing={billing}
-                          allowScholarCheckout
-                          autoResumeCheckout={false}
-                        />
-                      ) : (
-                        <Button
-                          href={`/login?next=${encodeURIComponent("/pricing")}`}
-                            variant={isPro && !guestMode ? "primary" : "secondary"}
-                          className="w-full"
-                          size="md"
-                        >
-                          {plan.cta.label}
-                        </Button>
-                      )
                     ) : (
                       <CheckoutButton
                         plan={plan.cta.plan}
                         interval={interval}
                         label={plan.cta.label}
-                          variant={isPro && !guestMode ? "primary" : "secondary"}
+                        variant={isPro && !guestMode ? "primary" : "secondary"}
                         billing={billing}
+                        allowScholarCheckout={scholarCheckoutEligible}
                         autoResumeCheckout={false}
                       />
                     )}

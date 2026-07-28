@@ -652,10 +652,14 @@ export function calculateDocumentIq({
 
   const whyThisScore = buildWhyThisScore({ readability, complexity, density, actionability });
   const iqLabel = mapIqScoreToBetterLabel({ readability, complexity, density, actionability });
+  const readingFromMeta = metadata?.estimatedReadingTimeMinutes;
+  const durationFromMeta = metadata?.estimatedDurationMinutes;
   const metadataReadingMinutes =
-    typeof metadata?.estimatedReadingTimeMinutes === "number"
-      ? metadata.estimatedReadingTimeMinutes
-      : null;
+    typeof readingFromMeta === "number" && readingFromMeta > 0
+      ? readingFromMeta
+      : typeof durationFromMeta === "number" && durationFromMeta > 0
+        ? durationFromMeta
+        : null;
   const estimatedReadingMinutes =
     metadataReadingMinutes && metadataReadingMinutes > 0
       ? Math.max(1, Math.round(metadataReadingMinutes))

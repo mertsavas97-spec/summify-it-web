@@ -2,18 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { getIntelligenceModeById, INTELLIGENCE_MODES } from "@/config/modes";
+import {
+  CORE_PRODUCT_LENS_MODE_IDS,
+  FREE_CORE_MODE_IDS,
+  getIntelligenceModeById,
+  PAID_PRIMARY_LENS_MODE_IDS,
+} from "@/config/modes";
 import { getPlanDefinition } from "@/data/pricingPlans";
 import {
   formatRecommendedSources,
   getCategoryLabelForMode,
-  getModesByCategory,
-  MODE_CATEGORY_META,
-  searchModes,
 } from "@/lib/mode-groups";
 import {
-  countModesForEntitlement,
-  formatEntitlementModeCountLabel,
   formatPlanBadgeLabel,
   getModeAccessState,
 } from "@/lib/mode-access";
@@ -59,6 +59,33 @@ function ModeIcon({ name }: { name: string }) {
   );
 }
 
+function resolvePickerModes(): IntelligenceModeDefinition[] {
+  return CORE_PRODUCT_LENS_MODE_IDS.map((id) => getIntelligenceModeById(id)).filter(
+    (mode): mode is IntelligenceModeDefinition => Boolean(mode),
+  );
+}
+
+function filterPickerModes(
+  modes: IntelligenceModeDefinition[],
+  query: string,
+): IntelligenceModeDefinition[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return modes;
+  return modes.filter((m) => {
+    const haystack = [
+      m.label,
+      m.shortDescription,
+      m.intelligenceLens,
+      m.id,
+      // STEM lives inside The Student — make it searchable
+      m.id === "the-student" ? "stem study lecture formula math chemistry" : "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(q);
+  });
+}
+
 type IntelligenceModeSelectorProps = {
   value: IntelligenceModeId;
   entitlementPlanId: PlanId;
@@ -76,17 +103,27 @@ export function IntelligenceModeSelector({
   const [query, setQuery] = useState("");
   const [hoverId, setHoverId] = useState<IntelligenceModeId | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const counts = useMemo(
-    () => countModesForEntitlement(entitlementPlanId),
-    [entitlementPlanId],
-  );
-  const countLabel = useMemo(
-    () => formatEntitlementModeCountLabel(counts, entitlementPlanId),
-    [counts, entitlementPlanId],
+
+  const coreModes = useMemo(() => resolvePickerModes(), []);
+  const filtered = useMemo(
+    () => filterPickerModes(coreModes, query),
+    [coreModes, query],
   );
 
-  const filtered = useMemo(() => searchModes(query), [query]);
-  const byCategory = useMemo(() => getModesByCategory(filtered), [filtered]);
+  const freeModes = useMemo(
+    () =>
+      filtered.filter((m) =>
+        (FREE_CORE_MODE_IDS as readonly string[]).includes(m.id),
+      ),
+    [filtered],
+  );
+  const paidModes = useMemo(
+    () =>
+      filtered.filter((m) =>
+        (PAID_PRIMARY_LENS_MODE_IDS as readonly string[]).includes(m.id),
+      ),
+    [filtered],
+  );
 
   const selectedMode = useMemo(
     () => getIntelligenceModeById(value),
@@ -103,8 +140,8 @@ export function IntelligenceModeSelector({
 
   const previewMode = useMemo(() => {
     const id = hoverId ?? value;
-    return INTELLIGENCE_MODES.find((m) => m.id === id);
-  }, [hoverId, value]);
+    return getIntelligenceModeById(id) ?? coreModes[0];
+  }, [hoverId, value, coreModes]);
 
   const previewAccess = useMemo(
     () =>
@@ -158,6 +195,78 @@ export function IntelligenceModeSelector({
   const selectedCategoryColors = selectedMode
     ? getCategoryColors(selectedMode.category)
     : null;
+
+  function renderModeRow(mode: IntelligenceModeDefinition) {
+    const access = getModeAccessState(mode, entitlementPlanId);
+    const isSelected = value === mode.id;
+    const isSoon = access.effectiveAvailability === "coming_soon";
+    const isLocked = access.effectiveAvailability === "locked";
+    const modeColors = getCategoryColors(mode.category);
+
+    return (
+      <li key={mode.id}>
+        <button
+          type="button"
+          disabled={isSoon}
+          onMouseEnter={() => setHoverId(mode.id)}
+          onFocus={() => setHoverId(mode.id)}
+          onClick={() => handlePick(mode)}
+          className={`flex w-full items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-all ${
+            isSelected
+              ? `${modeColors.borderActive} bg-violet-950/35`
+              : `border-transparent ${modeColors.hover}`
+          } ${isSoon ? "cursor-not-allowed opacity-50" : ""} ${isLocked ? "opacity-90" : ""}`}
+        >
+          <ModeIcon name={mode.icon} />
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-medium text-zinc-100">{mode.label}</span>
+              {mode.id === "the-student" && (
+                <span className="rounded border border-sky-500/25 bg-sky-950/30 px-1 py-px text-[9px] font-medium uppercase text-sky-300/90">
+                  STEM
+                </span>
+              )}
+              {access.canAccess && (
+                <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[9px] font-medium uppercase text-emerald-400/90">
+                  {isModeIncludedInPlan(mode.id, "free") ? "Free" : "Included"}
+                </span>
+              )}
+              {isLocked && access.upgradePlanId && (
+                <span
+                  className={`rounded border px-1 py-px text-[9px] font-medium uppercase ${modeColors.badge}`}
+                >
+                  {formatPlanBadgeLabel(access.upgradePlanId)}
+                </span>
+              )}
+              {isSoon && (
+                <span className="rounded border border-zinc-600/40 bg-zinc-800/40 px-1 py-px text-[9px] font-medium uppercase text-zinc-500">
+                  Soon
+                </span>
+              )}
+            </span>
+            <span className="mt-0.5 line-clamp-1 text-[11px] text-zinc-400">
+              {mode.shortDescription}
+            </span>
+          </span>
+          {isLocked && (
+            <svg
+              className="mt-1 h-3.5 w-3.5 shrink-0 text-zinc-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+              />
+            </svg>
+          )}
+        </button>
+      </li>
+    );
+  }
 
   return (
     <>
@@ -224,7 +333,7 @@ export function IntelligenceModeSelector({
         <span className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
           <ChevronRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-300/80" />
           <span className="text-right text-[11px] leading-snug text-zinc-500 group-hover:text-zinc-400">
-            {countLabel}
+            6 core lenses
           </span>
         </span>
       </button>
@@ -251,7 +360,9 @@ export function IntelligenceModeSelector({
                   >
                     Intelligence modes
                   </p>
-                  <p className="text-[11px] text-zinc-500">{countLabel}</p>
+                  <p className="text-[11px] text-zinc-500">
+                    6 core lenses · STEM is The Student
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -266,100 +377,43 @@ export function IntelligenceModeSelector({
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search modes…"
+                placeholder="Search lenses… (try STEM)"
                 className="mt-3 w-full rounded-lg border border-white/[0.08] bg-zinc-900/80 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30"
               />
             </div>
 
             <div className="grid min-h-0 flex-1 md:grid-cols-[1fr_240px]">
               <div className="min-h-0 overflow-y-auto p-3">
-                {MODE_CATEGORY_META.map((cat) => {
-                  const modes = byCategory.get(cat.id) ?? [];
-                  if (modes.length === 0) return null;
-                  const catColors = getCategoryColors(cat.id);
-                  return (
-                    <section key={cat.id} className="mb-4 last:mb-0">
-                      <p
-                        className={`mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${catColors.label}`}
-                      >
-                        {cat.label}
-                        <span className="ml-1.5 font-normal text-zinc-500">
-                          ({modes.length})
-                        </span>
-                      </p>
-                      <ul className="space-y-1">
-                        {modes.map((mode) => {
-                          const access = getModeAccessState(mode, entitlementPlanId);
-                          const isSelected = value === mode.id;
-                          const isSoon = access.effectiveAvailability === "coming_soon";
-                          const isLocked = access.effectiveAvailability === "locked";
-                          const modeColors = getCategoryColors(mode.category);
-
-                          return (
-                            <li key={mode.id}>
-                              <button
-                                type="button"
-                                disabled={isSoon}
-                                onMouseEnter={() => setHoverId(mode.id)}
-                                onFocus={() => setHoverId(mode.id)}
-                                onClick={() => handlePick(mode)}
-                                className={`flex w-full items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-all ${
-                                  isSelected
-                                    ? `${modeColors.borderActive} bg-violet-950/35`
-                                    : `border-transparent ${modeColors.hover}`
-                                } ${isSoon ? "cursor-not-allowed opacity-50" : ""} ${isLocked ? "opacity-90" : ""}`}
-                              >
-                                <ModeIcon name={mode.icon} />
-                                <span className="min-w-0 flex-1">
-                                  <span className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-xs font-medium text-zinc-100">
-                                      {mode.label}
-                                    </span>
-                                    {access.canAccess && (
-                                      <span className="rounded border border-emerald-500/25 bg-emerald-950/30 px-1 py-px text-[9px] font-medium uppercase text-emerald-400/90">
-                                        {isModeIncludedInPlan(mode.id, "free") ? "Free" : "Included"}
-                                      </span>
-                                    )}
-                                    {isLocked && access.upgradePlanId && (
-                                      <span
-                                        className={`rounded border px-1 py-px text-[9px] font-medium uppercase ${modeColors.badge}`}
-                                      >
-                                        {formatPlanBadgeLabel(access.upgradePlanId)}
-                                      </span>
-                                    )}
-                                    {isSoon && (
-                                      <span className="rounded border border-zinc-600/40 bg-zinc-800/40 px-1 py-px text-[9px] font-medium uppercase text-zinc-500">
-                                        Soon
-                                      </span>
-                                    )}
-                                  </span>
-                                  <span className="mt-0.5 line-clamp-1 text-[11px] text-zinc-400">
-                                    {mode.shortDescription}
-                                  </span>
-                                </span>
-                                {isLocked && (
-                                  <svg
-                                    className="mt-1 h-3.5 w-3.5 shrink-0 text-zinc-600"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={1.5}
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </section>
-                  );
-                })}
+                {filtered.length === 0 ? (
+                  <p className="px-1 py-6 text-center text-xs text-zinc-500">
+                    No matching lenses.
+                  </p>
+                ) : (
+                  <>
+                    {freeModes.length > 0 && (
+                      <section className="mb-4">
+                        <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-400/80">
+                          Free
+                          <span className="ml-1.5 font-normal text-zinc-500">
+                            ({freeModes.length})
+                          </span>
+                        </p>
+                        <ul className="space-y-1">{freeModes.map(renderModeRow)}</ul>
+                      </section>
+                    )}
+                    {paidModes.length > 0 && (
+                      <section>
+                        <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-400/80">
+                          Pro
+                          <span className="ml-1.5 font-normal text-zinc-500">
+                            ({paidModes.length})
+                          </span>
+                        </p>
+                        <ul className="space-y-1">{paidModes.map(renderModeRow)}</ul>
+                      </section>
+                    )}
+                  </>
+                )}
               </div>
 
               {previewMode && previewAccess && (

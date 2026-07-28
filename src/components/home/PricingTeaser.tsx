@@ -25,7 +25,7 @@ export function PricingTeaser() {
             }`}
           >
             {plan.badge && (
-              <Badge variant="accent" className="mb-3">
+              <Badge variant={plan.badge === "Coming soon" ? "muted" : "accent"} className="mb-3">
                 {plan.badge}
               </Badge>
             )}

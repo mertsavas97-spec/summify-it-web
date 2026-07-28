@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronRight, FileText, Presentation, Newspaper, Video } from "lucide-react";
+import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 
 const FORMAT_CARDS = [
   {
@@ -42,7 +45,7 @@ export function SummarizeFormatGrid() {
           Choose your AI summarizer
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-600 dark:text-zinc-500">
-          Same workspace for every format — structured summary, insights, flashcards, and quiz.
+          Same workspace for every format — summary first, then study cards, audio, or podcast.
         </p>
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FORMAT_CARDS.map((card) => {
@@ -51,6 +54,15 @@ export function SummarizeFormatGrid() {
               <li key={card.href}>
                 <Link
                   href={card.href}
+                  onClick={() =>
+                    trackProductEventV2Client("landing_cta_clicked", {
+                      metadata: {
+                        placement: "format_grid",
+                        target: card.href,
+                        format: card.label,
+                      },
+                    })
+                  }
                   className="group flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-5 transition-colors hover:border-violet-400/40 dark:border-white/[0.06] dark:bg-zinc-950/40 dark:hover:border-violet-500/25"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/50 bg-violet-50 text-violet-700 dark:border-violet-500/20 dark:bg-violet-950/40 dark:text-violet-200">

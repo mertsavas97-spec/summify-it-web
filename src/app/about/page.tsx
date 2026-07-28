@@ -22,9 +22,9 @@ export default function AboutPage() {
       <section>
         <h2 className="text-base font-semibold text-zinc-200">Public beta</h2>
         <p className="mt-2">
-          We are in public beta. Four intelligence modes are live today; Pro Intelligence modes
-          are visible as previews while we expand coverage. The workspace is free during beta —
-          no accounts or checkout required.
+          We are in public beta. Four free core lenses are live today (including Study);
+          Contract and Exam Prep unlock on paid plans. Catalog previews are not separate engines.
+          The workspace stays free to try — create an account to save analyses and unlock daily limits.
         </p>
       </section>
       <section>

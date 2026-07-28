@@ -1,5 +1,5 @@
 import { BLOG_POSTS } from "@/data/blog-posts";
-import { ACTIVE_INTELLIGENCE_MODE_IDS } from "@/config/modes";
+import { CORE_PRODUCT_LENS_MODE_IDS, getIntelligenceModeById } from "@/config/modes";
 import { GUIDE_SLUGS } from "@/data/guides/registry";
 import { USE_CASE_SLUGS } from "@/data/use-cases/registry";
 import { AUDIO_STUDY_PATHS } from "@/data/audio-study-landings";
@@ -54,9 +54,9 @@ export function getInternalLinkCatalog(extraBlogSlugs: { slug: string; title: st
     group: "Guides",
   }));
 
-  const modes = ACTIVE_INTELLIGENCE_MODE_IDS.map((id) => ({
+  const modes = CORE_PRODUCT_LENS_MODE_IDS.map((id) => ({
     href: `/modes/${id}`,
-    label: id.replace(/-/g, " "),
+    label: getIntelligenceModeById(id)?.label ?? id.replace(/-/g, " "),
     group: "Modes",
   }));
 

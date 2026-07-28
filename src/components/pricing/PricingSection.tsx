@@ -7,10 +7,14 @@ import { PricingCards } from "./PricingCards";
 
 type PricingSectionProps = {
   billing: BillingStatusCopy;
-  scholarCheckoutEligible: boolean;
+  /** True when signed-in user has a verified school (.edu) email. */
+  scholarCheckoutEligible?: boolean;
 };
 
-export function PricingSection({ billing, scholarCheckoutEligible }: PricingSectionProps) {
+export function PricingSection({
+  billing,
+  scholarCheckoutEligible = false,
+}: PricingSectionProps) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
 
   return (

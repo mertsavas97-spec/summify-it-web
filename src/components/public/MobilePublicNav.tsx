@@ -172,9 +172,6 @@ export function MobilePublicNav() {
         </div>
 
         <div className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain px-4">
-          <Link href="/modes" onClick={close} className={navLinkClass(pathname.startsWith("/modes"))}>
-            Modes
-          </Link>
           <MobileNavGroup label="Formats" items={FORMAT_NAV_ITEMS} onNavigate={close} />
           <MobileNavGroup label="Segments" items={SEGMENT_NAV_ITEMS} onNavigate={close} />
           <Link href="/upload" onClick={close} className={navLinkClass(pathname === "/upload")}>

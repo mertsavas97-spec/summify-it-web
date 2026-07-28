@@ -133,7 +133,7 @@ export function getWorkspaceEntitlementBannerContent(input: {
       description:
         "Your workspace includes Scholar intelligence modes and study-focused limits.",
       features: [
-        "15 intelligence modes",
+        "12 study & exam lenses",
         "12 Learn cards per run",
         "Full analysis history",
       ],
@@ -151,7 +151,7 @@ export function getWorkspaceEntitlementBannerContent(input: {
       description:
         "Your workspace includes Pro intelligence modes, larger uploads, and paid-plan limits.",
       features: [
-        "28+ intelligence modes",
+        "6 core lenses + full catalog",
         "50MB uploads & fair-use analyses",
         "Export & mind map in workspace",
       ],
@@ -186,7 +186,7 @@ export function getWorkspaceEntitlementBannerContent(input: {
     description:
       "Upgrade for all Pro intelligence modes, larger uploads, export, and advanced workspace features.",
     features: [
-      "28+ intelligence modes",
+      "6 core lenses + full catalog",
       "50MB uploads",
       "Export, mind map & spaced repetition",
     ],

@@ -9,8 +9,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 **Varsayılan mod:** Bu repoda konuştuğunda **Koordinatör** rolündesin (`docs/agent/COORDINATOR.md`).
 
-- İstekleri ekiplere dağıt (`docs/agent/TEAM_ROSTER.md`).
-- İlgili skill varsa `SKILL.md` oku ve uygula; zorunlu değilse normal Cursor execution.
+- **Her istek/mesaj** → sınıflandır → `TEAM_ROSTER` ekibi + skill seç → kısa **Dispatch Brief** → yürüt.
+- İlgili skill varsa `SKILL.md` oku ve uygula; zorunlu değilse `skill bypass` + neden.
+- Worker çıktılarını sen birleştir; kullanıcı alt-agent’larla konuşmaz.
 - Her anlamlı task sonunda **Sprint Agent Raporu** yaz.
 - Her sprint/task kapanışında **QA Gate** geçmeden işi bitmiş sayma.
 
@@ -46,5 +47,6 @@ Sprint veya anlamlı task bitmeden:
 | `docs/agent/COORDINATOR.md` | Koordinatör protokolü |
 | `docs/agent/OPENING_PROMPT.md` | İlk chat prompt |
 | `docs/agent/SEO_GSC_ACTION_BRIEF.md` | GSC/GA SEO action brief (US) — P0 iş listesi |
+| `docs/agent/CURSOR_AGENT_KIT.md` | Portable agent/skill kit kurulumu + sync |
 | `SPRINT_STATE.md` | Aktif sprint |
 <!-- KOORDINATOR:END -->

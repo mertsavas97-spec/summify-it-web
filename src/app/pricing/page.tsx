@@ -37,6 +37,10 @@ export default async function PricingPage() {
       <p className="mx-auto mt-4 max-w-2xl text-center text-xs leading-relaxed text-zinc-500">
         {PRICING_BETA_NOTE}
       </p>
+      <p className="mx-auto mt-2 max-w-2xl text-center text-[11px] leading-relaxed text-zinc-600">
+        Scholar checkout is available with a school email (.edu). Sign in with your student address
+        to unlock Start Scholar.
+      </p>
 
       <PricingSection billing={billing} scholarCheckoutEligible={scholarCheckoutEligible} />
 

@@ -97,7 +97,9 @@ export async function POST(request: Request) {
       metadata,
     };
 
-    const savedAnalysisId = await saveAnalysis(payload);
+    const savedAnalysisId = await saveAnalysis(payload, {
+      authVerifiedUserId: user.id,
+    });
     if (!savedAnalysisId) {
       return NextResponse.json({ success: false, error: "Failed to save analysis" }, { status: 500 });
     }

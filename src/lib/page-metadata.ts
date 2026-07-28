@@ -345,4 +345,15 @@ export const modePageSeo: Partial<
       "ai summarizer for students",
     ],
   },
+  "exam-prep": {
+    title: "AI Exam Prep Mode — High-Yield Facts & Test Angles",
+    description:
+      "Turn lectures and textbook chapters into high-yield exam review: contrasts, likely question angles, and drill-ready cards. Paid lens — Study stays free.",
+    keywords: [
+      "exam prep ai",
+      "ai exam notes",
+      "study for exams",
+      "pdf exam review",
+    ],
+  },
 };

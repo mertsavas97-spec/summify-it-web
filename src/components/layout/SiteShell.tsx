@@ -9,7 +9,7 @@ type SiteShellProps = {
 
 export function SiteShell({ children }: SiteShellProps) {
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-dvh flex-col">
       <GlobalGhostSessionClaim />
       <Header />
       <AnnouncementBanner />

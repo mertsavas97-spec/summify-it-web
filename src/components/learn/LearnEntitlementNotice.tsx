@@ -10,7 +10,7 @@ export function LearnEntitlementNotice({ planLabel }: LearnEntitlementNoticeProp
       <h2 className="text-lg font-semibold text-white">Learn practice is a paid feature</h2>
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">
         Your current plan ({planLabel}) does not include spaced repetition practice sets. Upgrade to
-        Scholar or Pro to turn saved analyses into private practice cards.
+        Pro to turn saved analyses into private practice cards (Scholar coming soon).
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button href="/pricing" size="sm">

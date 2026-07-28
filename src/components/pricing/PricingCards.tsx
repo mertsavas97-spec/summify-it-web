@@ -3,6 +3,7 @@ import { getPlanCheckoutLabel } from "@/lib/billing/provider";
 import {
   getPricingPlanFootnote,
   isPlanCheckoutEnabled,
+  SCHOLAR_EDU_REQUIRED_MESSAGE,
 } from "@/lib/billing/plan-availability";
 import type { BillingCheckoutPlanId, BillingStatusCopy } from "@/types/billing";
 import type { BillingInterval } from "@/types/plan";
@@ -10,16 +11,11 @@ import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 
-const SCHOLAR_EDU_UNAVAILABLE =
-  "Only available for .edu email addresses.";
-const SCHOLAR_EDU_FOOTNOTE =
-  "Available for verified students — sign up with a .edu email address to unlock.";
-const SCHOLAR_VERIFICATION_TITLE = "Student verification required";
-
 type PricingCardsProps = {
   interval: BillingInterval;
   billing: BillingStatusCopy;
-  scholarCheckoutEligible: boolean;
+  /** True when signed-in user has a .edu (or equivalent) school email. */
+  scholarCheckoutEligible?: boolean;
 };
 
 type GuestPlanCard = {
@@ -118,26 +114,10 @@ function PlanFootnote({ text }: { text: string }) {
   );
 }
 
-function ScholarVerificationNote() {
-  return (
-    <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-500/[0.08] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <p className="text-xs font-semibold leading-relaxed text-violet-100">
-        {SCHOLAR_VERIFICATION_TITLE}
-      </p>
-      <p className="mt-1 text-[11px] leading-relaxed text-zinc-300">
-        {SCHOLAR_EDU_FOOTNOTE}
-      </p>
-      <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-        {SCHOLAR_EDU_UNAVAILABLE}
-      </p>
-    </div>
-  );
-}
-
 export function PricingCards({
   interval,
   billing,
-  scholarCheckoutEligible,
+  scholarCheckoutEligible = false,
 }: PricingCardsProps) {
   const plans = getPricingPlansForInterval(interval);
 
@@ -151,12 +131,11 @@ export function PricingCards({
       "1 analysis",
       "Summary",
       "Deep Analysis preview",
-      "Learn Cards preview",
+      "8 Learn Cards",
       "30-second Audio Preview",
       "Document IQ",
       "No saved analyses",
-      "No full Learn Cards",
-      "No full Audio Study Mode",
+      "No Audio Study Mode",
       "No podcasts",
       "No exports",
       "No history",
@@ -174,11 +153,16 @@ export function PricingCards({
         const isPro = plan.highlighted;
         const isGuest = plan.id === "guest";
         const isScholar = plan.id === "scholar";
-        const footnote = isGuest || isScholar ? null : getPricingPlanFootnote(plan.id);
+        const scholarCheckoutOpen =
+          isScholar && isPlanCheckoutEnabled("scholar") && scholarCheckoutEligible;
+        const footnote = isGuest
+          ? null
+          : isScholar && !scholarCheckoutEligible
+            ? SCHOLAR_EDU_REQUIRED_MESSAGE
+            : getPricingPlanFootnote(plan.id);
         const checkoutEnabled =
-          (plan.id === "pro" || plan.id === "team") && isPlanCheckoutEnabled(plan.id);
-        const showScholarCheckout =
-          isScholar && scholarCheckoutEligible && billing.enabled;
+          (plan.id === "pro" || plan.id === "team" || scholarCheckoutOpen) &&
+          isPlanCheckoutEnabled(plan.id as BillingCheckoutPlanId);
 
         return (
           <article
@@ -197,7 +181,7 @@ export function PricingCards({
 
             <div className="flex flex-wrap items-center gap-2">
               {plan.badge && (
-                <Badge variant={isScholar ? "accent" : plan.comingSoon ? "muted" : "accent"}>
+                <Badge variant={plan.comingSoon ? "muted" : "accent"}>
                   {plan.badge}
                 </Badge>
               )}
@@ -260,26 +244,23 @@ export function PricingCards({
                 >
                   {plan.cta}
                 </Button>
-              ) : isScholar ? (
-                showScholarCheckout ? (
-                  <CheckoutButton
-                    plan="scholar"
-                    interval={interval}
-                    label="Start Scholar"
-                    variant="primary"
-                    billing={billing}
-                    allowScholarCheckout
-                  />
-                ) : (
-                  <ScholarVerificationNote />
-                )
+              ) : isScholar && !scholarCheckoutEligible ? (
+                <Button
+                  href={`/login?next=${encodeURIComponent("/pricing")}`}
+                  variant="secondary"
+                  className="w-full"
+                  size="md"
+                >
+                  Sign in with .edu email
+                </Button>
               ) : checkoutEnabled ? (
                 <CheckoutButton
-                  plan={plan.id as "pro" | "team"}
+                  plan={plan.id as "pro" | "team" | "scholar"}
                   interval={interval}
                   label={getPlanCheckoutLabel(plan.id as BillingCheckoutPlanId, billing)}
                   variant={isPro ? "primary" : "secondary"}
                   billing={billing}
+                  allowScholarCheckout={scholarCheckoutEligible}
                 />
               ) : (
                 <Button href="/upload" variant="secondary" className="w-full" size="md">
@@ -287,7 +268,6 @@ export function PricingCards({
                 </Button>
               )}
               {footnote ? <PlanFootnote text={footnote} /> : null}
-              {isScholar && showScholarCheckout ? <ScholarVerificationNote /> : null}
             </div>
           </article>
         );

@@ -46,20 +46,27 @@ body:has([data-workspace-root]) {
 
 body:has([data-workspace-root]) footer {
   border-color: rgba(255, 255, 255, 0.035);
-  background: rgba(8, 9, 13, 0.82);
+  background: rgba(8, 9, 13, 0.92);
+  margin-top: auto;
 }
 
 body:has([data-workspace-root]) footer > div {
   max-width: 1180px;
-  padding-block: 1.5rem;
+  padding-block: 1.25rem;
 }
 
 body:has([data-workspace-root]) footer > div > .grid {
   display: none;
 }
 
-body:has([data-workspace-root]) footer p {
+body:has([data-workspace-root]) footer > div > p {
   margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+body:has([data-workspace-root]) footer > div > p + * {
+  margin-top: 0.5rem;
 }
 
 ::selection {

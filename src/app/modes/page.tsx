@@ -37,16 +37,16 @@ export default function ModesHubPage() {
       />
       <PublicHero
         badge="Intelligence modes"
-        title="29 specialized lenses. Five active today."
-        description={`Choose how Summify organizes your source — executive, academic, creator, document, technical, and more. ${counts.active} modes run in the workspace now; ${counts.locked} Pro modes and ${counts.comingSoon} coming soon are visible for early access.`}
-        primaryCta={{ href: "/upload", label: "Try active modes" }}
-        secondaryCta={{ href: "/pricing", label: "Planned pricing" }}
+        title="6 intelligence lenses. Four free today."
+        description={`Four free core lenses — General, Study, Executive, and Creator — plus paid Contract and Exam Prep. Catalog previews are not separate engines; ${counts.active} free cores run today, with ${counts.locked} upgradeable lenses and ${counts.comingSoon} coming soon.`}
+        primaryCta={{ href: "/upload", label: "Try free lenses" }}
+        secondaryCta={{ href: "/pricing", label: "View pricing" }}
       />
 
       <section className="border-b border-white/[0.04] px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-center text-xs text-zinc-500">
-            {counts.active} active · {counts.locked} Pro · {counts.comingSoon} coming soon
+            6 core lenses · {counts.active} free · Contract & Exam on paid · catalog previews
           </p>
         </div>
       </section>

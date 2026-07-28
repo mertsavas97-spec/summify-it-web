@@ -2,6 +2,7 @@ import {
   normalizeDeckText,
   presentationSemanticStems,
 } from "@/server/presentation/presentationFragments";
+import type { LearnCardOutput } from "@/server/ai/schemas";
 import { cognitiveQuestionKey } from "./learnCognitiveDedup";
 import type { LearnCandidate } from "./types";
 
@@ -117,5 +118,33 @@ export function dedupeLearnCandidates(
     usedDeckKeys.add(titleKey);
   }
 
+  return out;
+}
+
+/**
+ * Light cross-dedupe for AI-generated Learn cards against summary/insights.
+ * Used even when the ≥4 AI-card path skips buildLearnIntelligence.
+ */
+export function dedupeAiLearnCardsAgainstAnalysis(
+  cards: LearnCardOutput[],
+  analysis: { title?: string; summary: string; keyInsights: string[] },
+  maxOverlap = 0.62,
+): LearnCardOutput[] {
+  const corpus: string[] = [
+    analysis.summary,
+    analysis.title ?? "",
+    ...analysis.keyInsights,
+  ].filter((s) => s.trim().length > 0);
+
+  const out: LearnCardOutput[] = [];
+  for (const card of cards) {
+    const text = `${card.title} ${card.content}`;
+    if (corpus.some((other) => overlapRatio(text, other) >= maxOverlap)) continue;
+    if (out.some((kept) => overlapRatio(text, `${kept.title} ${kept.content}`) >= maxOverlap)) {
+      continue;
+    }
+    out.push(card);
+    corpus.push(text);
+  }
   return out;
 }

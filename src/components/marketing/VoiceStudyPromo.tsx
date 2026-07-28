@@ -73,7 +73,7 @@ export function VoiceStudyPromo({ unlocked = false, className = "" }: VoiceStudy
           <div className="flex items-center gap-2">
             {!unlocked && <Lock className="h-3 w-3 text-zinc-500" />}
             <p className="text-xs text-slate-600 dark:text-zinc-400">
-              {unlocked ? "Available in 29+ study modes" : "Unlock for your documents"}
+              {unlocked ? "Available across Study & paid lenses" : "Unlock for your documents"}
             </p>
           </div>
           <Link

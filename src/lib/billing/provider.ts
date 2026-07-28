@@ -98,7 +98,7 @@ export function getPlanCheckoutLabel(
 
   if (billing.provider === "polar") {
     const labels: Record<BillingCheckoutPlanId, string> = {
-      scholar: "Coming soon",
+      scholar: "Start Scholar",
       pro: "Start Pro",
       team: "Start Team",
     };

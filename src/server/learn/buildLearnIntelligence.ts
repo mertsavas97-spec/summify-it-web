@@ -550,6 +550,7 @@ function buildLearnIntelligenceCore(
     keyInsightCount: result.keyInsights.length,
     isPresentation,
     isYoutube: options.isYoutubeTranscript === true,
+    structureFamily: options.personaAdaptivePlan?.structureFamily,
   });
 
   const sourceFirstBuilt = buildSourceFirstLearn({

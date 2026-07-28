@@ -63,6 +63,7 @@ export async function runPostAnalysisPersistence(
   const planId = resolvePlanId(input.storedPlan);
   const savedAnalysisId = await saveAnalysis(payload, {
     maxSavedAnalyses: getMaxSavedAnalysesForPlan(planId),
+    authVerifiedUserId: input.userId,
   });
 
   return {

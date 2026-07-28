@@ -1,14 +1,14 @@
 import type { FaqItem } from "@/data/faqs";
 import type { IntelligenceModeId } from "@/types/modes";
-import type { ActiveIntelligenceModeId } from "@/config/modes";
+import type { CoreProductLensModeId } from "@/config/modes";
 
 export type ModeSeoContent = {
   introParagraphs: string[];
   faqs: FaqItem[];
-  relatedModeIds: ActiveIntelligenceModeId[];
+  relatedModeIds: CoreProductLensModeId[];
 };
 
-export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> = {
+export const MODE_SEO_CONTENT: Partial<Record<CoreProductLensModeId, ModeSeoContent>> = {
   "general-summary": {
     introParagraphs: [
       "General Summary is your neutral first pass on any document, article, or transcript. It balances overview, insights, risks, and next actions without the quiz-heavy emphasis of study modes or the decision framing of executive lenses.",
@@ -30,7 +30,7 @@ export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> 
       },
       {
         q: "Is General Summary free?",
-        a: "Yes, during public beta alongside other active modes.",
+        a: "Yes — it is one of the four free core lenses.",
       },
     ],
     relatedModeIds: ["executive-brief", "the-student", "the-creator"],
@@ -48,7 +48,7 @@ export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> 
       },
       {
         q: "Can teams share outputs?",
-        a: "Saved analyses support optional public share links during beta.",
+        a: "Saved analyses support optional public share links.",
       },
       {
         q: "Best formats?",
@@ -81,11 +81,11 @@ export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> 
         a: "The Student emphasizes concept and quiz cards; General Summary is neutral.",
       },
       {
-        q: "Is it free for students?",
-        a: "The workspace is free during public beta.",
+        q: "Is Study free?",
+        a: "Yes — The Student is included in the four free core lenses. Exam Prep is a paid lens.",
       },
     ],
-    relatedModeIds: ["general-summary", "the-creator", "executive-brief"],
+    relatedModeIds: ["general-summary", "exam-prep", "executive-brief"],
   },
   "the-creator": {
     introParagraphs: [
@@ -117,7 +117,7 @@ export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> 
     introParagraphs: [
       "Contract Summary (Contract Analyzer mode) highlights obligations, dates, payment terms, termination rights, and ambiguous clauses in PDF and DOCX uploads. It is built for first-pass orientation — not legal advice.",
       "Freelancers and procurement teams use it to decide where human counsel should spend time. Every flagged clause still requires verification in the signed document and review by qualified professionals before execution.",
-      "Read the contract summary guide for workflow checklists. Do not upload agreements you cannot send to configured AI providers.",
+      "Contract Summary is a paid primary lens. Free accounts keep Study and the other three core lenses; upgrade when you need clause-level review.",
     ],
     faqs: [
       {
@@ -129,8 +129,8 @@ export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> 
         a: "PDF and DOCX in the workspace.",
       },
       {
-        q: "Can it compare contract versions?",
-        a: "Analyze each version separately and diff your own notes.",
+        q: "Is it free?",
+        a: "No — Contract Summary unlocks on Pro today (Scholar is coming soon). Free includes four core lenses including Study.",
       },
       {
         q: "Scanned PDFs?",
@@ -139,13 +139,36 @@ export const MODE_SEO_CONTENT: Record<ActiveIntelligenceModeId, ModeSeoContent> 
     ],
     relatedModeIds: ["executive-brief", "general-summary", "the-student"],
   },
+  "exam-prep": {
+    introParagraphs: [
+      "Exam Prep prioritizes high-yield facts, contrasts, and likely question angles from lectures, textbooks, and study PDFs. Use it when you already know the course and need drill-ready cards — not a first-pass overview.",
+      "It complements The Student (free Study lens): Student builds teachable structure; Exam Prep sharpens test-facing recall. Both still require you to verify against your syllabus.",
+      "Exam Prep is a paid primary lens on Pro (Scholar coming soon).",
+    ],
+    faqs: [
+      {
+        q: "How is Exam Prep different from The Student?",
+        a: "Exam Prep emphasizes high-yield / likely-test angles; The Student is the broader free Study lens.",
+      },
+      {
+        q: "Is Exam Prep free?",
+        a: "No — it unlocks on paid plans. The Student remains free.",
+      },
+      {
+        q: "Best sources?",
+        a: "Lecture PDFs, textbook chapters, and captioned course videos.",
+      },
+      {
+        q: "Does it replace practice exams?",
+        a: "No. It orients review; your instructor’s materials remain authoritative.",
+      },
+    ],
+    relatedModeIds: ["the-student", "general-summary", "executive-brief"],
+  },
 };
 
 export function getModeSeoContent(
   modeId: IntelligenceModeId,
 ): ModeSeoContent | undefined {
-  if (modeId in MODE_SEO_CONTENT) {
-    return MODE_SEO_CONTENT[modeId as ActiveIntelligenceModeId];
-  }
-  return undefined;
+  return MODE_SEO_CONTENT[modeId as CoreProductLensModeId];
 }

@@ -151,7 +151,7 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
 
   return (
     <li
-      className={`group rounded-lg border p-2.5 transition-colors duration-150 hover:border-white/15 ${style.border} ${style.bg} ${style.hoverShadow}`}
+      className={`group rounded-xl border p-3.5 transition-colors duration-150 hover:border-white/15 sm:p-4 ${style.border} ${style.bg} ${style.hoverShadow}`}
       data-learn-card-type={card.type}
       data-workspace-learn-card
       onClick={handleCardOpen}
@@ -184,23 +184,23 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
               </span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-sm font-semibold leading-snug text-zinc-50">
+          <p className="mt-0.5 text-sm font-semibold leading-snug text-zinc-50 sm:text-[15px]">
             {card.title}
           </p>
-          <p className="mt-1 line-clamp-4 text-[11px] leading-snug text-zinc-500">
+          <p className="mt-1.5 text-sm leading-relaxed text-zinc-300 [overflow-wrap:anywhere] sm:text-[15px] sm:leading-relaxed">
             {displayContent}
           </p>
           {isQuiz && quiz?.answer && (
-            <div className="mt-1.5">
+            <div className="mt-2">
               {showAnswer ? (
-                <p className="rounded border border-emerald-500/15 bg-emerald-950/15 px-2 py-1.5 text-[11px] leading-snug text-emerald-200/85">
+                <p className="rounded-lg border border-emerald-500/15 bg-emerald-950/15 px-2.5 py-2 text-sm leading-relaxed text-emerald-100/90 sm:text-[15px]">
                   {quiz.answer}
                 </p>
               ) : (
                 <button
                   type="button"
                   onClick={() => setShowAnswer(true)}
-                  className="text-[9px] font-medium text-emerald-500/80 hover:text-emerald-400"
+                  className="text-xs font-medium text-emerald-400/90 hover:text-emerald-300"
                 >
                   Show answer
                 </button>

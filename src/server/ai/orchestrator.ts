@@ -20,6 +20,7 @@ import { USER_MESSAGES } from "@/lib/user-messages";
 import type { PlanId } from "@/types/plan";
 import { devLog, devWarn } from "@/server/logging";
 import { buildLearnIntelligence } from "@/server/learn";
+import { dedupeAiLearnCardsAgainstAnalysis } from "@/server/learn/dedupeLearnCards";
 import { resolveLearnCardTargets } from "@/server/learn/learnCardTargets";
 import { generateLearnCardsForAnalysis } from "./generateLearnCards";
 import { applyAdaptivePlanPostProcess } from "@/lib/cognition/postProcessAnalysis";
@@ -75,7 +76,8 @@ function applyLearnIntelligence(
   options?: { aiLearnCards?: LearnCardOutput[] },
 ): AnalysisResult {
   const plan = intelligence.personaAdaptivePlan;
-  const aiLearnCards = options?.aiLearnCards ?? [];
+  const rawAiLearnCards = options?.aiLearnCards ?? [];
+  const aiLearnCards = dedupeAiLearnCardsAgainstAnalysis(rawAiLearnCards, result);
 
   if (aiLearnCards.length >= MIN_AI_LEARN_CARDS) {
     return { ...result, learnCards: aiLearnCards };
@@ -253,6 +255,7 @@ async function attemptProvider(
       keyInsightCount: postProcessed.keyInsights.length,
       isPresentation,
       isYoutube: isYoutubeTranscript,
+      structureFamily: intelligence.personaAdaptivePlan?.structureFamily,
     });
 
     const generationCap = getLearnCardsGenerationCap();
@@ -264,7 +267,24 @@ async function attemptProvider(
       generationCap,
       cardCount,
       clampedCardCount: Math.max(4, Math.min(20, Math.round(cardCount))),
+      structureFamily: intelligence.personaAdaptivePlan?.structureFamily,
     });
+
+    const planStrategy = intelligence.personaAdaptivePlan?.learnCardStrategy;
+    const strategyHint = [
+      mode ? `Analysis mode: ${mode}.` : null,
+      planStrategy?.summary,
+      planStrategy?.providerTypeEmphasis,
+      planStrategy?.titleStyle ? `Title style: ${planStrategy.titleStyle}` : null,
+      planStrategy?.preferredAdaptiveTypes?.length
+        ? `Prefer adaptive types: ${planStrategy.preferredAdaptiveTypes.join(", ")}.`
+        : null,
+      planStrategy?.avoidedAdaptiveTypes?.length
+        ? `Avoid: ${planStrategy.avoidedAdaptiveTypes.join(", ")}.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     const aiLearnCards = await generateLearnCardsForAnalysis({
       provider,
@@ -275,6 +295,8 @@ async function attemptProvider(
       isPresentation,
       isWebArticle: /web|article|url/i.test(intelligence.profile.documentTypeGuess ?? ""),
       documentTypeGuess: intelligence.profile.documentTypeGuess,
+      analysisMode: mode,
+      strategyHint: strategyHint || undefined,
     });
 
     return applyLearnIntelligence(

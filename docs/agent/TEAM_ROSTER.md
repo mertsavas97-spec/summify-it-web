@@ -10,7 +10,7 @@
 | `design` | Design & UX | DESIGN.md, tokens, onboarding, dashboard UI | `$design`, `ui-design-system`, `design-system` |
 | `frontend` | Web Frontend | Next.js App Router, React, Tailwind, accessibility | `senior-frontend`, `senior-fullstack` |
 | `backend` | API & Integrations | AI APIs, Supabase, Vercel Blob, document processing | `senior-backend`, `api-design-reviewer` |
-| `growth` | Growth & Launch | SEO, funnel, landing pages, paywall | `launch-strategy`, `programmatic-seo`, `paywall-upgrade-cro` |
+| `growth` | Growth & Launch | SEO, funnel, landing pages, paywall, ASO | `launch-strategy`, `programmatic-seo`, `paywall-upgrade-cro`, `aso`, `ai-seo`, `marketing-plan` |
 | `qa` | QA & Release | Typecheck, lint, smoke, regression review | `code-reviewer`, `ship-gate`, `senior-qa` |
 | `security` | Security & Privacy | Secrets, auth, file upload, data handling | `ai-security`, `cloud-security`, `dependency-auditor` |
 | `guardian` | Product Guardian | Scope, claims, privacy/regulatory copy drift | `adversarial-reviewer`, `named-persona-adversarial-review` |
@@ -29,9 +29,10 @@
 
 ## Domain (`.agents/skills/`) — sık kullanılanlar
 
-`product-discovery`, `senior-frontend`, `senior-fullstack`, `senior-backend`, `api-design-reviewer`, `programmatic-seo`, `schema-markup`, `pricing-strategy`, `code-reviewer`, `dependency-auditor`, `ai-security`, `ship-gate`, `paywall-upgrade-cro`
+`product-discovery`, `senior-frontend`, `senior-fullstack`, `senior-backend`, `api-design-reviewer`, `programmatic-seo`, `schema-markup`, `pricing-strategy`, `code-reviewer`, `dependency-auditor`, `ai-security`, `ship-gate`, `paywall-upgrade-cro`, `aso`, `ai-seo`, `marketing-plan`, `social`
 
-Tam liste: proje kökünde `.agents/skills/*/SKILL.md` (kit’ten bootstrap ile gelir).
+Tam liste: `.agents/skills/*/SKILL.md` (~275; portable kit). Yenilemek için: `bash scripts/sync-cursor-agent-kit.sh`  
+Kit notu: `docs/agent/CURSOR_AGENT_KIT.md`
 
 ## Routing
 

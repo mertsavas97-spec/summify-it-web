@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/Button";
-import { ModesMegaMenu } from "@/components/public/ModesMegaMenu";
 import { NavDropdown } from "@/components/public/NavDropdown";
 import { MobilePublicNav } from "@/components/public/MobilePublicNav";
 import { HeaderAuth } from "@/components/auth/HeaderAuth";
@@ -23,7 +22,6 @@ const SEGMENT_PATHS = SEGMENT_NAV_ITEMS.map((i) => i.href);
 export function PublicHeader() {
   const pathname = usePathname();
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const modesActive = pathname === "/modes" || pathname.startsWith("/modes/");
   const formatsActive = FORMAT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const segmentsActive = SEGMENT_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
@@ -113,7 +111,6 @@ export function PublicHeader() {
         </div>
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
-          <ModesMegaMenu isActive={modesActive} />
           <NavDropdown label="Formats" items={FORMAT_NAV_ITEMS} isActive={formatsActive} />
           <NavDropdown label="Segments" items={SEGMENT_NAV_ITEMS} isActive={segmentsActive} />
           {navLinks.map((link) => {

@@ -22,7 +22,7 @@ type CheckoutButtonProps = {
   variant?: "primary" | "secondary" | "ghost";
   className?: string;
   billing: BillingStatusCopy;
-  /** Pricing page: Scholar checkout for verified .edu accounts only. */
+  /** When true, Scholar checkout is allowed (caller verified .edu eligibility). */
   allowScholarCheckout?: boolean;
   /** Pricing page only — avoid resuming checkout when this button mounts inside modals. */
   autoResumeCheckout?: boolean;
@@ -32,7 +32,7 @@ function isCheckoutPlanAllowed(
   planId: CheckoutIntent["planId"],
   allowScholarCheckout: boolean,
 ): boolean {
-  if (planId === "scholar") return allowScholarCheckout;
+  if (planId === "scholar") return allowScholarCheckout && isPlanCheckoutEnabled(planId);
   return isPlanCheckoutEnabled(planId);
 }
 

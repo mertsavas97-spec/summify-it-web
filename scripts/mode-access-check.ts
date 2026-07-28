@@ -56,12 +56,51 @@ const fixtures: Fixture[] = [
   },
 ];
 
-const expectations: Record<string, { available: number; keyPoints: boolean }> = {
-  free: { available: 5, keyPoints: false },
-  beta: { available: 5, keyPoints: false },
-  "pro active": { available: 28, keyPoints: true },
-  "team active": { available: 28, keyPoints: true },
-  "scholar active": { available: 15, keyPoints: true },
+const expectations: Record<
+  string,
+  {
+    available: number;
+    keyPoints: boolean;
+    contract: boolean;
+    examPrep: boolean;
+    student: boolean;
+  }
+> = {
+  free: {
+    available: 4,
+    keyPoints: false,
+    contract: false,
+    examPrep: false,
+    student: true,
+  },
+  beta: {
+    available: 4,
+    keyPoints: false,
+    contract: false,
+    examPrep: false,
+    student: true,
+  },
+  "pro active": {
+    available: 28,
+    keyPoints: true,
+    contract: true,
+    examPrep: true,
+    student: true,
+  },
+  "team active": {
+    available: 28,
+    keyPoints: true,
+    contract: true,
+    examPrep: true,
+    student: true,
+  },
+  "scholar active": {
+    available: 12,
+    keyPoints: true,
+    contract: true,
+    examPrep: true,
+    student: true,
+  },
 };
 
 let failed = 0;
@@ -71,11 +110,18 @@ for (const fx of fixtures) {
   const counts = countModesForEntitlement(planId);
   const expected = expectations[fx.name];
   const keyPoints = canAccessMode("key-points", planId);
+  const contract = canAccessMode("contract-analyzer", planId);
+  const examPrep = canAccessMode("exam-prep", planId);
+  const student = canAccessMode("the-student", planId);
   const ok =
-    counts.available === expected.available && keyPoints === expected.keyPoints;
+    counts.available === expected.available &&
+    keyPoints === expected.keyPoints &&
+    contract === expected.contract &&
+    examPrep === expected.examPrep &&
+    student === expected.student;
 
   console.log(
-    `${ok ? "✓" : "✗"} ${fx.name}: plan=${planId} available=${counts.available}/${expected.available} locked=${counts.locked} key-points=${keyPoints}`,
+    `${ok ? "✓" : "✗"} ${fx.name}: plan=${planId} available=${counts.available}/${expected.available} contract=${contract} exam=${examPrep} student=${student} key-points=${keyPoints}`,
   );
 
   if (!ok) failed += 1;

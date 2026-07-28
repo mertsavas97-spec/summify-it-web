@@ -26,7 +26,44 @@ type AnalysisResultViewProps = {
   uiSectionLabels?: PersonaUiSectionLabels;
   entitlementPlanId?: PlanId;
   collapseDeepSecondarySections?: boolean;
+  /** Source character count — deep sources get a richer Summary panel. */
+  extractedCharacters?: number | null;
 };
+
+function splitSummaryParagraphs(summary: string): string[] {
+  const trimmed = summary.trim();
+  if (!trimmed) return [];
+
+  const byBreak = trimmed
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (byBreak.length > 1) return byBreak;
+
+  const sentences = trimmed.split(/(?<=[.!?])\s+/).filter(Boolean);
+  if (sentences.length <= 3) return [trimmed];
+
+  const paragraphs: string[] = [];
+  for (let i = 0; i < sentences.length; i += 3) {
+    paragraphs.push(sentences.slice(i, i + 3).join(" "));
+  }
+  return paragraphs;
+}
+
+function resolveSummaryDepth(args: {
+  extractedCharacters: number | null | undefined;
+  insightCount: number;
+  actionCount: number;
+}): "light" | "rich" {
+  const chars = args.extractedCharacters ?? 0;
+  if (chars >= 3500 || args.insightCount >= 4 || args.actionCount >= 2) {
+    return "rich";
+  }
+  if (chars >= 1800 || args.insightCount >= 3) {
+    return "rich";
+  }
+  return "light";
+}
 
 export function AnalysisResultView({
   result,
@@ -40,15 +77,32 @@ export function AnalysisResultView({
   uiSectionLabels,
   entitlementPlanId = "free",
   collapseDeepSecondarySections = false,
+  extractedCharacters = null,
 }: AnalysisResultViewProps) {
   const showLearn = sections === "all" && result.learnCards.length > 0;
+  const summaryDepth =
+    sections === "summary"
+      ? resolveSummaryDepth({
+          extractedCharacters,
+          insightCount: result.keyInsights.length,
+          actionCount: result.actionItems.length,
+        })
+      : "light";
+  const enrichSummaryTab = sections === "summary" && summaryDepth === "rich";
   const showSummary = sections !== "deep" && sections !== "insights";
   const showInsights =
-    sections === "all" || sections === "overview" || sections === "insights" || sections === "deep";
-  const showRisks = sections !== "summary" && result.risksOrWarnings.length > 0;
-  const showActions = sections !== "summary" && result.actionItems.length > 0;
+    sections === "all" ||
+    sections === "overview" ||
+    sections === "insights" ||
+    sections === "deep" ||
+    enrichSummaryTab;
+  const showRisks =
+    (sections !== "summary" || enrichSummaryTab) && result.risksOrWarnings.length > 0;
+  const showActions =
+    (sections !== "summary" || enrichSummaryTab) && result.actionItems.length > 0;
   const insightTracked = useRef(false);
   const mode = getIntelligenceModeById(modeId);
+  const summaryParagraphs = splitSummaryParagraphs(result.summary);
 
   useEffect(() => {
     if (insightTracked.current) return;
@@ -95,7 +149,7 @@ export function AnalysisResultView({
       <div className={embedded ? "min-w-0" : "min-w-0 divide-y divide-white/[0.04] px-4"}>
         {showSummary ? (
           <>
-            {mode ? (
+            {mode && !embedded ? (
               <div
                 className="mb-1 rounded-xl border border-emerald-400/20 bg-emerald-950/25 px-3 py-2.5"
                 data-mode-summary-context
@@ -105,16 +159,13 @@ export function AnalysisResultView({
                     AI Summary
                   </span>
                   <p className="min-w-0 break-words text-xs leading-snug text-zinc-300 [overflow-wrap:anywhere]">
-                    Shaped by intelligence mode:{" "}
                     <span className="font-semibold text-violet-200">{mode.label}</span>
+                    <span className="text-zinc-500"> — </span>
+                    <span className="text-zinc-400">
+                      {mode.shortDescription.replace(/\.$/, "")}
+                    </span>
                   </p>
                 </div>
-                <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
-                  This is the structured AI summary of your source.{" "}
-                  <span className="text-zinc-400">{mode.label}</span> is an intelligence mode —{" "}
-                  {mode.shortDescription.replace(/\.$/, "")}. The heading below is that mode’s
-                  summary label, not a separate document type.
-                </p>
               </div>
             ) : null}
             <CollapsibleSection
@@ -123,9 +174,16 @@ export function AnalysisResultView({
               badgeTone="emerald"
               defaultOpen
             >
-              <p className="max-w-prose break-words text-sm leading-[1.7] text-zinc-400 [overflow-wrap:anywhere]">
-                {result.summary}
-              </p>
+              <div className="max-w-prose space-y-3.5">
+                {summaryParagraphs.map((paragraph, index) => (
+                  <p
+                    key={`summary-p-${index}`}
+                    className="break-words text-sm leading-[1.75] text-zinc-300 [overflow-wrap:anywhere]"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
             </CollapsibleSection>
           </>
         ) : null}

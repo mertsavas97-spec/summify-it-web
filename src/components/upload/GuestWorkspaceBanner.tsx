@@ -22,8 +22,8 @@ export function GuestWorkspaceBanner({
   const description = exhausted
     ? "Create a free account for 5 analyses per day — and recover your last result after you sign in."
     : compact
-      ? "Create a free account for 5 analyses/day and saved history."
-      : "Create a free account for 5 analyses per day, saved history, audio lessons, and podcasts.";
+      ? "Create a free account for 5 analyses/day, Learn cards, and saved history."
+      : "Create a free account for 5 analyses per day, 8 Learn cards, quizzes, and saved history. Audio Study and Podcast unlock on Pro.";
 
   const href = `/login?returnTo=${encodeURIComponent("/upload")}`;
 

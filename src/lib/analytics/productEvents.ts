@@ -1,6 +1,7 @@
 export const PRODUCT_EVENTS = {
   // Acquisition
   landing_view: "landing_view",
+  landing_cta_clicked: "landing_cta_clicked",
   upload_page_view: "upload_page_view",
   pricing_view: "pricing_view",
   login_view: "login_view",

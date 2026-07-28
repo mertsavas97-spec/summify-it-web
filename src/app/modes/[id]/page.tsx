@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import {
-  ACTIVE_INTELLIGENCE_MODE_IDS,
+  CORE_PRODUCT_LENS_MODE_IDS,
   getIntelligenceModeById,
+  isActiveIntelligenceModeId,
 } from "@/config/modes";
 import { buildPageMetadata } from "@/lib/seo";
 import { modePageSeo } from "@/lib/page-metadata";
@@ -15,13 +16,14 @@ type PageProps = {
 };
 
 export function generateStaticParams() {
-  return ACTIVE_INTELLIGENCE_MODE_IDS.map((id) => ({ id }));
+  return CORE_PRODUCT_LENS_MODE_IDS.map((id) => ({ id }));
 }
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
   const mode = getIntelligenceModeById(id as IntelligenceModeId);
-  if (!mode || mode.availability !== "active") {
+  const isCoreLens = (CORE_PRODUCT_LENS_MODE_IDS as readonly string[]).includes(id);
+  if (!mode || (!isActiveIntelligenceModeId(id) && !isCoreLens)) {
     return buildPageMetadata({
       title: "Intelligence mode",
       description: "Summify intelligence mode.",
@@ -49,7 +51,8 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function ModeDetailPage({ params }: PageProps) {
   const { id } = await params;
   const mode = getIntelligenceModeById(id as IntelligenceModeId);
-  if (!mode || mode.availability !== "active") {
+  const isCoreLens = (CORE_PRODUCT_LENS_MODE_IDS as readonly string[]).includes(id);
+  if (!mode || (!isActiveIntelligenceModeId(id) && !isCoreLens)) {
     notFound();
   }
 

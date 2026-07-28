@@ -74,7 +74,7 @@ Summify combines document intelligence modes, Learn cards, mind maps, and a ligh
 We're shipping in public, listening closely during beta, and keeping the experience premium: no spammy growth hacks, no training on your private uploads for model improvement, and share pages that respect privacy (structured output only, never raw files).`,
   features: [
     "Multi-format ingestion: PDF, PPTX, YouTube, web articles, DOCX, TXT, MP3",
-    "29+ intelligence modes tuned for executives, students, creators, contracts, and more",
+    "6 core intelligence lenses for executives, students, creators, contracts, and exam prep",
     "Learn cards and spaced memory review built into the workspace",
     "Mind maps generated from analysis — no extra AI call required",
     "Export to Markdown, TXT, JSON, and print-friendly layouts",

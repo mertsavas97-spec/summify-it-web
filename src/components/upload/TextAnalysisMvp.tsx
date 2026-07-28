@@ -316,11 +316,14 @@ function PostAnalysisResultShell({
   isPaidActive,
   savedToWorkspace,
   savedAnalysisId,
+  intelligence = null,
   learningExperience = "summary-learn",
   sourceQuality = null,
   sourceQualityNote = null,
   fallbackCharacterCount = null,
   onGuestSaveClick,
+  onSavedAnalysisIdChange,
+  onSavedToWorkspaceChange,
   mediaModules,
   onExperienceChange,
   onNewAnalysis,
@@ -337,15 +340,30 @@ function PostAnalysisResultShell({
   isPaidActive: boolean;
   savedToWorkspace?: boolean;
   savedAnalysisId?: string | null;
+  intelligence?: AnalysisIntelligenceMetadata | null;
   learningExperience?: LearningExperienceId;
   sourceQuality?: DocumentProfileMetadata["sourceQuality"] | null;
   sourceQualityNote?: string | null;
   fallbackCharacterCount?: number | null;
   onGuestSaveClick?: () => void;
+  onSavedAnalysisIdChange?: (id: string | null) => void;
+  onSavedToWorkspaceChange?: (saved: boolean) => void;
   mediaModules?: (view: "audio" | "podcast") => ReactNode;
   onExperienceChange?: (experience: LearningExperienceId) => void;
   onNewAnalysis?: () => void;
 }) {
+  const [retryingSave, setRetryingSave] = useState(false);
+  const [localSavedToWorkspace, setLocalSavedToWorkspace] = useState(savedToWorkspace);
+  const [localSavedAnalysisId, setLocalSavedAnalysisId] = useState(savedAnalysisId);
+
+  useEffect(() => {
+    setLocalSavedToWorkspace(savedToWorkspace);
+  }, [savedToWorkspace]);
+
+  useEffect(() => {
+    setLocalSavedAnalysisId(savedAnalysisId);
+  }, [savedAnalysisId]);
+
   const modeDef = getIntelligenceModeById(modeId);
   const sourceTitle = getResultSourceTitle({ extractionMeta, inputMode, result });
   const sourceKindLabel = getSourceKindLabel(inputMode, extractionMeta);
@@ -369,44 +387,83 @@ function PostAnalysisResultShell({
     extractionMeta?.sourceKind === "file" ? extractionMeta.estimatedPages : null;
   const slideCount =
     extractionMeta?.sourceKind === "presentation" ? extractionMeta.slideCount : null;
+
+  async function handleRetrySave() {
+    if (retryingSave || !isAuthenticated) return;
+    setRetryingSave(true);
+    try {
+      const sourceLabel =
+        extractionMeta?.sourceKind === "youtube"
+          ? extractionMeta.title?.trim() || `YouTube · ${extractionMeta.videoId}`
+          : extractionMeta?.sourceKind === "url"
+            ? extractionMeta.title?.trim() || extractionMeta.sourceUrl
+            : extractionMeta?.sourceKind === "presentation" ||
+                extractionMeta?.sourceKind === "file"
+              ? extractionMeta.fileName
+              : sourceTitle;
+
+      const res = await fetch("/api/analyses/persist", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          result,
+          providerUsed,
+          fallbackUsed,
+          intelligenceModeId: modeId,
+          sourceHint: extractionMeta?.sourceKind ?? inputMode,
+          sourceLabel,
+          intelligence,
+        }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        savedAnalysisId?: string;
+      };
+      if (!res.ok || !data.success || !data.savedAnalysisId) return;
+
+      setLocalSavedToWorkspace(true);
+      setLocalSavedAnalysisId(data.savedAnalysisId);
+      onSavedToWorkspaceChange?.(true);
+      onSavedAnalysisIdChange?.(data.savedAnalysisId);
+    } catch {
+      // Keep failure banner; user can retry again.
+    } finally {
+      setRetryingSave(false);
+    }
+  }
+
   return (
     <div className="space-y-4" data-workspace-analysis-result-shell>
-      <header className="rounded-2xl border border-white/[0.07] bg-[#11141d]/75 p-4 shadow-sm shadow-black/20 backdrop-blur sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-violet-200/75">{sourceKindLabel}</p>
-            <h3 className="mt-1 line-clamp-2 max-w-3xl text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
-              {sourceTitle}
-            </h3>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {metadataChips.map((chip) => (
-                <span
-                  key={chip}
-                  className="max-w-full rounded-full border border-white/[0.07] bg-white/[0.035] px-2.5 py-1 text-[11px] text-zinc-400"
-                >
-                  {chip}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="shrink-0 lg:max-w-[320px]">
-            <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              {onNewAnalysis ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const confirmed = window.confirm(
-                      "Start a new analysis? Your current results stay available only if you’ve saved them.",
-                    );
-                    if (!confirmed) return;
-                    onNewAnalysis();
-                  }}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-violet-400/25 hover:text-violet-100"
-                >
-                  New analysis
-                </button>
-              ) : null}
-              {savedAnalysisId && isAuthenticated ? (
+      <header className="min-w-0" data-workspace-result-header>
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-zinc-500">
+          {sourceKindLabel}
+        </p>
+        <h3 className="mt-1 line-clamp-2 max-w-3xl text-xl font-semibold leading-snug tracking-tight text-white sm:text-2xl">
+          {sourceTitle}
+        </h3>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-100">
+            {modeLabel}
+          </span>
+          {metadataChips
+            .filter((chip) => !chip.toLowerCase().startsWith("mode:"))
+            .slice(0, 2)
+            .map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-500"
+              >
+                {chip}
+              </span>
+            ))}
+        </div>
+        {localSavedAnalysisId && isAuthenticated ? (
+          <details className="mt-3 group">
+            <summary className="cursor-pointer list-none text-[11px] font-medium text-zinc-500 hover:text-zinc-300 [&::-webkit-details-marker]:hidden">
+              Export
+            </summary>
+            <div className="mt-2">
               <AnalysisExportToolbar
                 result={result}
                 exportContext={{
@@ -416,16 +473,9 @@ function PostAnalysisResultShell({
                   uiSectionLabels,
                 }}
               />
-            ) : (
-              <AnalysisToolbar
-                result={result}
-                modeId={modeId}
-                uiSectionLabels={uiSectionLabels}
-              />
-            )}
             </div>
-          </div>
-        </div>
+          </details>
+        ) : null}
       </header>
 
       <LearningExperiencesResults
@@ -439,7 +489,7 @@ function PostAnalysisResultShell({
         isPaidActive={isPaidActive}
         sourceType={extractionMeta?.sourceKind ?? (inputMode === "text" ? "text" : null)}
         sourceLabel={sourceTitle}
-        savedAnalysisId={savedAnalysisId}
+        savedAnalysisId={localSavedAnalysisId}
         modeLabel={modeLabel}
         sourceKindLabel={sourceKindLabel}
         extractedCharacters={extractedCharacters}
@@ -457,20 +507,29 @@ function PostAnalysisResultShell({
             <p className="text-xs text-zinc-500">Podcast generation is not available for this analysis yet.</p>
           )
         }
-        onTryAudio={() => onExperienceChange?.("audio")}
-        onTryPodcast={() => onExperienceChange?.("podcast")}
+        onExperienceChange={(experience) => onExperienceChange?.(experience)}
         footerContent={
           <>
             <WorkspaceSaveBanner
-              savedToWorkspace={savedToWorkspace}
+              savedToWorkspace={localSavedToWorkspace}
               isAuthenticated={isAuthenticated}
-              savedAnalysisId={savedAnalysisId}
+              savedAnalysisId={localSavedAnalysisId}
               onGuestSaveClick={onGuestSaveClick}
+              onRetrySave={
+                isAuthenticated && localSavedToWorkspace === false
+                  ? () => {
+                      void handleRetrySave();
+                    }
+                  : undefined
+              }
             />
-            {isAuthenticated && savedAnalysisId ? (
+            {retryingSave ? (
+              <p className="mt-1 text-[11px] text-zinc-500">Retrying dashboard save…</p>
+            ) : null}
+            {isAuthenticated && localSavedAnalysisId ? (
               <AnalysisExportSharePanel
                 result={result}
-                analysisId={savedAnalysisId}
+                analysisId={localSavedAnalysisId}
                 isPublic={false}
                 shareId={null}
                 exportContext={{
@@ -533,12 +592,19 @@ export function TextAnalysisMvp({
   const [savedToWorkspace, setSavedToWorkspace] = useState<boolean | undefined>(
     injectedAnalysis?.savedToWorkspace,
   );
+  const [intelligence, setIntelligence] = useState<AnalysisIntelligenceMetadata | null>(
+    injectedAnalysis?.intelligence ?? null,
+  );
   const [upgradeMode, setUpgradeMode] = useState<IntelligenceModeDefinition | null>(null);
   const displayResult = injectedAnalysis?.result ?? result;
-  const displaySavedToWorkspace = injectedAnalysis?.savedToWorkspace ?? savedToWorkspace;
+  // Prefer a successful local save (e.g. Retry) over a stale injected false.
+  const displaySavedToWorkspace =
+    savedToWorkspace === true
+      ? true
+      : (injectedAnalysis?.savedToWorkspace ?? savedToWorkspace);
+  const displayIntelligence = injectedAnalysis?.intelligence ?? intelligence;
   const displayUiSectionLabels =
-    injectedAnalysis?.intelligence.personaUiSectionLabels ??
-    meta?.personaUiSectionLabels;
+    displayIntelligence?.personaUiSectionLabels ?? meta?.personaUiSectionLabels;
   const displayMeta = injectedAnalysis
     ? {
         providerUsed: injectedAnalysis.providerUsed,
@@ -567,12 +633,7 @@ export function TextAnalysisMvp({
     if (!canRunAnalysis(mode, entitlementPlanId)) return;
     setError(null);
     setFailureDebug(null);
-    setResult(null);
-    onAnalysisResultChange?.(null);
-    onSavedAnalysisIdChange?.(null);
-    setMeta(null);
-    setSavedToWorkspace(undefined);
-    onIntelligenceReady?.(null);
+    // Keep prior result visible until success — clearing here wiped ghost handoff on quota 429.
     onAnalyzingChange?.(true);
     trackMetaCustomEvent("AnalysisStarted", {
       source_type: extractionMeta?.sourceKind ?? (isManualTextMode ? "text" : "unknown"),
@@ -654,6 +715,7 @@ export function TextAnalysisMvp({
         personaUiSectionLabels: analysis.intelligence.personaUiSectionLabels,
       });
       setSavedToWorkspace(analysis.savedToWorkspace);
+      setIntelligence(analysis.intelligence);
       onSavedAnalysisIdChange?.(analysis.savedAnalysisId ?? null);
       onIntelligenceReady?.(analysis.intelligence);
       onAnalysisSuccess?.({
@@ -784,11 +846,14 @@ export function TextAnalysisMvp({
           uiSectionLabels={displayUiSectionLabels}
           savedToWorkspace={displaySavedToWorkspace}
           savedAnalysisId={savedAnalysisId}
+          intelligence={displayIntelligence}
           learningExperience={learningExperience}
-          sourceQuality={injectedAnalysis?.intelligence.profile.sourceQuality ?? null}
-          sourceQualityNote={injectedAnalysis?.intelligence.profile.sourceQualityNote ?? null}
+          sourceQuality={displayIntelligence?.profile.sourceQuality ?? null}
+          sourceQualityNote={displayIntelligence?.profile.sourceQualityNote ?? null}
           fallbackCharacterCount={rawText.trim().length}
           onGuestSaveClick={onGuestSaveClick}
+          onSavedAnalysisIdChange={onSavedAnalysisIdChange}
+          onSavedToWorkspaceChange={setSavedToWorkspace}
           mediaModules={mediaModules}
           onExperienceChange={onExperienceChange}
           onNewAnalysis={onNewAnalysis}
