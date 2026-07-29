@@ -8,10 +8,9 @@ import { SeoContentSection } from "@/components/public/SeoContentSection";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
 import { createPageMetadata } from "@/lib/metadata";
 
-const TITLE =
-  "ADHD-Friendly AI Study Tool — Break Down Lectures Into Digestible Lessons";
+const TITLE = "ADHD Study Tool — Digestible AI Lessons & Cards";
 const DESCRIPTION =
-  "Summify helps ADHD students study smarter: short audio lessons, structured learn cards, and podcast-style breakdowns that keep your focus without overwhelming you.";
+  "ADHD-friendly study: short audio lessons, structured Learn cards, and podcast-style breakdowns that keep focus without overload.";
 
 export function generateMetadata(): Metadata {
   return {

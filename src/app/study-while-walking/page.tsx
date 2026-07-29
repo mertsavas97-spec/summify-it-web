@@ -8,9 +8,9 @@ import { SeoContentSection } from "@/components/public/SeoContentSection";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
 import { createPageMetadata } from "@/lib/metadata";
 
-const TITLE = "Study While Walking — Turn Lecture Notes Into Audio Lessons With AI";
+const TITLE = "Study While Walking — AI Audio From Lecture Notes";
 const DESCRIPTION =
-  "Upload your PDFs or lecture notes and get a teacher-style audio lesson you can listen to on your walk, commute, or workout.";
+  "Upload PDFs or lecture notes and get a teacher-style audio lesson for your walk, commute, or workout.";
 
 export function generateMetadata(): Metadata {
   return {

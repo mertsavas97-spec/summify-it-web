@@ -5,7 +5,7 @@ import { buildPageMetadata } from "@/lib/seo";
 export const metadata = buildPageMetadata({
   title: "Audio Study Mode — AI Voice Lessons",
   description:
-    "Study while walking, during workouts, and across passive study time. Summify doesn't give you a summary. It becomes your study companion with audio-first lessons.",
+    "Study while walking, commuting, or working out. Teacher-style AI audio lessons that turn passive time into real progress.",
   path: "/audio-study",
   keywords: ["audio study", "AI voice study", "learn by listening", "teacher-style lessons"],
 });

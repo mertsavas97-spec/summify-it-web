@@ -29,6 +29,7 @@ export default async function PricingPage() {
       <JsonLd data={pricingPageJsonLd()} />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
       <SectionHeading
+        as="h1"
         eyebrow="Pricing"
         title="Plans for every workflow"
         description="Choose the Summify workspace tier that matches your learning and document intelligence workflow."

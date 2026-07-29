@@ -67,9 +67,9 @@ export const COMPARISONS: ComparisonPageConfig[] = [
     relatedLinks: [
       { href: "/summarize-pdf", label: "AI PDF summarizer", description: "Primary PDF workflow." },
       {
-        href: "/blog/best-notebooklm-alternatives",
-        label: "NotebookLM alternatives guide",
-        description: "Longer editorial comparison.",
+        href: "/compare/notebooklm",
+        label: "NotebookLM vs Summify",
+        description: "Side-by-side product comparison.",
       },
       { href: "/modes/the-student", label: "The Student mode", description: "Study-focused lens." },
       { href: "/upload", label: "Try Summify", description: "Free to try." },

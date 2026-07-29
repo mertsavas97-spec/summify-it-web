@@ -8,7 +8,7 @@ export const pageSeo = {
   home: buildPageMetadata({
     title: "Free AI Summarizer — PDF, PowerPoint, YouTube & Articles",
     description:
-      "Summarize PDFs, PowerPoint decks, YouTube videos, and web articles with AI. Get structured summaries, key insights, flashcards, and quizzes — free to try. Start now →",
+      "Summarize PDFs, PowerPoint, YouTube, and articles with AI. Get structured summaries, flashcards, and quizzes — free to try.",
     path: "/",
     // Head PDF terms live on /summarize-pdf only (avoid home cannibalization).
     keywords: [

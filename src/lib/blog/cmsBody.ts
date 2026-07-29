@@ -5,6 +5,18 @@ export type CmsBlogBodyFormat = "markdown" | "html";
 const HTML_BODY_PATTERN =
   /<(?:h[1-4]|p|ul|ol|li|a|strong|em|b|i|hr|blockquote|code|pre|br|img)(?:\s|>|\/)/i;
 
+/** Broken or retired blog paths → live replacements (Ahrefs crawl fixes). */
+const INTERNAL_HREF_REWRITES: Record<string, string> = {
+  "/blog/active-recall-vs-rereading": "/blog/audio-learning-vs-rereading",
+  "/blog/how-adhd-students-study-with-ai": "/adhd-study-tool",
+  "/blog/best-notebooklm-alternatives": "/compare/notebooklm",
+  "/blog/notebooklm-vs-summify": "/compare/notebooklm",
+  "/blog/how-to-read-research-papers-faster-with-ai": "/research-paper-study-tool",
+  "/pdf-summarizer": "/summarize-pdf",
+  "/youtube-video-summarizer": "/summarize-youtube-video",
+  "/video-summarizer": "/summarize-youtube-video",
+};
+
 function isInternalHref(href: string) {
   if (!href || href.startsWith("/") || href.startsWith("#")) return true;
 
@@ -18,6 +30,37 @@ function isInternalHref(href: string) {
 
 function isDangerousHref(href: string) {
   return /^(?:javascript|vbscript|data):/i.test(href.trim());
+}
+
+/** Normalize apex/www absolute URLs and rewrite known broken internal paths. */
+export function normalizeInternalBlogHref(href: string): string {
+  const trimmed = href.trim();
+  if (!trimmed || trimmed.startsWith("#") || isDangerousHref(trimmed)) return trimmed;
+
+  let path = trimmed;
+  try {
+    if (/^https?:\/\//i.test(trimmed)) {
+      const url = new URL(trimmed);
+      const host = url.hostname.toLowerCase();
+      if (host === "summify.app" || host === "www.summify.app" || host.endsWith(".summify.app")) {
+        path = `${url.pathname}${url.search}${url.hash}` || "/";
+      } else {
+        return trimmed;
+      }
+    }
+  } catch {
+    return trimmed;
+  }
+
+  if (!path.startsWith("/")) return trimmed;
+
+  const qIdx = path.search(/[?#]/);
+  const pathname = qIdx >= 0 ? path.slice(0, qIdx) : path;
+  const suffix = qIdx >= 0 ? path.slice(qIdx) : "";
+  const key = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  const rewritten = INTERNAL_HREF_REWRITES[key];
+  if (rewritten) return `${rewritten}${suffix}`;
+  return path;
 }
 
 export function detectCmsBlogBodyFormat(body: string): CmsBlogBodyFormat {
@@ -73,8 +116,9 @@ export function sanitizeCmsBlogHtml(html: string): string {
         if (!href || isDangerousHref(href)) {
           return { tagName: "a", attribs: safeAttributes };
         }
-        safeAttributes.href = href;
-        if (isInternalHref(href)) {
+        const normalized = normalizeInternalBlogHref(href);
+        safeAttributes.href = normalized;
+        if (isInternalHref(normalized)) {
           return { tagName: "a", attribs: safeAttributes };
         }
         safeAttributes.target = "_blank";

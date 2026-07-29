@@ -7,9 +7,9 @@ import { PublicHero } from "@/components/public/PublicHero";
 import { SeoContentSection } from "@/components/public/SeoContentSection";
 import { createPageMetadata } from "@/lib/metadata";
 
-const TITLE = "AI Lecture Note Summarizer — Structured Study Summaries in Seconds";
+const TITLE = "AI Lecture Note Summarizer — Study Cards & Audio";
 const DESCRIPTION =
-  "Paste or upload your lecture notes. Summify extracts key concepts, generates learn cards, and creates an audio lesson you can review anywhere.";
+  "Paste or upload lecture notes. Summify extracts key concepts, builds Learn cards, and creates an audio lesson.";
 
 export function generateMetadata(): Metadata {
   return {

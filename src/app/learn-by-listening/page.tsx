@@ -6,9 +6,9 @@ import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = {
   ...createPageMetadata({
-    title: "Learn by Listening — AI Audio Study & Podcast Learning",
+    title: "Learn by Listening — AI Audio Study & Podcasts",
     description:
-      "Study while walking, learn during workouts, and convert passive time into progress. Summify doesn't give you a summary. It becomes your study companion with audio-first learning.",
+      "Study while walking or working out. Turn passive time into progress with Summify audio lessons and podcast-style learning.",
     path: "/learn-by-listening",
   }),
   keywords: [

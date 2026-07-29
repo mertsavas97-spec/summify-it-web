@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getIntelligenceModeById } from "@/config/modes";
+import { CORE_PRODUCT_LENS_MODE_IDS, getIntelligenceModeById } from "@/config/modes";
 import { formatRecommendedSources, getCategoryLabelForMode } from "@/lib/mode-groups";
 import { getModeMarketingPreview } from "@/data/mode-marketing";
 import type { IntelligenceModeId } from "@/types/modes";
@@ -13,6 +13,29 @@ import { ModeSeoExpansion } from "./ModeSeoExpansion";
 type ModeDetailSectionsProps = {
   modeId: IntelligenceModeId;
 };
+
+function isCoreProductLens(modeId: string): boolean {
+  return (CORE_PRODUCT_LENS_MODE_IDS as readonly string[]).includes(modeId);
+}
+
+function modeHeroTitle(modeId: IntelligenceModeId, fallbackLabel: string): string {
+  switch (modeId) {
+    case "general-summary":
+      return "AI Document Summarizer — General Summary";
+    case "contract-analyzer":
+      return "AI Contract Summary — Clauses & Obligations";
+    case "the-student":
+      return "AI Study Notes — The Student Mode";
+    case "executive-brief":
+      return "AI Executive Brief — Decision-Ready Summary";
+    case "the-creator":
+      return "AI Creator Mode — Hooks, Themes & Beats";
+    case "exam-prep":
+      return "AI Exam Prep Mode — High-Yield Facts & Test Angles";
+    default:
+      return fallbackLabel;
+  }
+}
 
 const MODE_USE_CASES: Partial<
   Record<IntelligenceModeId, { title: string; description: string }[]>
@@ -91,10 +114,12 @@ const MODE_USE_CASES: Partial<
 
 export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
   const mode = getIntelligenceModeById(modeId);
-  if (!mode || mode.availability !== "active") return null;
+  // Marketing pages for core lenses (incl. paid/locked Contract & Exam) must still render an H1.
+  if (!mode || (mode.availability !== "active" && !isCoreProductLens(modeId))) return null;
 
   const preview = getModeMarketingPreview(modeId);
   const useCases = MODE_USE_CASES[modeId] ?? [];
+  const isLockedMarketing = mode.availability !== "active";
 
   return (
     <>
@@ -102,18 +127,11 @@ export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-start">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-400/80">
-              {getCategoryLabelForMode(modeId)} · Active mode
+              {getCategoryLabelForMode(modeId)} ·{" "}
+              {isLockedMarketing ? "Paid lens" : "Active mode"}
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {mode.id === "general-summary"
-                ? "AI Document Summarizer — General Summary"
-                : mode.id === "contract-analyzer"
-                  ? "AI Contract Summary — Clauses & Obligations"
-                  : mode.id === "the-student"
-                    ? "AI Study Notes — The Student Mode"
-                    : mode.id === "executive-brief"
-                      ? "AI Executive Brief — Decision-Ready Summary"
-                      : mode.label}
+              {modeHeroTitle(mode.id, mode.label)}
             </h1>
             <p className="mt-4 text-base leading-relaxed text-zinc-400">
               {mode.intelligenceLens}
@@ -126,8 +144,8 @@ export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
               <ProductDisclaimer className="mt-4 max-w-prose" />
             ) : null}
             <div className="mt-6 flex flex-wrap gap-2">
-              <Button href="/upload" size="md">
-                Try {mode.label} in workspace
+              <Button href={isLockedMarketing ? "/pricing" : "/upload"} size="md">
+                {isLockedMarketing ? `Unlock ${mode.label}` : `Try ${mode.label} in workspace`}
               </Button>
               <Button href="/modes" size="md" variant="secondary">
                 All modes

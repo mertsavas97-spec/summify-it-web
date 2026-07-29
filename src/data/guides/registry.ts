@@ -56,9 +56,9 @@ export const GUIDES: GuideArticle[] = [
   },
   {
     slug: "how-to-summarize-youtube-videos-with-ai",
-    title: "How to Summarize YouTube Videos With AI (Without Losing Context)",
+    title: "How to Summarize YouTube Videos With AI",
     description:
-      "A step-by-step workflow for transcript-based YouTube intelligence — captions, modes, study notes, and verification habits that keep summaries trustworthy.",
+      "Transcript-based YouTube summaries: captions, modes, study notes, and habits that keep AI outputs trustworthy.",
     date: "2026-05-03",
     readingTime: "12 min read",
     category: "Guides",

@@ -7,9 +7,9 @@ import { PublicHero } from "@/components/public/PublicHero";
 import { SeoContentSection } from "@/components/public/SeoContentSection";
 import { createPageMetadata } from "@/lib/metadata";
 
-const TITLE = "Turn Your Notes Into a Podcast — AI Study Podcast From Any Document";
+const TITLE = "Turn Notes Into a Podcast — AI Study Discussions";
 const DESCRIPTION =
-  "Upload lecture notes, research papers, or any PDF. Summify turns them into a natural two-speaker podcast discussion in minutes.";
+  "Upload lecture notes, papers, or any PDF. Summify turns them into a natural two-speaker podcast in minutes.";
 
 export function generateMetadata(): Metadata {
   return {

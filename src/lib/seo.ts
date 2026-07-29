@@ -152,9 +152,15 @@ export function buildBlogPostMetadata(
   },
 ): Metadata {
   const path = `/blog/${post.slug}`;
+  const rawTitle = post.seoTitle?.trim() || post.title;
+  const rawDescription = post.seoDescription?.trim() || post.description;
+  // Keep SERP-safe lengths (Ahrefs: title ~≤60 with brand; description ≤155–160).
+  const title = rawTitle.length > 55 ? `${rawTitle.slice(0, 52).trimEnd()}…` : rawTitle;
+  const description =
+    rawDescription.length > 155 ? `${rawDescription.slice(0, 152).trimEnd()}…` : rawDescription;
   return buildPageMetadata({
-    title: post.seoTitle?.trim() || post.title,
-    description: post.seoDescription?.trim() || post.description,
+    title,
+    description,
     path,
     ogType: "article",
     publishedTime: post.date,

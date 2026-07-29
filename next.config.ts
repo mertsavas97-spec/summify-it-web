@@ -54,6 +54,57 @@ const nextConfig: NextConfig = {
         destination: "/summarize-youtube-video",
         permanent: true,
       },
+      // Ahrefs crawl: missing / unpublished blog posts → closest live pages
+      {
+        source: "/blog/active-recall-vs-rereading",
+        destination: "/blog/audio-learning-vs-rereading",
+        permanent: true,
+      },
+      {
+        source: "/blog/active-recall-vs-rereading/",
+        destination: "/blog/audio-learning-vs-rereading",
+        permanent: true,
+      },
+      {
+        source: "/blog/how-adhd-students-study-with-ai",
+        destination: "/adhd-study-tool",
+        permanent: true,
+      },
+      {
+        source: "/blog/how-adhd-students-study-with-ai/",
+        destination: "/adhd-study-tool",
+        permanent: true,
+      },
+      {
+        source: "/blog/best-notebooklm-alternatives",
+        destination: "/compare/notebooklm",
+        permanent: true,
+      },
+      {
+        source: "/blog/best-notebooklm-alternatives/",
+        destination: "/compare/notebooklm",
+        permanent: true,
+      },
+      {
+        source: "/blog/notebooklm-vs-summify",
+        destination: "/compare/notebooklm",
+        permanent: true,
+      },
+      {
+        source: "/blog/notebooklm-vs-summify/",
+        destination: "/compare/notebooklm",
+        permanent: true,
+      },
+      {
+        source: "/blog/how-to-read-research-papers-faster-with-ai",
+        destination: "/research-paper-study-tool",
+        permanent: true,
+      },
+      {
+        source: "/blog/how-to-read-research-papers-faster-with-ai/",
+        destination: "/research-paper-study-tool",
+        permanent: true,
+      },
     ];
   },
   async headers() {

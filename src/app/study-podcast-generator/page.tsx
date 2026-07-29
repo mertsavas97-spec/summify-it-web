@@ -8,9 +8,9 @@ import { SeoContentSection } from "@/components/public/SeoContentSection";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
 import { createPageMetadata } from "@/lib/metadata";
 
-const TITLE = "AI Study Podcast Generator — Turn Any Source Into a Podcast Lesson";
+const TITLE = "AI Study Podcast Generator — Any Source to Podcast";
 const DESCRIPTION =
-  "Turn PDFs, YouTube videos, and articles into two-speaker podcast discussions. Study by listening with Summify's AI podcast generator.";
+  "Turn PDFs, YouTube videos, and articles into two-speaker podcast discussions. Study by listening with Summify.";
 
 export function generateMetadata(): Metadata {
   return {

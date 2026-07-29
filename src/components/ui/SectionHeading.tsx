@@ -3,6 +3,8 @@ type SectionHeadingProps = {
   title: string;
   description?: string;
   align?: "left" | "center";
+  /** Use h1 for page heroes (SEO); default h2 for mid-page sections. */
+  as?: "h1" | "h2";
 };
 
 export function SectionHeading({
@@ -10,8 +12,10 @@ export function SectionHeading({
   title,
   description,
   align = "center",
+  as = "h2",
 }: SectionHeadingProps) {
   const alignClass = align === "center" ? "text-center mx-auto" : "text-left";
+  const HeadingTag = as;
 
   return (
     <div className={`max-w-2xl ${alignClass}`}>
@@ -20,9 +24,9 @@ export function SectionHeading({
           {eyebrow}
         </p>
       )}
-      <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+      <HeadingTag className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
         {title}
-      </h2>
+      </HeadingTag>
       {description && (
         <p className="mt-3 text-base leading-relaxed text-zinc-400">
           {description}
