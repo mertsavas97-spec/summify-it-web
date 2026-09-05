@@ -68,7 +68,9 @@ Env vars for Scholar may remain configured for a future launch; checkout is bloc
 
 ## Webhook endpoint
 
-**URL:** `https://your-domain.com/api/polar/webhook`
+**URL (production):** `https://www.summify.app/api/polar/webhook`
+
+Use the **www** host. Do **not** use `https://summify.app/...` — apex redirects to www with HTTP 308, and Polar treats redirects as webhook delivery failures (auto-disables after consecutive failures).
 
 Configure in Polar Dashboard → Settings → Webhooks. Subscribe at minimum to:
 
