@@ -7,8 +7,12 @@ export const AI_CONFIG = {
   providers: {
     groq: {
       name: "groq" as const,
-      /** Cost-efficient Groq model with JSON-friendly output */
-      model: "llama-3.3-70b-versatile",
+      /**
+       * Primary analysis model on Groq.
+       * `llama-3.3-70b-versatile` was shut down 2026-08-16; Groq recommends
+       * `openai/gpt-oss-120b` (or `qwen/qwen3.6-27b`) as replacement.
+       */
+      model: "openai/gpt-oss-120b",
     },
     gemini: {
       name: "gemini" as const,
