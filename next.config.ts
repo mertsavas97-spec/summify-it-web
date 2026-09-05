@@ -9,18 +9,18 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // Apex → www, but never redirect Polar webhooks.
-      // Polar treats HTTP 3xx as delivery failures and does not follow redirects
-      // (common with www vs non-www on Vercel). See Polar webhook delivery docs.
+      // Apex → www for pages only. Never redirect `/api/*`.
+      // Polar (and similar providers) treat HTTP 3xx as webhook delivery failures
+      // and do not follow redirects — a common Vercel www/non-www footgun.
       {
-        source: "/:path((?!api/polar/webhook).*)",
+        source: "/:path((?!api/).*)*",
         has: [{ type: "host", value: "summify.app" }],
         destination: "https://www.summify.app/:path*",
         permanent: true,
       },
       // Production Vercel alias → canonical www (preview *-git-* hosts stay open)
       {
-        source: "/:path((?!api/polar/webhook).*)",
+        source: "/:path((?!api/).*)*",
         has: [{ type: "host", value: "summify-it-web.vercel.app" }],
         destination: "https://www.summify.app/:path*",
         permanent: true,
