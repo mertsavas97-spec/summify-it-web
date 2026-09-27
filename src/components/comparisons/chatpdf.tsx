@@ -19,7 +19,7 @@ export function ChatPdfComparisonBody() {
       </p>
       <p>
         Read our{" "}
-        <InternalTextLink href="/guides/best-ai-pdf-summarizers-2026">
+        <InternalTextLink href="/guides/how-to-evaluate-ai-pdf-summarizer">
           PDF summarizer guide
         </InternalTextLink>{" "}
         for evaluation criteria, then open the{" "}

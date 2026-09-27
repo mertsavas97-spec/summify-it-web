@@ -64,7 +64,7 @@ export function BestAiPdfSummarizersGuideBody() {
         chosen by the vendor.
       </p>
       <p>
-        Price matters after quality. Free tiers are useful for comparison during beta periods.
+        Price matters after quality. A free tier is useful for comparison.
         Paid tiers should unlock volume, collaboration, or advanced modes you will actually
         use — not vanity badges.
       </p>
@@ -96,7 +96,7 @@ export function BestAiPdfSummarizersGuideBody() {
         HR packets, unreleased financials, and client contracts do not belong in tools with
         vague data policies. Read how uploads are processed, which AI providers receive text,
         and whether files persist after analysis. Summify does not offer a permanent document
-        library during public beta; still, do not upload material you cannot process on a
+        library. Still, do not upload material you cannot process on a
         third-party stack.
       </p>
       <p>
@@ -110,8 +110,8 @@ export function BestAiPdfSummarizersGuideBody() {
         <InternalTextLink href="/summarize-pdf">Summify’s PDF workflow</InternalTextLink> lives
         in a document intelligence workspace. Upload to the{" "}
         <InternalTextLink href="/upload">analysis workspace</InternalTextLink>, select a mode,
-        and receive structured analysis plus Learn cards. During public beta the workspace is
-        free — ideal for running the fidelity checklist on your own syllabus readings or
+        and receive structured analysis plus Learn cards. The Free plan covers daily
+        summaries — useful for running the fidelity checklist on your own syllabus readings or
         reports.
       </p>
       <p>
@@ -124,8 +124,10 @@ export function BestAiPdfSummarizersGuideBody() {
         <InternalTextLink href="/compare/chatpdf">ChatPDF comparison</InternalTextLink>. For
         a closer point-by-point look at another popular option, see the{" "}
         <InternalTextLink href="/compare/quillbot">QuillBot comparison</InternalTextLink>. For
-        shorter editorial coverage, see the{" "}
-        <InternalTextLink href="/blog/best-ai-pdf-summarizers-2026">blog article</InternalTextLink>
+        the full 2026 tool roundup with a comparison table, see the{" "}
+        <InternalTextLink href="/blog/best-ai-pdf-summarizers-2026">
+          best AI PDF summarizers list
+        </InternalTextLink>
         . Researchers pairing papers and articles should also explore{" "}
         <InternalTextLink href="/for-researchers">researcher workflows</InternalTextLink> and
         the <InternalTextLink href="/guides/ai-study-notes-guide">AI study notes guide</InternalTextLink>.

@@ -57,6 +57,18 @@ const nextConfig: NextConfig = {
         destination: "/summarize-youtube-video",
         permanent: true,
       },
+      // Guide slug intent split: the blog owns the "best ai pdf summarizer"
+      // roundup query; the guide owns "how to evaluate / checklist" only.
+      {
+        source: "/guides/best-ai-pdf-summarizers-2026",
+        destination: "/guides/how-to-evaluate-ai-pdf-summarizer",
+        permanent: true,
+      },
+      {
+        source: "/guides/best-ai-pdf-summarizers-2026/",
+        destination: "/guides/how-to-evaluate-ai-pdf-summarizer",
+        permanent: true,
+      },
       // Ahrefs crawl: missing / unpublished blog posts → closest live pages
       {
         source: "/blog/active-recall-vs-rereading",

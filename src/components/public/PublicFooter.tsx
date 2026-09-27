@@ -30,7 +30,7 @@ const footerSections = [
   {
     title: "Resources",
     links: [
-      { href: "/guides/best-ai-pdf-summarizers-2026", label: "PDF Summarizer Guide" },
+      { href: "/guides/how-to-evaluate-ai-pdf-summarizer", label: "PDF Summarizer Guide" },
       { href: "/compare/notebooklm", label: "NotebookLM Alternative" },
       { href: "/compare/chatpdf", label: "vs ChatPDF" },
       { href: "/blog", label: "Blog" },

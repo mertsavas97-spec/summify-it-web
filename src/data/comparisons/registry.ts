@@ -137,7 +137,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
     ],
     relatedLinks: [
       { href: "/summarize-pdf", label: "PDF summarizer", description: "Summify format page." },
-      { href: "/guides/best-ai-pdf-summarizers-2026", label: "PDF summarizer guide", description: "Evaluation framework." },
+      { href: "/guides/how-to-evaluate-ai-pdf-summarizer", label: "PDF summarizer guide", description: "Evaluation framework." },
       { href: "/upload", label: "Try Summify", description: "Free during beta." },
     ],
     Content: ChatPdfComparisonBody,

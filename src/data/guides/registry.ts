@@ -1,5 +1,5 @@
 import type { GuideArticle } from "./types";
-import { BestAiPdfSummarizersGuideBody } from "@/components/guides/best-ai-pdf-summarizers-2026";
+import { BestAiPdfSummarizersGuideBody } from "@/components/guides/how-to-evaluate-ai-pdf-summarizer";
 import { YoutubeSummarizeGuideBody } from "@/components/guides/how-to-summarize-youtube-videos-with-ai";
 import { AiStudyNotesGuideBody } from "@/components/guides/ai-study-notes-guide";
 import { PdfToFlashcardsGuideBody } from "@/components/guides/pdf-to-flashcards-workflow";
@@ -7,10 +7,10 @@ import { ContractSummaryGuideBody } from "@/components/guides/contract-summary-a
 
 export const GUIDES: GuideArticle[] = [
   {
-    slug: "best-ai-pdf-summarizers-2026",
-    title: "Best AI PDF Summarizers in 2026: A Practical Buyer’s Guide",
+    slug: "how-to-evaluate-ai-pdf-summarizer",
+    title: "How to Evaluate an AI PDF Summarizer",
     description:
-      "How to evaluate AI PDF summarizers on structure, fidelity, study outputs, and privacy — with a framework you can apply before paying for any tool.",
+      "A buyer checklist for AI PDF summarizers: score fidelity, study outputs, and privacy before you pay. For the 2026 tool roundup, see the blog comparison.",
     date: "2026-05-01",
     updatedAt: "2026-05-18",
     readingTime: "14 min read",
@@ -31,8 +31,8 @@ export const GUIDES: GuideArticle[] = [
     ],
     faqs: [
       {
-        q: "What is the best AI PDF summarizer in 2026?",
-        a: "There is no universal winner. Choose based on your workflow — study notes, executive briefs, or contract first reads — and test on your own files.",
+        q: "How should I evaluate an AI PDF summarizer?",
+        a: "Score tools on fidelity, structure, study outputs, and privacy. Test on your own files. For a 2026 comparison roundup, use the blog article rather than this checklist.",
       },
       {
         q: "Are free AI PDF summarizers safe?",
