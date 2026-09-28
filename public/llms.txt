@@ -1,0 +1,29 @@
+# Summify
+
+Summify is a free AI summarizer and study workspace. Users upload a PDF, PowerPoint, Word file, or paste a YouTube link, article URL, or text. The product returns a structured summary, then optional flashcards, quizzes, audio lessons, and podcast-style review.
+
+Canonical site: https://www.summify.app
+
+## What it does
+
+- Summarize PDFs, PowerPoint (PPT/PPTX), DOCX, web articles, and YouTube transcripts.
+- Contract summary mode for a first-pass read of clauses and obligations. It is informational, not legal advice.
+- Learn cards (flashcards and quizzes) and optional audio study after the summary.
+- Plans: Free, Scholar (verified .edu), Pro, and Team. See https://www.summify.app/pricing
+
+## Primary pages
+
+- https://www.summify.app/ — product home
+- https://www.summify.app/upload — analysis workspace
+- https://www.summify.app/summarize-pdf — PDF summarizer
+- https://www.summify.app/summarize-powerpoint — PowerPoint summarizer
+- https://www.summify.app/summarize-web-articles — summarize web articles online
+- https://www.summify.app/summarize-youtube-video — YouTube summarizer
+- https://www.summify.app/modes/contract-analyzer — contract summary AI
+- https://www.summify.app/pricing — Free and Pro plans
+- https://www.summify.app/blog/best-ai-pdf-summarizers-2026 — comparison of AI PDF summarizer tools in 2026
+- https://www.summify.app/guides/how-to-evaluate-ai-pdf-summarizer — how to evaluate an AI PDF summarizer
+
+## Notes for assistants
+
+Prefer https://www.summify.app URLs (www). Do not describe Summify as a law firm or guaranteed-accurate legal review. Analysis quality depends on the source text.

@@ -1,0 +1,15 @@
+{
+  "project": "summify",
+  "brandLock": true,
+  "forbiddenPaths": [
+    "src/components/upload",
+    "src/components/learn",
+    "src/components/podcast",
+    "src/server/ai",
+    "src/server/learn",
+    "src/lib/cognition"
+  ],
+  "lastAudit": "2026-07-30",
+  "auditReport": "docs/hallmark/AUDIT-2026-07-30.md",
+  "notes": "Marketing-only Hallmark scope. Pipeline forbidden. Brand: #0e1016 / #8b5cf6 / Geist."
+}

@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Summify — Google for Startups Pitch Deck</title>
+  <meta name="description" content="Summify brand pitch deck for Google for Startups — AI summarizer and study workspace." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e1016;
+      --bg-elevated: #161922;
+      --bg-card: #1c1f2a;
+      --fg: #e4e4e7;
+      --muted: #a1a1aa;
+      --dim: #71717a;
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #8b5cf6;
+      --accent-soft: rgba(139, 92, 246, 0.15);
+      --cyan: #67e8f9;
+      --violet: #c4b5fd;
+      --gradient: linear-gradient(135deg, #c4b5fd 0%, #67e8f9 55%, #7dd3fc 100%);
+      --radius: 18px;
+      --font: "Geist", system-ui, -apple-system, sans-serif;
+      --mono: "Geist Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #05060a;
+      color: var(--fg);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .deck-shell {
+      width: min(100%, 1280px);
+      aspect-ratio: 16 / 9;
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 40px 120px -40px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(139, 92, 246, 0.08);
+      background: var(--bg);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: clamp(28px, 4.2vw, 56px) clamp(32px, 4.8vw, 64px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      background:
+        radial-gradient(ellipse 70% 55% at 50% -15%, rgba(139, 92, 246, 0.16), transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 80%, rgba(34, 211, 238, 0.06), transparent 55%),
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px),
+        var(--bg);
+      background-size: auto, auto, 64px 64px, 64px 64px, auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: clamp(18px, 2.4vw, 28px);
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand img {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      ring: 1px solid var(--border);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--violet);
+    }
+
+    .slide-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .slide-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 12px;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: var(--dim);
+    }
+
+    .slide-footer .page { font-family: var(--mono); letter-spacing: 0.04em; }
+
+    h1 {
+      font-size: clamp(36px, 4.6vw, 64px);
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+
+    h2 {
+      font-size: clamp(28px, 3.2vw, 44px);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+      max-width: 18ch;
+    }
+
+    .gradient-text {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lede {
+      margin-top: 16px;
+      max-width: 52ch;
+      font-size: clamp(15px, 1.35vw, 19px);
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: clamp(18px, 2.5vw, 36px);
+      align-items: stretch;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: rgba(22, 25, 34, 0.82);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: clamp(14px, 1.6vw, 22px);
+      backdrop-filter: blur(8px);
+    }
+
+    .card.accent {
+      border-color: rgba(139, 92, 246, 0.35);
+      background: linear-gradient(180deg, rgba(139, 92, 246, 0.12), rgba(22, 25, 34, 0.9));
+      box-shadow: 0 0 40px -20px rgba(139, 92, 246, 0.55);
+    }
+
+    .card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .card p, .card li {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .card ul {
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .card li::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      margin-right: 8px;
+      background: var(--accent);
+      vertical-align: 1px;
+      box-shadow: 0 0 8px rgba(139, 92, 246, 0.8);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      background: var(--accent-soft);
+      color: var(--violet);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+    }
+
+    .stat {
+      text-align: left;
+    }
+
+    .stat .value {
+      font-size: clamp(22px, 2.4vw, 32px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .stat .label {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      position: relative;
+    }
+
+    .flow-step {
+      position: relative;
+      padding: 16px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(22, 25, 34, 0.9);
+      min-height: 110px;
+    }
+
+    .flow-step .n {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--cyan);
+      margin-bottom: 8px;
+    }
+
+    .flow-step strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .flow-step span {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .compare {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .compare th, .compare td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare th {
+      color: var(--dim);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .compare td:first-child { color: var(--muted); width: 28%; }
+    .compare .yes { color: #86efac; }
+    .compare .partial { color: #fde68a; }
+    .compare .no { color: #71717a; }
+    .compare tr.summify td {
+      background: rgba(139, 92, 246, 0.08);
+      color: #fff;
+    }
+
+    .ask-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .ask-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(22, 25, 34, 0.75);
+    }
+
+    .ask-item .dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      color: var(--violet);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .ask-item strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .ask-item p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .cover-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 820px;
+    }
+
+    .cover-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .nav {
+      position: absolute;
+      right: 18px;
+      bottom: 14px;
+      z-index: 5;
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav button {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(22, 25, 34, 0.9);
+      color: var(--fg);
+      cursor: pointer;
+      font-size: 16px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .nav button:hover {
+      border-color: rgba(139, 92, 246, 0.5);
+      background: rgba(139, 92, 246, 0.15);
+    }
+
+    .progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 2px;
+      background: rgba(255,255,255,0.06);
+      z-index: 4;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+      transition: width 0.3s ease;
+    }
+
+    .hint {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: #52525b;
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+      z-index: 10;
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 0; align-items: stretch; }
+      .deck-shell {
+        width: 100%;
+        height: 100vh;
+        aspect-ratio: auto;
+        border-radius: 0;
+      }
+      .grid-2, .grid-3, .grid-4, .flow {
+        grid-template-columns: 1fr;
+      }
+      .slide { overflow: auto; }
+      .hint { display: none; }
+    }
+
+    @media print {
+      body { background: #000; padding: 0; }
+      .deck-shell {
+        width: 100%;
+        height: auto;
+        aspect-ratio: auto;
+        box-shadow: none;
+        border: none;
+      }
+      .slide {
+        position: relative;
+        opacity: 1 !important;
+        visibility: visible !important;
+        page-break-after: always;
+        height: 100vh;
+        pointer-events: auto;
+      }
+      .nav, .hint, .progress { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck-shell" id="deck" aria-live="polite">
+    <!-- 1. Cover -->
+    <section class="slide active" data-slide="1">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Google for Startups · Confidential</span>
+      </div>
+      <div class="slide-body cover-center">
+        <span class="pill">Public beta · Live product</span>
+        <h1 style="margin-top:18px">
+          The AI summarizer that
+          <span class="gradient-text">turns sources into understanding</span>
+        </h1>
+        <p class="lede">
+          Summify helps students and knowledge workers go from PDF, PowerPoint, YouTube, or article
+          to structured summary, Learn cards, and optional audio — in one workspace.
+        </p>
+        <div class="cover-meta">
+          <span class="pill">www.summify.app</span>
+          <span class="pill">EdTech · AI learning</span>
+          <span class="pill">B2C SaaS + Scholar</span>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Brand pitch deck · Google for Startups application</span>
+        <span class="page">01 / 10</span>
+      </div>
+    </section>
+
+    <!-- 2. Problem -->
+    <section class="slide" data-slide="2">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">The problem</span>
+      </div>
+      <div class="slide-body">
+        <h2>Summaries are everywhere. <span class="gradient-text">Learning still breaks.</span></h2>
+        <p class="lede">
+          Students and professionals drown in long documents and lectures. Generic AI chat tools
+          return flat bullet lists — then leave people alone to turn insight into retention.
+        </p>
+        <div class="grid-3" style="margin-top:28px">
+          <div class="card">
+            <h3>Information overload</h3>
+            <p>PDFs, decks, YouTube lectures, and articles pile up faster than anyone can review with attention.</p>
+          </div>
+          <div class="card">
+            <h3>One-shot tools</h3>
+            <p>Most summarizers stop at text. No study cards, no quiz loop, no listen-back path from the same source.</p>
+          </div>
+          <div class="card accent">
+            <h3>Retention gap</h3>
+            <p>Without active recall and multi-format reinforcement, “I summarized it” rarely becomes “I know it.”</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Why Summify exists</span>
+        <span class="page">02 / 10</span>
+      </div>
+    </section>
+
+    <!-- 3. Solution -->
+    <section class="slide" data-slide="3">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Solution</span>
+      </div>
+      <div class="slide-body">
+        <h2>One upload. <span class="gradient-text">A complete learning loop.</span></h2>
+        <p class="lede">
+          Summify is an AI summarizer workspace: structured intelligence first, then Learn cards and quizzes —
+          with optional teacher-style audio and podcast discussion when users are ready.
+        </p>
+        <div class="flow" style="margin-top:28px">
+          <div class="flow-step">
+            <div class="n">01</div>
+            <strong>Upload</strong>
+            <span>PDF, PowerPoint, YouTube, web article, or text</span>
+          </div>
+          <div class="flow-step">
+            <div class="n">02</div>
+            <strong>Lens</strong>
+            <span>General, Study, Executive, Creator — plus paid Contract &amp; Exam Prep</span>
+          </div>
+          <div class="flow-step">
+            <div class="n">03</div>
+            <strong>Summary + Learn</strong>
+            <span>Structured insights, flashcards, and quiz practice</span>
+          </div>
+          <div class="flow-step">
+            <div class="n">04</div>
+            <strong>Listen</strong>
+            <span>Optional Audio Lesson or two-host Podcast</span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Product thesis</span>
+        <span class="page">03 / 10</span>
+      </div>
+    </section>
+
+    <!-- 4. Product -->
+    <section class="slide" data-slide="4">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Product</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div>
+            <h2>Built for real study workflows</h2>
+            <p class="lede" style="max-width:38ch">
+              Live at summify.app — free to try, account to save, paid tiers for audio depth and higher limits.
+            </p>
+            <div class="grid-2" style="margin-top:20px; grid-template-columns:1fr 1fr; gap:10px">
+              <div class="card">
+                <h3>Document IQ</h3>
+                <p>Source complexity signals that guide how users study the material.</p>
+              </div>
+              <div class="card">
+                <h3>Intelligence lenses</h3>
+                <p>Same pipeline, different emphasis — Study for students, Executive for decision-makers.</p>
+              </div>
+              <div class="card">
+                <h3>Learn layer</h3>
+                <p>Grounded flashcards and quizzes from the analysis — not generic chat fluff.</p>
+              </div>
+              <div class="card">
+                <h3>Audio Study</h3>
+                <p>Teacher-style lessons and podcast discussions after the summary path.</p>
+              </div>
+            </div>
+          </div>
+          <div class="card accent" style="display:flex; flex-direction:column; justify-content:center">
+            <span class="eyebrow">Core promise</span>
+            <h3 style="font-size:22px; letter-spacing:-0.03em; margin:12px 0 10px; line-height:1.25">
+              We don’t stop at “here’s a summary.”
+            </h3>
+            <p>
+              Summify keeps the thread: understand → practice → listen — always from the same source,
+              so users spend less time reformatting and more time retaining.
+            </p>
+            <ul style="margin-top:16px">
+              <li>Guest try → sign-in to save</li>
+              <li>Workspace history &amp; shareable outputs</li>
+              <li>Privacy-minded processing (no private training on user uploads)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>What ships today</span>
+        <span class="page">04 / 10</span>
+      </div>
+    </section>
+
+    <!-- 5. Market -->
+    <section class="slide" data-slide="5">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Market</span>
+      </div>
+      <div class="slide-body">
+        <h2>A large market at the intersection of <span class="gradient-text">AI + learning</span></h2>
+        <p class="lede">
+          Demand is shifting from “chat with a model” to durable study systems that respect attention,
+          commuting time, and exam cycles.
+        </p>
+        <div class="grid-3" style="margin-top:28px">
+          <div class="card accent stat">
+            <div class="value">TAM</div>
+            <div class="label" style="margin-top:10px; color:var(--muted); font-size:13px; line-height:1.45">
+              Global AI education &amp; productivity tooling — learners and knowledge workers who consume long-form digital sources daily.
+            </div>
+          </div>
+          <div class="card stat">
+            <div class="value">SAM</div>
+            <div class="label" style="margin-top:10px; color:var(--muted); font-size:13px; line-height:1.45">
+              English-first students and self-learners who already use AI summarizers, note apps, and YouTube lectures for coursework and upskilling.
+            </div>
+          </div>
+          <div class="card stat">
+            <div class="value">SOM</div>
+            <div class="label" style="margin-top:10px; color:var(--muted); font-size:13px; line-height:1.45">
+              Near-term focus: students (.edu Scholar), exam prep, and individuals converting PDFs/YouTube into Summary → Learn → Audio loops.
+            </div>
+          </div>
+        </div>
+        <div class="grid-4" style="margin-top:14px">
+          <div class="card"><h3>Students</h3><p>Lectures, papers, exam prep</p></div>
+          <div class="card"><h3>Researchers</h3><p>Papers → structured review</p></div>
+          <div class="card"><h3>Creators</h3><p>Long-form → talking points</p></div>
+          <div class="card"><h3>Professionals</h3><p>Decks &amp; docs → briefings</p></div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Beachhead: students &amp; self-learners</span>
+        <span class="page">05 / 10</span>
+      </div>
+    </section>
+
+    <!-- 6. Business model -->
+    <section class="slide" data-slide="6">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Business model</span>
+      </div>
+      <div class="slide-body">
+        <h2>Freemium SaaS with a <span class="gradient-text">student wedge</span></h2>
+        <p class="lede">Subscription revenue. Free converts curiosity; Scholar and Pro monetize depth and audio.</p>
+        <div class="grid-4" style="margin-top:24px">
+          <div class="card">
+            <h3>Free · $0</h3>
+            <ul>
+              <li>5 analyses / day</li>
+              <li>Summary + Learn + Quiz</li>
+              <li>4 core lenses</li>
+            </ul>
+          </div>
+          <div class="card accent">
+            <h3>Scholar · $4.99/mo</h3>
+            <ul>
+              <li>.edu email required</li>
+              <li>Higher limits + audio</li>
+              <li>Contract &amp; Exam Prep</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Pro · $7.99/mo</h3>
+            <ul>
+              <li>Unlimited fair-use analyses</li>
+              <li>Unlimited audio &amp; podcast</li>
+              <li>Mind maps &amp; spaced repetition</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Team · $24.99/mo</h3>
+            <ul>
+              <li>Up to 5 seats</li>
+              <li>Shared workspace path</li>
+              <li>Pro-level intelligence</li>
+            </ul>
+          </div>
+        </div>
+        <p style="margin-top:16px; font-size:13px; color:var(--dim)">
+          Billing via Polar. Annual plans available (~33–37% savings). Unit economics improve as Gemini/Vertex
+          inference and caching efficiency scale with Google Cloud credits.
+        </p>
+      </div>
+      <div class="slide-footer">
+        <span>How we make money</span>
+        <span class="page">06 / 10</span>
+      </div>
+    </section>
+
+    <!-- 7. Traction -->
+    <section class="slide" data-slide="7">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Traction &amp; stage</span>
+      </div>
+      <div class="slide-body">
+        <h2>Public beta with a <span class="gradient-text">shipping product</span></h2>
+        <p class="lede">
+          We prioritize product truth over vanity metrics. The application surface is live, indexable,
+          and usable end-to-end today.
+        </p>
+        <div class="grid-3" style="margin-top:26px">
+          <div class="card accent">
+            <h3>Live product</h3>
+            <ul>
+              <li>www.summify.app in production</li>
+              <li>Upload → analyze → Learn → audio path</li>
+              <li>Auth, dashboard, share flows</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Go-to-market underway</h3>
+            <ul>
+              <li>SEO landing pages by format &amp; use case</li>
+              <li>Student / Scholar positioning</li>
+              <li>Product Hunt–ready public beta narrative</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Next 90 days</h3>
+            <ul>
+              <li>Deepen Gemini / Vertex alignment</li>
+              <li>Grow .edu Scholar conversion</li>
+              <li>Instrument retention &amp; paid activation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Honest early-stage signal: product shipped, growth loop next</span>
+        <span class="page">07 / 10</span>
+      </div>
+    </section>
+
+    <!-- 8. Competition -->
+    <section class="slide" data-slide="8">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Competition</span>
+      </div>
+      <div class="slide-body">
+        <h2>Not another chat box — a <span class="gradient-text">study system</span></h2>
+        <div style="margin-top:22px; overflow:hidden; border:1px solid var(--border); border-radius:16px; background:rgba(22,25,34,0.7)">
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Capability</th>
+                <th>ChatGPT / generic AI</th>
+                <th>NotebookLM-style</th>
+                <th>Classic summarizers</th>
+                <th>Summify</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Multi-format upload workspace</td>
+                <td class="partial">Partial</td>
+                <td class="yes">Strong</td>
+                <td class="partial">Limited</td>
+                <td class="yes">Yes</td>
+              </tr>
+              <tr>
+                <td>Structured summary + lenses</td>
+                <td class="partial">Prompt-dependent</td>
+                <td class="partial">Source Q&amp;A</td>
+                <td class="yes">Summary-first</td>
+                <td class="yes">Yes</td>
+              </tr>
+              <tr>
+                <td>Learn cards + quiz loop</td>
+                <td class="no">Manual</td>
+                <td class="partial">Limited</td>
+                <td class="no">Rare</td>
+                <td class="yes">Built-in</td>
+              </tr>
+              <tr class="summify">
+                <td>Audio / podcast after summary</td>
+                <td class="no">Separate tools</td>
+                <td class="partial">Audio focus</td>
+                <td class="no">Usually no</td>
+                <td class="yes">Optional, same source</td>
+              </tr>
+              <tr>
+                <td>Student pricing (.edu)</td>
+                <td class="partial">Varies</td>
+                <td class="partial">Consumer</td>
+                <td class="partial">Varies</td>
+                <td class="yes">Scholar tier</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:14px; font-size:13px; color:var(--muted)">
+          Positioning: <strong style="color:#fff">Summary first. Study next. Audio when you need it.</strong>
+          Competitors optimize for chat or for listening alone — Summify connects the full loop.
+        </p>
+      </div>
+      <div class="slide-footer">
+        <span>Differentiation</span>
+        <span class="page">08 / 10</span>
+      </div>
+    </section>
+
+    <!-- 9. Why Google / Ask -->
+    <section class="slide" data-slide="9">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Why Google for Startups</span>
+      </div>
+      <div class="slide-body">
+        <h2>We scale on <span class="gradient-text">inference, trust, and reach</span></h2>
+        <p class="lede">
+          Google for Startups helps us harden AI quality, control costs, and accelerate student growth —
+          with the infrastructure and mentorship an AI learning product needs.
+        </p>
+        <div class="ask-list">
+          <div class="ask-item">
+            <div class="dot">1</div>
+            <div>
+              <strong>Cloud &amp; AI credits</strong>
+              <p>Run and optimize Gemini / Vertex AI workloads for analysis, Learn generation, and audio pipelines with sustainable unit economics.</p>
+            </div>
+          </div>
+          <div class="ask-item">
+            <div class="dot">2</div>
+            <div>
+              <strong>Technical mentorship</strong>
+              <p>Guidance on retrieval quality, grounding, latency, and responsible AI for student-facing educational products.</p>
+            </div>
+          </div>
+          <div class="ask-item">
+            <div class="dot">3</div>
+            <div>
+              <strong>Network &amp; distribution</strong>
+              <p>Access to founders, operators, and campus/education channels that accelerate Scholar adoption and product feedback loops.</p>
+            </div>
+          </div>
+          <div class="ask-item">
+            <div class="dot">4</div>
+            <div>
+              <strong>What we bring</strong>
+              <p>A live multi-format workspace, clear freemium monetization, and a focused thesis: AI that helps people remember — not just skim.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>The ask</span>
+        <span class="page">09 / 10</span>
+      </div>
+    </section>
+
+    <!-- 10. Close -->
+    <section class="slide" data-slide="10">
+      <div class="topbar">
+        <div class="brand">
+          <img src="https://www.summify.app/brand-icon.png" alt="" />
+          Summify
+        </div>
+        <span class="eyebrow">Closing</span>
+      </div>
+      <div class="slide-body cover-center">
+        <span class="pill">Let’s build the learning layer for the AI era</span>
+        <h1 style="margin-top:18px; max-width:16ch">
+          From every source to
+          <span class="gradient-text">lasting understanding</span>
+        </h1>
+        <p class="lede">
+          Summify is live in public beta. We’re applying to Google for Startups to scale AI quality,
+          student growth, and a product the world can trust for real learning — not disposable summaries.
+        </p>
+        <div class="cover-meta">
+          <span class="pill">https://www.summify.app</span>
+          <span class="pill">Product: /upload</span>
+          <span class="pill">Pricing: /pricing</span>
+        </div>
+        <div class="card" style="margin-top:28px; max-width:520px">
+          <h3>Contact</h3>
+          <p style="margin-top:6px">
+            Website: <strong style="color:#fff">www.summify.app</strong><br />
+            Use your Summify corporate email for Google for Startups correspondence.<br />
+            Demo: open Workspace → upload any PDF or YouTube lecture.
+          </p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>Thank you</span>
+        <span class="page">10 / 10</span>
+      </div>
+    </section>
+
+    <div class="progress"><span id="progress" style="width:10%"></span></div>
+    <div class="nav" aria-label="Slide navigation">
+      <button type="button" id="prev" aria-label="Previous slide">←</button>
+      <button type="button" id="next" aria-label="Next slide">→</button>
+    </div>
+  </div>
+
+  <p class="hint">← → or click · P to print / PDF</p>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const progress = document.getElementById("progress");
+      let index = 0;
+
+      function show(i) {
+        index = Math.max(0, Math.min(slides.length - 1, i));
+        slides.forEach((s, n) => s.classList.toggle("active", n === index));
+        progress.style.width = ((index + 1) / slides.length) * 100 + "%";
+      }
+
+      document.getElementById("prev").addEventListener("click", () => show(index - 1));
+      document.getElementById("next").addEventListener("click", () => show(index + 1));
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+          e.preventDefault();
+          show(index + 1);
+        } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+          e.preventDefault();
+          show(index - 1);
+        } else if (e.key === "Home") {
+          show(0);
+        } else if (e.key === "End") {
+          show(slides.length - 1);
+        } else if (e.key.toLowerCase() === "p" && (e.metaKey || e.ctrlKey)) {
+          /* native print */
+        } else if (e.key.toLowerCase() === "p" && !e.metaKey && !e.ctrlKey) {
+          window.print();
+        }
+      });
+
+      let touchX = null;
+      document.getElementById("deck").addEventListener("touchstart", (e) => {
+        touchX = e.changedTouches[0].screenX;
+      });
+      document.getElementById("deck").addEventListener("touchend", (e) => {
+        if (touchX == null) return;
+        const dx = e.changedTouches[0].screenX - touchX;
+        if (Math.abs(dx) > 50) show(index + (dx < 0 ? 1 : -1));
+        touchX = null;
+      });
+
+      show(0);
+    })();
+  </script>
+</body>
+</html>
