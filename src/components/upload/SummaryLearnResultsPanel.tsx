@@ -1,15 +1,18 @@
 "use client";
 
-import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import dynamic from "next/dynamic";
+import { useMemo, useState, useEffect, useRef, useCallback, type MouseEvent, type ReactNode } from "react";
 import {
   Eye,
   EyeOff,
   Layers,
+  Network,
   Plus,
   RotateCcw,
 } from "lucide-react";
 import { AnalysisPracticeSession } from "@/components/learn/AnalysisPracticeSession";
 import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
+import { MindMapSkeleton } from "@/components/mindmap/MindMapSkeleton";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import {
   assessLearnSessionCapacity,
@@ -20,12 +23,15 @@ import { orderPracticeCardsForVersion } from "@/lib/learn/orderPracticeCardsForV
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
 import type { PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
+import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
+import { quizQuestionTargetForChars } from "@/server/intelligence/sourceOutputQuota";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import type { DocumentProfileMetadata } from "@/types/intelligence";
 import type { IntelligenceModeId } from "@/types/modes";
 import type { PlanId } from "@/types/plan";
 import type { AnalysisResult } from "@/types/text-analysis";
+import type { QuizQuestion } from "@/types/learn-quiz";
 import { AnalysisResultView } from "./AnalysisResultView";
 import { LearnSection } from "./LearnSection";
 import {
@@ -39,6 +45,12 @@ type LearnVersionRecord = {
   focusThemes: string[];
   remountKey: number;
 };
+
+/** Lazy: React Flow only loads when the Mind map tab is opened. */
+const MindMapPanel = dynamic(
+  () => import("@/components/mindmap/MindMapPanel").then((m) => m.MindMapPanel),
+  { ssr: false, loading: () => <MindMapSkeleton /> },
+);
 
 type LearnVersionStats = {
   gotItCount: number;
@@ -65,6 +77,9 @@ type SummaryLearnResultsPanelProps = {
   sourceQuality?: DocumentProfileMetadata["sourceQuality"] | null;
   sourceQualityNote?: string | null;
   footerContent?: ReactNode;
+  onQuizAvailabilityChange?: (available: boolean) => void;
+  focusQuiz?: boolean;
+  onFocusQuizHandled?: () => void;
 };
 
 function SessionModuleToolbar({
@@ -248,6 +263,9 @@ export function SummaryLearnResultsPanel({
   sourceQuality = null,
   sourceQualityNote = null,
   footerContent,
+  onQuizAvailabilityChange,
+  focusQuiz = false,
+  onFocusQuizHandled,
 }: SummaryLearnResultsPanelProps) {
   const [quizActive, setQuizActive] = useState(false);
   const [learnStarted, setLearnStarted] = useState(false);
@@ -263,8 +281,17 @@ export function SummaryLearnResultsPanel({
     Record<number, LearnVersionStats>
   >({});
 
+  // Remote quiz (LLM-generated) state
+  const [remoteQuiz, setRemoteQuiz] = useState<QuizQuestion[] | null>(null);
+  const [remoteQuizStatus, setRemoteQuizStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const remoteQuizFetchedRef = useRef(false);
+
   const cardAccess = useMemo(
-    () => getPracticeCardAccessForPlan(entitlementPlanId, result.learnCards),
+    () =>
+      getPracticeCardAccessForPlan(
+        entitlementPlanId,
+        uniqueLearnCards(result.learnCards),
+      ),
     [entitlementPlanId, result.learnCards],
   );
 
@@ -319,19 +346,114 @@ export function SummaryLearnResultsPanel({
         risksOrWarnings: result.risksOrWarnings,
         actionItems: result.actionItems,
         learnCards: cardAccess.accessibleCards,
-        maxQuestions: cardAccess.isLimited ? 5 : 6,
+        maxQuestions: quizQuestionTargetForChars(extractedCharacters),
         variantSeed: `learn-v${activeLearnVersion}-quiz-${quizSessionKey}`,
         intelligenceModeId: modeId,
       }),
     [
       activeLearnVersion,
       cardAccess.accessibleCards,
-      cardAccess.isLimited,
+      extractedCharacters,
       quizSessionKey,
       result,
       modeId,
     ],
   );
+
+  // Fetch remote quiz — uses refs to avoid stale closures and missing deps
+  const fetchRemoteQuiz = useCallback(async () => {
+    if (remoteQuizStatus !== "idle") return;
+    setRemoteQuizStatus("loading");
+    try {
+      const maxQ = quizQuestionTargetForChars(extractedCharacters);
+      const res = await fetch("/api/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: result.title,
+          summary: result.summary,
+          keyInsights: result.keyInsights,
+          risksOrWarnings: result.risksOrWarnings,
+          learnCards: cardAccess.accessibleCards.map((c) => ({
+            type: c.type,
+            title: c.title,
+            content: c.content,
+          })),
+          count: maxQ,
+          provider: providerUsed === "gemini" ? "gemini" : "groq",
+        }),
+      });
+      if (!res.ok) throw new Error("Quiz API failed");
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.questions) && data.questions.length > 0) {
+        // Map raw questions to QuizQuestion shape
+        const mapped: QuizQuestion[] = data.questions.map(
+          (q: { question: string; options: string[]; correctIndex: number; explanation: string }, idx: number) => ({
+            id: `quiz-remote-${idx}`,
+            question: q.question,
+            options: q.options.map((opt: string, oi: number) => ({
+              key: (["A", "B", "C", "D"] as const)[oi],
+              text: opt,
+            })),
+            correctOptionKey: (["A", "B", "C", "D"] as const)[q.correctIndex],
+            explanation: q.explanation,
+            difficulty: "medium" as const,
+            theme: q.question.split(" ")[0]?.toLowerCase() ?? `q${idx}`,
+          }),
+        );
+        setRemoteQuiz(mapped);
+        setRemoteQuizStatus("ready");
+      } else {
+        setRemoteQuizStatus("error");
+      }
+    } catch {
+      setRemoteQuizStatus("error");
+    }
+  }, [
+    remoteQuizStatus,
+    extractedCharacters,
+    result.title,
+    result.summary,
+    result.keyInsights,
+    result.risksOrWarnings,
+    cardAccess.accessibleCards,
+    providerUsed,
+  ]);
+
+  // Merge remote (LLM) quiz with local fallback — remote takes priority
+  const mergedQuizQuestions = useMemo((): QuizQuestion[] => {
+    if (!remoteQuiz || remoteQuiz.length === 0) return quizQuestions;
+    const local = quizQuestions;
+    const seen = new Set<string>();
+    const norm = (q: QuizQuestion) =>
+      q.question.trim().toLowerCase().replace(/\s+/g, " ").replace(/[?!.]+$/, "");
+    for (const q of remoteQuiz) seen.add(norm(q));
+    const combined: QuizQuestion[] = [...remoteQuiz];
+    for (const q of local) {
+      if (combined.length >= quizQuestionTargetForChars(extractedCharacters)) break;
+      if (!seen.has(norm(q))) combined.push(q);
+    }
+    return combined;
+  }, [remoteQuiz, quizQuestions, extractedCharacters]);
+
+  // Fetch remote quiz lazily on first quiz access or after a short delay on mount
+  useEffect(() => {
+    if (remoteQuizFetchedRef.current || remoteQuizStatus !== "idle") return;
+    // Start fetch after a short delay so the analysis result renders first
+    const timer = setTimeout(() => {
+      remoteQuizFetchedRef.current = true;
+      fetchRemoteQuiz();
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [fetchRemoteQuiz, remoteQuizStatus]);
+
+  // Also fetch immediately when user explicitly starts quiz
+  const ensureRemoteQuiz = useCallback(() => {
+    if (remoteQuizStatus === "idle" && !remoteQuizFetchedRef.current) {
+      remoteQuizFetchedRef.current = true;
+      fetchRemoteQuiz();
+    }
+  }, [fetchRemoteQuiz, remoteQuizStatus]);
 
   const audioStudyInput = useMemo(
     () =>
@@ -339,48 +461,97 @@ export function SummaryLearnResultsPanel({
         sourceType,
         intelligenceMode: modeId,
         sourceLabel,
-        quizThemes: quizQuestions.map((q) => q.theme).filter(Boolean) as string[],
+        quizThemes: mergedQuizQuestions.map((q) => q.theme).filter(Boolean) as string[],
       }),
-    [modeId, quizQuestions, result, sourceLabel, sourceType],
+    [modeId, mergedQuizQuestions, result, sourceLabel, sourceType],
   );
 
   const analysisId = savedAnalysisId ?? "live-analysis";
   const hasLearn = basePracticeCards.length > 0;
   const hasInsights = result.keyInsights.length > 0;
-  const hasQuiz = quizQuestions.length > 0;
-  const flashcardCount = result.learnCards.filter(
-    (card) => !card.isLockedPreview && card.type !== "quiz",
-  ).length;
-  const hasFlashcards = flashcardCount > 0;
+  const hasQuiz = mergedQuizQuestions.length > 0;
   const activeLearnStats = learnStatsByVersion[activeLearnVersion];
+
+  // Notify parent about quiz availability for the external Quiz button
+  useEffect(() => {
+    onQuizAvailabilityChange?.(hasQuiz);
+  }, [hasQuiz, onQuizAvailabilityChange]);
+
+  // Handle external focusQuiz request (from Quiz button above tab bar)
+  useEffect(() => {
+    if (focusQuiz && hasQuiz) {
+      handleNavigate("quiz");
+      onFocusQuizHandled?.();
+    }
+  }, [focusQuiz, hasQuiz, onFocusQuizHandled]);
 
   const sectionTabs = useMemo(() => {
     const tabs: ResultsSectionId[] = ["summary"];
     if (hasInsights) tabs.push("insights");
-    if (hasFlashcards) tabs.push("flashcards");
+    // Study cards stays mounted even when card generation produced nothing, so
+    // the section renders an empty state instead of silently disappearing.
+    tabs.push("flashcards");
     return tabs;
-  }, [hasFlashcards, hasInsights]);
+  }, [hasInsights]);
+
+  /** Mind map is independent of the flashcards tab — always available. */
+  const hasMindMap =
+    result.summary.trim().length > 0 ||
+    hasInsights ||
+    result.actionItems.length > 0 ||
+    result.risksOrWarnings.length > 0;
+
+  const mindMapInput = useMemo(
+    () => ({
+      title: result.title,
+      summary: result.summary,
+      keyInsights: result.keyInsights,
+      risksOrWarnings: result.risksOrWarnings,
+      actionItems: result.actionItems,
+      learnCards: result.learnCards
+        .filter((card) => !card.isLockedPreview)
+        .map((card) => ({
+          type: card.type,
+          title: card.title ?? "",
+          content: card.content ?? "",
+        })),
+      sourceKind: sourceType,
+      intelligenceMode: modeId,
+      sourceChars: extractedCharacters,
+    }),
+    [extractedCharacters, modeId, result, sourceType],
+  );
 
   const practiceTabs = useMemo((): ResultsSectionId[] => {
     const tabs: ResultsSectionId[] = [];
     if (hasLearn) tabs.push("learn");
-    tabs.push("quiz");
+    if (hasQuiz) tabs.push("quiz");
     return tabs;
-  }, [hasLearn]);
+  }, [hasLearn, hasQuiz]);
 
-  const readingTabs = useMemo(
-    () =>
-      sectionTabs.filter(
-        (id) => id === "summary" || id === "insights" || id === "flashcards",
-      ),
-    [sectionTabs],
-  );
+  const readingTabs = useMemo(() => {
+    const tabs: ResultsSectionId[] = sectionTabs.filter(
+      (id) => id === "summary" || id === "insights" || id === "flashcards",
+    );
+    if (hasMindMap) tabs.push("mindmap");
+    return tabs;
+  }, [hasMindMap, sectionTabs]);
 
   function handleNavigate(id: ResultsSectionId) {
     setActiveSection(id);
-    if (id === "learn") setLearnCollapsed(false);
-    if (id === "quiz") setQuizCollapsed(false);
-    scrollToResultsSection(id);
+    // Tab visibility is driven by activeSection, but a session only renders
+    // once it has been started — clicking a practice tab must mount it too,
+    // otherwise the tab highlights while the other panel stays on screen.
+    if (id === "learn") {
+      setLearnStarted(true);
+      setLearnCollapsed(false);
+    }
+    if (id === "quiz") {
+      setQuizActive(true);
+      setQuizCollapsed(false);
+    }
+    // Scroll after commit: the target panel may be mounting right now.
+    requestAnimationFrame(() => scrollToResultsSection(id));
   }
 
   function focusLearnSection() {
@@ -399,6 +570,7 @@ export function SummaryLearnResultsPanel({
   function handleStartQuiz(event?: MouseEvent) {
     event?.preventDefault();
     event?.stopPropagation();
+    ensureRemoteQuiz();
     setQuizCollapsed(false);
     setQuizActive(true);
     setActiveSection("quiz");
@@ -464,13 +636,19 @@ export function SummaryLearnResultsPanel({
             activeId={
               activeSection === "summary" ||
               activeSection === "insights" ||
-              activeSection === "flashcards"
+              activeSection === "flashcards" ||
+              activeSection === "mindmap"
                 ? activeSection
                 : "summary"
             }
           onNavigate={(id) => {
             setActiveSection(id);
-            if (id === "summary" || id === "insights" || id === "flashcards") {
+            if (
+              id === "summary" ||
+              id === "insights" ||
+              id === "flashcards" ||
+              id === "mindmap"
+            ) {
               setLearnStarted(false);
               setQuizActive(false);
             }
@@ -521,7 +699,7 @@ export function SummaryLearnResultsPanel({
             </div>
           ) : null}
 
-          {activeSection === "flashcards" && hasFlashcards ? (
+          {activeSection === "flashcards" ? (
             <div
               id="result-section-flashcards"
               className="min-w-0 p-3 sm:p-5"
@@ -533,9 +711,6 @@ export function SummaryLearnResultsPanel({
                   <h3 className="text-sm font-semibold text-white">Study cards</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-zinc-500">
-                    {flashcardCount} card{flashcardCount === 1 ? "" : "s"}
-                  </span>
                   {hasLearn ? (
                     <button
                       type="button"
@@ -547,11 +722,40 @@ export function SummaryLearnResultsPanel({
                   ) : null}
                 </div>
               </div>
-              <LearnSection
-                cards={result.learnCards}
-                modeId={modeId}
-                entitlementPlanId={entitlementPlanId}
-              />
+              {result.learnCards.length > 0 ? (
+                <LearnSection
+                  cards={result.learnCards}
+                  modeId={modeId}
+                  entitlementPlanId={entitlementPlanId}
+                />
+              ) : (
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 text-sm text-zinc-400">
+                  <p className="font-medium text-zinc-200">
+                    Study cards could not be generated for this analysis.
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Summary, key insights, quiz and the mind map are unaffected. Run the
+                    analysis again to generate study cards.
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          {activeSection === "mindmap" && hasMindMap ? (
+            <div
+              id="result-section-mindmap"
+              className="min-w-0 p-3 sm:p-5"
+              role="tabpanel"
+            >
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Network className="h-4 w-4 text-cyan-300" aria-hidden />
+                <h3 className="text-sm font-semibold text-white">Mind map</h3>
+                <span className="text-[11px] text-zinc-500">
+                  Built from this analysis · lens: {modeLabel}
+                </span>
+              </div>
+              <MindMapPanel active {...mindMapInput} />
             </div>
           ) : null}
         </div>
@@ -603,7 +807,9 @@ export function SummaryLearnResultsPanel({
             {learnStarted ? (
               <section
                 id="result-section-learn"
-                className="min-w-0 overflow-visible rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-950/40 via-[#0f1520]/95 to-zinc-950 p-3 sm:p-5"
+                className={`min-w-0 overflow-visible rounded-2xl border border-sky-400/25 bg-gradient-to-br from-sky-950/40 via-[#0f1520]/95 to-zinc-950 p-3 sm:p-5${
+                  activeSection === "learn" ? "" : " hidden"
+                }`}
               >
                 <LearnVersionTabs
                   versions={learnVersions}
@@ -651,7 +857,9 @@ export function SummaryLearnResultsPanel({
             {quizActive ? (
               <section
                 id="result-section-quiz"
-                className="min-w-0 overflow-visible rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 via-[#14101f]/90 to-zinc-950 p-3 sm:p-5"
+                className={`min-w-0 overflow-visible rounded-2xl border border-violet-400/25 bg-gradient-to-br from-violet-950/45 via-[#14101f]/90 to-zinc-950 p-3 sm:p-5${
+                  activeSection === "quiz" ? "" : " hidden"
+                }`}
               >
                 <SessionModuleToolbar
                   title="Quiz session"
@@ -665,12 +873,22 @@ export function SummaryLearnResultsPanel({
                   <p className="text-xs text-zinc-500">
                     Quiz hidden. Tap Show to continue, or Restart to begin from question 1.
                   </p>
+                ) : remoteQuizStatus === "loading" ? (
+                  <div className="flex items-center justify-center py-12 text-zinc-400">
+                    <div className="flex items-center gap-3">
+                      <svg className="animate-spin h-5 w-5 text-violet-400" viewBox="0 0 24 24" aria-hidden>
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
+                        <path className="opacity-75" d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" fill="none" />
+                      </svg>
+                      <span className="text-sm font-medium">Building your quiz from this source…</span>
+                    </div>
+                  </div>
                 ) : (
                   <AnalysisQuizSession
                     key={`quiz-${quizSessionKey}-v${activeLearnVersion}`}
                     analysisId={analysisId}
                     documentTitle={result.title}
-                    questions={quizQuestions}
+                    questions={mergedQuizQuestions}
                     retentionSummary={activeLearnStats?.summary ?? null}
                     gotItCount={activeLearnStats?.gotItCount ?? 0}
                     reviewAgainCount={activeLearnStats?.reviewAgainCount ?? 0}

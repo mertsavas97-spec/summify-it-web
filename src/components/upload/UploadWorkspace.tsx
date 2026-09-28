@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { uploadPresigned } from "@vercel/blob/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   FileText,
@@ -18,6 +18,10 @@ import { UnifiedSourceComposer, detectLinkKind } from "./UnifiedSourceComposer";
 import { WorkspaceEntitlementBanner } from "./WorkspaceEntitlementBanner";
 import { TextAnalysisMvp } from "./TextAnalysisMvp";
 import { getPlanLimits } from "@/lib/plans/planLimits";
+import {
+  FULL_SOURCE_CHAR_LIMIT,
+  PORTION_USED_NOTICE,
+} from "@/lib/analysis/sourceCoverage";
 import { USER_MESSAGES } from "@/lib/user-messages";
 import {
   getExtractionSourceLabel,
@@ -48,7 +52,10 @@ import { getBillingStatusCopy } from "@/lib/billing/provider";
 import {
   clearPendingAnalysis,
   consumePendingAnalysisForAuthReturn,
+  clearHomeResultHandoff,
+  readHomeResultHandoff,
   saveAuthReturnTo,
+  saveHomeResultHandoff,
   savePendingAnalysis,
 } from "@/lib/auth/return-to";
 import {
@@ -351,12 +358,13 @@ function getGeneratingExperienceCopy(
   return {
     stepLabel: "",
     title: "Building your AI summary",
-    description: "Summary, insights, and study cards from your source.",
+    description:
+      "Summary, key insights, study cards, quiz questions, and a mind map from your source.",
     nextHint: "",
     stages: [
       { id: "extract", label: "Source ready", done: true },
-      { id: "analyze", label: "Writing summary", done: false, active: true },
-      { id: "learn", label: "Study cards", done: false },
+      { id: "analyze", label: "Writing summary & key insights", done: false, active: true },
+      { id: "learn", label: "Study cards, quiz & mind map", done: false },
     ],
     shell:
       "border-violet-400/20 bg-gradient-to-b from-violet-950/40 via-[#11141d]/90 to-[#0b0e15] shadow-[0_0_48px_rgba(139,92,246,0.14)]",
@@ -692,10 +700,26 @@ export type InjectedAnalysisPayload = {
   savedAnalysisId?: string | null;
 };
 
-export function UploadWorkspace() {
-  const [restoredPendingAnalysis] = useState(() =>
-    consumePendingAnalysisForAuthReturn({ justReturned: consumeAuthJustReturned() }),
-  );
+type UploadWorkspaceProps = {
+  /** Homepage embeds the same pipeline without the full-page chrome. */
+  surface?: "page" | "home";
+  onPhaseChange?: (phase: WorkspacePipelinePhase) => void;
+};
+
+export function UploadWorkspace({
+  surface = "page",
+  onPhaseChange,
+}: UploadWorkspaceProps = {}) {
+  const isHomeSurface = surface === "home";
+  const [restoredPendingAnalysis] = useState(() => {
+    const fromAuth = consumePendingAnalysisForAuthReturn({
+      justReturned: consumeAuthJustReturned(),
+    });
+    if (fromAuth) return fromAuth;
+    if (surface === "page") return readHomeResultHandoff();
+    return null;
+  });
+  const router = useRouter();
   const workspaceEntitlement = useWorkspaceEntitlement();
   const [inputMode, setInputMode] = useState<WorkspaceInputMode>(
     restoredPendingAnalysis?.inputMode ?? "file",
@@ -801,6 +825,7 @@ export function UploadWorkspace() {
   const modeSectionRef = useRef<HTMLDivElement | null>(null);
   const runAnalysisRef = useRef<null | (() => void)>(null);
   const uploadStartedRef = useRef<Set<string>>(new Set());
+  const homeResultRedirected = useRef(false);
 
   const hydrateCompletedAnalysis = useCallback((payload: InjectedAnalysisPayload) => {
     setInjectedAnalysis(payload);
@@ -921,8 +946,62 @@ export function UploadWorkspace() {
     [analysisMode, extractionMeta, fileName, getSourceType, inputMode, sourceUrl],
   );
 
+  const redirectHomeResultToWorkspace = useCallback(
+    (payload: InjectedAnalysisPayload) => {
+      if (!isHomeSurface || homeResultRedirected.current) return false;
+      homeResultRedirected.current = true;
+      if (!workspaceEntitlement.isAuthenticated) {
+        saveGhostSession({
+          analysisResult: payload.result,
+          providerUsed: payload.providerUsed,
+          fallbackUsed: payload.fallbackUsed,
+          intelligenceMetadata: payload.intelligence,
+          ...buildGhostCaptureContext(),
+        });
+      }
+      const saved = saveHomeResultHandoff({
+        analysisId: payload.savedAnalysisId ?? null,
+        returnTo: "/upload",
+        inputMode,
+        fileName,
+        sourceUrl,
+        rawText,
+        extractStatus,
+        extractionMeta,
+        analysisMode: analysisModeRef.current,
+        analysisResult: payload.result,
+        injectedAnalysis: payload,
+        analysisIntelligence: payload.intelligence,
+      });
+      if (!saved) {
+        homeResultRedirected.current = false;
+        return false;
+      }
+      router.push("/upload");
+      return true;
+    },
+    [
+      buildGhostCaptureContext,
+      extractStatus,
+      extractionMeta,
+      fileName,
+      inputMode,
+      isHomeSurface,
+      rawText,
+      router,
+      sourceUrl,
+      workspaceEntitlement.isAuthenticated,
+    ],
+  );
+
   const persistGuestSaveHandoff = useCallback(() => {
     const safeReturnTo = saveAuthReturnTo("/upload");
+
+    // Guest → account funnel step: guest asked to keep this analysis.
+    trackEvent("account_requested", {
+      surface: "result_save_banner",
+      return_to: safeReturnTo,
+    });
 
     const injected =
       injectedAnalysis ??
@@ -1121,9 +1200,8 @@ export function UploadWorkspace() {
         sourceContext: buildYoutubeSourceContext(meta),
       });
 
-      setIsAnalyzing(false);
-
       if (!analysis.success) {
+        setIsAnalyzing(false);
         setYoutubeAnalysisError(analysis.error);
         if (isAnalysisQuotaError(analysis.error, analysis.errorCode)) {
           setAnalysisQuotaExhausted(true);
@@ -1132,14 +1210,18 @@ export function UploadWorkspace() {
         return false;
       }
 
-      setInjectedAnalysis({
+      const youtubePayload: InjectedAnalysisPayload = {
         result: analysis.result,
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
         intelligence: analysis.intelligence,
         savedToWorkspace: analysis.savedToWorkspace,
         savedAnalysisId: analysis.savedAnalysisId,
-      });
+      };
+      if (redirectHomeResultToWorkspace(youtubePayload)) return true;
+
+      setIsAnalyzing(false);
+      setInjectedAnalysis(youtubePayload);
       setLatestAnalysisResult(analysis.result);
       setLatestSavedAnalysisId(analysis.savedAnalysisId ?? null);
       setAnalysisIntelligence(analysis.intelligence);
@@ -1158,7 +1240,7 @@ export function UploadWorkspace() {
       }
       return true;
     },
-    [buildGhostCaptureContext, workspaceEntitlement.isAuthenticated],
+    [buildGhostCaptureContext, redirectHomeResultToWorkspace, workspaceEntitlement.isAuthenticated],
   );
 
   const runUrlAnalysis = useCallback(
@@ -1182,9 +1264,8 @@ export function UploadWorkspace() {
         },
       });
 
-      setIsAnalyzing(false);
-
       if (!analysis.success) {
+        setIsAnalyzing(false);
         setUrlAnalysisError(analysis.error);
         if (isAnalysisQuotaError(analysis.error, analysis.errorCode)) {
           setAnalysisQuotaExhausted(true);
@@ -1193,14 +1274,18 @@ export function UploadWorkspace() {
         return false;
       }
 
-      setInjectedAnalysis({
+      const urlPayload: InjectedAnalysisPayload = {
         result: analysis.result,
         providerUsed: analysis.providerUsed,
         fallbackUsed: analysis.fallbackUsed,
         intelligence: analysis.intelligence,
         savedToWorkspace: analysis.savedToWorkspace,
         savedAnalysisId: analysis.savedAnalysisId,
-      });
+      };
+      if (redirectHomeResultToWorkspace(urlPayload)) return true;
+
+      setIsAnalyzing(false);
+      setInjectedAnalysis(urlPayload);
       setLatestAnalysisResult(analysis.result);
       setLatestSavedAnalysisId(analysis.savedAnalysisId ?? null);
       setAnalysisIntelligence(analysis.intelligence);
@@ -1219,7 +1304,7 @@ export function UploadWorkspace() {
       }
       return true;
     },
-    [buildGhostCaptureContext, workspaceEntitlement.isAuthenticated],
+    [buildGhostCaptureContext, redirectHomeResultToWorkspace, workspaceEntitlement.isAuthenticated],
   );
 
   const planLimits = useMemo(
@@ -1586,18 +1671,79 @@ export function UploadWorkspace() {
   const isCompletedResultWorkspace = Boolean(completedAnalysisResult);
 
   const workspacePhase = useMemo<WorkspacePipelinePhase>(() => {
-    if (isCompletedResultWorkspace) return "results";
-    if (isAnalyzing || singleActionPipelineBusy) return "analyzing";
-    if (hasUsableSource) return "configure";
+    if (isCompletedResultWorkspace) return isHomeSurface ? "analyzing" : "results";
+    if (isAnalyzing) return "analyzing";
     if (isExtracting || singleActionPipelineBusy) return "ingesting";
+    if (hasUsableSource) return "configure";
     return "empty";
   }, [
     hasUsableSource,
     isAnalyzing,
     isCompletedResultWorkspace,
     isExtracting,
+    isHomeSurface,
     singleActionPipelineBusy,
   ]);
+
+  const coverageNotice =
+    limitNotice ??
+    (!getPlanLimits(workspaceEntitlement.entitlementPlanId).supportsChunkedAnalysis &&
+    rawText.trim().length > FULL_SOURCE_CHAR_LIMIT
+      ? PORTION_USED_NOTICE
+      : null);
+
+  const authReturnTo = isHomeSurface ? "/" : "/upload";
+
+  useEffect(() => {
+    if (isHomeSurface) return;
+    if (restoredPendingAnalysis?.analysisResult || restoredPendingAnalysis?.injectedAnalysis) {
+      const timeoutId = window.setTimeout(() => {
+        clearHomeResultHandoff();
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    const pending = readHomeResultHandoff();
+    if (!pending?.analysisResult && !pending?.injectedAnalysis) return;
+
+    const result = (pending.analysisResult as AnalysisResult | null) ?? null;
+    const intelligence =
+      (pending.analysisIntelligence as AnalysisIntelligenceMetadata | null) ?? null;
+    const injected =
+      (pending.injectedAnalysis as InjectedAnalysisPayload | null) ??
+      (result && intelligence
+        ? {
+            result,
+            providerUsed: "guest-session",
+            fallbackUsed: false,
+            intelligence,
+            savedAnalysisId: pending.analysisId,
+          }
+        : null);
+
+    if (pending.inputMode) setInputMode(pending.inputMode);
+    setFileName(pending.fileName);
+    setSourceUrl(pending.sourceUrl);
+    if (pending.extractStatus) setExtractStatus(pending.extractStatus as UploadExtractStatus);
+    setExtractionMeta((pending.extractionMeta as ExtractionMetadata | null) ?? null);
+    setRawText(pending.rawText ?? "");
+    if (pending.analysisMode) setAnalysisMode(pending.analysisMode as IntelligenceModeId);
+    if (pending.rawText?.trim() || pending.inputMode === "text") setShowTextComposer(true);
+    if (intelligence) setAnalysisIntelligence(intelligence);
+    if (injected) setInjectedAnalysis(injected);
+    if (result) setLatestAnalysisResult(result);
+    setLatestSavedAnalysisId(pending.analysisId);
+    setHasAnalysisResult(Boolean(result || injected));
+
+    const timeoutId = window.setTimeout(() => {
+      clearHomeResultHandoff();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [isHomeSurface, restoredPendingAnalysis]);
+
+  useEffect(() => {
+    onPhaseChange?.(workspacePhase);
+  }, [onPhaseChange, workspacePhase]);
 
   const isFileSourceReady = inputMode === "file" && extractStatus === "ready";
   const isTextSourceReady = inputMode === "text" && rawText.trim().length >= 100;
@@ -1682,15 +1828,21 @@ export function UploadWorkspace() {
         isAuthenticated={workspaceEntitlement.isAuthenticated}
         onClose={() => setShowAnalysisPaywall(false)}
         onAuthIntent={persistGuestSaveHandoff}
-        authReturnTo="/upload"
+        authReturnTo={authReturnTo}
       />
       <div
-        className={`mx-auto w-full max-w-[1180px] overflow-x-hidden px-4 sm:px-6 lg:px-8 ${
-          isEmptyWorkspace && !isCompletedResultWorkspace ? "py-4 sm:py-5" : "py-7 sm:py-9"
-        } ${showAnalysisPaywall ? "blur-sm brightness-75" : ""}`}
+        id={isHomeSurface ? "home-workspace" : undefined}
+        className={
+          isHomeSurface
+            ? `w-full min-w-0 overflow-x-hidden ${showAnalysisPaywall ? "blur-sm brightness-75" : ""}`
+            : `mx-auto w-full max-w-[1180px] overflow-x-hidden px-4 sm:px-6 lg:px-8 ${
+                isEmptyWorkspace && !isCompletedResultWorkspace ? "py-4 sm:py-5" : "py-7 sm:py-9"
+              } ${showAnalysisPaywall ? "blur-sm brightness-75" : ""}`
+        }
         data-workspace-root
+        data-workspace-surface={surface}
       >
-      {!isCompletedResultWorkspace && workspacePhase === "empty" && (
+      {!isHomeSurface && !isCompletedResultWorkspace && workspacePhase === "empty" && (
       <header className="pb-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
@@ -1704,7 +1856,7 @@ export function UploadWorkspace() {
           <div className="lg:text-right">
             {workspaceEntitlement.ready && !workspaceEntitlement.isAuthenticated ? (
               <Link
-                href="/login?returnTo=/upload"
+                href={`/login?returnTo=${encodeURIComponent(authReturnTo)}`}
                 className="text-xs font-medium text-violet-300/80 transition-colors hover:text-violet-200"
               >
                 Sign in to save analyses
@@ -1716,6 +1868,7 @@ export function UploadWorkspace() {
       )}
 
       {workspaceEntitlement.ready &&
+      !isHomeSurface &&
       !workspaceEntitlement.isAuthenticated &&
       !isCompletedResultWorkspace &&
       workspacePhase !== "analyzing" ? (
@@ -1729,9 +1882,14 @@ export function UploadWorkspace() {
 
       {!isCompletedResultWorkspace &&
       workspacePhase === "configure" ? (
-        <p className="mx-auto mt-2 mb-1 max-w-xl text-center text-[11px] font-medium tracking-wide text-zinc-600">
-          Source ready · choose lens if needed · summarize
-        </p>
+        <div className="mx-auto mt-2 mb-1 max-w-xl space-y-1 text-center">
+          <p className="text-[11px] font-medium tracking-wide text-zinc-600">
+            Source ready · choose lens if needed · summarize
+          </p>
+          {coverageNotice ? (
+            <p className="text-xs text-zinc-400">{coverageNotice}</p>
+          ) : null}
+        </div>
       ) : null}
 
       <div
@@ -1766,6 +1924,7 @@ export function UploadWorkspace() {
                   pipelineBusy={singleActionPipelineBusy}
                   showTextInput={showTextComposer || inputMode === "text"}
                   disabled={isAnalyzing}
+                  emphasizeChoices={isHomeSurface && workspacePhase === "empty"}
                   onFileSelected={(file) => {
                     setShowTextComposer(false);
                     void handleFileSelected(file);
@@ -1907,13 +2066,26 @@ export function UploadWorkspace() {
               onRetryYoutubeAnalysis={handleYoutubeRetryAnalysis}
               onRetryUrlAnalysis={handleUrlRetryAnalysis}
               injectedAnalysis={injectedAnalysis}
-              onAnalyzingChange={handleAnalyzingChange}
-              onAnalysisComplete={setHasAnalysisResult}
-              onAnalysisResultChange={setLatestAnalysisResult}
+              hideCompletedResult={isHomeSurface}
+              onAnalyzingChange={(busy) => {
+                if (isHomeSurface && homeResultRedirected.current && !busy) return;
+                handleAnalyzingChange(busy);
+              }}
+              onAnalysisComplete={(done) => {
+                if (isHomeSurface) return;
+                setHasAnalysisResult(done);
+              }}
+              onAnalysisResultChange={(result) => {
+                if (isHomeSurface) return;
+                setLatestAnalysisResult(result);
+              }}
               onSavedAnalysisIdChange={setLatestSavedAnalysisId}
-              onIntelligenceReady={setAnalysisIntelligence}
+              onIntelligenceReady={(intelligence) => {
+                if (isHomeSurface) return;
+                setAnalysisIntelligence(intelligence);
+              }}
               onAnalysisSuccess={({ result, providerUsed, fallbackUsed, intelligence, savedToWorkspace, savedAnalysisId }) => {
-                hydrateCompletedAnalysis({
+                const payload: InjectedAnalysisPayload = {
                   result,
                   providerUsed,
                   fallbackUsed,
@@ -1922,7 +2094,9 @@ export function UploadWorkspace() {
                     ? { savedToWorkspace }
                     : {}),
                   savedAnalysisId: savedAnalysisId ?? null,
-                });
+                };
+                if (redirectHomeResultToWorkspace(payload)) return;
+                hydrateCompletedAnalysis(payload);
                 if (savedAnalysisId) {
                   setLatestSavedAnalysisId(savedAnalysisId);
                 }
@@ -1945,7 +2119,7 @@ export function UploadWorkspace() {
                 runAnalysisRef.current = handler;
               }}
               deferUntilAnalysisActive={workspacePhase !== "results"}
-              limitNotice={limitNotice}
+              limitNotice={coverageNotice}
               onPaywall={() => setShowAnalysisPaywall(true)}
               onAnalysisQuotaExhausted={() => {
                 setAnalysisQuotaExhausted(true);
@@ -1968,6 +2142,7 @@ export function UploadWorkspace() {
                     isPaidActive={workspaceEntitlement.isPaidActive}
                     intelligenceModeId={analysisMode}
                     sourceType={extractionMeta?.sourceKind ?? null}
+                    sourceChars={extractionMeta?.extractedCharacters ?? null}
                     documentTitle={completedAnalysisResult.title}
                     modeLabel={getIntelligenceModeById(analysisMode)?.label ?? analysisMode}
                     sourceKindLabel={

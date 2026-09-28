@@ -1,7 +1,7 @@
 "use client";
 
-import { type ReactNode } from "react";
-import { BookOpen, Headphones, Mic } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { BookOpen, Headphones, Mic, HelpCircle } from "lucide-react";
 import type { LearningExperienceId } from "@/types/learning-experience";
 import { SummaryLearnResultsPanel } from "./SummaryLearnResultsPanel";
 import type { AnalysisResult } from "@/types/text-analysis";
@@ -110,9 +110,29 @@ export function LearningExperiencesResults({
   footerContent,
 }: LearningExperiencesResultsProps) {
   const experience = initialExperience;
+  const [quizAvailable, setQuizAvailable] = useState(false);
+  const [focusQuiz, setFocusQuiz] = useState(false);
+
+  const handleQuizClick = () => {
+    setFocusQuiz(true);
+    if (experience !== "summary-learn") {
+      onExperienceChange("summary-learn");
+    }
+  };
 
   return (
     <section className="space-y-4" data-learning-experiences-results data-experience={experience}>
+      {quizAvailable && (
+        <button
+          type="button"
+          onClick={handleQuizClick}
+          className="w-full sm:w-auto rounded-xl border border-violet-400/30 bg-violet-500/15 px-4 py-2.5 text-sm font-semibold text-violet-100 hover:bg-violet-500/25 hover:border-violet-400/50 transition-colors flex items-center justify-center gap-2"
+          aria-label="Open quiz"
+        >
+          <HelpCircle className="h-4 w-4" aria-hidden />
+          <span>Quiz</span>
+        </button>
+      )}
       <ExperienceSwitcher active={experience} onChange={onExperienceChange} />
 
       {experience === "audio" ? (
@@ -189,6 +209,9 @@ export function LearningExperiencesResults({
           sourceQuality={sourceQuality}
           sourceQualityNote={sourceQualityNote}
           footerContent={footerContent}
+          onQuizAvailabilityChange={setQuizAvailable}
+          focusQuiz={focusQuiz}
+          onFocusQuizHandled={() => setFocusQuiz(false)}
         />
       ) : (
         footerContent

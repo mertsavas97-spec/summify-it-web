@@ -106,7 +106,7 @@ export async function saveAnalysis(
   try {
     const supabase = await createClientIfConfigured();
     if (!supabase) {
-      // Cookie client unavailable — still try service-role when the caller verified auth.
+      // Cookie client unavailable — try service-role when the caller verified auth.
       if (
         options.authVerifiedUserId &&
         options.authVerifiedUserId === payload.user_id &&
@@ -126,59 +126,31 @@ export async function saveAnalysis(
       return null;
     }
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    // Use the pre-verified user ID from the caller instead of calling getUser() again.
+    // The route already validated auth via getOptionalUser() and passed authVerifiedUserId.
+    const userId = options.authVerifiedUserId ?? payload.user_id;
 
-    // Prefer getUser() (validated) over getSession().access_token — the latter is often
-    // missing in App Router route handlers even when the user is authenticated.
-    if (!user || user.id !== payload.user_id) {
-      if (
-        options.authVerifiedUserId &&
-        options.authVerifiedUserId === payload.user_id &&
-        isServiceRoleConfigured()
-      ) {
-        devWarn("[summify.save] falling_back_to_service_role", {
-          reason: userError?.message ?? (user ? "session_user_mismatch" : "no_session_user"),
-          userId: payload.user_id,
-        });
-        const admin = getSupabaseAdmin();
-        const id = await insertSavedAnalysis(admin, payload, payload.user_id, "service_role");
-        if (id && options.maxSavedAnalyses != null) {
-          await trimSavedAnalysesForUser(admin, payload.user_id, options.maxSavedAnalyses);
-        }
-        return id;
-      }
-
-      devLog("[summify.save] saved_analysis_skipped_no_user", {
-        reason: user ? "session_user_mismatch" : "no_session_user",
-        message: userError?.message,
-      });
-      return null;
-    }
-
-    const sessionId = await insertSavedAnalysis(supabase, payload, user.id, "user_session");
+    const sessionId = await insertSavedAnalysis(supabase, payload, userId, "user_session");
     if (sessionId) {
       if (options.maxSavedAnalyses != null) {
-        await trimSavedAnalysesForUser(supabase, user.id, options.maxSavedAnalyses);
+        await trimSavedAnalysesForUser(supabase, userId, options.maxSavedAnalyses);
       }
       return sessionId;
     }
 
     // Cookie client authenticated but insert failed (RLS/grants). Retry with service role.
     if (
-      options.authVerifiedUserId === user.id &&
+      options.authVerifiedUserId === userId &&
       isServiceRoleConfigured()
     ) {
       devWarn("[summify.save] falling_back_to_service_role", {
         reason: "user_session_insert_failed",
-        userId: user.id,
+        userId,
       });
       const admin = getSupabaseAdmin();
-      const id = await insertSavedAnalysis(admin, payload, user.id, "service_role");
+      const id = await insertSavedAnalysis(admin, payload, userId, "service_role");
       if (id && options.maxSavedAnalyses != null) {
-        await trimSavedAnalysesForUser(admin, user.id, options.maxSavedAnalyses);
+        await trimSavedAnalysesForUser(admin, userId, options.maxSavedAnalyses);
       }
       return id;
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Headphones, Layers } from "lucide-react";
+import { BookOpen, Headphones, Layers, Network, HelpCircle } from "lucide-react";
 import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 
 const NEXT_STEPS = [
@@ -15,10 +15,26 @@ const NEXT_STEPS = [
   },
   {
     title: "Study cards",
-    body: "Turn insights into flashcards and quiz practice from the same analysis.",
+    body: "Turn insights into flashcards for active recall from the same analysis.",
     href: "/upload",
     intent: "study",
     Icon: Layers,
+    primary: false,
+  },
+  {
+    title: "Quiz",
+    body: "Test your understanding with source-grounded questions — not generic templates.",
+    href: "/upload",
+    intent: "quiz",
+    Icon: HelpCircle,
+    primary: false,
+  },
+  {
+    title: "Mind map",
+    body: "Explore the analysis as an interactive concept graph — available on Pro plans.",
+    href: "/upload",
+    intent: "mindmap",
+    Icon: Network,
     primary: false,
   },
   {
@@ -47,11 +63,11 @@ export function HomeAfterSummarySection() {
             After the summary, keep going
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
-            Most summarizers stop at text. Summify continues into study cards, then optional audio
-            or podcast — always from the same upload.
+            Most summarizers stop at text. Summify continues into study cards, quiz questions, an
+            interactive mind map, then optional audio or podcast — always from the same upload.
           </p>
         </div>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-3">
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {NEXT_STEPS.map((item) => {
             const Icon = item.Icon;
             return (

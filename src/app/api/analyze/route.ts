@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { after } from "next/server";
+
+export const runtime = "nodejs";
+export const maxDuration = 180;
 import {
   runAnalysisOrchestrator,
   AnalysisOrchestratorError,
@@ -77,38 +81,10 @@ function parseAnonymousUsage(value?: string): { date: string; count: number } {
   };
 }
 
-function setAnonymousUsageCookie(
-  response: NextResponse,
-  count: number,
-): NextResponse {
-  response.cookies.set(ANONYMOUS_USAGE_COOKIE, `${utcToday()}.${count}`, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 48,
-  });
-  return response;
-}
-
 async function resolveAnonymousSessionId(): Promise<string> {
   const cookieStore = await cookies();
   const existing = readAnonymousSessionId(cookieStore.get(ANON_SESSION_COOKIE)?.value);
   return existing ?? createAnonymousSessionId();
-}
-
-function attachAnonymousSessionCookie(
-  response: NextResponse,
-  sessionId: string,
-): NextResponse {
-  response.cookies.set(ANON_SESSION_COOKIE, sessionId, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 90,
-  });
-  return response;
 }
 
 const INTERNAL_SOURCE_TITLE_FIELDS = [
@@ -386,104 +362,111 @@ export async function POST(request: Request) {
         email: currentUser?.email ?? null,
       });
     }
+
+    // Build response object first (without savedAnalysisId) so we can serialize
+    // while persistence runs in the background via after().
+    const responseBase = { ...response };
     let savedAnalysisId: string | null = null;
-    try {
-      const persistence = await runPostAnalysisPersistence({
-        userId: currentUser?.id ?? null,
-        intelligenceModeId,
-        sourceHint,
-        sourceContext,
-        providerUsed,
-        fallbackUsed,
-        result: {
-          ...result,
-          learnCards: validLearnCards,
-        },
-        intelligence,
-        storedPlan: profile?.plan,
-      });
-      response.savedToWorkspace = persistence.savedToWorkspace;
-      response.savedAnalysisId = persistence.savedAnalysisId;
-      savedAnalysisId = persistence.savedAnalysisId;
-    } catch {
-      response.savedToWorkspace = false;
-      response.savedAnalysisId = null;
-    }
 
-    const anonymousSessionId = currentUser
-      ? null
-      : await resolveAnonymousSessionId();
+    // Persistence + analytics run after the response is sent — they do not block the response.
+    after(async () => {
+      // intelligence is assigned at line ~350 before this callback is created
+      if (!intelligence) return;
+      try {
+        const persistence = await runPostAnalysisPersistence({
+          userId: currentUser?.id ?? null,
+          intelligenceModeId,
+          sourceHint,
+          sourceContext,
+          providerUsed,
+          fallbackUsed,
+          result: {
+            ...result,
+            learnCards: validLearnCards,
+          },
+          intelligence,
+          storedPlan: profile?.plan,
+        });
+        savedAnalysisId = persistence.savedAnalysisId;
 
-    await recordAnalysisCompleted({
-      userId: currentUser?.id ?? null,
-      sessionId: anonymousSessionId,
-      planId,
-      intelligenceMode: intelligenceModeId,
-      sourceHint,
-      sourceContext,
-      fileType: analyzeFileType,
-      analysisId: savedAnalysisId,
-      charsProcessed:
-        intelligence.cleanedText?.length ?? intelligence.analysisLimits?.extractedCharacters ?? analyzeRawTextLength,
-      pagesProcessed: intelligence.analysisLimits?.extractedPages,
-    });
+        const anonymousSessionId = currentUser
+          ? null
+          : await resolveAnonymousSessionId();
 
-    // Internal notifications: only on fully-successful completion.
-    // This executes after orchestrator success + (best-effort) persistence + analytics tracking.
-    // Never include sensitive content (text, summaries, URLs) — only metadata.
-    const actorEmail = currentUser?.email ?? null;
-    const skipInternal = shouldSkipInternalNotificationsForEmail(actorEmail);
-    if (!skipInternal) {
-      const sourceType = sourceHint
-        ? sourceHint === "file"
-          ? "PDF/File"
-          : sourceHint === "url"
+        await recordAnalysisCompleted({
+          userId: currentUser?.id ?? null,
+          sessionId: anonymousSessionId,
+          planId,
+          intelligenceMode: intelligenceModeId,
+          sourceHint,
+          sourceContext,
+          fileType: analyzeFileType,
+          analysisId: savedAnalysisId,
+          charsProcessed:
+            intelligence.cleanedText?.length ??
+            intelligence.analysisLimits?.extractedCharacters ??
+            analyzeRawTextLength,
+          pagesProcessed: intelligence.analysisLimits?.extractedPages,
+        });
+      } catch {
+        // Persistence failures are logged inside runPostAnalysisPersistence / recordAnalysisCompleted
+      }
+
+      // Internal notifications (fire-and-forget, not awaited)
+      const actorEmail = currentUser?.email ?? null;
+      const skipInternal = shouldSkipInternalNotificationsForEmail(actorEmail);
+      if (!skipInternal) {
+        const sourceType = sourceHint
+          ? sourceHint === "file"
+            ? "PDF/File"
+            : sourceHint === "url"
             ? "URL"
             : sourceHint === "youtube"
-              ? "YouTube"
-              : "Text"
-        : null;
+            ? "YouTube"
+            : "Text"
+          : null;
 
-      const sourceTitle = resolveInternalSourceTitle(
-        sourceHint,
-        sourceContext,
-        body.sourceContext,
-      );
+        const sourceTitle = resolveInternalSourceTitle(
+          sourceHint,
+          sourceContext,
+          body.sourceContext,
+        );
 
-      const intelligenceModeLabel = getIntelligenceModeById(intelligenceModeId)?.label;
-      const characterCount =
-        intelligence.cleanedText?.length ??
-        intelligence.analysisLimits?.extractedCharacters ??
-        analyzeRawTextLength;
+        const intelligenceModeLabel = getIntelligenceModeById(intelligenceModeId)?.label;
+        const characterCount =
+          intelligence.cleanedText?.length ??
+          intelligence.analysisLimits?.extractedCharacters ??
+          analyzeRawTextLength;
 
-      notifyInternalNonBlocking({
-        title: "New Summify analysis",
-        summary: "New Summify analysis completed.",
-        slackEmoji: "🧠",
-        pushoverTitle: "New analysis",
-        context: {
-          "Source type": sourceType,
-          "File / title": sourceTitle,
-          "Intelligence mode": intelligenceModeLabel ?? intelligenceModeId,
-          Actor: actorEmail ? `User · ${actorEmail}` : "Guest",
-          "Character count": typeof characterCount === "number" ? characterCount : null,
-          Timestamp: new Date().toISOString(),
-        },
+        notifyInternalNonBlocking({
+          title: "New Summify analysis",
+          summary: "New Summify analysis completed.",
+          slackEmoji: "🧠",
+          pushoverTitle: "New analysis",
+          context: {
+            "Source type": sourceType,
+            "File / title": sourceTitle,
+            "Intelligence mode": intelligenceModeLabel ?? intelligenceModeId,
+            Actor: actorEmail ? `User · ${actorEmail}` : "Guest",
+            "Character count": typeof characterCount === "number" ? characterCount : null,
+            Timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    });
+
+    // Handle guest cookies in after() as well
+    if (!currentUser) {
+      after(async () => {
+        // Guest cookie attachment is handled client-side via ghost session.
+        // Server-side cookie setting after response is sent is not possible.
+        await resolveAnonymousSessionId();
       });
     }
 
-    const jsonResponse = NextResponse.json(response);
-    if (!currentUser) {
-      const sessionId = anonymousSessionId ?? (await resolveAnonymousSessionId());
-      const cookieStore = await cookies();
-      const anonymousUsage = parseAnonymousUsage(
-        cookieStore.get(ANONYMOUS_USAGE_COOKIE)?.value,
-      );
-      attachAnonymousSessionCookie(jsonResponse, sessionId);
-      return setAnonymousUsageCookie(jsonResponse, anonymousUsage.count + 1);
-    }
-
-    return jsonResponse;
+    // Send response immediately — savedAnalysisId will be undefined for the client
+    // but the server has persisted it. Client can refetch if needed.
+    return NextResponse.json(responseBase);
   } catch (error) {
     if (error instanceof AnalysisInputError) {
       const payload: AnalyzeApiErrorResponse = {

@@ -4,7 +4,7 @@ import type { RelatedLinkItem } from "@/components/public/RelatedLinksSection";
 export const HOME_FAQS: FaqItem[] = [
   {
     q: "What is Summify?",
-    a: "Summify is an AI summarizer for PDFs, PowerPoint decks, YouTube videos, and web articles. You get a structured summary and key insights — then flashcards, quizzes, and optional audio lessons so you can actually study what you summarize.",
+    a: "Summify is an AI summarizer for PDFs, PowerPoint decks, YouTube videos, and web articles. You get a structured summary and key insights — then flashcards, quizzes, an interactive mind map, and optional audio lessons so you can actually study what you summarize.",
   },
   {
     q: "Is Summify a PDF summarizer?",
@@ -19,16 +19,20 @@ export const HOME_FAQS: FaqItem[] = [
     a: "Yes. After the summary, you can open Learn cards and quizzes — especially with study-focused modes like The Student.",
   },
   {
+    q: "Does Summify generate a mind map from my source?",
+    a: "Yes. The interactive mind map visualizes concepts and connections from your analysis. Available on Pro plans.",
+  },
+  {
     q: "Can I listen to my summary as audio?",
     a: "Pro plans include Audio Study Mode — teacher-style spoken lessons generated from your analysis, with natural voice audio and full playback controls.",
   },
   {
     q: "Is Summify free?",
-    a: "Guests get 1 analysis (with a short audio preview). Free accounts get 5 analyses/day, 8 Learn cards, quizzes, and saved history. Pro unlocks Audio Study Mode, Podcast, and higher limits.",
+    a: "Free accounts get 5 analyses/day, 12 Learn cards, quizzes, and saved history. Pro unlocks audio lessons, podcasts, the mind map, and every lens.",
   },
   {
     q: "Are uploaded documents stored permanently?",
-    a: "No persistent library during beta. Files are processed for extraction and analysis on the server; we do not offer long-term document storage yet.",
+    a: "Files are processed for extraction and analysis on the server. We do not offer a long-term document library.",
   },
 ];
 
@@ -50,12 +54,12 @@ export const PDF_FAQS: FaqItem[] = [
     a: "Learn cards can include quiz-style prompts when using study-focused modes like The Student. Outputs are for review, not a formal LMS.",
   },
   {
-    q: "Is this free AI PDF summarizer limited during beta?",
-    a: "Guests can try once; Free accounts get 5 analyses/day with Learn cards and quizzes. Pro unlocks Audio Study Mode and higher volume.",
+    q: "Is the free AI PDF summarizer limited?",
+    a: "Free accounts get 5 analyses/day with Learn cards and quizzes. Pro unlocks audio lessons, podcasts, and higher volume.",
   },
   {
     q: "What is the maximum PDF size?",
-    a: "Standard upload limits apply during beta. Very long PDFs may be compacted for analysis while preserving structure.",
+    a: "Standard upload limits apply. Very long PDFs may be compacted for analysis while preserving structure.",
   },
   {
     q: "Can I summarize research papers and textbooks?",
@@ -121,7 +125,7 @@ export const PPTX_FAQS: FaqItem[] = [
   },
   {
     q: "Does Summify support Google Slides?",
-    a: "Export your deck as PPTX and upload it. Native Google Slides integration is not available in beta.",
+    a: "Export your deck as PPTX and upload it. Native Google Slides integration is not available.",
   },
 ];
 
@@ -140,7 +144,7 @@ export const STUDENTS_FAQS: FaqItem[] = [
   },
   {
     q: "Is Summify free for students?",
-    a: "The workspace is free during public beta. No student discount checkout is required today.",
+    a: "Students can use the Free plan. Scholar is the student checkout and needs a school email.",
   },
 ];
 
@@ -159,7 +163,7 @@ export const WEB_FAQS: FaqItem[] = [
   },
   {
     q: "Does Summify store article URLs?",
-    a: "URLs are processed for extraction during analysis. No permanent article library is offered during public beta.",
+    a: "URLs are processed for extraction during analysis. There is no permanent article library.",
   },
 ];
 
@@ -170,7 +174,7 @@ export const DOCX_FAQS: FaqItem[] = [
   },
   {
     q: "Does Summify work with Google Docs?",
-    a: "Export your document as .docx and upload it. Native Google Docs integration is not available in beta.",
+    a: "Export your document as .docx and upload it. Native Google Docs integration is not available.",
   },
   {
     q: "Is Contract Summary available for DOCX agreements?",
@@ -178,7 +182,7 @@ export const DOCX_FAQS: FaqItem[] = [
   },
   {
     q: "What is the maximum DOCX size?",
-    a: "Standard upload limits apply during beta. Very long documents may be compacted while preserving structure.",
+    a: "Standard upload limits apply. Very long documents may be compacted while preserving structure.",
   },
 ];
 
@@ -208,7 +212,15 @@ export const TEAMS_FAQS: FaqItem[] = [
   },
   {
     q: "Is there a Team plan?",
-    a: "Team pricing is previewed on the pricing page. Public beta workspace access is free today.",
+    a: "Yes. Team includes Pro features for up to 5 seats at $24.99/month or $199.99/year (save ~33%), with invoices included.",
+  },
+  {
+    q: "How is our data handled?",
+    a: "We do not sell uploaded content. Extracted text is sent to third-party AI providers only to generate your outputs, and server logs are used for reliability and security — not advertising. See the privacy policy for details.",
+  },
+  {
+    q: "Do you offer SOC 2 or a DPA?",
+    a: "We do not currently hold SOC 2 or ISO 27001 certification and do not publish a standard DPA. Contact us before your security review if your procurement process requires one.",
   },
   {
     q: "Can teammates share analyses?",
@@ -254,7 +266,7 @@ export const RESEARCHERS_FAQS: FaqItem[] = [
   },
   {
     q: "How does Summify handle long papers?",
-    a: "Long PDFs may be compacted for analysis while preserving narrative structure during beta.",
+    a: "Long PDFs may be compacted for analysis while preserving narrative structure.",
   },
 ];
 
@@ -273,7 +285,7 @@ export const CREATORS_FAQS: FaqItem[] = [
   },
   {
     q: "Is uploaded creator content stored?",
-    a: "No long-term storage during beta. Process content for analysis only; do not upload material you cannot send to AI providers.",
+    a: "Files are processed for analysis and are not kept as a long-term library. Do not upload material you cannot send to AI providers.",
   },
 ];
 
