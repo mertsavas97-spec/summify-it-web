@@ -113,6 +113,52 @@ export function clearPendingAnalysis(): void {
   sessionStorage.removeItem(PENDING_ANALYSIS_STORAGE_KEY);
 }
 
+const HOME_RESULT_HANDOFF_KEY = "summify.homeResultHandoff";
+let latchedHomeResultHandoff: PendingAnalysisSnapshot | null = null;
+
+/** Homepage starts the run. The workspace page is where the result is shown. */
+export function saveHomeResultHandoff(snapshot: PendingAnalysisSnapshot): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  const write = (payload: PendingAnalysisSnapshot) => {
+    sessionStorage.setItem(HOME_RESULT_HANDOFF_KEY, JSON.stringify(payload));
+  };
+  try {
+    write(snapshot);
+    latchedHomeResultHandoff = snapshot;
+    return true;
+  } catch {
+    try {
+      const trimmed = { ...snapshot, rawText: snapshot.rawText.slice(0, 12_000) };
+      write(trimmed);
+      latchedHomeResultHandoff = trimmed;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export function readHomeResultHandoff(): PendingAnalysisSnapshot | null {
+  if (latchedHomeResultHandoff) return latchedHomeResultHandoff;
+  if (typeof sessionStorage === "undefined") return null;
+  const raw = sessionStorage.getItem(HOME_RESULT_HANDOFF_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as PendingAnalysisSnapshot;
+    if (!parsed?.analysisResult && !parsed?.injectedAnalysis) return null;
+    latchedHomeResultHandoff = parsed;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function clearHomeResultHandoff(): void {
+  latchedHomeResultHandoff = null;
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.removeItem(HOME_RESULT_HANDOFF_KEY);
+}
+
 /**
  * Restore a pending upload workspace only when the user is returning from auth
  * (matching returnTo or a just-returned auth handoff flag). Otherwise discard
@@ -162,4 +208,4 @@ export function resolveAuthReturnTo(options: {
     }
   }
   return { returnTo: fallback, source: "fallback" };
-}
+}// force rebuild
