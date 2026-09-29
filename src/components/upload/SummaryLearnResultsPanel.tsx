@@ -529,10 +529,10 @@ export function SummaryLearnResultsPanel({
     return tabs;
   }, [hasLearn, hasQuiz]);
 
-  const readingTabs = useMemo(() => {
-    const tabs: ResultsSectionId[] = sectionTabs.filter(
+  const readingTabs = useMemo((): ResultsSectionId[] => {
+    const tabs = sectionTabs.filter(
       (id) => id === "summary" || id === "insights" || id === "flashcards",
-    );
+    ) as ResultsSectionId[];
     if (hasMindMap) tabs.push("mindmap");
     return tabs;
   }, [hasMindMap, sectionTabs]);
