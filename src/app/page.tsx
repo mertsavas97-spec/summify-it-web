@@ -51,8 +51,6 @@ export default function HomePage() {
 
       <HomeAfterSummarySection />
 
-      <DifferentiationStrip />
-
       <FormatWorkflow
         id="how-it-works"
         title="From upload to summary in minutes"

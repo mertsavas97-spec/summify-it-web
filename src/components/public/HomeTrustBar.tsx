@@ -15,8 +15,8 @@ const ITEMS: TrustItem[] = [
   { icon: FileText, value: "PDF · PPTX · YouTube · Web", label: "One workspace for every source" },
   { icon: Globe, value: "100+ languages", label: "Multilingual sources & output" },
   { icon: Zap, value: "Sub-minute results", label: "Structured summary in seconds" },
-  { icon: Shield, value: "Encrypted transit", label: "TLS 1.3 + encrypted storage" },
-  { icon: CheckCircle, value: "No data retention", label: "Files deleted after processing" },
+  { icon: Shield, value: "Encrypted transit", label: "TLS 1.3 for all uploads" },
+  { icon: Zap, value: "No server retention", label: "Files processed in memory only" },
   { icon: Zap, value: "Source-grounded AI", label: "Every answer traces to your doc" },
 ] as const;
 
