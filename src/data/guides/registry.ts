@@ -138,7 +138,7 @@ export const GUIDES: GuideArticle[] = [
       },
       {
         q: "Is Summify free for students?",
-        a: "The workspace is free during public beta.",
+        a: "The Free plan includes daily summaries and Learn cards. Audio lessons and podcasts are on Pro.",
       },
     ],
     relatedLinks: [
@@ -232,7 +232,7 @@ export const GUIDES: GuideArticle[] = [
       },
       {
         q: "Is client data stored?",
-        a: "No long-term document library during beta. See Privacy for processing details.",
+        a: "No long-term document library. See Privacy for processing details.",
       },
     ],
     relatedLinks: [

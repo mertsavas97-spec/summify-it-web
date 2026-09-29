@@ -93,7 +93,7 @@ export default function ForFreelancersPage() {
 
       <CTASection
         title="Analyze your next client document"
-        description="Free during public beta — do not upload confidential material you cannot process on AI providers."
+        description="Do not upload confidential material you cannot process on AI providers."
         primaryLabel="Open workspace"
         secondaryHref="/summarize-docx"
         secondaryLabel="DOCX summarizer"

@@ -26,6 +26,8 @@ import { createClientIfConfigured } from "@/lib/supabase/server";
 import type { UserLimits } from "@/types/database";
 import type { AnalysisResult } from "@/types/text-analysis";
 
+export const maxDuration = 180;
+
 type FeatureUsageCheck = {
   allowed: boolean;
   used: number;
@@ -383,7 +385,7 @@ export async function POST(request: Request) {
           duration_minutes: podcast.estimatedDurationMinutes,
           voice_host: audio.voices[0]?.voiceId ?? null,
           voice_expert: audio.voices[1]?.voiceId ?? null,
-          chunk_count: audio.audioBase64.length,
+          chunk_count: podcast.script.length,
           cached: scriptCached,
         },
         insertViaServiceRole: true,

@@ -130,6 +130,7 @@ export default async function LearnPage({ searchParams }: PageProps) {
             documentTitle={displayTitle}
             modeLabel={getIntelligenceModeLabel(saved.intelligence_mode)}
             sourceKindLabel={getSourceKindLabel(saved.source_kind)}
+            sourceChars={saved.metadata?.extractedCharacterCount ?? null}
             learnCards={learnCards}
             hasLearnCards={hasLearnCards}
             practicePersisted

@@ -36,14 +36,9 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
           </p>
           <p className="mt-1 text-[11px] text-zinc-600">
             {usage.dailyAnalysisCount} completed today · {usage.planName}
-            {usage.isBeta ? " — full access during beta" : ""}
           </p>
         </div>
-        {usage.isBeta ? (
-          <Badge variant="accent">Beta</Badge>
-        ) : (
           <Badge variant="muted">{usage.planName}</Badge>
-        )}
       </div>
 
       {showUpgrade && (
@@ -73,7 +68,7 @@ export function DashboardUsagePanel({ usage }: DashboardUsagePanelProps) {
 
       {!usage.isBeta ? (
         <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-          Free includes 5 analyses per day, 20MB uploads, 4 core modes, 8 Learn cards, and up to 10
+          Free includes 5 analyses per day, 20MB uploads, 4 core modes, 12 Learn cards, and up to 10
           saved analyses. Audio Study and Podcast are on Pro.{" "}
           <Link href="/account" className="text-violet-400/70 hover:text-violet-300">
             Account

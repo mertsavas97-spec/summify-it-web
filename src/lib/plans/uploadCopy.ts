@@ -1,3 +1,4 @@
+import { PORTION_USED_NOTICE } from "@/lib/analysis/sourceCoverage";
 import { formatNumber } from "@/lib/format-number";
 import type { PlanId } from "@/types/plan";
 import { getPlanLimits } from "./planLimits";
@@ -35,7 +36,7 @@ export function getUploadZoneCopy(planId: PlanId): UploadZoneCopy {
 }
 
 export function getPlanLimitNotice(): string {
-  return "Only the most important sections of this document were analyzed due to your current plan limits.";
+  return PORTION_USED_NOTICE;
 }
 
 export function formatCharacterLimit(planId: PlanId): string {

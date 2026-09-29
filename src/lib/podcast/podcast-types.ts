@@ -5,9 +5,9 @@ export type PodcastSpeakerId = "host" | "expert";
 
 /**
  * Podcast density mode — controls pacing and depth of discussion.
- * - quick: concise, fast-paced (3-6 min)
- * - standard: balanced discussion (6-12 min)
- * - deep-dive: extended exploration (12-20 min)
+ * - quick: concise discussion (5-8 min)
+ * - standard: balanced discussion (10-15 min)
+ * - deep-dive: extended exploration (15-20 min)
  * - critical: analytical, challenge-focused
  * - debate: contrasting viewpoints, productive friction
  */

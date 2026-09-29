@@ -83,8 +83,9 @@ export function PdfToAudioLessonsBody() {
       <h2 id="learn-first">Learn and quiz before you listen</h2>
       <p>
         Active recall primes attention. When you hear a concept you missed in the quiz, it sticks.
-        Summify’s Summary → Learn → Quiz → Audio Study path is intentional: listening reinforces
-        what you already struggled to retrieve.
+        Summify’s Summary → Learn → Quiz →{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink> path is intentional:
+        listening reinforces what you already struggled to retrieve.
       </p>
       <p>
         For creators repurposing interviews or shows, see the{" "}
@@ -142,8 +143,9 @@ export function LearnWhileWalkingBody() {
       </p>
       <h2 id="cta">Walk tomorrow’s recap</h2>
       <p>
-        Generate today’s analysis, complete Learn cards, and queue audio for tomorrow morning’s
-        route to campus. For a lighter mobile workflow, use the{" "}
+        Generate today’s analysis, complete Learn cards, and queue{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink> lessons for tomorrow
+        morning’s route to campus. For a lighter mobile workflow, use the{" "}
         <InternalTextLink href="/ios-app">Summify iOS app</InternalTextLink> on iPhone.
       </p>
     </BlogProse>
@@ -161,8 +163,9 @@ export function AiStudyCompanionWorkflowsBody() {
       <h2 id="four-pass">The four-pass model</h2>
       <p>
         Pass one: structured summary for orientation. Pass two: Learn cards for encoding. Pass
-        three: quiz for retrieval. Pass four: audio study for consolidation while away from the
-        desk. Skipping passes saves minutes and costs retention.
+        three: quiz for retrieval. Pass four:{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink> for consolidation
+        while away from the desk. Skipping passes saves minutes and costs retention.
       </p>
       <h2 id="team">Sharing with teams</h2>
       <p>
@@ -235,7 +238,9 @@ export function AudioLearningVsRereadingBody() {
       </p>
       <h2 id="cta">Combine both</h2>
       <p>
-        Read once, quiz, listen, then targeted reread of only the pages that still confuse you.
+        Read once, quiz, listen with{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink>, then targeted
+        reread of only the pages that still confuse you.
       </p>
     </BlogProse>
   );
@@ -255,8 +260,9 @@ export function PassiveLearningWithAiBody() {
       </p>
       <h2 id="structure">Structure beats length</h2>
       <p>
-        Short teacher-style sections beat hour-long monotone reads. Summify scripts target exam-friendly
-        length with reflection questions at the end.
+        Short teacher-style sections beat hour-long monotone reads.{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink> scripts target
+        exam-friendly length with reflection questions at the end.
       </p>
       <h2 id="cta">Design your passive block</h2>
       <p>
@@ -288,7 +294,8 @@ export function AiTeacherVoiceResearchBody() {
       <h2 id="cta">Try a paper tonight</h2>
       <p>
         Upload a preprint via <InternalTextLink href="/for-researchers">research workflows</InternalTextLink>{" "}
-        and generate audio on Pro.
+        and generate an <InternalTextLink href="/audio-study">Audio Study</InternalTextLink>{" "}
+        lesson on Pro.
       </p>
     </BlogProse>
   );
@@ -304,7 +311,8 @@ export function LectureNotesToSpokenBody() {
       </ArticleIntro>
       <h2 id="slides">Slides alone are thin</h2>
       <p>
-        Decks lack connective tissue. Summify’s analysis adds narrative; audio Study adds voice.
+        Decks lack connective tissue. Summify’s analysis adds narrative;{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink> adds voice.
         Combine with YouTube lectures via the video summarizer when courses mix formats.
       </p>
       <h2 id="english">Non-English lectures, English study</h2>
@@ -339,8 +347,9 @@ export function StudyWhileCommutingBody() {
       </p>
       <h2 id="cta">Commute plan</h2>
       <p>
-        Sunday night: queue three Summify audio sessions for the week in{" "}
-        <InternalTextLink href="/upload">your workspace</InternalTextLink>.
+        Sunday night: queue three{" "}
+        <InternalTextLink href="/audio-study">Audio Study</InternalTextLink> sessions for the
+        week in <InternalTextLink href="/upload">your workspace</InternalTextLink>.
         If you want to study on iPhone between stops, the{" "}
         <InternalTextLink href="/ios-app">AI summary app for iPhone</InternalTextLink> is a
         natural backup.

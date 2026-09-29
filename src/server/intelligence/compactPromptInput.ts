@@ -9,7 +9,14 @@ import type {
   DocumentProfile,
   KnowledgeLayer,
 } from "./types";
+import { formatInsightQuotaLine } from "./sourceOutputQuota";
 import type { TextAnalysisMode } from "@/server/ai/schemas";
+import {
+  FREE_ANALYSIS_CHAR_BUDGET,
+  FREE_ANALYSIS_WINDOWS,
+  FULL_SOURCE_CHAR_LIMIT,
+  sampleEvenWindows,
+} from "@/lib/analysis/sourceCoverage";
 
 function formatProfileBlock(profile: DocumentProfile): string {
   const typeLabel = formatDocumentTypeLabel(profile.documentTypeGuess);
@@ -24,7 +31,7 @@ function formatProfileBlock(profile: DocumentProfile): string {
     `- Suggested mode alignment: ${profile.suggestedMode}`,
     profile.sourceQualityNote ? `- Note: ${profile.sourceQualityNote}` : "",
     profile.needsChunking
-      ? "- Note: long-form content is analyzed in prioritized sections within your plan."
+      ? "- Note: long-form content is covered in order, within the plan budget."
       : "",
   ]
     .filter(Boolean)
@@ -69,9 +76,18 @@ function formatKnowledgeBlock(layer: KnowledgeLayer): string {
     .join("\n\n");
 }
 
-function truncateRaw(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-  return `${text.slice(0, maxChars)}\n\n[Source text truncated for token budget.]`;
+export function sampleAcrossSource(
+  text: string,
+  budget: number,
+  marker = "\n\n[… later in the source …]\n\n",
+): string {
+  if (text.length <= budget) return text;
+  const sliceBudget = Math.max(800, Math.floor((budget - marker.length * 2) / 3));
+  const midStart = Math.max(0, Math.floor(text.length / 2) - Math.floor(sliceBudget / 2));
+  const head = text.slice(0, sliceBudget);
+  const middle = text.slice(midStart, midStart + sliceBudget);
+  const tail = text.slice(-sliceBudget);
+  return [head, middle, tail].join(marker);
 }
 
 function formatYoutubeSourceBlock(
@@ -93,9 +109,7 @@ function formatYoutubeSourceBlock(
     '- BANNED narrator framing: "the video discusses…", "the speaker talks about…", "this video covers…".',
     "- Write summary/keyInsights as editorial or lecture intelligence — state claims and argument flow directly.",
     "- Prefer: thesis, argument chain, tensions, evidence, clip-worthy moments, misconceptions.",
-    ctx.hasTimestamps
-      ? "- Timestamps appear in the transcript as [m:ss] or [h:mm:ss]. Reference them in keyInsights when they anchor a claim."
-      : "",
+    "- Do not write timecodes in any field. Omit [m:ss] and [h:mm:ss] from title, summary, insights, risks, actions, and learn cards.",
   ];
 
   if (ctx.importantMoments && ctx.importantMoments.length > 0) {
@@ -170,6 +184,8 @@ export type CompactPromptOptions = {
   sourceContext?: AnalyzeSourceContext;
   analysisMode?: TextAnalysisMode;
   cognitionPromptBlock?: string;
+  /** Paid long sources: ordered notes replace the raw text in the final call. */
+  orderedSourceNotes?: string;
 };
 
 /**
@@ -181,7 +197,7 @@ export function compactPromptInput(
   knowledgeLayer: KnowledgeLayer,
   plan: AdaptiveAnalysisPlan,
   options?: CompactPromptOptions,
-): { compactedCharacterCount: number; userPrompt: string } {
+): { compactedCharacterCount: number; userPrompt: string; analysisSourceText: string } {
   const profileBlock = formatProfileBlock(profile);
   const youtubeBlock =
     options?.isYoutubeTranscript && options.sourceContext?.sourceKind === "youtube"
@@ -225,49 +241,34 @@ export function compactPromptInput(
     .filter(Boolean)
     .join("\n\n");
 
-  let body: string;
+  const notes = options?.orderedSourceNotes?.trim();
+  const videoMarker = "\n\n[… later in the video …]\n\n";
+  let sourceNote: string;
+  let sourceText: string;
 
-  switch (plan.pipelineType) {
-    case "short_direct": {
-      const raw = truncateRaw(cleanedText, plan.maxInputCharacters);
-      body = [
-        prefix,
-        groundingBlock,
-        knowledgeBlock,
-        options?.isPresentation ? "FULL SLIDE DECK TEXT:" : "FULL CLEANED SOURCE:",
-        raw,
-      ].join("\n\n");
-      break;
-    }
-    case "medium_compacted": {
-      const rawBudget = Math.min(5_000, Math.floor(plan.maxInputCharacters * 0.45));
-      const raw = truncateRaw(cleanedText, rawBudget);
-      body = [
-        prefix,
-        groundingBlock,
-        knowledgeBlock,
-        "SUPPORTING EXCERPTS (partial raw text):",
-        raw,
-        "Ground analysis in entities, sections, and phrases above — do not invent content.",
-      ].join("\n\n");
-      break;
-    }
-    case "long_preview": {
-      const rawBudget = Math.min(2_500, Math.floor(plan.maxInputCharacters * 0.3));
-      const raw = truncateRaw(cleanedText, rawBudget);
-      body = [
-        prefix,
-        groundingBlock,
-        knowledgeBlock,
-        "LONG TRANSCRIPT PREVIEW — limited excerpt for grounding:",
-        raw,
-        "Prioritize knowledge layer. Flag gaps in risksOrWarnings if coverage is incomplete.",
-      ].join("\n\n");
-      break;
-    }
+  if (notes) {
+    sourceNote =
+      "SOURCE NOTES — ordered parts from the start of the source through the end. Write the analysis from every part, not only the first.";
+    sourceText = notes;
+  } else if (cleanedText.length <= FULL_SOURCE_CHAR_LIMIT) {
+    sourceNote = options?.isYoutubeTranscript
+      ? "FULL VIDEO TRANSCRIPT — cover the whole lecture, not only the opening minutes."
+      : options?.isPresentation
+        ? "FULL SLIDE DECK TEXT:"
+        : "FULL CLEANED SOURCE:";
+    sourceText = cleanedText;
+  } else {
+    sourceNote = options?.isYoutubeTranscript
+      ? "TRANSCRIPT WINDOWS — equal slices from the opening through the ending. Cover every slice, not only the start."
+      : "SOURCE WINDOWS — equal slices from the start through the end. Cover every slice, not only the opening.";
+    sourceText = options?.isYoutubeTranscript
+      ? sampleEvenWindows(cleanedText, FREE_ANALYSIS_CHAR_BUDGET, FREE_ANALYSIS_WINDOWS, videoMarker)
+      : sampleEvenWindows(cleanedText, FREE_ANALYSIS_CHAR_BUDGET, FREE_ANALYSIS_WINDOWS);
   }
 
-  const userPrompt = `${body}\n\nOutput depth: ${plan.outputDepth}. Learn depth hint: ${plan.learnDepth}.\n\n${ANALYSIS_OUTPUT_LANGUAGE_RULES}`;
+  const body = [prefix, groundingBlock, knowledgeBlock, sourceNote, sourceText].join("\n\n");
 
-  return { compactedCharacterCount: userPrompt.length, userPrompt };
+  const userPrompt = `${body}\n\nOutput depth: ${plan.outputDepth}. Learn depth hint: ${plan.learnDepth}.\n${formatInsightQuotaLine(cleanedText.length)}\n\n${ANALYSIS_OUTPUT_LANGUAGE_RULES}`;
+
+  return { compactedCharacterCount: userPrompt.length, userPrompt, analysisSourceText: sourceText };
 }

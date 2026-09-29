@@ -3,11 +3,13 @@
  */
 
 import {
-  LEARN_CARD_PROVIDER_TYPES,
+  LEARN_CARD_OUTPUT_TYPES,
   type LearnCardOutput,
-  type LearnCardProviderType,
+  type LearnCardOutputType,
 } from "./schemas";
 import { extractJsonFromText } from "./validate-response";
+import { isGenericFlashcardPrompt, isStandaloneFlashcardQuestion } from "@/lib/learn/flashcardPair";
+import { answerStartsAsCut, repairStudyCard } from "@/lib/learn/separateLearnCardCopy";
 
 export type GeneratedLearnCard = {
   type: string;
@@ -17,13 +19,15 @@ export type GeneratedLearnCard = {
   answer: string;
 };
 
-const PROVIDER_TYPES = new Set<string>(LEARN_CARD_PROVIDER_TYPES);
+const OUTPUT_TYPES = new Set<string>(LEARN_CARD_OUTPUT_TYPES);
 
-const EXTRACTION_TYPE_TO_PROVIDER: Record<string, LearnCardProviderType> = {
+const EXTRACTION_TYPE_TO_PROVIDER: Record<string, LearnCardOutputType> = {
   fact: "concept",
   cause: "why",
   consequence: "why",
-  connection: "concept",
+  // Link and Myth chips come from these — keep them distinct so a lens's
+  // connection / misconception cards are not flattened into concept or why.
+  connection: "connection",
   number: "quiz",
   // STEM / study inventory types (Phase-2 often emits these when strategyHint asks for them)
   definition: "concept",
@@ -35,7 +39,7 @@ const EXTRACTION_TYPE_TO_PROVIDER: Record<string, LearnCardProviderType> = {
   method: "concept",
   quiz: "quiz",
   review_question: "quiz",
-  misconception: "why",
+  misconception: "misconception",
   theme: "concept",
   character: "concept",
   symbol: "memory_hook",
@@ -44,9 +48,6 @@ const EXTRACTION_TYPE_TO_PROVIDER: Record<string, LearnCardProviderType> = {
   memory_hook: "memory_hook",
   creator_hook: "memory_hook",
 };
-
-const QUESTION_MAX = 80;
-const ANSWER_MAX = 160;
 
 function containsNonEnglishFragment(text: string): boolean {
   // Detect common Turkish characters that indicate untranslated content
@@ -140,14 +141,23 @@ function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: stri
     });
     return false;
   }
+  const repaired = repairStudyCard(card.type, question, answer);
+  if (repaired) {
+    card.type = repaired.type;
+    card.question = repaired.title;
+    card.answer = repaired.content;
+  }
+  const repairedQuestion = card.question.trim();
+  const repairedAnswer = card.answer.trim();
   if (
-    isAnswerIdenticalToQuestion(question, answer) &&
-    !isQuizGenerationType(card.type)
+    !repaired ||
+    isAnswerIdenticalToQuestion(repairedQuestion, repairedAnswer) ||
+    answerStartsAsCut(repairedQuestion, repairedAnswer)
   ) {
     console.warn("[summify.parser] card_rejected", {
       question: card.question,
       answer: card.answer,
-      rule: "identical",
+      rule: isAnswerIdenticalToQuestion(question, answer) ? "identical" : "continuation",
     });
     return false;
   }
@@ -159,7 +169,7 @@ function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: stri
     });
     return false;
   }
-  if (/^significant changes occurred|changes occurred significantly/i.test(answer)) {
+  if (/^significant changes occurred|changes occurred significantly/i.test(repairedAnswer)) {
     console.warn("[summify.parser] card_rejected", {
       question: card.question,
       answer: card.answer,
@@ -197,19 +207,15 @@ function passesClientQualityRules(card: GeneratedLearnCard, documentTitle?: stri
     });
     return false;
   }
-  if (/^what changed after\b/i.test(question)) {
+  if (
+    /^what changed after\b/i.test(question) ||
+    isGenericFlashcardPrompt(question) ||
+    !isStandaloneFlashcardQuestion(question)
+  ) {
     console.warn("[summify.parser] card_rejected", {
       question: card.question,
       answer: card.answer,
       rule: "banned_stem",
-    });
-    return false;
-  }
-  if (question.length > QUESTION_MAX || answer.length > ANSWER_MAX) {
-    console.warn("[summify.parser] card_rejected", {
-      question: card.question,
-      answer: card.answer,
-      rule: "length",
     });
     return false;
   }
@@ -285,10 +291,58 @@ function personNamesInCard(card: GeneratedLearnCard, documentTitle?: string): st
   return names;
 }
 
-function mapToProviderType(raw: string): LearnCardProviderType | null {
+function mapToLearnCardType(raw: string): LearnCardOutputType | null {
   const key = raw.trim().toLowerCase();
-  if (PROVIDER_TYPES.has(key)) return key as LearnCardProviderType;
+  if (OUTPUT_TYPES.has(key)) return key as LearnCardOutputType;
   return EXTRACTION_TYPE_TO_PROVIDER[key] ?? null;
+}
+
+const GENERIC_TOPIC_WORDS = new Set([
+  "the",
+  "and",
+  "for",
+  "with",
+  "from",
+  "this",
+  "that",
+  "these",
+  "those",
+  "what",
+  "when",
+  "which",
+  "into",
+  "over",
+  "under",
+  "general",
+  "overview",
+  "intro",
+  "introduction",
+]);
+
+function textTokens(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !GENERIC_TOPIC_WORDS.has(w)),
+  );
+}
+
+function tokenOverlapRatio(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let shared = 0;
+  for (const token of a) {
+    if (b.has(token)) shared += 1;
+  }
+  return shared / Math.min(a.size, b.size);
+}
+
+function answerOf(card: LearnCardOutput): string {
+  if (card.type === "quiz" && card.content.includes("\n---\n")) {
+    return card.content.split("\n---\n").slice(1).join("\n---\n");
+  }
+  return card.content;
 }
 
 /** Count `cards` array entries in Phase 2 JSON before quality filtering. */
@@ -324,6 +378,8 @@ export function parseLearnCardsGenerationResponse(
   const list = Array.isArray(obj.cards) ? obj.cards : [];
 
   const out: LearnCardOutput[] = [];
+  /** Topic key per kept card — parallel to `out` for duplicate-topic checks. */
+  const outTopics: string[] = [];
   const seenQuestions = new Set<string>();
   const personCardCount = new Map<string, number>();
 
@@ -336,8 +392,8 @@ export function parseLearnCardsGenerationResponse(
       type: typeof c.type === "string" ? c.type : "fact",
       difficulty: typeof c.difficulty === "string" ? c.difficulty : undefined,
       topic: typeof c.topic === "string" ? c.topic : undefined,
-      question: c.question.trim().slice(0, QUESTION_MAX),
-      answer: c.answer.trim().slice(0, ANSWER_MAX),
+      question: c.question.trim(),
+      answer: c.answer.trim(),
     };
 
     if (!passesClientQualityRules(generated, options?.documentTitle)) continue;
@@ -376,9 +432,35 @@ export function parseLearnCardsGenerationResponse(
       });
       continue;
     }
+
+    // Same fact in different words: question, answer, or topic collision
+    // against a card that was already kept in this deck.
+    const qTokens = textTokens(generated.question);
+    const aTokens = textTokens(generated.answer);
+    const topicKey = (generated.topic ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+    const repeated = out.some((kept, index) => {
+      const keptQ = textTokens(kept.title);
+      const keptA = textTokens(answerOf(kept));
+      const questionOverlap = tokenOverlapRatio(qTokens, keptQ);
+      const answerOverlap = tokenOverlapRatio(aTokens, keptA);
+      if (questionOverlap >= 0.55) return true;
+      if (answerOverlap >= 0.65) return true;
+      // Same topic + the answers share substance = the same fact twice.
+      if (topicKey && outTopics[index] === topicKey && answerOverlap >= 0.4) return true;
+      return false;
+    });
+    if (repeated) {
+      console.warn("[summify.parser] card_rejected", {
+        question: generated.question,
+        answer: generated.answer,
+        rule: "duplicate_semantic",
+        topic: topicKey || undefined,
+      });
+      continue;
+    }
     seenQuestions.add(qKey);
 
-    const providerType = mapToProviderType(generated.type);
+    const providerType = mapToLearnCardType(generated.type);
     if (!providerType) {
       console.warn("[summify.parser] card_rejected", {
         question: generated.question,
@@ -418,6 +500,7 @@ export function parseLearnCardsGenerationResponse(
     }
 
     out.push(card);
+    outTopics.push(topicKey);
     if (options?.maxCards && out.length >= options.maxCards) break;
   }
 

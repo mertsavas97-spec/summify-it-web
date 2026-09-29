@@ -1,9 +1,10 @@
+import { randomUUID } from "crypto";
 import {
-  buildPollyDataUrl,
   generatePollySpeech,
   getPollyEnvCheck,
   logPollyErrorFull,
 } from "@/server/audio/polly";
+import { getServerSupabaseAdmin } from "@/server/supabase/admin";
 import type {
   PodcastDiscussionAudio,
   PodcastDiscussionScript,
@@ -101,6 +102,57 @@ const MAX_AUDIO_CHUNKS = 80;
 
 /** Maximum total characters to synthesize (cost control). */
 const MAX_TOTAL_CHARS = 25000;
+const PODCAST_AUDIO_BUCKET = "audio-study";
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7;
+const POLLY_CONCURRENCY = 4;
+
+async function synthesizeChunks(chunks: PodcastAudioChunk[]): Promise<Buffer[]> {
+  const audioBuffers: Array<Buffer | null> = new Array(chunks.length).fill(null);
+  let cursor = 0;
+
+  async function worker(): Promise<void> {
+    while (cursor < chunks.length) {
+      const index = cursor;
+      cursor += 1;
+      const chunk = chunks[index];
+      try {
+        const audio = await generatePollySpeech({
+          text: chunk.text,
+          voiceId: voiceForSpeaker(chunk.speaker),
+        });
+        audioBuffers[index] = audio.audio;
+      } catch (chunkError) {
+        console.warn("[podcast] chunk_synthesis_failed", {
+          speaker: chunk.speaker,
+          textLength: chunk.text.length,
+          error: chunkError instanceof Error ? chunkError.message : String(chunkError),
+        });
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(POLLY_CONCURRENCY, chunks.length) }, () => worker()),
+  );
+  return audioBuffers.filter((buffer): buffer is Buffer => buffer !== null);
+}
+
+async function storePodcastAudio(audio: Buffer): Promise<string> {
+  const admin = getServerSupabaseAdmin();
+  const path = `podcast/${randomUUID()}.mp3`;
+  const { error } = await admin.storage.from(PODCAST_AUDIO_BUCKET).upload(path, audio, {
+    contentType: "audio/mpeg",
+    upsert: false,
+  });
+  if (error) throw new Error(error.message);
+
+  const signed = await admin.storage.from(PODCAST_AUDIO_BUCKET).createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+  if (signed.error || !signed.data?.signedUrl) {
+    throw new Error(signed.error?.message ?? "Unable to create podcast audio link.");
+  }
+  console.info("[podcast] audio_stored", { path, bytes: audio.length });
+  return signed.data.signedUrl;
+}
 
 export async function generatePodcastDiscussionAudio(
   podcast: PodcastDiscussionScript,
@@ -136,58 +188,30 @@ export async function generatePodcastDiscussionAudio(
   }
 
   try {
-    const audioBuffers: Buffer[] = [];
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (const chunk of audioChunks) {
-      try {
-        const audio = await generatePollySpeech({
-          text: chunk.text,
-          voiceId: voiceForSpeaker(chunk.speaker),
-        });
-        audioBuffers.push(audio.audio);
-        successCount++;
-      } catch (chunkError) {
-        // Log but continue with remaining chunks
-        errorCount++;
-        console.warn("[podcast] chunk_synthesis_failed", {
-          speaker: chunk.speaker,
-          textLength: chunk.text.length,
-          error: chunkError instanceof Error ? chunkError.message : String(chunkError),
-        });
-      }
-    }
-
+    const audioBuffers = await synthesizeChunks(audioChunks);
     if (audioBuffers.length === 0) {
       throw new Error("All podcast audio chunks failed to synthesize.");
     }
-
-    // Log partial failures if any
-    if (errorCount > 0) {
+    if (audioBuffers.length < audioChunks.length) {
       console.warn("[podcast] partial_synthesis_failure", {
-        successCount,
-        errorCount,
+        successCount: audioBuffers.length,
+        errorCount: audioChunks.length - audioBuffers.length,
         totalChunks: audioChunks.length,
       });
     }
 
     const merged = Buffer.concat(audioBuffers);
-    const audioBase64 = merged.toString("base64");
-    const audioMime = "audio/mpeg";
-
-    // Calculate actual audio duration from bytes (approx. 1 second per 22,000 bytes for MP3 at 22kHz)
+    const audioUrl = await storePodcastAudio(merged);
     const actualAudioDurationSeconds = Math.round(merged.byteLength / 22000);
     console.info("[podcast] actual_audio_duration_seconds", {
-      analysisId: podcast.analysisId ?? null, // Assuming analysisId is available in podcast object
       actualAudioDurationSeconds,
       byteLength: merged.byteLength,
     });
 
     return {
-      audioBase64,
-      audioMime,
-      audioUrl: buildPollyDataUrl(audioBase64, audioMime),
+      audioBase64: "",
+      audioMime: "audio/mpeg",
+      audioUrl,
       voices: [
         { speaker: "host", name: "Host", voiceId: VOICE_CONFIG.host },
         { speaker: "expert", name: "Expert", voiceId: VOICE_CONFIG.expert },

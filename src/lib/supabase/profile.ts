@@ -6,13 +6,21 @@ import { DEFAULT_PAID_PREVIEW_PLAN } from "@/types/plan";
 import type { Profile, UserLimits } from "@/types/database";
 import { devLog, devWarn } from "@/server/logging";
 import { createClientIfConfigured } from "@/lib/supabase/server";
-import {
-  notifyInternalNonBlocking,
-  shouldSkipInternalNotificationsForEmail,
-} from "@/server/internalNotifications";
+import { notifyNewSignup } from "@/server/internalNotifications";
 
 function utcToday(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function authProviderLabel(user: User): string {
+  const meta = user.app_metadata as { provider?: string; providers?: string[] } | null;
+  return meta?.provider ?? meta?.providers?.[0] ?? "email";
+}
+
+function displayName(user: User): string | null {
+  const meta = user.user_metadata as { full_name?: string; name?: string } | null;
+  const name = meta?.full_name?.trim() || meta?.name?.trim();
+  return name || null;
 }
 
 async function ensureUserLimitsRow(
@@ -143,23 +151,20 @@ export async function ensureProfileForUser(passedUser?: User): Promise<Profile |
     profile = data as Profile | null;
     profileError = error;
 
-      // New user = first successful profile insert.
-      // Never block auth callback; fail silently.
-      if (!error && profile && !shouldSkipInternalNotificationsForEmail(email)) {
-        notifyInternalNonBlocking({
-          title: "New Summify user",
-          summary: `New Summify user: ${email ?? "unknown"}`,
-          slackEmoji: "👤",
-          pushoverTitle: "New Summify user",
-          context: {
-            Email: email,
-            "Auth provider": (user.app_metadata as { provider?: string } | null)?.provider ??
-              (user.app_metadata as { providers?: string[] } | null)?.providers?.[0] ??
-              null,
-            Timestamp: new Date().toISOString(),
-          },
-        });
-      }
+    if (!error && profile) {
+      const confirmed = Boolean(
+        (user as User & { email_confirmed_at?: string | null }).email_confirmed_at ||
+          (user as User & { confirmed_at?: string | null }).confirmed_at,
+      );
+      notifyNewSignup({
+        email,
+        name: displayName(user),
+        provider: authProviderLabel(user),
+        plan: profile.plan,
+        emailConfirmed: confirmed,
+        signedUpAt: user.created_at,
+      });
+    }
 
     if (error?.code === "23505") {
       const { data: retry, error: retryError } = await supabase

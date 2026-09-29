@@ -5,6 +5,8 @@ import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Cl
 import { LearnMemoryAnchorPanel } from "@/components/learn/LearnMemoryAnchorPanel";
 import { LearnSourceTracePanel } from "@/components/learn/LearnSourceTracePanel";
 import type { LearnCardOutput, LearnCardOutputType } from "@/types/text-analysis";
+import { repairStudyCard } from "@/lib/learn/separateLearnCardCopy";
+import { ExpandableText } from "@/components/ui/ExpandableText";
 import { parseQuizContent } from "@/types/text-analysis";
 
 const CARD_STYLES: Record<
@@ -126,7 +128,6 @@ function FutureHookButton({ label }: { label: string }) {
 }
 
 export function LearnCardItem({ card }: LearnCardItemProps) {
-  const style = resolveStyle(card.type);
   const isQuiz = card.type === "quiz";
   const quiz = isQuiz ? parseQuizContent(card.content) : null;
   const [showAnswer, setShowAnswer] = useState(false);
@@ -138,7 +139,22 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
     trackProductEventV2Client("learn_card_opened", { metadata: { card_type: card.type } });
   };
 
-  const displayContent = isQuiz && quiz ? quiz.question : card.content;
+  const repaired = isQuiz
+    ? { type: card.type, title: card.title, content: card.content }
+    : repairStudyCard(card.type, card.title, card.content);
+  if (!repaired) return null;
+  const separated = { title: repaired.title, content: isQuiz ? "" : repaired.content };
+  const style = resolveStyle(repaired.type as LearnCardOutputType);
+  const questionText = quiz?.question?.trim() ?? "";
+  const titleText = separated.title.trim().replace(/[?？]+$/g, "").toLowerCase();
+  const repeatedQuestion =
+    questionText.length > 0 &&
+    questionText.replace(/[?？]+$/g, "").toLowerCase() === titleText;
+  const displayContent = isQuiz
+    ? repeatedQuestion
+      ? ""
+      : questionText
+    : separated.content;
   const relCount = card.cardRelationships?.length ?? 0;
   const difficultyLabel =
     card.difficulty === "high"
@@ -152,7 +168,7 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
   return (
     <li
       className={`group rounded-xl border p-3.5 transition-colors duration-150 hover:border-white/15 sm:p-4 ${style.border} ${style.bg} ${style.hoverShadow}`}
-      data-learn-card-type={card.type}
+      data-learn-card-type={repaired.type}
       data-workspace-learn-card
       onClick={handleCardOpen}
     >
@@ -184,18 +200,28 @@ export function LearnCardItem({ card }: LearnCardItemProps) {
               </span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-sm font-semibold leading-snug text-zinc-50 sm:text-[15px]">
-            {card.title}
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-zinc-300 [overflow-wrap:anywhere] sm:text-[15px] sm:leading-relaxed">
-            {displayContent}
-          </p>
+          <ExpandableText
+            text={separated.title}
+            lines={3}
+            className="mt-0.5 text-sm font-semibold leading-snug text-zinc-50 sm:text-[15px]"
+          />
+          {displayContent ? (
+            <ExpandableText
+              text={displayContent}
+              lines={4}
+              className="mt-1.5 text-sm leading-relaxed text-zinc-300 sm:text-[15px] sm:leading-relaxed"
+            />
+          ) : null}
           {isQuiz && quiz?.answer && (
             <div className="mt-2">
               {showAnswer ? (
-                <p className="rounded-lg border border-emerald-500/15 bg-emerald-950/15 px-2.5 py-2 text-sm leading-relaxed text-emerald-100/90 sm:text-[15px]">
-                  {quiz.answer}
-                </p>
+                <div className="rounded-lg border border-emerald-500/15 bg-emerald-950/15 px-2.5 py-2">
+                  <ExpandableText
+                    text={quiz.answer}
+                    lines={4}
+                    className="text-sm leading-relaxed text-emerald-100/90 sm:text-[15px]"
+                  />
+                </div>
               ) : (
                 <button
                   type="button"

@@ -461,7 +461,7 @@ export function AnalysisPracticeSession({
 
   return (
     <>
-    <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-3 sm:p-6">
+    <section className="min-w-0 max-w-full overflow-x-clip rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-3 sm:p-6">
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-violet-300/80">
@@ -506,7 +506,7 @@ export function AnalysisPracticeSession({
           cognitiveLevel={active.cognitiveLevel}
         />
 
-        <p className="mt-4 break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere] sm:text-xl">
+        <p className="mt-4 min-w-0 whitespace-pre-wrap break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere] sm:text-xl">
           {active.prompt}
         </p>
 

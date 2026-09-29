@@ -23,13 +23,6 @@ export function LearnSourceTracePanel({ trace, className = "" }: LearnSourceTrac
   const label = confidenceLabel(trace.confidence);
   const locationParts: string[] = [];
   if (trace.pageNumber != null) locationParts.push(`Page ${trace.pageNumber}`);
-  if (trace.timestampStart) {
-    locationParts.push(
-      trace.timestampEnd && trace.timestampEnd !== trace.timestampStart
-        ? `${trace.timestampStart}–${trace.timestampEnd}`
-        : trace.timestampStart,
-    );
-  }
 
   return (
     <div className={`mt-2 ${className}`}>

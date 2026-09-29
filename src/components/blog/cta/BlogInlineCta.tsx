@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { withCtaUtm } from "@/lib/analytics/utm";
 
 type BlogInlineCtaProps = {
   headline?: string;
@@ -18,7 +19,7 @@ export function BlogInlineCta({
       <p className="text-sm font-medium text-violet-100/95">{headline}</p>
       <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">{body}</p>
       <Link
-        href={href}
+        href={withCtaUtm(href, "blog", "blog_inline")}
         className="mt-3 inline-flex text-sm font-medium text-violet-300 hover:text-violet-200"
       >
         {label} →

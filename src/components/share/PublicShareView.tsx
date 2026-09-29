@@ -137,6 +137,7 @@ export function PublicShareView({ shared, shareId }: PublicShareViewProps) {
                   content: card.content ?? "",
                 })),
               sourceKind: shared.source_kind,
+              intelligenceMode: sharedModeId,
             }}
           />
         </div>

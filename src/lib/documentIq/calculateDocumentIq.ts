@@ -440,7 +440,7 @@ function buildWhyThisScore({
   else positives.push("Moderate complexity");
 
   if (actionability >= 70) positives.push("Action-oriented content");
-  else if (actionability <= 35) negatives.push("Limited action-oriented content");
+  else if (actionability <= 48) negatives.push("Limited action-oriented content");
 
   return { positives, negatives };
 }
@@ -579,54 +579,53 @@ export function calculateDocumentIq({
     ACTION_SIGNALS_TR.reduce((sum, s) => sum + (lowered.includes(s) ? 1 : 0), 0);
   const actionHitRate = safeDivide(actionHits, 18); // normalize by approximate list size
 
-  // --- Readability (higher = clearer structure)
-  // targets: avgSentenceLen ~ 16-22, avgWordLen ~ 4-6, healthy paragraphing and line breaks.
-  const sentenceLenPenalty = clamp(Math.abs(avgSentenceLen - 18) * 2.2, 0, 40);
-  const wordLenPenalty = clamp(Math.abs(avgWordLen - 5) * 7, 0, 25);
-  const paragraphBonus = clamp(Math.log2(paragraphCount + 1) * 12, 0, 24);
-  const lineBreakBonus = clamp(Math.log2(lineBreaks + 1) * 6, 0, 18);
-  const denseBlockPenalty = paragraphs.length <= 1 && lineBreaks < 2 ? 18 : 0;
-  // Structural whitespace from extractors can inflate readability. Keep bonuses
-  // useful but bounded so scraped articles do not routinely score a perfect 100.
+  // Readability: spoken transcripts and textbook prose often run longer than
+  // 18 words. Only very short fragments or runaway sentences should lose points.
+  const sentenceLenPenalty =
+    avgSentenceLen < 10
+      ? clamp((10 - avgSentenceLen) * 3.2, 0, 28)
+      : avgSentenceLen > 34
+        ? clamp((avgSentenceLen - 34) * 0.9, 0, 22)
+        : 0;
+  const wordLenPenalty = clamp(Math.abs(avgWordLen - 5) * 4.5, 0, 14);
+  const paragraphBonus = clamp(Math.log2(paragraphCount + 1) * 10, 0, 16);
+  const lineBreakBonus = clamp(Math.log2(lineBreaks + 1) * 4, 0, 10);
+  const denseBlockPenalty = paragraphs.length <= 1 && lineBreaks < 2 ? 12 : 0;
   const readabilityRaw =
-    60 +
-    Math.min(paragraphBonus, 18) +
-    Math.min(lineBreakBonus, 10) -
-    sentenceLenPenalty -
-    wordLenPenalty -
-    denseBlockPenalty;
+    70 + paragraphBonus + lineBreakBonus - sentenceLenPenalty - wordLenPenalty - denseBlockPenalty;
   const readability = roundScore(readabilityRaw);
 
-  // --- Complexity (higher = more complex)
+  // Complexity describes the vocabulary. Ordinary study prose should sit in
+  // the middle, not start near the floor.
   const complexityRaw =
-    20 +
-    longWordRatio * 55 +
-    uppercaseTokenRatio * 55 +
-    numericRatio * 35 +
-    technicalRatio * 45 +
-    clamp(uniqueWordRatio * 35, 0, 35);
+    46 +
+    longWordRatio * 70 +
+    technicalRatio * 40 +
+    numericRatio * 25 +
+    clamp(uniqueWordRatio * 24, 0, 16) +
+    uppercaseTokenRatio * 20;
   const complexity = roundScore(complexityRaw);
 
-  // --- Density (higher = more information-dense)
-  // Higher unique ratio and lower repetition increase density; too many stopwords reduces.
+  // Density should not fall just because a long source repeats common words.
+  const repetitionPenalty = clamp(Math.max(0, top10Share - 0.28) * 70, 0, 28);
+  const stopPenalty = clamp(Math.max(0, stopwordRatio - 0.5) * 45, 0, 16);
   const densityRaw =
-    25 +
-    uniqueWordRatio * 55 -
-    top10Share * 35 -
-    stopwordRatio * 25 +
-    clamp(safeDivide(wordCount, paragraphCount) / 40, 0, 1) * 20;
+    58 +
+    clamp(uniqueWordRatio * 22, 0, 14) +
+    clamp(safeDivide(wordCount, paragraphCount) / 80, 0, 1) * 8 -
+    repetitionPenalty -
+    stopPenalty;
   const density = roundScore(densityRaw);
 
-  // --- Actionability (higher = more action/decision language)
-  const actionabilityRaw = 15 + actionHitRate * 70 + clamp(numericRatio * 30, 0, 20);
+  // Missing imperative language is a profile note, not a failed document.
+  const actionabilityRaw = 38 + actionHitRate * 52 + clamp(numericRatio * 20, 0, 8);
   const actionability = roundScore(actionabilityRaw);
 
-  const iqScore = roundScore(
-    readability * 0.25 +
-      complexity * 0.25 +
-      density * 0.3 +
-      actionability * 0.2,
-  );
+  const weighted =
+    readability * 0.34 + complexity * 0.22 + density * 0.3 + actionability * 0.14;
+  // A handful of repeated words cannot look analysis-ready.
+  const coverage = clamp(Math.log2(uniqueWordCount + 1) / Math.log2(90), 0.28, 1);
+  const iqScore = roundScore(weighted * coverage);
 
   const bulletCount = countRegexMatches(text, /^\s*(?:[-*•‣–—]|\d+\.|\(?[a-zA-Z]\)|\([0-9]+\))\s+/gm);
   const tableSignalCount = countRegexMatches(text, /^\s*\|.+\|\s*$/gm) + countRegexMatches(text, /\t{2,}/g);

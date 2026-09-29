@@ -22,6 +22,8 @@ type UnifiedSourceComposerProps = {
   showTextInput: boolean;
   disabled?: boolean;
   compact?: boolean;
+  /** Homepage hero: source cards read as the live, clickable workspace. */
+  emphasizeChoices?: boolean;
   onFileSelected: (file: File) => void;
   onLinkChange: (url: string) => void;
   onLinkSubmit: (url: string) => Promise<void>;
@@ -66,6 +68,7 @@ export function UnifiedSourceComposer({
   pipelineBusy,
   showTextInput,
   disabled = false,
+  emphasizeChoices = false,
   onFileSelected,
   onLinkChange,
   onLinkSubmit,
@@ -115,7 +118,9 @@ export function UnifiedSourceComposer({
   if (!choice) {
     return (
       <div className="space-y-3" data-unified-source-composer data-source-choice-grid>
-        <p className="text-xs text-zinc-500">File, link, or text — pick one.</p>
+        <p className={emphasizeChoices ? "text-xs font-medium text-violet-100/90" : "text-xs text-zinc-500"}>
+          {emphasizeChoices ? "Click a source to start analyzing" : "File, link, or text — pick one."}
+        </p>
         <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Source type">
           {CHOICE_CARDS.map(({ id, title, blurb, Icon }) => (
             <button
@@ -125,7 +130,11 @@ export function UnifiedSourceComposer({
               aria-checked={false}
               disabled={isBusy}
               onClick={() => pickChoice(id)}
-              className="flex flex-col items-start gap-3 rounded-2xl border border-white/[0.08] bg-zinc-950/40 p-4 text-left transition-all hover:border-violet-400/35 hover:bg-violet-950/20 disabled:opacity-50"
+              className={
+                emphasizeChoices
+                  ? "group flex cursor-pointer flex-col items-start gap-3 rounded-2xl border border-violet-300/35 bg-violet-950/25 p-4 text-left shadow-[0_0_0_1px_rgba(167,139,250,0.12)] transition-colors hover:border-cyan-200/50 hover:bg-violet-900/40 hover:shadow-[0_12px_40px_-16px_rgba(139,92,246,0.85)] disabled:cursor-not-allowed disabled:opacity-50 sm:transition-all sm:hover:-translate-y-0.5"
+                  : "flex flex-col items-start gap-3 rounded-2xl border border-white/[0.08] bg-zinc-950/40 p-4 text-left transition-all hover:border-violet-400/35 hover:bg-violet-950/20 disabled:opacity-50"
+              }
             >
               <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-200">
                 <Icon className="h-4 w-4" aria-hidden />
@@ -213,7 +222,7 @@ export function UnifiedSourceComposer({
                 placeholder="Paste article or YouTube URL"
                 disabled={isBusy}
                 autoFocus
-                className="w-full rounded-xl border border-white/[0.08] bg-black/25 py-2.5 pl-10 pr-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50"
+                className="w-full rounded-xl border border-white/[0.08] bg-black/25 py-2.5 pl-10 pr-3 text-base text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50 sm:text-sm"
               />
             </div>
           </label>
@@ -243,7 +252,7 @@ export function UnifiedSourceComposer({
             placeholder="Paste notes, transcripts, or long-form text…"
             disabled={isBusy}
             autoFocus
-            className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-sm leading-relaxed text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50"
+            className="w-full resize-y rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-base leading-relaxed text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500/40 focus:outline-none focus:ring-1 focus:ring-violet-500/30 disabled:opacity-50 sm:text-sm"
           />
           <p className="text-[11px] text-zinc-600">{charCount} chars · min 100</p>
         </div>

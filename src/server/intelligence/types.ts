@@ -186,8 +186,10 @@ export type AnalysisIntelligenceContext = {
   knowledgeLayerSummary: KnowledgeLayerSummary;
   tokenBudget: TokenBudget;
   adaptivePlan: AdaptiveAnalysisPlan;
-  /** Full document text after cleanText(rawText) — used for learn-card Phase 1. */
+  /** Full document text after plan limits. */
   cleanedText: string;
+  /** Text the summary model actually reads. Learn cards use this, not a narrower window. */
+  analysisSourceText?: string;
   compactedUserPrompt: string;
   analysisLimits?: AnalysisLimitsMeta;
   limitNotice?: string | null;

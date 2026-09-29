@@ -3,6 +3,7 @@
  */
 
 import type { LearnCardOutput } from "@/types/text-analysis";
+import { declarativeCardHeadline, formatWhyCard } from "@/lib/learn/separateLearnCardCopy";
 import { capitalizedPhrases } from "./knowledgeStructure";
 import type { ModeLearnStrategy } from "./modeLearnStrategies";
 
@@ -196,8 +197,10 @@ export function buildSafeLearnTitle(input: {
       return "Why was 3 July more than a sports scandal?";
     }
     if (pattern.includes("timeline") || /\b\d{4}\b/.test(text)) {
-      if (event) return `Why was ${event} a turning point?`;
-      return `What changed after the pivotal moment for ${entity}?`;
+      if (event && !/^\d{4}/.test(event) && event.length <= 42) {
+        return `Why was ${event} a turning point?`;
+      }
+      return declarativeCardHeadline(content).slice(0, LEARN_TITLE_MAX);
     }
     if (/\bconflict|tension|crisis|pressure|versus|rupture\b/i.test(text)) {
       return `What tension defined the ${entity} era?`;
@@ -218,13 +221,20 @@ export function buildSafeLearnTitle(input: {
     return `Why did ${entity} matter beyond sports alone?`;
   }
 
-  if (card.type === "why_it_matters" || pattern.includes("cause")) {
-    return `Why did ${entity} become decisive in this document?`;
+  if (card.type === "why_it_matters" || card.type === "why" || pattern.includes("cause")) {
+    return formatWhyCard(card.title, content)?.title ?? declarativeCardHeadline(content).slice(0, LEARN_TITLE_MAX);
   }
   if (pattern.includes("timeline") || /\b\d{4}\b/.test(text)) {
-    return event
-      ? `What changed after ${event}?`
-      : `What marked the main turning point for ${entity}?`;
+    const namedEvent =
+      event &&
+      event.length <= 42 &&
+      !/^(this event|this point|\d{4}\b)/i.test(event) &&
+      content.toLowerCase().includes(event.toLowerCase().slice(0, 18)) &&
+      /\b(changed|became|abolished|shift|reform|broke|resulted|replaced|failed|turned|ended|began)\b/i.test(
+        content,
+      );
+    if (namedEvent && event) return `What changed after ${event}?`;
+    return declarativeCardHeadline(content).slice(0, LEARN_TITLE_MAX);
   }
   if (/\bconflict|tension|crisis\b/i.test(text)) {
     return `What tension shaped ${entity} during this period?`;
@@ -233,7 +243,9 @@ export function buildSafeLearnTitle(input: {
     return `How did ${entity}'s role transform over time?`;
   }
 
-  return `What is the most important idea about ${entity}?`;
+  const fromContent = declarativeCardHeadline(content).slice(0, LEARN_TITLE_MAX);
+  if (fromContent.split(/\s+/).length >= 4) return fromContent;
+  return `What distinguishes ${entity}?`;
 }
 
 export function validateLearnTitle(
@@ -308,7 +320,9 @@ export function validateQuestionAnswerAlignment(card: LearnCardOutput): boolean 
     );
   }
   if (/^what changed\b|^what happened\b/.test(title)) {
-    return /\b(after|before|during|\d{4}|became|shifted)\b/i.test(content);
+    return /\b(changed|became|abolished|shift|reform|broke|resulted|replaced|failed|turned|ended|began|launched)\b/i.test(
+      content,
+    );
   }
   if (/^what\b/.test(title) && /\bdefined\b/.test(title)) {
     return /\b(is|was|means|refers|characterized)\b/i.test(content);
@@ -337,7 +351,11 @@ export function ensureValidLearnTitle(
     result = validateLearnTitle(safe, { creatorMode });
     regenerated = true;
     if (!result.valid) {
-      result = { valid: true, title: safe.slice(0, LEARN_TITLE_MAX) };
+      const headline = declarativeCardHeadline(card.content).slice(0, LEARN_TITLE_MAX);
+      const headlineCheck = validateLearnTitle(headline, { creatorMode });
+      result = headlineCheck.valid
+        ? headlineCheck
+        : { valid: true, title: headline || safe.slice(0, LEARN_TITLE_MAX) };
     }
   }
 

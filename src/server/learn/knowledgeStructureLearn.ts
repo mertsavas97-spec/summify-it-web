@@ -5,6 +5,7 @@
 import type { AnalysisResult } from "@/server/ai/schemas";
 import type { LearnCardPattern } from "@/types/adaptive-learn";
 import type { KnowledgeStructure } from "./knowledgeStructure";
+import { declarativeCardHeadline } from "@/lib/learn/separateLearnCardCopy";
 import {
   isChronologySensitiveMode,
   isWeakGenericLearnTitle,
@@ -61,25 +62,36 @@ function primaryEntity(structure: KnowledgeStructure, fallback: string): string 
 }
 
 function tensionTitle(entity: string, conflictSnippet?: string): string {
-  const hook = conflictSnippet?.slice(0, 36).replace(/\?+$/, "").trim();
-  if (hook && hook.length > 12) {
-    return `What tension does “${hook}” create for ${entity}?`.slice(0, 72);
+  const hook = conflictSnippet?.trim();
+  if (hook && hook.length >= 16 && hook.length <= 70 && !/[,;:]$/.test(hook)) {
+    const question = `What tension does “${hook}” create for ${entity}?`;
+    if (question.length <= 110 && question.endsWith("?")) return question;
   }
-  return `What institutional or social tension shapes ${entity} in this source?`.slice(0, 72);
+  if (hook) return declarativeCardHeadline(hook);
+  return `What tension shaped ${entity} in this source?`;
 }
 
-function turningPointTitle(moment: string, entity: string): string {
-  const snippet = moment.slice(0, 48).replace(/\?+$/, "").trim();
+function turningPointTitle(moment: string): string {
   if (/\b3\s*july|july\s*3\b/i.test(moment)) {
     return "Why was 3 July more than a sports scandal?";
   }
-  return `Why was ${snippet} a turning point for ${entity}?`.slice(0, 72);
+  return declarativeCardHeadline(moment);
 }
 
 function causalTitle(cause: string, effect: string): string {
-  const c = cause.slice(0, 40).replace(/\?+$/, "");
-  const e = effect.slice(0, 40).replace(/\?+$/, "");
-  return `How did ${c} lead to ${e}?`.slice(0, 72);
+  const causeClean = cause.trim();
+  const effectClean = effect.trim();
+  const question = `How did ${causeClean} lead to ${effectClean}?`;
+  if (
+    question.length <= 110 &&
+    causeClean.length >= 8 &&
+    causeClean.length <= 70 &&
+    effectClean.length >= 8 &&
+    effectClean.length <= 70
+  ) {
+    return question;
+  }
+  return declarativeCardHeadline(`${causeClean} led to ${effectClean}`);
 }
 
 function contrastTitle(a: string, b: string): string {
@@ -125,21 +137,11 @@ export function synthesizeKnowledgeStructureCandidates(
       out.push(
         draft(
           "memory_hook",
-          turningPointTitle(moment, entity),
+          turningPointTitle(moment),
           moment,
           PATTERN_TO_LEARN.timeline_turning_point,
           0.8,
           "Timeline turning points",
-        ),
-      );
-      out.push(
-        draft(
-          "connection",
-          `What changed after this point for ${entity}?`.slice(0, 72),
-          moment,
-          PATTERN_TO_LEARN.historical_significance,
-          0.74,
-          "Historical significance",
         ),
       );
     }

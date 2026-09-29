@@ -4,6 +4,7 @@ import { SeoContentSection } from "@/components/public/SeoContentSection";
 import { FormatWorkflow } from "@/components/public/FormatWorkflow";
 import { FeatureGrid } from "@/components/public/FeatureGrid";
 import { UseCaseSection } from "@/components/public/UseCaseSection";
+import { ComparisonTable } from "@/components/seo/content/ComparisonTable";
 import { FAQSection } from "@/components/public/FAQSection";
 import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { CTASection } from "@/components/public/CTASection";
@@ -56,6 +57,27 @@ export function FormatLandingTemplate({ config }: FormatLandingTemplateProps) {
         subtitle={config.useCases.subtitle}
         cases={config.useCases.cases}
       />
+
+      {config.comparison && (
+        <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight text-white">
+              {config.comparison.title}
+            </h2>
+            {config.comparison.subtitle && (
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                {config.comparison.subtitle}
+              </p>
+            )}
+            <div className="mt-6">
+              <ComparisonTable
+                competitorName={config.comparison.competitorName}
+                rows={config.comparison.rows}
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       <FAQSection items={config.faqs} />
 

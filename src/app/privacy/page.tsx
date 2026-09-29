@@ -8,7 +8,7 @@ export default function PrivacyPage() {
   return (
     <TrustPageLayout
       eyebrow="Privacy"
-      title="Privacy during public beta"
+      title="Privacy"
       lead="Plain-language summary of how data flows through Summify today. We will continue refining this policy as the product evolves."
     >
       <ProductDisclaimer />
@@ -30,9 +30,8 @@ export default function PrivacyPage() {
         </p>
       </section>
       <section>
-        <h2 className="text-base font-semibold text-zinc-200">What we do not do yet</h2>
+        <h2 className="text-base font-semibold text-zinc-200">What we do not do</h2>
         <ul className="mt-2 list-inside list-disc space-y-1.5 text-zinc-400">
-          <li>No user accounts or billing in beta</li>
           <li>No marketed “document library” or long-term cloud storage product</li>
           <li>No selling of your uploaded content</li>
         </ul>

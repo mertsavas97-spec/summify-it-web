@@ -3,6 +3,8 @@
  */
 
 import type { AnalysisResult, LearnCardOutput, TextAnalysisMode } from "@/server/ai/schemas";
+import { repairStudyCard } from "@/lib/learn/separateLearnCardCopy";
+import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { buildLearnKindTargets } from "@/server/intelligence/mode-routing";
 import type { LearnWeightingProfile } from "@/types/modes";
 import { dedupeLearnCandidates } from "./dedupeLearnCards";
@@ -204,8 +206,8 @@ function makeCandidate(
   if (!t || !c || isGeneric(`${t} ${c}`)) return null;
   return {
     kind,
-    title: t.slice(0, 72),
-    content: c.slice(0, 380),
+    title: t,
+    content: c,
     source,
     importance: 0.5,
     entities: [],
@@ -344,11 +346,11 @@ function synthesizeQuizCards(
   for (const insight of insights) {
     const entities = insight.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b/g);
     const subject = entities?.[0] ?? "this source";
-    const question = `What claim does the source make about ${subject}?`;
+    const question = `What does ${subject} explain in this material?`;
     const answer = insight;
     const draft = makeCandidate(
       "quiz",
-      question.slice(0, 56),
+      question,
       `${question}\n---\n${answer}`,
       "synthesized",
     );
@@ -444,18 +446,20 @@ function polishLearnContent(
     text = polishPresentationCardContent(kind, text);
     text = text.replace(/---\s*slide\s+\d+[^-]*---/gi, "").trim();
   }
-  const maxLen = flags.isYoutube || flags.isPresentation ? 240 : 320;
-  return text.length > maxLen ? `${text.slice(0, maxLen)}…` : text;
+  return text;
 }
 
 function toLearnCardOutput(
   candidate: LearnCandidate,
   flags: { isYoutube: boolean; isPresentation: boolean },
-): LearnCardOutput {
+): LearnCardOutput | null {
+  const polished = polishLearnContent(candidate.kind, candidate.content, flags);
+  const separated = repairStudyCard(candidate.kind, candidate.title, polished);
+  if (!separated) return null;
   const base: LearnCardOutput = {
-    type: candidate.kind as LearnCardOutput["type"],
-    title: candidate.title.slice(0, 56),
-    content: polishLearnContent(candidate.kind, candidate.content, flags),
+    type: separated.type as LearnCardOutput["type"],
+    title: separated.title,
+    content: separated.content,
   };
   return candidateToEnrichedOutput(candidate, base);
 }
@@ -551,6 +555,7 @@ function buildLearnIntelligenceCore(
     isPresentation,
     isYoutube: options.isYoutubeTranscript === true,
     structureFamily: options.personaAdaptivePlan?.structureFamily,
+    sourceChars: options.extractedText?.length,
   });
 
   const sourceFirstBuilt = buildSourceFirstLearn({
@@ -570,7 +575,7 @@ function buildLearnIntelligenceCore(
     sourceFirstBuilt.rejectedCardCount,
     sourceFirstBuilt.extractedClaimCount,
   );
-  const useSourceFirstPrimary = sourceFirstValidated.cards.length >= range.min;
+  const useSourceFirstPrimary = sourceFirstValidated.cards.length >= range.target;
 
   if (useSourceFirstPrimary) {
     const progression = applyLearningProgression(sourceFirstValidated.cards, learnStrategy, {
@@ -752,11 +757,13 @@ function buildLearnIntelligenceCore(
   };
 
   const candidateHints = new Map<string, CandidateTraceHint>();
-  const finalCards = selected.map((c, i) => {
+  const finalCards: LearnCardOutput[] = [];
+  selected.forEach((c, i) => {
     const out = toLearnCardOutput(c, outputFlags);
+    if (!out) return;
     const id = out.cardId ?? `learn_${i}_${c.kind}`;
     candidateHints.set(id, { source: c.source, groupTitle: c.groupTitle });
-    return out;
+    finalCards.push(out);
   });
   if (finalCards.length < range.min) {
     const usedTitles = new Set(finalCards.map((c) => c.title.toLowerCase()));
@@ -765,6 +772,7 @@ function buildLearnIntelligenceCore(
       if (finalCards.length >= range.min) break;
       if (usedTitles.has(c.title.toLowerCase())) continue;
       const out = toLearnCardOutput(c, outputFlags);
+      if (!out) continue;
       const id = out.cardId ?? `learn_fill_${i}_${c.kind}`;
       candidateHints.set(id, { source: c.source, groupTitle: c.groupTitle });
       finalCards.push(out);
@@ -875,10 +883,12 @@ function buildLearnIntelligenceCore(
     const usedTitles = new Set(finalOrdered.map((c) => c.title.toLowerCase()));
     for (const insight of result.keyInsights) {
       if (finalOrdered.length >= range.min) break;
+      const separated = repairStudyCard("concept", insight, insight);
+      if (!separated) continue;
       const draft: LearnCardOutput = {
-        type: "why_it_matters",
-        title: insight.slice(0, 80),
-        content: insight.slice(0, 380),
+        type: separated.type as LearnCardOutput["type"],
+        title: separated.title,
+        content: separated.content,
         learnPattern: "cause_effect_chain",
       };
       const { title } = ensureValidLearnTitle(draft, {
@@ -893,6 +903,7 @@ function buildLearnIntelligenceCore(
     }
   }
 
+  finalOrdered = uniqueLearnCards(finalOrdered);
   pipelineCounts.finalOutput = finalOrdered.length;
   const titleValidationDebug = learnTitleValidationDebugStats(titleValidation.titleStats);
 

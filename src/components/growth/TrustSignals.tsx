@@ -1,5 +1,5 @@
-import { Shield, Sparkles, Lock } from "lucide-react";
-import { TRUST_SIGNALS, PUBLIC_BETA_LABEL } from "@/lib/public-copy";
+import { Shield, Lock, Sparkles } from "lucide-react";
+import { TRUST_SIGNALS } from "@/lib/public-copy";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
 
 type TrustSignalsProps = {
@@ -15,10 +15,6 @@ export function TrustSignals({ variant = "compact", className = "" }: TrustSigna
         aria-label="Trust and privacy"
       >
         <li className="flex items-center gap-1">
-          <Sparkles className="h-3 w-3 text-violet-500/60" aria-hidden />
-          {PUBLIC_BETA_LABEL}
-        </li>
-        <li className="flex items-center gap-1">
           <Lock className="h-3 w-3 text-violet-500/60" aria-hidden />
           {TRUST_SIGNALS.noTraining}
         </li>
@@ -32,7 +28,7 @@ export function TrustSignals({ variant = "compact", className = "" }: TrustSigna
       aria-label="Trust and privacy"
     >
       <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-        {PUBLIC_BETA_LABEL}
+        Privacy
       </p>
       <ul className="mt-3 space-y-2.5 text-xs leading-relaxed text-zinc-500">
         <li className="flex gap-2">

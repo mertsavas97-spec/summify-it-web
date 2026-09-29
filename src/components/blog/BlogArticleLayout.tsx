@@ -14,6 +14,7 @@ import {
   getRelatedProductLinks,
 } from "@/lib/blog";
 import { getBlogCategory } from "@/data/blog-categories";
+import { getBlogHeading } from "@/lib/seo";
 import { blogPostJsonLdGraph } from "@/lib/schema";
 import type { BlogPost } from "@/data/blog-posts";
 import Link from "next/link";
@@ -67,7 +68,7 @@ export function BlogArticleLayout({ post, children }: BlogArticleLayoutProps) {
               <span>{post.readingTime}</span>
             </div>
             <h1 className="mt-4 text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">
-              {post.title}
+              {getBlogHeading(post)}
             </h1>
             <p className="mt-4 text-base leading-relaxed text-zinc-400">{post.description}</p>
             {post.tags.length > 0 && (

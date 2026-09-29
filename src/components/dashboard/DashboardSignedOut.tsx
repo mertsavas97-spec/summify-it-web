@@ -13,8 +13,8 @@ export function DashboardSignedOut() {
         Your intelligence library
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-        Sign in to save completed summaries, revisit flashcards, and track usage during public
-        beta. Guests can still run 1 free AI summary without an account.
+        Sign in to save completed summaries, revisit flashcards, and track usage.
+        You can still run one summary without an account.
       </p>
 
       {isSupabaseConfigured() ? (

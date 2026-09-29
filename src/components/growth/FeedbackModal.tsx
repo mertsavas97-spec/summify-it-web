@@ -75,7 +75,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           </button>
         </div>
         <p className="mt-2 text-sm text-zinc-400">
-          Help us improve the public beta. Share what worked, what confused you, or what you wish
+          Help us improve Summify. Share what worked, what confused you, or what you wish
           Summify did better.
         </p>
 

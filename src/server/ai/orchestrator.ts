@@ -14,15 +14,25 @@ import {
   type AnalyzeSourceContext,
 } from "@/server/intelligence";
 import type { ModeRoutingResult } from "@/server/intelligence/mode-routing";
-import { CHUNKED_ANALYSIS_SEGMENT_CHARS } from "@/lib/plans/planLimits";
+import { describeLensCardEmphasis } from "@/server/intelligence/mode-routing";
+import { CHUNKED_ANALYSIS_SEGMENT_CHARS, getPlanLimits } from "@/lib/plans/planLimits";
 import { getLearnCardsGenerationCap } from "@/lib/plan-features";
 import { USER_MESSAGES } from "@/lib/user-messages";
+import { compactPromptInput } from "@/server/intelligence/compactPromptInput";
+import { collectOrderedSourceNotes } from "@/server/intelligence/sourceNotes";
+import { FULL_SOURCE_CHAR_LIMIT } from "@/lib/analysis/sourceCoverage";
 import type { PlanId } from "@/types/plan";
 import { devLog, devWarn } from "@/server/logging";
 import { buildLearnIntelligence } from "@/server/learn";
 import { dedupeAiLearnCardsAgainstAnalysis } from "@/server/learn/dedupeLearnCards";
 import { resolveLearnCardTargets } from "@/server/learn/learnCardTargets";
-import { generateLearnCardsForAnalysis } from "./generateLearnCards";
+import {
+  applyGeneratedLearnCardFloor,
+  enforceKeyInsightFloor,
+} from "@/server/intelligence/sourceOutputQuota";
+import {
+  generateLearnCardsForAnalysis,
+} from "./generateLearnCards";
 import { applyAdaptivePlanPostProcess } from "@/lib/cognition/postProcessAnalysis";
 import {
   classifyProviderFailure,
@@ -37,9 +47,6 @@ import {
   type AnalyzeRunContext,
   type ProviderAttemptRecord,
 } from "./analysis-failure";
-
-/** When AI two-phase learn returns at least this many cards, skip deterministic buildLearnIntelligence. */
-const MIN_AI_LEARN_CARDS = 4;
 
 export type OrchestratorSuccess = {
   result: AnalysisResult;
@@ -78,14 +85,24 @@ function applyLearnIntelligence(
   const plan = intelligence.personaAdaptivePlan;
   const rawAiLearnCards = options?.aiLearnCards ?? [];
   const aiLearnCards = dedupeAiLearnCardsAgainstAnalysis(rawAiLearnCards, result);
+  const range = resolveLearnCardTargets({
+    complexity: intelligence.profile.complexity,
+    summary: result.summary,
+    keyInsightCount: result.keyInsights.length,
+    isPresentation: sourceContext?.sourceKind === "presentation",
+    isYoutube: sourceContext?.sourceKind === "youtube",
+    structureFamily: plan?.structureFamily,
+    sourceChars: intelligence.cleanedText.length,
+  });
+  const floored = applyGeneratedLearnCardFloor(aiLearnCards, range);
 
-  if (aiLearnCards.length >= MIN_AI_LEARN_CARDS) {
-    return { ...result, learnCards: aiLearnCards };
+  if (floored.cards.length > 0) {
+    return { ...result, learnCards: floored.cards };
   }
 
   devLog("[summify.learnCards] buildLearnIntelligence fallback triggered", {
     aiCardCount: aiLearnCards.length,
-    minAiLearnCards: MIN_AI_LEARN_CARDS,
+    cardFloor: range.min,
   });
 
   const resultForBuild: AnalysisResult =
@@ -214,6 +231,7 @@ async function attemptProvider(
               isYoutubeTranscript,
               isPresentation,
               intelligenceModeLabel: modeRouting?.label,
+              intelligenceModeId: modeRouting?.intelligenceModeId,
               modePromptAdjunct: modeRouting?.promptAdjunct,
               cognitionPromptBlock: intelligence.cognitionPromptBlock,
             },
@@ -226,6 +244,7 @@ async function attemptProvider(
               isYoutubeTranscript,
               isPresentation,
               intelligenceModeLabel: modeRouting?.label,
+              intelligenceModeId: modeRouting?.intelligenceModeId,
               modePromptAdjunct: modeRouting?.promptAdjunct,
               cognitionPromptBlock: intelligence.cognitionPromptBlock,
             },
@@ -247,32 +266,49 @@ async function attemptProvider(
 
   try {
     const parsed = parseAndValidateAnalysisResult(raw, { mode });
-    const postProcessed = applyAdaptivePlanPostProcess(parsed, intelligence.personaAdaptivePlan);
+    const adapted = applyAdaptivePlanPostProcess(parsed, intelligence.personaAdaptivePlan);
+    const postProcessed = {
+      ...adapted,
+      keyInsights: enforceKeyInsightFloor({
+        insights: adapted.keyInsights,
+        summary: adapted.summary,
+        sourceChars: intelligence.cleanedText.length,
+      }),
+    };
 
     const range = resolveLearnCardTargets({
       complexity: intelligence.profile.complexity,
       summary: postProcessed.summary,
       keyInsightCount: postProcessed.keyInsights.length,
       isPresentation,
-      isYoutube: isYoutubeTranscript,
-      structureFamily: intelligence.personaAdaptivePlan?.structureFamily,
-    });
+    isYoutube: isYoutubeTranscript,
+    structureFamily: intelligence.personaAdaptivePlan?.structureFamily,
+    sourceChars: intelligence.cleanedText.length,
+  });
 
+    // Deck ceiling is the highest plan cap: a paying plan must never meet
+    // locked previews it already paid for. Free still generates the full set
+    // so the locked remainder can act as the Pro upsell preview.
     const generationCap = getLearnCardsGenerationCap();
-    const cardCount = Math.min(range.target * 1.5, generationCap);
+    const cardCount = Math.min(
+      range.max,
+      generationCap,
+      Math.max(4, Math.round(range.target * 1.15)),
+    );
 
     devLog("[summify.learnCards] orchestrator learn generation", {
       provider,
       rangeTarget: range.target,
       generationCap,
       cardCount,
-      clampedCardCount: Math.max(4, Math.min(20, Math.round(cardCount))),
+      clampedCardCount: Math.max(4, Math.min(30, Math.round(cardCount))),
       structureFamily: intelligence.personaAdaptivePlan?.structureFamily,
     });
 
     const planStrategy = intelligence.personaAdaptivePlan?.learnCardStrategy;
     const strategyHint = [
       mode ? `Analysis mode: ${mode}.` : null,
+      describeLensCardEmphasis(modeRouting),
       planStrategy?.summary,
       planStrategy?.providerTypeEmphasis,
       planStrategy?.titleStyle ? `Title style: ${planStrategy.titleStyle}` : null,
@@ -288,8 +324,10 @@ async function attemptProvider(
 
     const aiLearnCards = await generateLearnCardsForAnalysis({
       provider,
-      compactedContent: intelligence.cleanedText,
+      compactedContent: intelligence.analysisSourceText?.trim() || intelligence.cleanedText,
+      summary: postProcessed.summary,
       cardCount,
+      maxCards: Math.min(range.max, generationCap),
       documentTitle: postProcessed.title,
       isYoutube: isYoutubeTranscript,
       isPresentation,
@@ -337,12 +375,38 @@ export async function runAnalysisOrchestrator(
     );
   }
 
+  const planId = options?.planId ?? "free";
   const intelligence = prepareAnalysisIntelligence(rawText, mode, {
     sourceHint,
     sourceContext,
     modeRouting,
-    planId: options?.planId ?? "free",
+    planId,
   });
+
+  if (
+    getPlanLimits(planId).supportsChunkedAnalysis &&
+    intelligence.cleanedText.length > FULL_SOURCE_CHAR_LIMIT
+  ) {
+    const notes = await collectOrderedSourceNotes(intelligence.cleanedText);
+    if (notes) {
+      const rebuilt = compactPromptInput(
+        intelligence.cleanedText,
+        intelligence.profile,
+        intelligence.knowledgeLayer,
+        intelligence.adaptivePlan,
+        {
+          isYoutubeTranscript: intelligence.analyzeSource?.sourceKind === "youtube",
+          isPresentation: intelligence.analyzeSource?.sourceKind === "presentation",
+          sourceContext: intelligence.analyzeSource,
+          analysisMode: mode,
+          cognitionPromptBlock: intelligence.cognitionPromptBlock,
+          orderedSourceNotes: notes,
+        },
+      );
+      intelligence.compactedUserPrompt = rebuilt.userPrompt;
+      intelligence.analysisSourceText = rebuilt.analysisSourceText;
+    }
+  }
   const attempts: ProviderAttemptRecord[] = [];
 
   if (intelligence.tokenBudget.riskLevel === "high") {

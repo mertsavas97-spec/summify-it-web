@@ -44,28 +44,28 @@ body:has([data-workspace-root]) {
   background-size: 100% 100%, 72px 72px, 72px 72px;
 }
 
-body:has([data-workspace-root]) footer {
+body:has([data-workspace-surface="page"]) footer {
   border-color: rgba(255, 255, 255, 0.035);
   background: rgba(8, 9, 13, 0.92);
   margin-top: auto;
 }
 
-body:has([data-workspace-root]) footer > div {
+body:has([data-workspace-surface="page"]) footer > div {
   max-width: 1180px;
   padding-block: 1.25rem;
 }
 
-body:has([data-workspace-root]) footer > div > .grid {
+body:has([data-workspace-surface="page"]) footer > div > .grid {
   display: none;
 }
 
-body:has([data-workspace-root]) footer > div > p {
+body:has([data-workspace-surface="page"]) footer > div > p {
   margin-top: 0;
   padding-top: 0;
   border-top: none;
 }
 
-body:has([data-workspace-root]) footer > div > p + * {
+body:has([data-workspace-surface="page"]) footer > div > p + * {
   margin-top: 0.5rem;
 }
 
@@ -351,6 +351,22 @@ body:has([data-workspace-root]) footer > div > p + * {
 }
 
 /* Mind map — React Flow dark theme */
+.mindmap-flow,
+.mindmap-flow .react-flow__pane,
+.mindmap-flow .react-flow__viewport,
+.mindmap-flow .react-flow__node,
+.mindmap-flow .mindmap-node-card {
+  /* Touch: pan/pinch inside the canvas, never scroll the page behind it.
+     touch-action is NOT inherited, so every layer down to the card needs it —
+     otherwise a drag that starts on a card scrolls the page instead. */
+  touch-action: none;
+}
+
+.mindmap-flow {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .mindmap-flow .react-flow__pane {
   cursor: grab;
 }
@@ -365,4 +381,91 @@ body:has([data-workspace-root]) footer > div > p + * {
 
 .mindmap-node-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Tap-to-read panel: the text inside scrolls, the page does not. */
+.mindmap-reader {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+.mindmap-reader .overflow-y-auto {
+  touch-action: pan-y;
+}
+
+/* Homepage live-workspace glow. CSS-only drift; no pointer tracking. */
+.home-workspace-glow-blob {
+  animation: home-workspace-glow-drift 10s ease-in-out infinite;
+}
+
+.home-workspace-glow-blob--alt {
+  animation-name: home-workspace-glow-drift-alt;
+  animation-duration: 13s;
+}
+
+.home-workspace-glow-shift[data-paused="true"] .home-workspace-glow-blob {
+  animation-play-state: paused;
+}
+
+@keyframes home-workspace-glow-drift {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  50% {
+    transform: translate3d(calc(-50% + 42px), -22px, 0);
+  }
+}
+
+@keyframes home-workspace-glow-drift-alt {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  50% {
+    transform: translate3d(calc(-50% - 36px), 18px, 0);
+  }
+}
+
+@keyframes home-workspace-glow-drift-sm {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  50% {
+    transform: translate3d(calc(-50% + 8px), -10px, 0);
+  }
+}
+
+@keyframes home-workspace-glow-drift-alt-sm {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  50% {
+    transform: translate3d(calc(-50% - 8px), 8px, 0);
+  }
+}
+
+@media (max-width: 639px) {
+  .home-workspace-glow-blob {
+    animation-name: home-workspace-glow-drift-sm;
+    animation-duration: 14s;
+  }
+
+  .home-workspace-glow-blob--alt {
+    animation-name: home-workspace-glow-drift-alt-sm;
+    animation-duration: 17s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-workspace-glow-blob,
+  .home-workspace-glow-blob--alt {
+    animation: none;
+    transform: translate3d(-50%, 0, 0);
+  }
 }

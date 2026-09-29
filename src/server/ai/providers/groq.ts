@@ -46,6 +46,7 @@ export async function callGroqAnalysis(
     isYoutubeTranscript?: boolean;
     isPresentation?: boolean;
     intelligenceModeLabel?: string;
+    intelligenceModeId?: string;
     modePromptAdjunct?: string;
     cognitionPromptBlock?: string;
   },
@@ -57,6 +58,7 @@ export async function callGroqAnalysis(
     isYoutubeTranscript: promptOptions?.isYoutubeTranscript,
     isPresentation: promptOptions?.isPresentation,
     intelligenceModeLabel: promptOptions?.intelligenceModeLabel,
+    intelligenceModeId: promptOptions?.intelligenceModeId,
     modePromptAdjunct: promptOptions?.modePromptAdjunct,
     cognitionPromptBlock: promptOptions?.cognitionPromptBlock,
   });

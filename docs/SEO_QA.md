@@ -20,7 +20,7 @@ Use this checklist before launch and after major marketing or blog changes.
 ## Open Graph & Twitter
 
 - [ ] Default OG image: `public/og-default.png` at **1200×630**
-- [ ] Absolute OG URL: `https://www.summify.app/og/summify-og-v1.png` (via `siteConfig.ogImage` + `absoluteUrl`)
+- [ ] Absolute OG URL: `https://www.summify.app/og/summify-og-v1.jpg` (via `siteConfig.ogImage` + `absoluteUrl`)
 - [ ] `twitter:card` = `summary_large_image`
 - [ ] `twitter:site` and `twitter:creator` set (`@summifyapp` in `src/lib/seo.ts` — update when handle is confirmed)
 - [ ] Regenerate OG after brand changes: `npm run generate:og`
@@ -62,7 +62,7 @@ npm run generate:og
 
 1. Open `public/og-default.png` — confirm 1200×630 and readable text.
 2. Or: `file public/og-default.png` / Preview dimensions.
-3. Share debugger: [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or [Twitter Card Validator](https://cards-dev.twitter.com/validator) with `https://www.summify.app/og/summify-og-v1.png`.
+3. Share debugger: [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or [Twitter Card Validator](https://cards-dev.twitter.com/validator) with `https://www.summify.app/og/summify-og-v1.jpg`.
 
 ### Verify schema
 

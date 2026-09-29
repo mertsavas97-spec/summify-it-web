@@ -46,10 +46,14 @@ function reserveScore(c: LearnCandidate): number {
 function candidateToOutput(
   c: LearnCandidate,
   index: number,
-  toOutput: (c: LearnCandidate, flags: { isYoutube: boolean; isPresentation: boolean }) => LearnCardOutput,
+  toOutput: (
+    c: LearnCandidate,
+    flags: { isYoutube: boolean; isPresentation: boolean },
+  ) => LearnCardOutput | null,
   flags: { isYoutube: boolean; isPresentation: boolean },
-): LearnCardOutput {
+): LearnCardOutput | null {
   const out = toOutput(c, flags);
+  if (!out) return null;
   return {
     ...out,
     cardId: out.cardId ?? c.cardId ?? `reserve_${index}_${c.kind}`,
@@ -70,7 +74,10 @@ export function refillLearnCardsFromReserve<T extends LearnCardOutput>(input: {
   >;
   learnStrategy: ModeLearnStrategy;
   outputFlags: { isYoutube: boolean; isPresentation: boolean };
-  toOutput: (c: LearnCandidate, flags: { isYoutube: boolean; isPresentation: boolean }) => T;
+  toOutput: (
+    c: LearnCandidate,
+    flags: { isYoutube: boolean; isPresentation: boolean },
+  ) => T | null;
 }): T[] {
   const { range, current, pool, knowledgeStructure, result, learnStrategy, outputFlags, toOutput } =
     input;
@@ -98,7 +105,7 @@ export function refillLearnCardsFromReserve<T extends LearnCardOutput>(input: {
     if (usedKeys.has(key) || usedTitles.has(titleKey)) continue;
 
     const card = candidateToOutput(c, i, toOutput, outputFlags);
-    if (isWeakGenericLearnTitle(card.title)) continue;
+    if (!card || isWeakGenericLearnTitle(card.title)) continue;
 
     out.push(card as T);
     usedKeys.add(cognitiveQuestionKeyFromOutput(card));

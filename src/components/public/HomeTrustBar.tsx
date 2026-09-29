@@ -15,10 +15,10 @@ const ITEMS: TrustItem[] = [
 
 export function HomeTrustBar() {
   return (
-    <section className="border-b border-white/[0.04] px-4 pb-6 pt-0 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
+    <section className="border-b border-white/[0.04] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-6xl justify-center">
         <ul
-          className="grid gap-3 sm:grid-cols-3"
+          className="grid w-full max-w-4xl gap-3 sm:grid-cols-3"
           aria-label="Product trust highlights"
         >
           {ITEMS.map((item) => (

@@ -227,7 +227,7 @@ export function AnalysisQuizSession({
   const wasCorrect = selectedKey === active.correctOptionKey;
 
   return (
-    <section className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-3 sm:p-6">
+    <section className="min-w-0 max-w-full overflow-x-clip rounded-2xl border border-white/[0.08] bg-gradient-to-b from-zinc-900/80 to-zinc-950/90 p-3 sm:p-6">
       <div className="flex min-w-0 items-center justify-between gap-3 text-xs text-zinc-500">
         <span className="shrink-0 font-semibold uppercase tracking-wider text-violet-300/80">
           Quiz
@@ -239,7 +239,7 @@ export function AnalysisQuizSession({
 
       {phase === "question" ? (
         <>
-          <p className="mt-4 break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere] sm:text-xl">
+          <p className="mt-4 min-w-0 whitespace-pre-wrap break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere] sm:text-xl">
             {active.question}
           </p>
           <div className="mt-5 grid min-w-0 gap-2">
@@ -251,7 +251,7 @@ export function AnalysisQuizSession({
                 className="flex min-w-0 items-start gap-2 rounded-xl border border-white/[0.08] bg-zinc-950/70 px-3 py-3 text-left text-sm text-zinc-200 transition-colors hover:border-violet-500/35 hover:bg-violet-950/20 sm:px-4"
               >
                 <span className="shrink-0 font-semibold text-violet-300/90">{opt.key}.</span>
-                <span className="min-w-0 break-words [overflow-wrap:anywhere]">{opt.text}</span>
+                <span className="min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{opt.text}</span>
               </button>
             ))}
           </div>
@@ -285,10 +285,7 @@ export function AnalysisQuizSession({
             <p className="mt-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
               Explanation
             </p>
-            <div
-              className="mt-2 max-h-[40vh] overflow-y-auto pr-1 [overflow-wrap:anywhere]"
-              data-quiz-explanation
-            >
+            <div className="mt-2 min-w-0 [overflow-wrap:anywhere]" data-quiz-explanation>
               <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-zinc-300">
                 {active.explanation}
               </p>

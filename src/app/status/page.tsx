@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Status",
-  description: "Summify public beta service status.",
+  description: "Summify service status.",
   path: "/status",
   noIndex: true,
 });
@@ -32,7 +32,7 @@ export default function StatusPage() {
   return (
     <div className="mx-auto max-w-lg px-4 py-12 sm:px-6 sm:py-16">
       <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-400/80">
-        Public beta
+        Status
       </p>
       <h1 className="mt-2 text-2xl font-semibold text-white">Service status</h1>
       <p className="mt-2 text-sm text-zinc-500">
@@ -50,7 +50,7 @@ export default function StatusPage() {
           {data.status}
         </p>
         <p className="mt-2 text-[11px] text-zinc-600">
-          Summify is in public beta — accounts and billing are not live.
+          Live check for analysis and transcripts.
         </p>
       </div>
 

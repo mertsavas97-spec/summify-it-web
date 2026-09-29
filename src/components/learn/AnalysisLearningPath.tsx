@@ -6,9 +6,11 @@ import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
 import { LearningPhaseNav } from "@/components/learn/LearningPhaseNav";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
+import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
 import type { PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
 import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
+import { quizQuestionTargetForChars } from "@/server/intelligence/sourceOutputQuota";
 import type { AnalysisResult, LearnCardOutput } from "@/types/text-analysis";
 import type { PlanId } from "@/types/plan";
 
@@ -22,6 +24,8 @@ type AnalysisLearningPathProps = {
   isPaidActive?: boolean;
   intelligenceModeId?: string;
   sourceType?: string | null;
+  /** Transcript/source length — sizes the quiz (same bands as cards/insights). */
+  sourceChars?: number | null;
   practicePersisted?: boolean;
   hasLearnCards?: boolean;
   autoStart?: boolean;
@@ -44,6 +48,7 @@ export function AnalysisLearningPath({
   isPaidActive = false,
   intelligenceModeId = "general-summary",
   sourceType = null,
+  sourceChars = null,
   practicePersisted = true,
   hasLearnCards = true,
   autoStart = false,
@@ -61,9 +66,11 @@ export function AnalysisLearningPath({
   );
   const [sessionKey, setSessionKey] = useState(0);
 
+  const cards = useMemo(() => uniqueLearnCards(learnCards), [learnCards]);
+
   const cardAccess = useMemo(
-    () => getPracticeCardAccessForPlan(entitlementPlanId, learnCards),
-    [entitlementPlanId, learnCards],
+    () => getPracticeCardAccessForPlan(entitlementPlanId, cards),
+    [entitlementPlanId, cards],
   );
 
   const practiceCards = useMemo(
@@ -91,16 +98,16 @@ export function AnalysisLearningPath({
           sourceTrace: c.sourceTrace,
           recallDifficulty: c.recallDifficulty,
         })),
-        maxQuestions: cardAccess.isLimited ? 5 : 6,
+        maxQuestions: quizQuestionTargetForChars(sourceChars),
         intelligenceModeId,
       }),
-    [analysisContent, cardAccess.accessibleCards, cardAccess.isLimited, intelligenceModeId],
+    [analysisContent, cardAccess.accessibleCards, intelligenceModeId, sourceChars],
   );
 
   const audioInput = useMemo(
     () =>
       buildAudioStudyInputFromResult(
-        { ...analysisContent, learnCards },
+        { ...analysisContent, learnCards: cards },
         {
           sourceType,
           intelligenceMode: intelligenceModeId,
@@ -110,7 +117,7 @@ export function AnalysisLearningPath({
       ),
     [
       analysisContent,
-      learnCards,
+      cards,
       sourceType,
       intelligenceModeId,
       sourceKindLabel,

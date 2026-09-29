@@ -1,9 +1,10 @@
 import type { AnalysisResult, LearnCardOutput } from "./schemas";
 import { LEARN_CARD_OUTPUT_TYPES } from "./schemas";
 import type { TextAnalysisMode } from "./schemas";
+import { stripAnalysisTimecodes } from "@/lib/analysis/stripTimecodes";
 
 const LIMITS = {
-  keyInsights: 6,
+  keyInsights: 12,
   risksOrWarnings: 5,
   actionItems: 6,
   learnCards: 8,
@@ -290,7 +291,23 @@ export function normalizeAnalysisResult(
   };
 
   const deduped = crossSectionDedupe(raw, raw);
-  return repairEmptySections(deduped, raw);
+  return stripTimecodesFromResult(repairEmptySections(deduped, raw));
+}
+
+function stripTimecodesFromResult(result: AnalysisResult): AnalysisResult {
+  return {
+    ...result,
+    title: stripAnalysisTimecodes(result.title),
+    summary: stripAnalysisTimecodes(result.summary),
+    keyInsights: result.keyInsights.map(stripAnalysisTimecodes).filter(Boolean),
+    risksOrWarnings: result.risksOrWarnings.map(stripAnalysisTimecodes).filter(Boolean),
+    actionItems: result.actionItems.map(stripAnalysisTimecodes).filter(Boolean),
+    learnCards: result.learnCards.map((card) => ({
+      ...card,
+      title: stripAnalysisTimecodes(card.title),
+      content: stripAnalysisTimecodes(card.content),
+    })),
+  };
 }
 
 export function isUsableAnalysisCore(result: AnalysisResult): boolean {

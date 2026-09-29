@@ -743,6 +743,7 @@ export function UploadWorkspace({
   );
   /** Always the latest lens for analyze calls — avoids stale closure after setState. */
   const analysisModeRef = useRef(analysisMode);
+  // eslint-disable-next-line react-hooks/refs
   analysisModeRef.current = analysisMode;
   const searchParams = useSearchParams();
   const [learningExperience, setLearningExperience] = useState<LearningExperienceId>(() => {
@@ -1721,18 +1722,31 @@ export function UploadWorkspace({
           }
         : null);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (pending.inputMode) setInputMode(pending.inputMode);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFileName(pending.fileName);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSourceUrl(pending.sourceUrl);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (pending.extractStatus) setExtractStatus(pending.extractStatus as UploadExtractStatus);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExtractionMeta((pending.extractionMeta as ExtractionMetadata | null) ?? null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRawText(pending.rawText ?? "");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (pending.analysisMode) setAnalysisMode(pending.analysisMode as IntelligenceModeId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (pending.rawText?.trim() || pending.inputMode === "text") setShowTextComposer(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (intelligence) setAnalysisIntelligence(intelligence);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (injected) setInjectedAnalysis(injected);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (result) setLatestAnalysisResult(result);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLatestSavedAnalysisId(pending.analysisId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasAnalysisResult(Boolean(result || injected));
 
     const timeoutId = window.setTimeout(() => {

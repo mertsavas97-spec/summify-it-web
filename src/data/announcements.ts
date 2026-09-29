@@ -17,9 +17,9 @@ export type Announcement = {
 export const ANNOUNCEMENTS: Announcement[] = [
   {
     id: "public-beta-2026",
-    active: true,
+    active: false,
     priority: 10,
-    message: "Public beta is live — analyze PDFs, decks, videos, and articles for free.",
+    message: "Turn PDFs, decks, videos, and articles into structured summaries and Learn cards.",
     link: { href: "/upload", label: "Open workspace" },
   },
   {

@@ -84,6 +84,56 @@ export function assertModeIsRunnable(routing: ModeRoutingResult): void {
   // Locked catalog lenses are runnable when the caller's plan unlocks them (canAccessMode).
 }
 
+/** How a lens's learn weighting is expressed to the Phase-2 card writer. */
+const LENS_CARD_KIND_PHRASE: Record<LearnCardKind, string> = {
+  concept: "concept / definition cards",
+  why_it_matters: "why and cause-effect cards",
+  memory_hook: "memory-hook cards",
+  quiz: "recall quiz cards",
+  connection: "connection cards linking two ideas",
+  misconception: "misconception cards",
+};
+
+const LENS_KIND_ORDER: LearnCardKind[] = [
+  "concept",
+  "why_it_matters",
+  "connection",
+  "misconception",
+  "memory_hook",
+  "quiz",
+];
+
+/**
+ * Turn a lens's `learnWeighting` into one instruction the flashcard writer can
+ * act on: which card types this lens wants and which it should use sparingly.
+ * Returns undefined when the weighting is flat (nothing worth saying).
+ */
+export function describeLensCardEmphasis(
+  routing?: Pick<ModeRoutingResult, "label" | "learnWeighting"> | null,
+): string | undefined {
+  if (!routing) return undefined;
+  const entries = LENS_KIND_ORDER.map((kind) => ({
+    kind,
+    weight: routing.learnWeighting[kind] ?? 1,
+  }));
+  const prioritize = entries.filter((e) => e.weight >= 1.15);
+  const sparingly = entries.filter((e) => e.weight <= 0.7);
+  if (prioritize.length === 0 && sparingly.length === 0) return undefined;
+
+  const parts: string[] = [];
+  if (prioritize.length > 0) {
+    parts.push(
+      `prioritize ${prioritize.map((e) => LENS_CARD_KIND_PHRASE[e.kind]).join(", ")}`,
+    );
+  }
+  if (sparingly.length > 0) {
+    parts.push(
+      `use ${sparingly.map((e) => LENS_CARD_KIND_PHRASE[e.kind]).join(", ")} sparingly`,
+    );
+  }
+  return `Card type emphasis for the "${routing.label}" lens: ${parts.join("; ")}. Write at least one card of each prioritized type when the inventory supports it, and mix the types — do not fill the deck with one kind.`;
+}
+
 /** Build learn card kind targets from family + per-mode weighting. */
 export function buildLearnKindTargets(
   family: TextAnalysisMode,

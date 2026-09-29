@@ -25,6 +25,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `$skill` -> `.codex/skills/<name>/SKILL.md`
 - Domain skill -> `.agents/skills/<name>/SKILL.md`
 - Proje skill -> `.agents/skills/<project>-*/SKILL.md` (varsa)
+- **Hallmark** (`hallmark audit|redesign|study`) -> `.agents/skills/hallmark/SKILL.md` + scope rule `.cursor/rules/hallmark-summify.mdc`
+  - Marketing/public UI only. Never touch upload/analyze/learn/audio/podcast pipelines.
 
 ## Verification (QA Gate - zorunlu)
 

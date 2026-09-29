@@ -10,6 +10,7 @@ import type {
   LearnSourceTraceConfidence,
   LearnSourceTraceType,
 } from "@/types/adaptive-learn";
+import { declarativeCardHeadline } from "@/lib/learn/separateLearnCardCopy";
 import type { KnowledgeStructure } from "./knowledgeStructure";
 import { capitalizedPhrases } from "./knowledgeStructure";
 import type { ModeLearnStrategy } from "./modeLearnStrategies";
@@ -476,17 +477,19 @@ function extractClaims(input: BuildSourceFirstLearnInput): SourceLearningClaim[]
   return claims;
 }
 
-function specificEventLabel(claim: SourceLearningClaim): string {
+function specificEventLabel(claim: SourceLearningClaim, documentTitle?: string): string | null {
   if (/\b3\s*july|july\s*3\b/i.test(claim.text)) return "3 July";
-  const range = claim.text.match(/\b(?:19|20)\d{2}\s*[–-]\s*(?:19|20)\d{2}\b/);
-  if (range) return range[0];
-  const year = claim.text.match(/\b(19|20)\d{2}\b/);
-  if (year && claim.text.length > 60) {
-    const snippet = claim.text.slice(0, 72).replace(/\?+$/, "");
-    return snippet;
-  }
-  if (claim.entities[0]) return claim.entities[0];
-  return "this event";
+  const named = claim.entities.find(
+    (entity) =>
+      entity.length >= 4 &&
+      entity.length <= 42 &&
+      !/^(The|This|Period|Source|Story)$/i.test(entity) &&
+      !/^(19|20)\d{2}$/.test(entity),
+  );
+  if (!named) return null;
+  const doc = documentTitle?.trim().toLowerCase() ?? "";
+  if (doc && doc.includes(named.toLowerCase()) && named.split(/\s+/).length >= 3) return null;
+  return named;
 }
 
 function titleFromClaim(claim: SourceLearningClaim, documentTitle?: string): string | null {
@@ -504,15 +507,27 @@ function titleFromClaim(claim: SourceLearningClaim, documentTitle?: string): str
       if (/\b3\s*july|july\s*3\b/i.test(claim.text)) {
         return "Why was 3 July more than a sports scandal?";
       }
-      return `Why was ${specificEventLabel(claim)} a turning point?`;
+      {
+        const event = specificEventLabel(claim, documentTitle);
+        return event
+          ? `Why was ${event} a turning point?`
+          : declarativeCardHeadline(claim.text);
+      }
     case "cause_effect": {
       const parts = claim.text.split(/\b(?:because|led to|resulted in|therefore|thus)\b/i);
-      const cause = (parts[0] ?? claim.text).slice(0, 50).replace(/\?+$/, "").trim();
-      const effect = (parts[1] ?? "").slice(0, 50).replace(/\?+$/, "").trim();
-      if (cause.length > 8 && effect.length > 8) {
-        return `How did ${cause} lead to ${effect}?`.slice(0, LEARN_TITLE_MAX);
+      const cause = (parts[0] ?? claim.text).replace(/\?+$/, "").trim();
+      const effect = (parts[1] ?? "").replace(/\?+$/, "").trim();
+      const question = `How did ${cause} lead to ${effect}?`;
+      if (
+        cause.length > 8 &&
+        cause.length <= 70 &&
+        effect.length > 8 &&
+        effect.length <= 70 &&
+        question.length <= LEARN_TITLE_MAX
+      ) {
+        return question;
       }
-      return `How did ${subject} shape what happened next?`;
+      return declarativeCardHeadline(claim.text);
     }
     case "transformation":
       if (/\bcoexist|success.*crisis|sporting.*politic/i.test(claim.text)) {
@@ -528,12 +543,16 @@ function titleFromClaim(claim: SourceLearningClaim, documentTitle?: string): str
       }
       return `What tension shaped ${subject}?`;
     case "timeline": {
-      const event = specificEventLabel(claim);
-      if (/^\d{4}$/.test(event.trim())) return null;
-      if (/\b(?:19|20)\d{2}\s*[–-]\s*(?:19|20)\d{2}\b/.test(claim.text)) {
-        return `What changed between ${event}?`;
+      const event = specificEventLabel(claim, documentTitle);
+      if (
+        event &&
+        /\b(changed|became|abolished|shift|reform|broke|resulted|failed|turned|ended|began)\b/i.test(
+          claim.text,
+        )
+      ) {
+        return `What changed after ${event}?`;
       }
-      return `What changed after ${event}?`;
+      return declarativeCardHeadline(claim.text);
     }
     case "key_entity":
       return `Why was ${subject} important in this source?`;
@@ -545,8 +564,10 @@ function titleFromClaim(claim: SourceLearningClaim, documentTitle?: string): str
       return `What decision or tradeoff does the source highlight for ${subject}?`;
     case "definition":
       return `What does ${subject} mean in this context?`;
-    case "key_event":
-      return `Why did ${specificEventLabel(claim)} matter?`;
+    case "key_event": {
+      const event = specificEventLabel(claim, documentTitle);
+      return event ? `Why did ${event} matter?` : declarativeCardHeadline(claim.text);
+    }
     case "thesis":
       if (/\bmore than\b.*\b(club|team|institution)\b/i.test(claim.text)) {
         return `Why does the source frame ${subject} as more than a sports club?`;

@@ -102,7 +102,7 @@ export function sanitizeCmsBlogHtml(html: string): string {
     ],
     allowedAttributes: {
       a: ["href", "target", "rel"],
-      img: ["src", "alt", "width", "height", "loading"],
+      img: ["src", "alt", "width", "height", "loading", "decoding"],
     },
     allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesByTag: {
@@ -132,6 +132,7 @@ export function sanitizeCmsBlogHtml(html: string): string {
           if (value) safeAttributes[name] = value;
         }
         safeAttributes.loading = attribs.loading?.trim() || "lazy";
+        safeAttributes.decoding = "async";
         return { tagName: "img", attribs: safeAttributes };
       },
     },

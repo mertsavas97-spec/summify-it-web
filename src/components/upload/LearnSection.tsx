@@ -4,10 +4,15 @@ import { Badge } from "@/components/ui/Badge";
 import { LockedLearnCardPreview } from "@/components/learn/LockedLearnCardPreview";
 import { formatNumber } from "@/lib/format-number";
 import { getLearnModeHelperText, getLearnModeLabel } from "@/lib/learn-mode-copy";
-import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
+import {
+  getPracticeCardAccessForPlan,
+  lockedFlashcardUpsellLabel,
+  toLockedLearnPreview,
+} from "@/lib/learn/practiceCardAccess";
 import type { AnalysisResult, LearnCardOutput } from "@/types/text-analysis";
 import type { IntelligenceModeId } from "@/types/modes";
 import type { PlanId } from "@/types/plan";
+import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { LearnCardItem } from "./LearnCardItem";
 
 const KIND_LABELS: Partial<Record<LearnCardOutput["type"], string>> = {
@@ -103,15 +108,9 @@ type LearnSectionProps = {
 };
 
 export function LearnSection({ cards, modeId, entitlementPlanId = "free" }: LearnSectionProps) {
-  const access = getPracticeCardAccessForPlan(entitlementPlanId, cards);
-  const displayAccessible =
-    access.isLimited && cards.some((c) => c.isLockedPreview)
-      ? cards.filter((c) => !c.isLockedPreview)
-      : access.accessibleCards;
-  const displayLocked =
-    access.isLimited && cards.some((c) => c.isLockedPreview)
-      ? cards.filter((c) => c.isLockedPreview)
-      : access.lockedCards;
+  const access = getPracticeCardAccessForPlan(entitlementPlanId, uniqueLearnCards(cards));
+  const displayAccessible = access.accessibleCards;
+  const displayLocked = access.lockedCards.map(toLockedLearnPreview);
 
   const kindCounts = countByKind(displayAccessible);
   const badges = Object.entries(kindCounts)
@@ -144,18 +143,14 @@ export function LearnSection({ cards, modeId, entitlementPlanId = "free" }: Lear
           </div>
           <div className="shrink-0 rounded-lg border border-white/[0.08] bg-zinc-950/70 px-2.5 py-1.5 text-[10px]">
             <span className="font-semibold tabular-nums text-violet-300/90">
-              {formatNumber(access.accessibleCount)}
+              {formatNumber(access.isLimited ? access.accessibleCount : access.totalCount)}
             </span>{" "}
-            <span className="text-zinc-500">available</span>
+            <span className="text-zinc-500">{access.isLimited ? "open" : "cards"}</span>
             {access.isLimited ? (
-              <p className="mt-0.5 font-medium text-violet-300/70">
-                +{access.lockedCount} more with Pro
+              <p className="mt-1 inline-flex rounded-full border border-amber-300/50 bg-amber-400/15 px-2 py-0.5 font-semibold text-amber-50 shadow-[0_0_16px_-6px_rgba(251,191,36,0.9)]">
+                {lockedFlashcardUpsellLabel(access.lockedCount)}
               </p>
-            ) : (
-              <p className="mt-0.5 text-zinc-600">
-                of {formatNumber(access.totalCount)} {access.totalCount === 1 ? "card" : "cards"}
-              </p>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -178,12 +173,14 @@ export function LearnSection({ cards, modeId, entitlementPlanId = "free" }: Lear
         {renderAccessibleCards(displayAccessible, "open")}
 
         {displayLocked.length > 0 ? (
-          <div className="space-y-3 border-t border-white/[0.06] pt-4" data-learn-locked-previews>
+          <div
+            className="space-y-3 rounded-xl border border-amber-300/35 bg-amber-400/[0.04] p-3"
+            data-learn-locked-previews
+          >
             <ul className="space-y-2">
               {displayLocked.map((card, i) => (
                 <LockedLearnCardPreview
-                  key={`locked-${card.cardId ?? card.title}-${i}`}
-                  card={card}
+                  key={`locked-${card.cardId ?? i}`}
                   index={i}
                   lockedCount={access.lockedCount}
                 />

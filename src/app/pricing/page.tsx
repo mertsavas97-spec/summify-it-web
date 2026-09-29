@@ -6,7 +6,6 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { getOptionalUser } from "@/lib/auth";
 import { isEduEmail } from "@/lib/auth/edu-email";
 import { getBillingStatusCopy } from "@/lib/billing/provider";
-import { PRICING_BETA_NOTE } from "@/lib/public-copy";
 import { pageSeo } from "@/lib/page-metadata";
 import { pricingPageJsonLd } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -32,15 +31,12 @@ export default async function PricingPage() {
         as="h1"
         eyebrow="Pricing"
         title="Plans for every workflow"
-        description="Choose the Summify workspace tier that matches your learning and document intelligence workflow."
+        description="Free covers daily summaries and study cards. Pro adds unlimited audio lessons, podcasts, and every lens."
       />
 
       <p className="mx-auto mt-4 max-w-2xl text-center text-xs leading-relaxed text-zinc-500">
-        {PRICING_BETA_NOTE}
-      </p>
-      <p className="mx-auto mt-2 max-w-2xl text-center text-[11px] leading-relaxed text-zinc-600">
-        Scholar checkout is available with a school email (.edu). Sign in with your student address
-        to unlock Start Scholar.
+        Scholar is the student plan and needs a school email (.edu). Sign in with that address to
+        start Scholar checkout.
       </p>
 
       <PricingSection billing={billing} scholarCheckoutEligible={scholarCheckoutEligible} />
@@ -67,14 +63,14 @@ export default async function PricingPage() {
             ]
           : billing.provider === "none"
             ? [
-                { label: "Public beta", sub: "Core access unchanged" },
-                { label: "Checkout paused", sub: "Billing coming soon" },
-                { label: "No card required", sub: "Try the workspace free" },
+                { label: "Checkout paused", sub: "Workspace stays open" },
+                { label: "Free tier", sub: "Daily summaries, no card" },
+                { label: "Pro", sub: "Full audio and every lens" },
               ]
             : [
-                { label: "Provider-neutral", sub: "Checkout via billing API" },
                 { label: "Secure payments", sub: "Handled by your provider" },
-                { label: "Beta access", sub: "current access preserved" },
+                { label: "Cancel anytime", sub: "Manage from your account" },
+                { label: "Pro", sub: "Full audio and every lens" },
               ]
         ).map((item) => (
           <div

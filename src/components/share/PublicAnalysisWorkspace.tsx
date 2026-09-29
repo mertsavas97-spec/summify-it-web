@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { MindMapSkeleton } from "@/components/mindmap/MindMapSkeleton";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
+import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { LearnCardItem } from "@/components/upload/LearnCardItem";
 import {
   PublicShareAudioLesson,
@@ -15,7 +16,11 @@ import type { IntelligenceModeId } from "@/types/modes";
 import type { AudioStudyMetadata } from "@/types/audio-study";
 import type { PodcastDiscussionMetadata } from "@/lib/podcast/podcast-types";
 import { getModeResultSectionLabels } from "@/lib/mode-result-presentation";
-
+import {
+  highlightSummaryParagraphs,
+  splitSummaryParagraphs,
+} from "@/lib/analysis/highlightSummary";
+import { stripAnalysisTimecodes } from "@/lib/analysis/stripTimecodes";
 type Tab = "audio" | "podcast" | "summary" | "learn" | "mindmap";
 
 type PublicAnalysisWorkspaceProps = {
@@ -100,19 +105,42 @@ export function PublicAnalysisWorkspace({
         {tab === "summary" && (
           <div className="divide-y divide-white/[0.04]">
             <CollapsibleSection title={labels.summary} defaultOpen>
-              <p className="max-w-prose text-sm leading-[1.7] text-zinc-300">{result.summary}</p>
+              <div className="max-w-prose space-y-3.5">
+                {highlightSummaryParagraphs(
+                  splitSummaryParagraphs(result.summary),
+                  result.keyInsights,
+                ).map((parts, index) => (
+                  <p
+                    key={`summary-p-${index}`}
+                    className="break-words text-sm leading-[1.75] text-zinc-300 [overflow-wrap:anywhere]"
+                  >
+                    {parts.map((part, partIndex) =>
+                      part.highlight ? (
+                        <mark
+                          key={`summary-h-${index}-${partIndex}`}
+                          className="rounded-sm bg-violet-400/15 px-0.5 font-semibold text-zinc-100 [box-decoration-break:clone]"
+                        >
+                          {part.text}
+                        </mark>
+                      ) : (
+                        <span key={`summary-t-${index}-${partIndex}`}>{part.text}</span>
+                      ),
+                    )}
+                  </p>
+                ))}
+              </div>
             </CollapsibleSection>
             <CollapsibleSection title={labels.keyInsights} count={result.keyInsights.length} defaultOpen>
-              <InsightList items={result.keyInsights} />
+              <InsightList items={result.keyInsights.map(stripAnalysisTimecodes)} />
             </CollapsibleSection>
             {result.risksOrWarnings.length > 0 ? (
               <CollapsibleSection title={labels.risks} count={result.risksOrWarnings.length}>
-                <InsightList items={result.risksOrWarnings} />
+                <InsightList items={result.risksOrWarnings.map(stripAnalysisTimecodes)} />
               </CollapsibleSection>
             ) : null}
             {result.actionItems.length > 0 ? (
               <CollapsibleSection title={labels.actions} count={result.actionItems.length}>
-                <InsightList items={result.actionItems} />
+                <InsightList items={result.actionItems.map(stripAnalysisTimecodes)} />
               </CollapsibleSection>
             ) : null}
           </div>
@@ -121,7 +149,7 @@ export function PublicAnalysisWorkspace({
         {tab === "learn" &&
           (result.learnCards.length > 0 ? (
             <ul className="space-y-3">
-              {result.learnCards.map((card: LearnCardOutput, index) => (
+              {uniqueLearnCards(result.learnCards).map((card: LearnCardOutput, index) => (
                 <li key={`${card.type}-${card.title}-${index}`}>
                   <LearnCardItem card={card} />
                 </li>
@@ -143,7 +171,7 @@ function InsightList({ items }: { items: string[] }) {
       {items.map((item) => (
         <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-zinc-400">
           <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-violet-400/80" aria-hidden />
-          <span>{item}</span>
+          <span className="min-w-0 break-words [overflow-wrap:anywhere]">{item}</span>
         </li>
       ))}
     </ul>

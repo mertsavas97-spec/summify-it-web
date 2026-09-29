@@ -418,15 +418,51 @@ export function parseTranscriptPayload(data: unknown): {
   return { segments: [], responseShape: shape, apiError: extractApiErrorMessage(obj) };
 }
 
+function readTitleString(value: unknown): string {
+  return typeof value === "string" ? decodeHtmlEntities(value).trim() : "";
+}
+
 function parseTitle(data: unknown): string | undefined {
   if (!data || typeof data !== "object") return undefined;
   const obj = data as Record<string, unknown>;
-  const raw =
-    (typeof obj.title === "string" ? obj.title : "") ||
-    (typeof obj.videoTitle === "string" ? obj.videoTitle : "") ||
-    (typeof obj.video_title === "string" ? obj.video_title : "");
-  const title = decodeHtmlEntities(raw.trim());
-  return title || undefined;
+  const nested = [obj.meta, obj.video, obj.videoDetails, obj.data].filter(
+    (item): item is Record<string, unknown> => Boolean(item) && typeof item === "object",
+  );
+  const candidates = [
+    obj.title,
+    obj.videoTitle,
+    obj.video_title,
+    obj.name,
+    ...nested.flatMap((item) => [item.title, item.videoTitle, item.video_title, item.name]),
+  ];
+  for (const candidate of candidates) {
+    const title = readTitleString(candidate);
+    if (title) return title;
+  }
+  return undefined;
+}
+
+/** Public oEmbed title. Transcript APIs often omit the video name. */
+async function fetchYouTubeOEmbedTitle(videoId: string): Promise<string | undefined> {
+  const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+  const endpoint = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(watchUrl)}`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4_000);
+  try {
+    const response = await fetch(endpoint, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) return undefined;
+    const payload = (await response.json()) as { title?: unknown };
+    const title = readTitleString(payload.title);
+    return title || undefined;
+  } catch {
+    return undefined;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function parseDurationMinutes(data: unknown, segments: TranscriptSegment[]): number | undefined {
@@ -808,7 +844,7 @@ export async function extractFromYouTube(
   const applied = applyPlanDocumentLimits(cleaned, limits);
 
   const profile = profileExtractedText(cleaned);
-  const title = parseTitle(payload);
+  const title = parseTitle(payload) ?? (await fetchYouTubeOEmbedTitle(videoId));
   const estimatedDurationMinutes = parseDurationMinutes(payload, segments);
   const hasTimestamps = segments.some((s) => s.startSeconds !== undefined);
   const importantMoments = hasTimestamps ? buildImportantMoments(segments) : undefined;

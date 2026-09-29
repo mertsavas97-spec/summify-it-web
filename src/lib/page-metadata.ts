@@ -35,9 +35,9 @@ export const pageSeo = {
   }),
 
   summarizePdf: buildPageMetadata({
-    title: "AI PDF Summarizer — Summarize PDFs Instantly",
+    title: "PDF Summarizer — Free AI Summary Online",
     description:
-      "Summarize any PDF with AI in seconds. Structured summary, key insights, flashcards, and quiz — no install required. Free to try. Upload your PDF →",
+      "PDF summarizer for papers, reports, and textbooks. Get a structured AI summary, key insights, and flashcards in minutes. Free to try — upload your PDF now.",
     path: "/summarize-pdf",
     keywords: [
       "pdf summarizer",
@@ -64,9 +64,9 @@ export const pageSeo = {
   }),
 
   summarizePowerpoint: buildPageMetadata({
-    title: "PowerPoint Summarizer AI — Summarize PPTX Decks Online",
+    title: "PowerPoint Summarizer for PPT & PPTX Decks",
     description:
-      "Upload a PowerPoint (.pptx) and get an AI slide summary — narrative, themes, key insights, and study cards. Free PPTX summarizer. Try now →",
+      "PowerPoint summarizer to summarize PPT and PPTX decks online. Pull slide themes, key points, and study cards. Free to try — upload your deck now.",
     path: "/summarize-powerpoint",
     keywords: [
       "powerpoint summarizer",
@@ -79,11 +79,12 @@ export const pageSeo = {
   }),
 
   summarizeWebArticles: buildPageMetadata({
-    title: "Web Article Summarizer AI — Paste a URL, Get Insights",
+    title: "Summarize Web Articles Online in Minutes",
     description:
-      "Paste any article URL for an AI summary with key insights, flashcards, and quiz. Fast web article summarizer — free to try.",
+      "Summarize web articles online from any public URL. Get key points, insights, and study cards in minutes. Free to try — paste a link and start.",
     path: "/summarize-web-articles",
     keywords: [
+      "summarize web articles online",
       "article summarizer",
       "web article summarizer",
       "summarize url",
@@ -236,9 +237,9 @@ export const pageSeo = {
 
   pricing: buildPageMetadata({
     // Conscious decision (SEO brief): keep indexed for US commercial/plan queries + Product schema.
-    title: "Pricing — AI Summarizer Plans",
+    title: "Summify Pricing — Free & Pro Plans",
     description:
-      "Compare Free, Scholar, Pro, and Team plans for AI summaries, flashcards, quizzes, audio lessons, and memory review.",
+      "Compare Summify pricing for Free, Scholar, Pro, and Team. AI summaries, flashcards, quizzes, and audio study included. See plans and start free today.",
     path: "/pricing",
   }),
 
@@ -259,7 +260,7 @@ export const pageSeo = {
   privacy: buildPageMetadata({
     title: "Privacy Policy",
     description:
-      "How Summify handles uploads and AI processing during public beta. Plain-language overview of data flow, providers, and retention.",
+      "How Summify handles uploads and AI processing. Plain-language overview of data flow, providers, and retention.",
     path: "/privacy",
   }),
 
@@ -318,9 +319,9 @@ export const modePageSeo: Partial<
     ],
   },
   "contract-analyzer": {
-    title: "AI Contract Summary Tool — Clauses & Obligations",
+    title: "Contract Summary AI for Clauses & Risks",
     description:
-      "Upload a contract or agreement for an AI first-pass summary of clauses, obligations, and points to review. Informational only — not legal advice.",
+      "Contract summary AI for a first-pass read of clauses, obligations, and risks. Informational only, not legal advice. Upload a contract and try it free.",
     keywords: [
       "contract summary",
       "contract summary ai",

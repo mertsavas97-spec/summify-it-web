@@ -10,7 +10,7 @@ import {
 import type { FactInventory } from "./factInventory";
 import { inferInventoryDomainHint } from "./factInventory";
 
-export const PHASE2_FLASHCARD_SYSTEM = `You are a flashcard writer. Your only input is a fact inventory JSON.
+export const PHASE2_FLASHCARD_SYSTEM = `You are a flashcard writer. Your input is a fact inventory JSON, plus optional summary and source excerpt for depth.
 Your only output is a flashcard JSON object.
 
 ${normalizeLearningLanguage()}
@@ -31,12 +31,15 @@ Exception: proper nouns like person names, club names, city names stay in their 
 
 RULES — all mandatory:
 
-Question format:
-- Prefer these patterns (pick what fits the inventory):
-  "Who did X?", "When did X happen?", "What caused X?", "What resulted from X?",
-  "How many X?", "What does [term] mean?", "What is the formula for X?",
-  "What is the next step when doing X?", "How do you compute X?"
-- Max 80 characters
+Question and answer, for every card type (concept, why, quiz, memory hook, misconception):
+- The question is one complete question. It ends with a question mark.
+- The answer is one complete statement. It does not start with "and", "which", or "that".
+- Do not split one sentence across the question and the answer.
+- The answer must add the fact. It must not repeat or finish the question's wording.
+- Name the specific term, person, number, cause, or step from that inventory fact.
+- Vary the sentence. Ask for a definition, a cause, a result, a comparison, or a calculation only when the fact itself calls for it.
+- Do not reuse one shell such as "Which statement is best supported", "Which insight is supported", "What claim does the source make", or "What is the most important idea".
+- Do not clip either sentence to fit a character count.
 - Never copy a sentence from the inventory as the question stem
 - Never start with "What changed after [long clause]?"
 
@@ -46,17 +49,32 @@ Answer format:
 - Must not restate the question
 - Answer must not be identical to the question
 - Must not repeat the document title
-- Max 160 characters
+- Write the full answer. Do not cut it off to fit a character count.
 
 Quiz cards (type "quiz"):
 - For cards with type 'quiz', the answer must be the actual answer to the question — a specific fact, number, name, date, definition, or formula. Never use the question text as the answer.
 
 Deduplication:
 - No two cards may test the same fact
+- No two cards may ask the same question in different words
 - A person may appear in at most 2 cards, each testing a different fact
 - Prefer definition/formula/step cards when those inventory arrays are non-empty.
 CRITICAL: Use ONLY terms, formulas, examples, and steps present in the inventory.
 Do NOT invent topics (e.g. quadratic equations, telescope lenses) if they are absent from the inventory.
+
+Depth — every card must be worth memorizing:
+- The answer must stand alone: state the fact, then the mechanism, cause, or consequence behind it.
+- Ground the explanation in the source excerpt when one is provided; do not invent reasoning the source does not support.
+- A card that is only a restatement of the inventory line is too shallow. Add the why or the how.
+- Never write a card that could be answered the same way for any other document.
+
+Generic questions are rejected — never write these shells:
+"According to the text…", "Based on the source…", "What does the source say…",
+"What is the main point of the document", "Which statement is best supported by the source",
+"What is the most important idea", "Why does this matter", "What should you remember",
+"How would you summarize this", "Can you explain", "Tell me about", "What do you know about",
+"What is the purpose of the text", "Which of the following", "What can be learned from this".
+Every question must name a specific term, person, number, event, or formula from the inventory.
 
 Return ONLY valid JSON. No markdown, no explanation.
 Start with { end with }.
@@ -65,11 +83,11 @@ Schema:
 {
   "cards": [
     {
-      "type": "fact|cause|consequence|number|connection|definition|formula|steps|contrast|quiz|mechanism|method",
+      "type": "fact|cause|consequence|number|connection|definition|formula|steps|contrast|quiz|mechanism|method|misconception|memory_hook",
       "difficulty": "easy|medium|hard",
-      "topic": "max 25 chars",
-      "question": "max 80 chars",
-      "answer": "max 160 chars"
+      "topic": "the specific term or event this card tests",
+      "question": "one complete exam question",
+      "answer": "the full source-grounded answer"
     }
   ]
 }`;
@@ -80,6 +98,12 @@ export type Phase2FlashcardUserInput = {
   inventory: FactInventory;
   domainHint?: string;
   strategyHint?: string;
+  /** Extra writer rules for a specific card pass. */
+  cardBrief?: string;
+  /** Written summary — context for depth. Never copied verbatim into a card. */
+  summary?: string;
+  /** Bounded source excerpt — grounding for mechanism / cause / consequence answers. */
+  sourceExcerpt?: string;
 };
 
 export function buildPhase2FlashcardUserPrompt(input: Phase2FlashcardUserInput): string {
@@ -87,6 +111,13 @@ export function buildPhase2FlashcardUserPrompt(input: Phase2FlashcardUserInput):
   const domainHint = input.domainHint ?? inferInventoryDomainHint(input.inventory);
   const strategyLine = input.strategyHint
     ? `Strategy hint: ${input.strategyHint}`
+    : "";
+  const brief = input.cardBrief ? `\n${input.cardBrief}\n` : "";
+  const summarySection = input.summary?.trim()
+    ? `\nWRITTEN SUMMARY (context for depth — do not copy sentences verbatim into cards):\n${input.summary.trim()}\n`
+    : "";
+  const excerptSection = input.sourceExcerpt?.trim()
+    ? `\nSOURCE EXCERPT (grounding — use it to explain mechanism, cause, and consequence in answers; do not invent beyond it):\n${input.sourceExcerpt.trim()}\n`
     : "";
 
   return `Generate ${input.cardCount} flashcards.
@@ -97,7 +128,9 @@ Do not use Turkish, Spanish, German, or any other language in the output even if
 
 Domain hint: ${domainHint}
 ${strategyLine}
-
+${brief}
+${summarySection}
+${excerptSection}
 Use ONLY facts from this inventory — do not invent or infer:
 
 ${JSON.stringify(input.inventory, null, 2)}`.trim();

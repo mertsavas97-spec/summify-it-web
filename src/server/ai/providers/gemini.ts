@@ -55,6 +55,7 @@ export async function callGeminiAnalysis(
     isYoutubeTranscript?: boolean;
     isPresentation?: boolean;
     intelligenceModeLabel?: string;
+    intelligenceModeId?: string;
     modePromptAdjunct?: string;
     cognitionPromptBlock?: string;
   },
@@ -66,6 +67,7 @@ export async function callGeminiAnalysis(
     isYoutubeTranscript: promptOptions?.isYoutubeTranscript,
     isPresentation: promptOptions?.isPresentation,
     intelligenceModeLabel: promptOptions?.intelligenceModeLabel,
+    intelligenceModeId: promptOptions?.intelligenceModeId,
     modePromptAdjunct: promptOptions?.modePromptAdjunct,
     cognitionPromptBlock: promptOptions?.cognitionPromptBlock,
   });

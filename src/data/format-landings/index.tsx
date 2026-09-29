@@ -7,7 +7,7 @@ export const WEB_ARTICLES_LANDING: FormatLandingConfig = {
   breadcrumbLabel: "Web article summarizer",
   hero: {
     badge: "Web article summarizer",
-    title: "Summarize web articles and URLs with structured intelligence",
+    title: "Summarize web articles online from a URL",
     description:
       "Paste a public article URL or upload saved HTML exports. Summify extracts readable text, applies your intelligence mode, and returns structured summaries, insights, and Learn cards — not a shallow bullet list.",
     primaryCta: { href: "/upload", label: "Try Summify free" },
@@ -88,6 +88,25 @@ export const WEB_ARTICLES_LANDING: FormatLandingConfig = {
         title: "Creators",
         description: "Mine beats and hooks from interviews and thought-leadership posts.",
       },
+    ],
+  },
+  // Rows mirror /compare/quillbot tableRows so claims stay consistent.
+  comparison: {
+    title: "Summify vs QuillBot for web articles",
+    subtitle:
+      "QuillBot is a writing and paraphrasing tool with a summarizer; Summify treats a URL as a source document with mode-tuned analysis and study outputs.",
+    competitorName: "QuillBot",
+    rows: [
+      {
+        feature: "Analyze an article from its URL",
+        summify: true,
+        competitor: "Pasted text only",
+      },
+      { feature: "Structured sections (insights, risks, actions)", summify: true, competitor: false },
+      { feature: "Intelligence modes (Student, Executive, Creator)", summify: true, competitor: false },
+      { feature: "Learn cards & quizzes from the source", summify: "Learn cards", competitor: false },
+      { feature: "YouTube & PPTX in the same workspace", summify: true, competitor: false },
+      { feature: "Paraphrasing & grammar editing", summify: false, competitor: true },
     ],
   },
   faqs: WEB_FAQS,
@@ -189,7 +208,7 @@ export const DOCX_LANDING: FormatLandingConfig = {
   relatedLinks: RELATED_LINKS.docx,
   cta: {
     title: "Summarize your next Word document",
-    description: "Upload DOCX in the workspace — free during public beta.",
+    description: "Upload DOCX in the workspace — included on the Free plan.",
     primaryLabel: "Upload DOCX",
   },
 };

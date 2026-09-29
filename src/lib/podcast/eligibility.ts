@@ -10,9 +10,9 @@ export type PodcastSourceProfile = {
 /**
  * Podcast suitability tier — determines how the podcast should be structured.
  * - unsuitable: source too short, recommend Audio Study instead
- * - short: quick discussion (3-6 min)
- * - standard: normal discussion (6-12 min)
- * - deep-dive: extended discussion (12-20 min)
+ * - short: quick discussion (5-8 min)
+ * - standard: normal discussion (10-15 min)
+ * - deep-dive: extended discussion (15-20 min)
  * - chaptered: very long source, may need chapter breaks
  */
 export type PodcastSuitabilityTier =
@@ -176,7 +176,7 @@ export function resolvePodcastEligibility(
     case "short":
       return {
         eligible: true,
-        reason: "This source supports a quick podcast discussion (3–6 min).",
+        reason: "This source supports a quick podcast discussion (5–8 min).",
         recommendedMode: "podcast",
         suitability,
         suggestedDensity,
@@ -232,7 +232,7 @@ export function resolvePodcastEligibility(
     case "deep-dive":
       return {
         eligible: true,
-        reason: "This source has enough depth for an extended podcast discussion (12–20 min).",
+        reason: "This source has enough depth for an extended podcast discussion (15–20 min).",
         recommendedMode: "podcast",
         suitability,
         suggestedDensity,

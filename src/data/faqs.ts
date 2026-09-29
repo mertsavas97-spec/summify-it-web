@@ -31,7 +31,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Does Summify support mind maps and memory review?",
-    a: "Yes. Saved analyses can include interactive mind maps derived from your structured outputs. The memory review system helps you revisit Learn cards over time when signed in (availability may vary by plan during beta).",
+    a: "Yes. Saved analyses can include interactive mind maps derived from your structured outputs. Memory review is available on Pro when you are signed in.",
   },
   {
     q: "Does YouTube summarization always work?",
@@ -39,7 +39,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "Is Summify free?",
-    a: "Guests get 1 analysis; Free accounts get 5 analyses/day with 8 Learn cards and quizzes (Audio Study and Podcast are Pro). Scholar is coming soon; Pro and Team checkout are available when billing is enabled.",
+    a: "Free accounts get 5 analyses/day with 12 Learn cards and quizzes. Audio lessons and podcasts are on Pro. Scholar needs a school email. Pro and Team checkout follow the billing setup on the pricing page.",
   },
   {
     q: "How should I verify AI output?",

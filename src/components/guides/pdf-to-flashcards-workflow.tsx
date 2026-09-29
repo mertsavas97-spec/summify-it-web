@@ -59,7 +59,7 @@ export function PdfToFlashcardsGuideBody() {
         <li>Pre-exam: Drill misses + practice problems, not new generation.</li>
       </ol>
       <p>
-        Saved analyses unlock memory review flows in the dashboard during beta. Even without
+        Saved analyses unlock memory review on Pro. Even without
         export to Anki, consistent in-product review beats exporting once and never opening the
         deck.
       </p>

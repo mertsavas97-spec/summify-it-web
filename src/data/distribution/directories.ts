@@ -41,7 +41,7 @@ export const DIRECTORY_LISTINGS: DirectoryListing[] = [
       "Premium AI knowledge workspace — structured intelligence, Learn cards, and memory review beyond generic summarizers.",
     shortDescription:
       "Turn PDFs, decks, and videos into structured summaries, mind maps, and review cards with 6 core intelligence lenses.",
-    ctaLabel: "Try free during public beta",
+    ctaLabel: "Try Summify free",
     ctaUrl: BASE_CTA,
     targetKeywords: [
       "AI PDF summarizer",
@@ -108,7 +108,7 @@ export const DIRECTORY_LISTINGS: DirectoryListing[] = [
     category: "Education · Office · AI",
     positioningAngle: "Structured alternative to chat-over-PDF tools — modes, mind map, memory review.",
     shortDescription:
-      "Summify: multi-format analysis, Learn cards, mind maps, and spaced review. Public beta at summify.app.",
+      "Summify: multi-format analysis, Learn cards, mind maps, and spaced review at summify.app.",
     ctaLabel: "Official website",
     ctaUrl: BASE_URL,
     targetKeywords: ["ChatPDF alternative", "PDF summarizer", "study app", "knowledge management"],
@@ -131,7 +131,7 @@ export const DIRECTORY_LISTINGS: DirectoryListing[] = [
     name: "Uneed",
     url: "https://uneed.best",
     category: "Productivity / AI",
-    positioningAngle: "Launch-friendly: public beta, free core analysis, premium UX.",
+    positioningAngle: "Free daily summaries, Pro for the full study workflow.",
     shortDescription:
       "Summify turns your sources into structured intelligence — summaries, Learn cards, mind maps, and share links.",
     ctaLabel: "Launch offer — try free",

@@ -38,6 +38,7 @@ import type { AnalyzeApiDebugMetadata } from "@/types/text-analysis";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { PlanUpgradeModal } from "@/components/pricing/PlanUpgradeModal";
 import { WorkspaceSaveBanner } from "./WorkspaceSaveBanner";
+import { ResultNextSteps } from "./ResultNextSteps";
 import type { InjectedAnalysisPayload } from "./UploadWorkspace";
 import { LearningExperiencesResults } from "./LearningExperiencesResults";
 import { AnalysisExportSharePanel } from "@/components/analysis/AnalysisExportSharePanel";
@@ -90,6 +91,8 @@ type TextAnalysisMvpProps = {
   mediaModules?: (view: "audio" | "podcast") => ReactNode;
   /** Keep analysis wiring mounted while another source-ready shell owns the pre-analysis UI. */
   deferUntilAnalysisActive?: boolean;
+  /** Homepage hands the finished result to /upload and must not paint it here. */
+  hideCompletedResult?: boolean;
   learningExperience?: LearningExperienceId;
   savedAnalysisId?: string | null;
   onGuestSaveClick?: () => void;
@@ -327,6 +330,7 @@ function PostAnalysisResultShell({
   mediaModules,
   onExperienceChange,
   onNewAnalysis,
+  limitNotice = null,
 }: {
   result: AnalysisResult;
   modeId: IntelligenceModeId;
@@ -351,16 +355,21 @@ function PostAnalysisResultShell({
   mediaModules?: (view: "audio" | "podcast") => ReactNode;
   onExperienceChange?: (experience: LearningExperienceId) => void;
   onNewAnalysis?: () => void;
+  limitNotice?: string | null;
 }) {
   const [retryingSave, setRetryingSave] = useState(false);
   const [localSavedToWorkspace, setLocalSavedToWorkspace] = useState(savedToWorkspace);
   const [localSavedAnalysisId, setLocalSavedAnalysisId] = useState(savedAnalysisId);
 
   useEffect(() => {
+    // Sync local state with prop — intentional state sync
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalSavedToWorkspace(savedToWorkspace);
   }, [savedToWorkspace]);
 
   useEffect(() => {
+    // Sync local state with prop — intentional state sync
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalSavedAnalysisId(savedAnalysisId);
   }, [savedAnalysisId]);
 
@@ -458,6 +467,9 @@ function PostAnalysisResultShell({
               </span>
             ))}
         </div>
+        {limitNotice ? (
+          <p className="mt-2 text-xs text-zinc-400">{limitNotice}</p>
+        ) : null}
         {localSavedAnalysisId && isAuthenticated ? (
           <details className="mt-3 group">
             <summary className="cursor-pointer list-none text-[11px] font-medium text-zinc-500 hover:text-zinc-300 [&::-webkit-details-marker]:hidden">
@@ -523,6 +535,11 @@ function PostAnalysisResultShell({
                   : undefined
               }
             />
+            <ResultNextSteps
+              isAuthenticated={isAuthenticated}
+              savedToWorkspace={Boolean(localSavedToWorkspace)}
+              savedAnalysisId={localSavedAnalysisId}
+            />
             {retryingSave ? (
               <p className="mt-1 text-[11px] text-zinc-500">Retrying dashboard save…</p>
             ) : null}
@@ -568,8 +585,10 @@ export function TextAnalysisMvp({
   entitlementPlanId,
   isAuthenticated,
   isPaidActive = false,
+  limitNotice = null,
   mediaModules,
   deferUntilAnalysisActive = false,
+  hideCompletedResult = false,
   learningExperience = "summary-learn",
   savedAnalysisId,
   onGuestSaveClick,
@@ -784,6 +803,10 @@ export function TextAnalysisMvp({
   // source-ready action area (UploadWorkspace) — not inside this lower “Analysis workspace” card.
   // We still keep this component mounted so it can wire `onAnalyzeReady`, but we avoid rendering
   // any pre-analysis UI (including limit notices) until analysis is actually running or complete.
+  if (hideCompletedResult && displayResult) {
+    return null;
+  }
+
   if (deferUntilAnalysisActive && !displayResult) {
     if (process.env.NODE_ENV === "development" && error && failureDebug) {
       return (
@@ -857,6 +880,7 @@ export function TextAnalysisMvp({
           mediaModules={mediaModules}
           onExperienceChange={onExperienceChange}
           onNewAnalysis={onNewAnalysis}
+          limitNotice={limitNotice}
         />
       )}
 

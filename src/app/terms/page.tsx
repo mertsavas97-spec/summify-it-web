@@ -8,15 +8,15 @@ export default function TermsPage() {
   return (
     <TrustPageLayout
       eyebrow="Terms"
-      title="Terms of use (public beta)"
-      lead="By using Summify during public beta, you agree to the following sensible limits. We will update these terms before general availability and paid plans."
+      title="Terms of use"
+      lead="By using Summify, you agree to the following limits."
     >
       <ProductDisclaimer />
       <section>
         <h2 className="text-base font-semibold text-zinc-200">The service</h2>
         <p className="mt-2">
           Summify provides AI-assisted document intelligence. Features, modes, and availability
-          may change during beta without notice. We aim for reliability but do not guarantee
+          may change as the product evolves. We aim for reliability but do not guarantee
           uninterrupted access.
         </p>
       </section>
@@ -40,7 +40,7 @@ export default function TermsPage() {
       <section>
         <h2 className="text-base font-semibold text-zinc-200">Limitation of liability</h2>
         <p className="mt-2">
-          To the fullest extent permitted by law, Summify is provided “as is” during beta without
+          To the fullest extent permitted by law, Summify is provided “as is” without
           warranties. We are not liable for indirect or consequential damages arising from use of
           the service.
         </p>

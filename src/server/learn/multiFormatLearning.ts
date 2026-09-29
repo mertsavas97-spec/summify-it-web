@@ -180,7 +180,7 @@ function buildTimelineFormat(
   }
 
   const corpus = summary;
-  const rangeMatches = corpus.matchAll(YEAR_RANGE);
+  const rangeMatches = corpus.matchAll(new RegExp(YEAR_RANGE.source, "g"));
   for (const m of rangeMatches) {
     const label = `${m[1]}–${m[2]}`;
     if (seen.has(label)) continue;

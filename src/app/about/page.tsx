@@ -20,11 +20,11 @@ export default function AboutPage() {
         </p>
       </section>
       <section>
-        <h2 className="text-base font-semibold text-zinc-200">Public beta</h2>
+        <h2 className="text-base font-semibold text-zinc-200">What’s included</h2>
         <p className="mt-2">
-          We are in public beta. Four free core lenses are live today (including Study);
-          Contract and Exam Prep unlock on paid plans. Catalog previews are not separate engines.
-          The workspace stays free to try — create an account to save analyses and unlock daily limits.
+          Four free core lenses are live today (including Study); Contract and Exam Prep unlock
+          on paid plans. The Free plan covers daily summaries — create an account to save analyses.
+          Pro adds unlimited audio lessons, podcasts, and every lens.
         </p>
       </section>
       <section>

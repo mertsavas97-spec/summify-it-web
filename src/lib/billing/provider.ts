@@ -72,11 +72,11 @@ export function getBillingStatusCopy(): BillingStatusCopy {
     provider: "none",
     enabled: false,
     badge: "Billing pending",
-    headline: "Join beta",
-    description: "Paid checkout is paused while billing provider review is pending.",
-    checkoutCta: "Join beta",
+    headline: "Checkout paused",
+    description: "Paid checkout is paused while the billing provider is not configured.",
+    checkoutCta: "Open workspace",
     accountNote:
-      "Billing is not enabled yet. Your current workspace access remains unchanged while provider review is pending.",
+      "Billing is not enabled yet. Open the workspace on the Free plan.",
   };
 }
 
@@ -89,7 +89,7 @@ export function getPlanCheckoutLabel(
     if (billing.provider === "polar" && !billing.enabled) {
       return "Billing unavailable";
     }
-    return "Join beta";
+    return "Open workspace";
   }
 
   if (isScholarCheckoutComingSoon(planId)) {

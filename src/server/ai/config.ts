@@ -20,8 +20,11 @@ export const AI_CONFIG = {
       model: "gemini-2.0-flash",
     },
   },
-  /** Conservative cap to control spend */
-  maxOutputTokens: 2048,
+  /**
+   * Room for a long source: several summary paragraphs plus up to 12 insights.
+   * Short sources still stop once the JSON is complete.
+   */
+  maxOutputTokens: 4096,
   temperature: 0.3,
   /** Per-provider request timeout (ms) */
   timeoutMs: 45_000,

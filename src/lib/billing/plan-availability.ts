@@ -6,7 +6,7 @@ export const SCHOLAR_EDU_REQUIRED_MESSAGE =
   "Scholar requires a .edu school email. Sign in with your student address to checkout.";
 
 export const TEAM_PRICING_NOTE =
-  "Includes up to 5 seats. Team invite management is rolling out during beta.";
+  "Up to 5 seats on one subscription.";
 
 export const TEAM_ACCOUNT_PLACEHOLDER =
   "Team workspace and invites are coming soon.";

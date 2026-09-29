@@ -134,7 +134,7 @@ export function getWorkspaceEntitlementBannerContent(input: {
         "Your workspace includes Scholar intelligence modes and study-focused limits.",
       features: [
         "12 study & exam lenses",
-        "12 Learn cards per run",
+        "18 Learn cards per run",
         "Full analysis history",
       ],
       primaryCta: billingEnabled ? "Manage billing" : "View account",

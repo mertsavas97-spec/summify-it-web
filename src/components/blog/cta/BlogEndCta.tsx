@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { withCtaUtm } from "@/lib/analytics/utm";
 
 type BlogEndCtaProps = {
   title?: string;
@@ -12,7 +13,7 @@ type BlogEndCtaProps = {
 export function BlogEndCta({
   title = "Turn PDFs into Learn cards and quizzes with Summify.",
   description =
-    "Upload PDFs, YouTube links, or decks. Get structured analysis, source-backed Learn cards, and a post-learn quiz — free during public beta.",
+    "Upload PDFs, YouTube links, or decks. Get structured analysis, source-backed Learn cards, and a post-learn quiz on the Free plan.",
   primaryHref = "/upload",
   primaryLabel = "Open workspace",
   secondaryHref = "/pricing",
@@ -26,11 +27,15 @@ export function BlogEndCta({
       <h2 className="text-lg font-semibold text-white sm:text-xl">{title}</h2>
       <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400">{description}</p>
       <div className="mt-5 flex flex-wrap gap-3">
-        <Button href={primaryHref} size="sm">
+        <Button href={withCtaUtm(primaryHref, "blog", "blog_end")} size="sm">
           {primaryLabel}
         </Button>
         {secondaryHref ? (
-          <Button href={secondaryHref} variant="secondary" size="sm">
+          <Button
+            href={withCtaUtm(secondaryHref, "blog", "blog_end")}
+            variant="secondary"
+            size="sm"
+          >
             {secondaryLabel}
           </Button>
         ) : null}

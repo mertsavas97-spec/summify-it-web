@@ -3,6 +3,7 @@
  * Never import in client components.
  */
 
+import { FULL_SOURCE_CHAR_LIMIT, PORTION_USED_NOTICE } from "@/lib/analysis/sourceCoverage";
 import { getPlanLimits } from "@/lib/plans/planLimits";
 import type { PlanId } from "@/types/plan";
 import type { TextAnalysisMode } from "@/server/ai/schemas";
@@ -72,6 +73,11 @@ export function prepareAnalysisIntelligence(
   });
   const knowledgeLayer = buildKnowledgeLayer(cleaned, profile, {
     presentationContext,
+    isYoutubeTranscript,
+    youtubeTitle:
+      options?.sourceContext?.sourceKind === "youtube"
+        ? options.sourceContext.title
+        : undefined,
   });
   const preliminaryBudget = estimateTokenBudget(cleaned.length, cleaned.length);
   const adaptivePlan = createAdaptiveAnalysisPlan(
@@ -113,7 +119,7 @@ export function prepareAnalysisIntelligence(
     complexityHint: profile.complexity,
   });
 
-  const { compactedCharacterCount, userPrompt } = compactPromptInput(
+  const { compactedCharacterCount, userPrompt, analysisSourceText } = compactPromptInput(
     cleaned,
     profile,
     knowledgeLayer,
@@ -136,9 +142,14 @@ export function prepareAnalysisIntelligence(
     tokenBudget,
     adaptivePlan,
     cleanedText: cleaned,
+    analysisSourceText,
     compactedUserPrompt: userPrompt,
     analysisLimits: prepared.analysisLimits,
-    limitNotice: prepared.limitNotice,
+    limitNotice:
+      (!planLimits.supportsChunkedAnalysis && cleaned.length > FULL_SOURCE_CHAR_LIMIT) ||
+      prepared.wasTruncated
+        ? PORTION_USED_NOTICE
+        : null,
     analyzeSource: options?.sourceContext,
     cognitionPromptBlock: cognition.promptBlock,
     personaAdaptivePlan: cognition.personaAdaptivePlan,

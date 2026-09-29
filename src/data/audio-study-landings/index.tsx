@@ -137,7 +137,7 @@ export const PDF_TO_AUDIO_STUDY: FormatLandingConfig = {
   relatedLinks: AUDIO_STUDY_RELATED,
   cta: {
     title: "Turn your next PDF into audio",
-    description: "Free summarization in beta · Audio Study on Pro.",
+    description: "Free summarization on the Free plan · Audio Study on Pro.",
     primaryLabel: "Upload PDF",
   },
 };

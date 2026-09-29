@@ -6,6 +6,7 @@ import {
   HelpCircle,
   Layers,
   Lightbulb,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -14,7 +15,8 @@ export type ResultsSectionId =
   | "quiz"
   | "summary"
   | "insights"
-  | "flashcards";
+  | "flashcards"
+  | "mindmap";
 
 type TabMeta = {
   label: string;
@@ -59,6 +61,13 @@ const TAB_META: Record<ResultsSectionId, TabMeta> = {
     Icon: Layers,
     activeText: "text-fuchsia-100",
     activeBar: "bg-fuchsia-400",
+  },
+  mindmap: {
+    label: "Mind map",
+    shortLabel: "Map",
+    Icon: Network,
+    activeText: "text-cyan-100",
+    activeBar: "bg-cyan-400",
   },
 };
 

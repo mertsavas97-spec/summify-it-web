@@ -45,7 +45,11 @@ export function SummarizeFormatGrid() {
           Choose your AI summarizer
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-slate-600 dark:text-zinc-500">
-          Same workspace for every format — summary first, then study cards, audio, or podcast.
+          Same workspace for every format — summary first, then study cards, audio, or podcast.{" "}
+          <Link href="/modes/contract-analyzer" className="text-violet-600 underline-offset-2 hover:underline dark:text-violet-300">
+            Contract summary AI
+          </Link>{" "}
+          is available as a mode.
         </p>
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FORMAT_CARDS.map((card) => {

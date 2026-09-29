@@ -97,7 +97,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
     summifyLimitations: [
       "Smaller brand awareness than chat-first PDF tools",
       "Team collaboration features still on roadmap",
-      "No native desktop app during beta",
+      "No native desktop app",
     ],
     competitorStrengths: [
       "Fast chat interface familiar to PDF users",
@@ -115,7 +115,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
       { feature: "Intelligence modes", summify: "6 core (4 free)", competitor: "Chat-first" },
       { feature: "Learn / study cards", summify: true, competitor: false },
       { feature: "Mind maps", summify: true, competitor: false },
-      { feature: "Public beta pricing", summify: "Free", competitor: "Freemium" },
+      { feature: "Free plan", summify: "Daily summaries", competitor: "Freemium" },
     ],
     faqs: [
       {
@@ -138,7 +138,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
     relatedLinks: [
       { href: "/summarize-pdf", label: "PDF summarizer", description: "Summify format page." },
       { href: "/guides/how-to-evaluate-ai-pdf-summarizer", label: "PDF summarizer guide", description: "Evaluation framework." },
-      { href: "/upload", label: "Try Summify", description: "Free during beta." },
+      { href: "/upload", label: "Try Summify", description: "Free plan, no card required." },
     ],
     Content: ChatPdfComparisonBody,
   },
@@ -195,7 +195,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
       },
       {
         q: "Is Summify free?",
-        a: "The workspace is free during public beta.",
+        a: "The Free plan includes daily summaries and Learn cards. Audio lessons and podcasts are on Pro.",
       },
     ],
     relatedLinks: [
@@ -223,7 +223,7 @@ export const COMPARISONS: ComparisonPageConfig[] = [
       "Learn cards and mind maps",
     ],
     summifyLimitations: [
-      "No live meeting bot during beta",
+      "No live meeting bot",
       "Relies on existing transcripts or captions for video",
     ],
     competitorStrengths: [

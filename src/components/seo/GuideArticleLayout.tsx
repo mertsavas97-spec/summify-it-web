@@ -88,7 +88,7 @@ export function GuideArticleLayout({ guide, children }: GuideArticleLayoutProps)
 
           <CtaStrip
             title="Try Summify on your own documents"
-            description="Upload PDFs, videos, decks, and articles — pick an intelligence mode and get structured analysis plus Learn cards. Free during public beta."
+            description="Upload PDFs, videos, decks, and articles — pick an intelligence mode and get structured analysis plus Learn cards on the Free plan."
             primaryLabel="Open workspace"
             analyticsSurface={`guide:${guide.slug}`}
           />

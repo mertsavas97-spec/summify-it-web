@@ -16,7 +16,7 @@ import type {
 } from "./podcast-types";
 
 const MAX_DIALOGUE_WORDS = 4000;
-const MAX_OUTPUT_TOKENS = 5200;
+const MAX_OUTPUT_TOKENS = 12000;
 
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -31,8 +31,8 @@ function inputDensity(input: PodcastDiscussionAnalysisInput): number {
   );
 }
 
-/** Words per minute for spoken English podcast dialogue. */
-const WORDS_PER_MINUTE = 175;
+/** Spoken pace used to keep each mode inside the on-screen duration. */
+const WORDS_PER_MINUTE = 145;
 
 /**
  * Estimate duration in minutes from word count.
@@ -77,77 +77,36 @@ export function resolveSourceSizeTier(input: PodcastDiscussionAnalysisInput): So
 }
 
 /**
- * Full mode × source size matrix for maxWords.
- * Values chosen to produce target durations at ~145 words/min.
+ * On-screen duration for the three podcast modes.
+ * Source length does not stretch these bands.
  */
-const MAX_WORDS_MATRIX: Record<
+const SCREEN_DURATION_MINUTES: Record<
   PodcastDensityMode,
-  Record<SourceSizeTier, number>
+  { min: number; max: number }
 > = {
-  quick: {
-    small: 800,    // ~5 min
-    medium: 1000,  // ~7 min
-    large: 1200,   // ~8 min
-  },
-  standard: {
-    small: 1300,   // ~9 min
-    medium: 2000,  // ~14 min
-    large: 2500,   // ~17 min
-  },
-  "deep-dive": {
-    small: 1800,   // ~12 min
-    medium: 2800,  // ~19 min
-    large: 3500,   // ~24 min
-  },
-  critical: {
-    small: 2000,   // ~14 min
-    medium: 3000,  // ~21 min
-    large: 3800,   // ~26 min
-  },
-  debate: {
-    small: 1500,   // ~10 min
-    medium: 2500,  // ~17 min
-    large: 3200,   // ~22 min
-  },
+  quick: { min: 5, max: 8 },
+  standard: { min: 10, max: 15 },
+  "deep-dive": { min: 15, max: 20 },
+  critical: { min: 10, max: 15 },
+  debate: { min: 10, max: 15 },
 };
 
 /**
- * Duration range labels for UI/prompt.
- */
-const DURATION_RANGES: Record<PodcastDensityMode, Record<SourceSizeTier, string>> = {
-  quick: { small: "4-6 min", medium: "6-8 min", large: "7-9 min" },
-  standard: { small: "8-10 min", medium: "13-15 min", large: "16-18 min" },
-  "deep-dive": { small: "11-13 min", medium: "18-20 min", large: "23-25 min" },
-  critical: { small: "13-15 min", medium: "20-22 min", large: "25-27 min" },
-  debate: { small: "9-11 min", medium: "16-18 min", large: "21-23 min" },
-};
-
-/**
- * Target word range labels for UI/prompt.
- */
-const TARGET_WORD_RANGES: Record<PodcastDensityMode, Record<SourceSizeTier, string>> = {
-  quick: { small: "700-900", medium: "900-1100", large: "1100-1300" },
-  standard: { small: "1200-1400", medium: "1800-2200", large: "2300-2700" },
-  "deep-dive": { small: "1600-2000", medium: "2600-3000", large: "3200-3800" },
-  critical: { small: "1800-2200", medium: "2800-3200", large: "3500-4000" },
-  debate: { small: "1300-1700", medium: "2300-2700", large: "2900-3500" },
-};
-
-/**
- * Resolve podcast length plan based on density mode and source size.
+ * Resolve podcast length from the selected mode.
+ * The same Quick, Standard, or Deep Dive choice keeps one duration on every source.
  */
 export function resolvePodcastLengthPlan(
-  input: PodcastDiscussionAnalysisInput,
+  _input: PodcastDiscussionAnalysisInput,
   densityMode: PodcastDensityMode,
 ): PodcastLengthPlan {
-  const sourceTier = resolveSourceSizeTier(input);
-  const maxWords = MAX_WORDS_MATRIX[densityMode][sourceTier];
-  const durationRange = DURATION_RANGES[densityMode][sourceTier];
-  const targetWordRange = `${TARGET_WORD_RANGES[densityMode][sourceTier]} words`;
+  const band = SCREEN_DURATION_MINUTES[densityMode];
+  const minWords = estimateWordCountFromDuration(band.min);
+  const maxWords = estimateWordCountFromDuration(band.max);
 
   return {
-    durationRange,
-    targetWordRange,
+    durationRange: `${band.min}-${band.max} min`,
+    targetWordRange: `${minWords}-${maxWords} words`,
+    minWords,
     maxWords,
     densityMode,
   };
@@ -176,14 +135,77 @@ function parseOutline(value: unknown): PodcastDiscussionOutlineItem[] {
   if (!Array.isArray(value)) return [];
   return value
     .map((item) => {
+      if (typeof item === "string") {
+        const text = cleanText(item);
+        if (!text) return null;
+        const [head, ...rest] = text.split(/[:—–]\s+/);
+        const title = cleanText(head).slice(0, 80);
+        const summary = cleanText(rest.join(" ")) || text;
+        return title && summary ? { title, summary } : null;
+      }
       if (!item || typeof item !== "object") return null;
       const record = item as Record<string, unknown>;
-      const title = cleanText(record.title);
-      const summary = cleanText(record.summary);
+      const title = cleanText(record.title ?? record.heading ?? record.beat);
+      const summary = cleanText(record.summary ?? record.description ?? record.text) || title;
       return title && summary ? { title, summary } : null;
     })
     .filter((item): item is PodcastDiscussionOutlineItem => item !== null)
     .slice(0, 12);
+}
+
+function normalizeSpeaker(value: unknown): PodcastDiscussionTurn["speaker"] | null {
+  if (typeof value !== "string") return null;
+  const key = value.trim().toLowerCase().replace(/[_-]+/g, " ");
+  if (
+    key === "host" ||
+    key === "a" ||
+    key === "speaker 1" ||
+    key === "speaker1" ||
+    key === "person a" ||
+    /\bhost\b/.test(key)
+  ) {
+    return "host";
+  }
+  if (
+    key === "expert" ||
+    key === "guest" ||
+    key === "b" ||
+    key === "speaker 2" ||
+    key === "speaker2" ||
+    key === "person b" ||
+    /\b(expert|guest)\b/.test(key)
+  ) {
+    return "expert";
+  }
+  return null;
+}
+
+function turnText(record: Record<string, unknown>): string {
+  for (const key of ["text", "line", "dialogue", "utterance", "content", "message"] as const) {
+    const text = cleanText(record[key]);
+    if (text) return text;
+  }
+  return "";
+}
+
+/** Field names Groq might use for dialogue turns. */
+const DIALOGUE_FIELD_NAMES = [
+  "script",
+  "turns",
+  "dialogue",
+  "sections",
+  "discussion",
+  "conversation",
+  "exchanges",
+  "content",
+] as const;
+
+function readDialogue(parsed: Record<string, unknown>): unknown {
+  for (const field of DIALOGUE_FIELD_NAMES) {
+    const value = parsed[field];
+    if (Array.isArray(value) && value.length > 0) return value;
+  }
+  return undefined;
 }
 
 function parseTurns(value: unknown, maxWords: number): PodcastDiscussionTurn[] {
@@ -195,10 +217,8 @@ function parseTurns(value: unknown, maxWords: number): PodcastDiscussionTurn[] {
   for (const item of value) {
     if (!item || typeof item !== "object") continue;
     const record = item as Record<string, unknown>;
-    const speaker = record.speaker === "host" || record.speaker === "expert"
-      ? record.speaker
-      : null;
-    const text = cleanText(record.text);
+    const speaker = normalizeSpeaker(record.speaker ?? record.role ?? record.name);
+    const text = turnText(record);
     const wordCount = countWords(text);
     if (!speaker || wordCount === 0) continue;
     if (totalWords + wordCount > Math.min(maxWords, MAX_DIALOGUE_WORDS)) break;
@@ -207,6 +227,19 @@ function parseTurns(value: unknown, maxWords: number): PodcastDiscussionTurn[] {
   }
 
   return turns;
+}
+
+function outlineFromScript(script: PodcastDiscussionTurn[]): PodcastDiscussionOutlineItem[] {
+  if (script.length === 0) return [];
+  const size = Math.max(1, Math.ceil(script.length / 3));
+  const items: PodcastDiscussionOutlineItem[] = [];
+  for (let index = 0; index < 3; index += 1) {
+    const slice = script.slice(index * size, (index + 1) * size);
+    const summary = slice.map((turn) => turn.text).join(" ").replace(/\s+/g, " ").trim().slice(0, 180);
+    if (!summary) continue;
+    items.push({ title: `Part ${index + 1}`, summary });
+  }
+  return items;
 }
 
 /**
@@ -231,19 +264,7 @@ function computeDuration(wordCount: number, providedEstimate: unknown): number {
   return Math.max(3, Math.min(25, calculated));
 }
 
-/** Field names Groq might use for dialogue turns. */
-const DIALOGUE_FIELD_NAMES = [
-  "script",
-  "turns",
-  "dialogue",
-  "sections",
-  "discussion",
-  "conversation",
-  "exchanges",
-  "content",
-] as const;
-
-function parsePodcastDiscussion(
+export function parsePodcastDiscussion(
   raw: string,
   lengthPlan: PodcastLengthPlan,
 ): PodcastDiscussionScript {
@@ -265,17 +286,11 @@ function parsePodcastDiscussion(
     dialogueFieldUsed: DIALOGUE_FIELD_NAMES.find(key => Array.isArray((parsed as Record<string, unknown>)[key])),
   });
 
-  const title = cleanText(parsed.title);
+  const title = cleanText(parsed.title) || "Discussion";
   const outline = parseOutline(parsed.outline);
+  const dialogueData = readDialogue(parsed);
 
-  // Try multiple field names for dialogue content
-  let dialogueData: unknown;
-  const usedFieldName = DIALOGUE_FIELD_NAMES.find((field) => {
-    dialogueData = parsed[field];
-    return Array.isArray(dialogueData) && dialogueData.length > 0;
-  });
-
-  if (!usedFieldName) {
+  if (!dialogueData) {
     console.error("[podcast] no_dialogue_field_found", {
       availableKeys: Object.keys(parsed),
       triedFields: DIALOGUE_FIELD_NAMES,
@@ -284,24 +299,30 @@ function parsePodcastDiscussion(
   }
 
   console.info("[podcast] dialogue_field_found", {
-    fieldName: usedFieldName,
+    fieldName: DIALOGUE_FIELD_NAMES.find((field) => parsed[field] === dialogueData),
     itemCount: (dialogueData as unknown[]).length,
   });
 
   const script = parseTurns(dialogueData, lengthPlan.maxWords);
   const totalWordCount = script.reduce((total, turn) => total + countWords(turn.text), 0);
+  const hasHost = script.some((turn) => turn.speaker === "host");
+  const hasExpert = script.some((turn) => turn.speaker === "expert");
 
-  // Validation: title and outline are required; script/dialogue length is flexible
-  // Word count is a generation guideline, not a hard requirement for parsing
-  if (!title || outline.length < 3 || script.length < 4) {
+  // A usable episode needs both speakers. Turn count is not a hard minimum:
+  // models often return two or three long turns, and rejecting those aborted generation.
+  if (script.length < 2 || !hasHost || !hasExpert) {
     console.error("[podcast] validation_failed", {
       hasTitle: Boolean(title),
       outlineLength: outline.length,
       scriptLength: script.length,
+      hasHost,
+      hasExpert,
       totalWordCount,
     });
     throw new Error("Podcast script JSON missing required discussion fields.");
   }
+
+  const resolvedOutline = outline.length >= 3 ? outline : outlineFromScript(script);
 
   // Log a warning if word count is very low, but don't fail
   if (totalWordCount < 200) {
@@ -319,7 +340,7 @@ function parsePodcastDiscussion(
       { id: "host", name: "Host" },
       { id: "expert", name: "Expert" },
     ],
-    outline,
+    outline: resolvedOutline,
     script,
     totalWordCount,
     densityMode: lengthPlan.densityMode,
@@ -339,7 +360,24 @@ function getGeminiClient(): GoogleGenAI {
 }
 
 async function callGroqJson(system: string, user: string): Promise<string> {
-  const completion = await getGroqClient().chat.completions.create(
+  const client = getGroqClient();
+  try {
+    return await requestGroqScript(client, system, user, true);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("json_validate_failed")) throw error;
+    console.warn("[podcast] groq_json_mode_failed_retrying_plain");
+    return requestGroqScript(client, system, user, false);
+  }
+}
+
+async function requestGroqScript(
+  client: Groq,
+  system: string,
+  user: string,
+  jsonMode: boolean,
+): Promise<string> {
+  const completion = await client.chat.completions.create(
     {
       model: AI_CONFIG.providers.groq.model,
       messages: [
@@ -348,9 +386,10 @@ async function callGroqJson(system: string, user: string): Promise<string> {
       ],
       temperature: 0.38,
       max_tokens: MAX_OUTPUT_TOKENS,
-      response_format: { type: "json_object" },
+      reasoning_effort: "low",
+      ...(jsonMode ? { response_format: { type: "json_object" as const } } : {}),
     },
-    { timeout: 60_000 },
+    { timeout: 90_000 },
   );
   const content = completion.choices[0]?.message?.content;
   if (!content?.trim()) throw new Error("Groq returned an empty podcast script.");
@@ -358,161 +397,53 @@ async function callGroqJson(system: string, user: string): Promise<string> {
 }
 
 /**
- * Generate podcast script in multiple calls for longer-density modes.
- * This bypasses Groq's tendency to produce short outputs in a single call.
+ * One extra Groq call when the first script is under the mode's minimum length.
  */
-async function generatePodcastScriptTwoPhase(
+async function extendShortScript(
   analysis: PodcastDiscussionAnalysisInput,
   lengthPlan: PodcastLengthPlan,
-  baseSystemPrompt: string,
+  current: PodcastDiscussionScript,
 ): Promise<PodcastDiscussionScript> {
-  console.info("[podcast] two_phase_generation_start", {
+  const remainingWordBudget = Math.max(0, Math.min(lengthPlan.maxWords, MAX_DIALOGUE_WORDS) - current.totalWordCount);
+  if (remainingWordBudget < 120) return current;
+
+  const recentTurns = current.script
+    .slice(-3)
+    .map((turn) => `${turn.speaker}: ${turn.text}`.slice(0, 240))
+    .join("\n");
+  const continuation = await callGroqJson(
+    PODCAST_DISCUSSION_SYSTEM,
+    `${buildPodcastDiscussionPrompt(analysis, lengthPlan)}
+
+CONTINUATION: The episode is shorter than ${lengthPlan.durationRange}.
+Current dialogue words: ${current.totalWordCount}.
+Reach at least ${lengthPlan.minWords} words and do not exceed ${lengthPlan.maxWords}.
+Generate ONLY additional Host and Expert turns. Do not repeat the opening.
+Keep this continuation under ${remainingWordBudget} words.
+
+RECENT TURNS:
+${recentTurns}`,
+  );
+  const added = parseTurns(readDialogue(extractJson(continuation)), remainingWordBudget);
+  const script = [...current.script, ...added];
+  const totalWordCount = script.reduce((total, turn) => total + countWords(turn.text), 0);
+  const hasHost = script.some((turn) => turn.speaker === "host");
+  const hasExpert = script.some((turn) => turn.speaker === "expert");
+  if (script.length < 2 || !hasHost || !hasExpert || added.length === 0) return current;
+
+  console.info("[podcast] continuation_complete", {
     densityMode: lengthPlan.densityMode,
-    targetWordRange: lengthPlan.targetWordRange,
-  });
-
-  // Phase 1: Generate intro + first half
-  const phase1Prompt = `${buildPodcastDiscussionPrompt(analysis, lengthPlan)}
-
-IMPORTANT: Generate ONLY the first half of the discussion (intro through the first 2-3 discussion beats).
-End at the midpoint — do not include the recap or conclusion.
-Focus on depth and substance in each turn.`;
-
-  const phase1Raw = await callGroqJson(baseSystemPrompt, phase1Prompt);
-  const phase1Result = extractJson(phase1Raw);
-
-  console.info("[podcast] two_phase_generation_phase1_complete", {
-    title: phase1Result.title,
-    outlineCount: Array.isArray(phase1Result.outline) ? phase1Result.outline.length : 0,
-    scriptCount: (() => {
-      const data = phase1Result.script ?? phase1Result.turns;
-      return Array.isArray(data) ? data.length : 0;
-    })(),
-  });
-
-  // Phase 2: Generate remaining sections with phase 1 as context
-  const phase1ScriptData = phase1Result.script ?? phase1Result.turns;
-  const phase1Summary = Array.isArray(phase1ScriptData)
-    ? phase1ScriptData
-        .slice(-2)
-        .map((t: unknown) => {
-          const turn = t as Record<string, unknown>;
-          return `${turn.speaker}: ${turn.text}`.slice(0, 200);
-        })
-        .join("\n")
-    : "";
-
-  const phase2Prompt = `${buildPodcastDiscussionPrompt(analysis, lengthPlan)}
-
-CONTINUATION INSTRUCTION: Generate the REMAINING sections of the discussion.
-The first half has already been generated. Continue from where it left off.
-
-LAST TURNS FROM PHASE 1:
-${phase1Summary}
-
-Generate the remaining discussion beats, counterpoints, real-world implications, recap, and reflection question.
-Do NOT repeat the intro or early sections. Focus on depth and substance.`;
-
-  const phase2Raw = await callGroqJson(baseSystemPrompt, phase2Prompt);
-  const phase2Result = extractJson(phase2Raw);
-
-  console.info("[podcast] two_phase_generation_phase2_complete", {
-    scriptCount: (() => {
-      const data = phase2Result.script ?? phase2Result.turns;
-      return Array.isArray(data) ? data.length : 0;
-    })(),
-  });
-
-  // Merge: Use phase 1's title/outline, combine scripts
-  const phase1Script = parseTurns(phase1Result.script ?? phase1Result.turns, lengthPlan.maxWords);
-  const phase2Script = parseTurns(phase2Result.script ?? phase2Result.turns, lengthPlan.maxWords);
-  let mergedScript = [...phase1Script, ...phase2Script];
-  let totalWordCount = mergedScript.reduce((total, turn) => total + countWords(turn.text), 0);
-
-  const targetWordCount = lengthPlan.maxWords;
-  const minimumAcceptableWordCount = Math.round(targetWordCount * 0.7);
-
-  // Phase 3 fallback: if the two-phase output is still materially under target,
-  // ask for an additional source-grounded expansion instead of accepting an over-compressed script.
-  let phase3Iterations = 0;
-  while (totalWordCount < minimumAcceptableWordCount && phase3Iterations < 2) {
-    const remainingWordBudget = Math.max(
-      0,
-      Math.min(lengthPlan.maxWords, MAX_DIALOGUE_WORDS) - totalWordCount,
-    );
-    const recentTurns = mergedScript
-      .slice(-3)
-      .map((turn) => `${turn.speaker}: ${turn.text}`.slice(0, 240))
-      .join("\n");
-
-    phase3Iterations++;
-    console.warn(`[podcast] phase3_fallback_triggered_iteration_${phase3Iterations}`, {
-      densityMode: lengthPlan.densityMode,
-      totalWordCount,
-      targetWordCount,
-      minimumAcceptableWordCount,
-      remainingWordBudget,
-    });
-
-    if (remainingWordBudget >= 150) {
-      const phase3Prompt = `${buildPodcastDiscussionPrompt(analysis, lengthPlan)}
-
-PHASE 3 FALLBACK INSTRUCTION: The previous script is too short.
-Current dialogue word count: ${totalWordCount}.
-Target dialogue word count: ${targetWordCount}.
-Minimum acceptable dialogue word count: ${minimumAcceptableWordCount}.
-
-Generate ONLY additional dialogue turns that extend the existing episode with deeper source-grounded explanation.
-Do NOT repeat the intro, early beats, or already-covered setup.
-Add missing nuance, examples, counterpoints, implications, and a stronger closing recap/reflection if needed.
-Keep the continuation under approximately ${remainingWordBudget} words.
-
-RECENT TURNS TO CONTINUE FROM:
-${recentTurns}`;
-
-      const phase3Raw = await callGroqJson(baseSystemPrompt, phase3Prompt);
-      const phase3Result = extractJson(phase3Raw);
-      const phase3Script = parseTurns(phase3Result.script ?? phase3Result.turns, remainingWordBudget);
-
-      mergedScript = [...mergedScript, ...phase3Script];
-      totalWordCount = mergedScript.reduce((total, turn) => total + countWords(turn.text), 0);
-
-      console.info(`[podcast] phase3_fallback_complete_iteration_${phase3Iterations}`, {
-        addedTurns: phase3Script.length,
-        totalTurns: mergedScript.length,
-        totalWordCount,
-      });
-    } else {
-      console.info(`[podcast] phase3_fallback_skipped_iteration_${phase3Iterations}`, {
-        reason: "remaining_word_budget_too_low",
-        remainingWordBudget,
-      });
-      break; // Exit loop if budget is too low
-    }
-  }
-
-  const title = cleanText(phase1Result.title) || cleanText(analysis.title);
-  const outline = parseOutline(phase1Result.outline);
-
-  console.info("[podcast] two_phase_generation_merged", {
-    phase1Turns: phase1Script.length,
-    phase2Turns: phase2Script.length,
-    totalTurns: mergedScript.length,
+    addedTurns: added.length,
     totalWordCount,
+    durationRange: lengthPlan.durationRange,
   });
 
   return {
-    title,
-    estimatedDurationMinutes: computeDuration(totalWordCount, phase1Result.estimatedDurationMinutes),
-    speakers: [
-      { id: "host", name: "Host" },
-      { id: "expert", name: "Expert" },
-    ],
-    outline,
-    script: mergedScript,
+    ...current,
+    script,
     totalWordCount,
-    densityMode: lengthPlan.densityMode,
-    toneProfile: analysis.toneProfile,
+    outline: current.outline.length >= 3 ? current.outline : outlineFromScript(script),
+    estimatedDurationMinutes: computeDuration(totalWordCount, undefined),
   };
 }
 
@@ -555,6 +486,7 @@ export async function generatePodcastDiscussionScript(
   console.info("[podcast] length_plan_resolved", {
     resolvedSourceSizeTier: resolveSourceSizeTier(analysis),
     resolvedDensityMode: resolvedDensityMode,
+    minWords: lengthPlan.minWords,
     maxWords: lengthPlan.maxWords,
     targetWordRange: lengthPlan.targetWordRange,
     durationRange: lengthPlan.durationRange,
@@ -563,26 +495,20 @@ export async function generatePodcastDiscussionScript(
     toneProfile: analysisInput.toneProfile ?? "casual",
   });
 
-  // Use multi-phase generation for standard, deep-dive, and critical modes to achieve longer outputs.
-  // Quick and debate intentionally stay single-call because their targets are lower / more concise.
-  const useTwoPhase =
-    resolvedDensityMode === "standard" ||
-    resolvedDensityMode === "deep-dive" ||
-    resolvedDensityMode === "critical";
-
-  if (useTwoPhase && process.env.GROQ_API_KEY) {
-    return generatePodcastScriptTwoPhase(analysisInput, lengthPlan, PODCAST_DISCUSSION_SYSTEM);
-  }
-
-  // Single-call generation for other modes
   const userPrompt = buildPodcastDiscussionPrompt(analysisInput, lengthPlan);
 
-  // Use Groq as the primary provider (same as main analysis pipeline)
   if (process.env.GROQ_API_KEY) {
-    return parsePodcastDiscussion(
+    const first = parsePodcastDiscussion(
       await callGroqJson(PODCAST_DISCUSSION_SYSTEM, userPrompt),
       lengthPlan,
     );
+    if (first.totalWordCount >= lengthPlan.minWords) return first;
+    console.info("[podcast] continuation_started", {
+      densityMode: lengthPlan.densityMode,
+      totalWordCount: first.totalWordCount,
+      minWords: lengthPlan.minWords,
+    });
+    return extendShortScript(analysisInput, lengthPlan, first);
   }
 
   // Fallback to Gemini only if Groq is not configured

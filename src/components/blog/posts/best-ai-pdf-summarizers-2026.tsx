@@ -73,7 +73,7 @@ export function BestAiPdfSummarizersBody() {
         upload a PDF to the{" "}
         <InternalTextLink href="/upload">analysis workspace</InternalTextLink>, choose an
         intelligence mode, and receive structured analysis plus Learn cards for concepts
-        and review. During public beta the workspace is free — useful for comparing output
+        and review. The Free plan covers daily summaries — useful for comparing output
         quality on your own materials.
       </p>
       <p>

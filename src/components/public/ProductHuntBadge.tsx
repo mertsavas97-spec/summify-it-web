@@ -18,6 +18,8 @@ export function ProductHuntBadge() {
           alt="Summify - Turn long sources into summaries, mind maps, learning cards. | Product Hunt"
           width={250}
           height={54}
+          loading="lazy"
+          decoding="async"
           src={PRODUCT_HUNT_IMG_SRC}
           className="h-auto w-full max-w-[250px]"
         />

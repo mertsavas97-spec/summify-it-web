@@ -65,7 +65,7 @@ export const USE_CASES: UseCaseLandingConfig[] = [
     relatedLinks: RELATED_LINKS.researchers,
     cta: {
       title: "Analyze your next paper",
-      description: "Free during public beta.",
+      description: "Included on the Free plan.",
       primaryLabel: "Open workspace",
     },
   },
@@ -160,7 +160,7 @@ export const USE_CASES: UseCaseLandingConfig[] = [
     relatedLinks: RELATED_LINKS.creators,
     cta: {
       title: "Repurpose your next episode",
-      description: "Free during public beta.",
+      description: "Included on the Free plan.",
       primaryLabel: "Open workspace",
     },
   },
@@ -208,7 +208,7 @@ export const USE_CASES: UseCaseLandingConfig[] = [
     relatedLinks: RELATED_LINKS.teams,
     cta: {
       title: "Brief your team faster",
-      description: "Free during public beta.",
+      description: "Included on the Free plan.",
       primaryLabel: "Open workspace",
     },
   },

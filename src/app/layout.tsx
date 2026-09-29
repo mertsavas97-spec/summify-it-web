@@ -20,7 +20,7 @@ import {
 } from "@/lib/seo";
 import { isIndexableHost, resolveRequestHost } from "@/lib/seo-host";
 import { getOptionalUser } from "@/lib/auth";
-import { getProfile } from "@/lib/supabase/profile";
+import { ensureProfileForUser, getProfile } from "@/lib/supabase/profile";
 
 import "./globals.css";
 
@@ -120,12 +120,11 @@ export default async function RootLayout({
     const user = await getOptionalUser().catch(() => null);
     if (user?.email) {
       userEmail = user.email;
-      // Try to determine if user is admin (for now, we'll skip this check)
-      // In the future, you can check the user's profile for an admin role
       if (user.id) {
-        await getProfile(user.id).catch(() => null);
-        // Check if user has admin role (if your profile schema has this)
-        // isAdmin = profile?.role === 'admin';
+        const profile = await getProfile(user.id).catch(() => null);
+        if (!profile) {
+          await ensureProfileForUser(user).catch(() => null);
+        }
       }
     }
   } catch {

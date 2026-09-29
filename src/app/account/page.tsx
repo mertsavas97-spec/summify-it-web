@@ -120,7 +120,7 @@ export default async function AccountPage() {
         {!paidActive ? (
           <p className="mt-3 rounded-lg border border-white/[0.06] bg-zinc-950/50 px-3 py-2 text-[11px] leading-relaxed text-zinc-500">
             Free includes 5 analyses per day, max 20MB uploads, PDF/DOCX/PPTX/TXT/YouTube/Web,
-            4 core intelligence modes (incl. Study), 8 Learn cards per run, and up to 10 saved analyses.
+            4 core intelligence modes (incl. Study), 12 Learn cards per run, and up to 10 saved analyses.
             Audio Study Mode and Podcast are on Pro.
           </p>
         ) : null}

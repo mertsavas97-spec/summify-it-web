@@ -96,19 +96,12 @@ export function sanitizeMemoryHookContent(card: LearnCardOutput): string {
   const content = card.content.trim();
   if (!isBrokenMemoryHookContent(content)) return content;
 
-  const text = `${card.title} ${content}`;
-  if (/\b(growth|rise).*(rupture|crisis)/i.test(text)) {
-    return "Growth \u2192 rupture \u2192 resistance \u2192 recovery.";
-  }
-  if (/\b3\s*july|july\s*3\b/i.test(text)) {
-    return "3 July turned a club crisis into a civil resistance memory.";
-  }
   const sentence = content
     .replace(/\s+\u2192\s+the\s+.*$/i, "")
     .split(/[.!?]/)
-    .find((s) => s.trim().length >= 18 && s.length <= 90);
+    .find((s) => s.trim().length >= 18 && s.length <= 90 && !/→|->|↔/.test(s));
   if (sentence) return sentence.trim().slice(0, 120);
-  return "Key turning point \u2192 institutional pressure \u2192 public response.";
+  return "";
 }
 
 export type FinalLearnCardValidationOptions = {
@@ -157,12 +150,13 @@ export function finalValidateLearnCards(
   cards: LearnCardOutput[],
   options: FinalLearnCardValidationOptions = {},
 ): { cards: LearnCardOutput[]; titleStats: LearnTitleValidationStats } {
-  const sanitized = cards.map((card) => {
+  const sanitized = cards.flatMap((card) => {
     let content = card.content;
     if (card.type === "memory_hook") {
       content = sanitizeMemoryHookContent({ ...card, title: card.title });
+      if (!content.trim()) return [];
     }
-    return { ...card, content: content.trim().slice(0, 380) };
+    return [{ ...card, content: content.trim().slice(0, 380) }];
   });
 
   const { cards: validated, stats } = applyStrictTitleValidation(sanitized, options);

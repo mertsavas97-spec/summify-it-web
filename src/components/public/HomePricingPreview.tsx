@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 type PricingPreviewPlan = {
-  id: "guest" | "free" | "pro" | "team";
+  id: "free" | "pro" | "team";
   name: string;
   price: string;
   period?: string;
@@ -13,28 +13,15 @@ type PricingPreviewPlan = {
 
 const PLANS: PricingPreviewPlan[] = [
   {
-    id: "guest",
-    name: "Guest",
-    price: "$0",
-    tagline: "Try the learning workflow once",
-    bullets: [
-      "1 analysis",
-      "Summary + Learn cards",
-      "30-second audio preview",
-      "No account required",
-    ],
-    cta: { label: "Try once", href: "/upload", variant: "secondary" },
-  },
-  {
     id: "free",
     name: "Free",
     price: "$0",
     period: "/month",
-    tagline: "Daily study, free forever",
+    tagline: "Daily summaries and study cards",
     bullets: [
       "5 analyses per day",
-      "8 Learn cards + quiz",
-      "4 core lenses (incl. Study)",
+      "12 Learn cards and a quiz",
+      "4 core lenses, including Study",
       "Up to 10 saved analyses",
     ],
     cta: {
@@ -48,12 +35,12 @@ const PLANS: PricingPreviewPlan[] = [
     name: "Pro",
     price: "$7.99",
     period: "/month",
-    tagline: "Audio lessons, study cards, quizzes, and memory reviews.",
+    tagline: "The full study workflow",
     bullets: [
-      "Full Audio Study Mode",
-      "Podcast mode",
-      "Unlimited history",
-      "Contract, Exam Prep & full mode catalog",
+      "Unlimited analyses (fair use)",
+      "Unlimited audio lessons and podcasts",
+      "All intelligence lenses",
+      "Mind maps and spaced repetition",
     ],
     cta: { label: "Start Pro", href: "/pricing?plan=pro", variant: "primary" },
     highlighted: true,
@@ -65,8 +52,8 @@ const TEAM_PLAN: PricingPreviewPlan = {
   name: "Team",
   price: "$24.99",
   period: "/month",
-  tagline: "Shared library + team memory",
-  bullets: ["Shared Library", "Team Memory", "Admin Controls"],
+  tagline: "Pro for a group",
+  bullets: ["Everything in Pro", "Up to 5 seats", "Shared library"],
   cta: { label: "Start Team", href: "/pricing?plan=team", variant: "secondary" },
 };
 
@@ -105,11 +92,11 @@ export function HomePricingPreview() {
               Pricing
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-              Start free — upgrade as your learning workflow grows
+              Start free — Pro is the full workflow
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
-              Choose the entry point that fits you today. Guest is a one-time try, Free is daily access,
-              and Pro unlocks the full learning workflow.
+              Free covers daily summaries and study cards. Pro adds unlimited audio lessons, podcasts,
+              and every lens. Team is Pro for up to 5 people.
             </p>
           </div>
           <Link
@@ -120,19 +107,19 @@ export function HomePricingPreview() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-4 lg:grid-cols-4">
+        <div className="mt-10 grid gap-4 lg:grid-cols-3">
           {[...PLANS, TEAM_PLAN].map((plan) => (
             <article
               key={plan.id}
               className={
                 plan.highlighted
-                  ? "relative flex h-full flex-col rounded-2xl border border-violet-500/35 bg-gradient-to-b from-violet-950/38 via-zinc-950/55 to-zinc-950/65 p-6 shadow-[0_30px_110px_-80px_rgba(124,58,237,0.9)]"
+                  ? "relative order-first flex h-full flex-col rounded-2xl border border-violet-400/45 bg-gradient-to-b from-violet-950/55 via-zinc-950/55 to-zinc-950/70 p-6 shadow-[0_30px_110px_-60px_rgba(124,58,237,0.95)] ring-1 ring-violet-400/30 lg:order-none"
                   : "relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/[0.06] dark:bg-zinc-950/45"
               }
             >
               {plan.highlighted ? (
                 <div className="absolute -top-3 left-6 rounded-full border border-violet-400/30 bg-violet-600 px-3 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-500/30">
-                  Recommended
+                  Most popular
                 </div>
               ) : null}
 

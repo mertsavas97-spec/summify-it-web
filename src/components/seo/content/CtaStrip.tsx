@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { trackEvent } from "@/lib/analytics/events";
+import { withCtaUtm, type InternalCtaSource } from "@/lib/analytics/utm";
 
 type CtaStripProps = {
   title: string;
@@ -12,6 +13,8 @@ type CtaStripProps = {
   secondaryLabel?: string;
   /** When set, primary CTA fires `guide_cta_clicked` with this surface id. */
   analyticsSurface?: string;
+  /** UTM surface; defaults to "guide". Comparison pages pass "compare". */
+  source?: InternalCtaSource;
 };
 
 export function CtaStrip({
@@ -22,7 +25,9 @@ export function CtaStrip({
   secondaryHref = "/pricing",
   secondaryLabel = "View plans",
   analyticsSurface,
+  source = "guide",
 }: CtaStripProps) {
+  const campaign = `${source}_strip`;
   function onPrimaryClick() {
     if (!analyticsSurface) return;
     trackEvent("guide_cta_clicked", {
@@ -38,11 +43,19 @@ export function CtaStrip({
         <h2 className="text-lg font-semibold text-white sm:text-xl">{title}</h2>
         <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-zinc-400">{description}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Button href={primaryHref} size="sm" onClick={onPrimaryClick}>
+          <Button
+            href={withCtaUtm(primaryHref, source, campaign)}
+            size="sm"
+            onClick={onPrimaryClick}
+          >
             {primaryLabel}
           </Button>
           {secondaryHref ? (
-            <Button href={secondaryHref} variant="secondary" size="sm">
+            <Button
+              href={withCtaUtm(secondaryHref, source, campaign)}
+              variant="secondary"
+              size="sm"
+            >
               {secondaryLabel}
             </Button>
           ) : null}

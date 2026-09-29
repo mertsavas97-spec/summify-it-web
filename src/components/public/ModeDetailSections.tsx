@@ -9,6 +9,7 @@ import { ProductMockCard } from "./ProductMockCard";
 import { CTASection } from "./CTASection";
 import { InternalTextLink } from "./InternalTextLink";
 import { ModeSeoExpansion } from "./ModeSeoExpansion";
+import { ComparisonTable } from "@/components/seo/content/ComparisonTable";
 
 type ModeDetailSectionsProps = {
   modeId: IntelligenceModeId;
@@ -177,6 +178,116 @@ export function ModeDetailSections({ modeId }: ModeDetailSectionsProps) {
             </ul>
           </div>
         </section>
+      )}
+
+      {modeId === "contract-analyzer" && (
+        <>
+          <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-6xl">
+              <h2 className="text-xl font-semibold text-white">
+                Contract Summary case study — MSA first read
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+                A walkthrough on a master services agreement (MSA), written with US and UK
+                contract terminology. Illustrative scenario — not a legal opinion.
+              </p>
+              <div className="mt-8 grid gap-4 lg:grid-cols-3">
+                <div className="rounded-xl border border-white/[0.06] bg-zinc-950/50 p-4">
+                  <span className="text-[10px] font-semibold text-violet-400/80">The input</span>
+                  <h3 className="mt-2 text-sm font-medium text-zinc-200">
+                    28-page MSA + statement of work
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    US-style: indemnification, limitation of liability, governing law
+                    (Delaware). UK-style: indemnities, liability caps, and governing law
+                    (England &amp; Wales) clauses sit in the same sections you would scan
+                    manually.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-zinc-950/50 p-4">
+                  <span className="text-[10px] font-semibold text-violet-400/80">The pass</span>
+                  <h3 className="mt-2 text-sm font-medium text-zinc-200">
+                    Obligations, dates, and ambiguous clauses
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    Payment terms, notice periods, auto-renewal and termination-for-convenience
+                    rights are pulled into structured sections, with vague wording flagged for
+                    human review rather than silently summarized away.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-zinc-950/50 p-4">
+                  <span className="text-[10px] font-semibold text-violet-400/80">The output</span>
+                  <h3 className="mt-2 text-sm font-medium text-zinc-200">
+                    Review memo + Learn cards
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    A decision-ready brief your team can circulate, plus flashcards on the key
+                    terms — useful for onboarding junior reviewers and for procurement handoffs.
+                  </p>
+                </div>
+              </div>
+              <p className="mt-6 text-xs text-zinc-600">
+                Contract Summary is informational only and does not constitute legal advice —
+                always have counsel review signable agreements.
+              </p>
+            </div>
+          </section>
+
+          <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl">
+              <h2 className="text-xl font-semibold text-white">
+                Contract Summary vs manual review
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                Most teams still triage agreements by skimming. Here is what changes when the
+                first pass runs in Summify.
+              </p>
+              <div className="mt-6">
+                <ComparisonTable
+                  competitorName="Manual review"
+                  rows={[
+                    {
+                      feature: "First pass on a 28-page MSA",
+                      summify: "Minutes",
+                      competitor: "Hours",
+                    },
+                    {
+                      feature: "Obligations & key dates extracted into sections",
+                      summify: true,
+                      competitor: "By hand",
+                    },
+                    {
+                      feature: "Ambiguous clauses flagged for human review",
+                      summify: true,
+                      competitor: "Reviewer-dependent",
+                    },
+                    {
+                      feature: "Repeatable output across a procurement batch",
+                      summify: true,
+                      competitor: false,
+                    },
+                    {
+                      feature: "Learn cards for team onboarding",
+                      summify: "Learn cards",
+                      competitor: false,
+                    },
+                    {
+                      feature: "Legal advice",
+                      summify: false,
+                      competitor: "Counsel",
+                    },
+                  ]}
+                />
+              </div>
+              <p className="mt-4 text-xs text-zinc-600">
+                Compare formats too:{" "}
+                <InternalTextLink href="/summarize-docx">DOCX</InternalTextLink> and{" "}
+                <InternalTextLink href="/summarize-pdf">PDF</InternalTextLink> agreements run
+                through the same mode.
+              </p>
+            </div>
+          </section>
+        </>
       )}
 
       <section className="border-b border-white/[0.04] px-4 py-14 sm:px-6 lg:px-8">

@@ -34,7 +34,7 @@ type DashboardSidebarProps = {
 export function DashboardSidebar({
   savedCount = 0,
   dailyCount = 0,
-  planLabel = "Public Beta",
+  planLabel = "Workspace",
 }: DashboardSidebarProps) {
   const pathname = usePathname();
 

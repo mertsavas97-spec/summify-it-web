@@ -24,6 +24,8 @@ export function ExpandableText({ text, className = "", lines = 4 }: ExpandableTe
   const [overflows, setOverflows] = useState(false);
 
   useEffect(() => {
+    // Reset expanded state when text changes — intentional state sync with prop
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpanded(false);
   }, [text]);
 

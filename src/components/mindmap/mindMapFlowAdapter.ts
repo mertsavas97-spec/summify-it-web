@@ -1,5 +1,6 @@
 import type { Edge, Node } from "@xyflow/react";
 import { layoutMindMapGraph } from "@/lib/mindmap/layoutMindMap";
+import { resolveMindMapNodeLabels } from "@/lib/mindmap/mindMapNodeLabels";
 import type { MindMapGraph } from "@/types/mindmap";
 import type { MindMapFlowNodeData } from "./MindMapNodeCard";
 
@@ -8,6 +9,7 @@ export function mindMapGraphToFlow(graph: MindMapGraph): {
   edges: Edge[];
 } {
   const positions = layoutMindMapGraph(graph);
+  const labels = resolveMindMapNodeLabels(graph.profile);
 
   const nodes: Node<MindMapFlowNodeData>[] = graph.nodes.map((n) => {
     const pos = positions.get(n.id) ?? { x: 0, y: 0 };
@@ -17,9 +19,12 @@ export function mindMapGraphToFlow(graph: MindMapGraph): {
       position: pos,
       data: {
         title: n.title,
+        fullTitle: n.fullTitle,
         insight: n.insight,
+        detail: n.detail,
         nodeType: n.metadata.type,
         importance: n.metadata.importance ?? "secondary",
+        typeLabel: labels[n.metadata.type] ?? "Node",
       },
     };
   });

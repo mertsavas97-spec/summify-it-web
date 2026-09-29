@@ -91,7 +91,7 @@ export default function ForResearchersPage() {
 
       <CTASection
         title="Synthesize your next paper"
-        description="Free during public beta — start with one PDF or article URL."
+        description="Start with one PDF or article URL on the Free plan."
         primaryLabel="Open workspace"
         secondaryHref="/use-cases/research-papers-students"
         secondaryLabel="Research use case"

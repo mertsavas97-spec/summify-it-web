@@ -46,5 +46,5 @@ export const siteConfig = {
   description:
     "Free AI summarizer for PDFs, PowerPoint, YouTube, and web articles. Get structured summaries, key insights, flashcards, quizzes, and optional audio lessons in one workspace.",
   url: getSiteUrl(),
-  ogImage: "https://www.summify.app/og/summify-og-v1.png",
+  ogImage: "https://www.summify.app/og/summify-og-v1.jpg",
 } as const;

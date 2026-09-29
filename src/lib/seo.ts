@@ -3,6 +3,49 @@ import type { BlogPost } from "@/data/blog-posts";
 import { getAllIndexablePaths } from "@/lib/seo-paths";
 import { siteConfig } from "@/lib/site";
 
+/**
+ * SERP titles for CMS posts that otherwise keep generic CMS titles.
+ * Base title stays under 50 chars so `| Summify` keeps the tag ≤60.
+ * Commercial "pdf summarizer" stays on /summarize-pdf; this blog owns the list query.
+ */
+const BLOG_SERP_OVERRIDES: Record<
+  string,
+  { title: string; description: string; heading?: string }
+> = {
+  "best-ai-pdf-summarizers-2026": {
+    title: "Best AI PDF Summarizer Tools in 2026",
+    description:
+      "Compare the best AI PDF summarizer tools in 2026: accuracy, study cards, pricing, and privacy. See what to test on your files, then try Summify free.",
+    // CMS title leaks into the H1 ("…What to Look For") and cannibalizes the
+    // evaluation guide. Keep the listicle intent in H1 too.
+    heading: "Best AI PDF Summarizer Tools in 2026",
+  },
+  "best-ai-tools-for-academic-research": {
+    title: "Best AI Tool for Academic Research 2026",
+    description:
+      "Find the best AI tool for academic research: summarize papers, pull key findings, and build study notes. See how to choose, then try Summify free.",
+  },
+};
+
+export function getBlogSerpCopy(post: {
+  slug: string;
+  title: string;
+  description: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+}): { title: string; description: string } {
+  const override = BLOG_SERP_OVERRIDES[post.slug];
+  return {
+    title: override?.title || post.seoTitle?.trim() || post.title,
+    description: override?.description || post.seoDescription?.trim() || post.description,
+  };
+}
+
+/** Visible H1 — overridden only where the CMS title targets another query. */
+export function getBlogHeading(post: { slug: string; title: string }): string {
+  return BLOG_SERP_OVERRIDES[post.slug]?.heading || post.title;
+}
+
 export const SEO_BRAND = "Summify";
 
 /** Update when a public Twitter/X handle is confirmed. */
@@ -116,7 +159,14 @@ export function buildPageMetadata(input: SeoPageInput): Metadata {
     title: { absolute: fullTitle },
     description: input.description,
     keywords: input.keywords,
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      // One English document for all English markets. Do not invent en-GB URLs.
+      languages: {
+        "en-US": canonical,
+        "x-default": canonical,
+      },
+    },
     robots: input.noindex
       ? { index: false, follow: false }
       : {
@@ -152,8 +202,9 @@ export function buildBlogPostMetadata(
   },
 ): Metadata {
   const path = `/blog/${post.slug}`;
-  const rawTitle = post.seoTitle?.trim() || post.title;
-  const rawDescription = post.seoDescription?.trim() || post.description;
+  const serp = getBlogSerpCopy(post);
+  const rawTitle = serp.title;
+  const rawDescription = serp.description;
   // Keep SERP-safe lengths (Ahrefs: title ~≤60 with brand; description ≤155–160).
   const title = rawTitle.length > 55 ? `${rawTitle.slice(0, 52).trimEnd()}…` : rawTitle;
   const description =

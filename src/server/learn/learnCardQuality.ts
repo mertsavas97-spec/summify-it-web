@@ -10,6 +10,8 @@ import {
   isSameCognitiveQuestion,
 } from "./learnCognitiveDedup";
 import { isWeakGenericLearnTitle, type KnowledgeStructure } from "./knowledgeStructure";
+import { isDistinctFlashcardPair, isGenericFlashcardPrompt } from "@/lib/learn/flashcardPair";
+import { answerStartsAsCut, repairStudyCard } from "@/lib/learn/separateLearnCardCopy";
 import { synthesizeKnowledgeStructureCandidates } from "./knowledgeStructureLearn";
 import { resolveLearnStrategy } from "./applyModeLearnStrategy";
 import {
@@ -24,7 +26,6 @@ import type { ModeLearnStrategy, ModeLearnStrategyInput, ModeStrategyPattern } f
 
 export type { LearnCardQualityStats } from "@/types/adaptive-learn";
 
-const MAX_TITLE_LENGTH = 110;
 const CONTENT_COMPARE_LEN = 120;
 const DEFAULT_TARGET_MIN = 6;
 const DEFAULT_TARGET_MAX = 12;
@@ -172,6 +173,7 @@ function isGenericTitle(title: string): boolean {
   const t = title.trim();
   if (t.length < 6) return true;
   if (isWeakGenericLearnTitle(t)) return true;
+  if (isGenericFlashcardPrompt(t)) return true;
   if (GENERIC_TITLE_PATTERNS.some((p) => p.test(t))) return true;
   if (GENERIC_TITLE_PREFIX.test(t)) return true;
   if (/^explain\s+[A-Z]{2,}(\s+[A-Z]{2,})+/i.test(t)) return true;
@@ -244,28 +246,28 @@ function trimBrokenTitleTail(title: string): string {
 function phraseFromContent(content: string, documentTitle?: string): string | null {
   const entities = extractEntities(content);
   if (entities.length >= 2) {
-    return `${entities[0]} and ${entities[1]}`.slice(0, MAX_TITLE_LENGTH);
+    return `${entities[0]} and ${entities[1]}`;
   }
   if (entities.length === 1) {
     const nouns = significantNouns(content.replace(entities[0], ""), 2);
     if (nouns[0]) {
-      return `${entities[0]} and ${nouns[0]}`.slice(0, MAX_TITLE_LENGTH);
+      return `${entities[0]} and ${nouns[0]}`;
     }
-    return entities[0].slice(0, MAX_TITLE_LENGTH);
+    return entities[0];
   }
 
   const nouns = significantNouns(content, 5);
   if (nouns.length >= 3) {
-    return nouns.slice(0, 4).join(" ").slice(0, MAX_TITLE_LENGTH);
+    return nouns.slice(0, 4).join(" ");
   }
 
   const firstSentence = content.split(/[.!?]/)[0]?.trim() ?? "";
   if (firstSentence.length >= 12) {
-    return firstSentence.split(/\s+/).slice(0, 8).join(" ").slice(0, MAX_TITLE_LENGTH);
+    return firstSentence.split(/\s+/).slice(0, 8).join(" ");
   }
 
   if (documentTitle && documentTitle.length > 5) {
-    return documentTitle.slice(0, MAX_TITLE_LENGTH);
+    return documentTitle;
   }
 
   return null;
@@ -288,32 +290,29 @@ function rewriteGenericTitle(
       creatorMode: isCreatorIntelligenceMode(intelligenceModeId, strategy),
     })
   ) {
-    return fromPattern.slice(0, MAX_TITLE_LENGTH);
+    return fromPattern;
   }
 
   switch (card.type) {
     case "memory_hook":
-      if (extractEntities(content).length > 0) {
-        return `What anchors recall of ${phrase}?`.slice(0, MAX_TITLE_LENGTH);
-      }
-      return `Memorable hook for ${phrase}`.slice(0, MAX_TITLE_LENGTH);
+      return `What anchors recall of ${phrase}?`;
     case "why_it_matters":
     case "why":
-      return `Why does ${phrase} matter?`.slice(0, MAX_TITLE_LENGTH);
+      return `Why does ${phrase} matter?`;
     case "quiz": {
       const q = content.split("\n---\n")[0]?.trim() ?? content;
-      if (q.endsWith("?") && !isGenericTitle(q)) return q.slice(0, MAX_TITLE_LENGTH);
-      return `What claim does the source make about ${phrase}?`.slice(0, MAX_TITLE_LENGTH);
+      if (q.endsWith("?") && !isGenericTitle(q)) return q;
+      return `What is the accurate fact about ${phrase}?`;
     }
     case "misconception":
-      return `Common mistake about ${phrase}`.slice(0, MAX_TITLE_LENGTH);
+      return `What mistake do people make about ${phrase}?`;
     case "connection":
-      return `${phrase}: how ideas connect`.slice(0, MAX_TITLE_LENGTH);
+      return `How is ${phrase} connected to the other ideas here?`;
     default:
       if (extractEntities(content).length > 0) {
-        return `What is ${phrase}?`.slice(0, MAX_TITLE_LENGTH);
+        return `What is ${phrase}?`;
       }
-      return phrase.slice(0, MAX_TITLE_LENGTH);
+      return null;
   }
 }
 
@@ -336,7 +335,7 @@ function normalizeCardTitle(
   if (wasGeneric) {
     const rewritten = rewriteGenericTitle(card, documentTitle, strategy, intelligenceModeId);
     if (rewritten && !isGenericTitle(rewritten)) {
-      return { title: rewritten.slice(0, MAX_TITLE_LENGTH), normalized: true };
+      return { title: rewritten, normalized: true };
     }
   }
 
@@ -344,10 +343,6 @@ function normalizeCardTitle(
     { ...card, title },
     { documentTitle, strategy, intelligenceModeId },
   );
-
-  if (title.length > MAX_TITLE_LENGTH) {
-    title = `${title.slice(0, MAX_TITLE_LENGTH - 1).trim()}…`;
-  }
 
   return { title, normalized: wasGeneric || title !== card.title.trim() };
 }
@@ -525,30 +520,30 @@ function fallbackTitleForInsight(
 
   const priority = strategy?.fallbackPriorities[0];
   if (strategy?.promptStyle === "decision_recall") {
-    return `What decision involves ${subject}?`.slice(0, MAX_TITLE_LENGTH);
+    return `What decision involves ${subject}?`;
   }
   if (strategy?.promptStyle === "argument_reconstruction" || priority === "claim") {
-    return `What claim does the source make about ${subject}?`.slice(0, MAX_TITLE_LENGTH);
+    return `What decision does ${subject} require?`;
   }
   if (strategy?.promptStyle === "creative_angle") {
-    return `What angle does ${subject} open?`.slice(0, MAX_TITLE_LENGTH);
+    return `What angle does ${subject} open?`;
   }
   if (strategy?.promptStyle === "clause_recall") {
-    return `What obligation involves ${subject}?`.slice(0, MAX_TITLE_LENGTH);
+    return `What obligation involves ${subject}?`;
   }
   if (strategy?.promptStyle === "mechanism_recall" || priority === "mechanism_breakdown") {
-    return `How does ${subject} work in this source?`.slice(0, MAX_TITLE_LENGTH);
+    return `How does ${subject} work?`;
   }
   if (priority === "cause_effect_chain" || strategy?.id.startsWith("student_historical")) {
-    return `Why did ${subject} matter in this period?`.slice(0, MAX_TITLE_LENGTH);
+    return `Why did ${subject} matter in this period?`;
   }
   if (priority === "timeline_chain" || priority === "historical_anchor") {
-    return `What happened regarding ${subject}?`.slice(0, MAX_TITLE_LENGTH);
+    return `What changed for ${subject}?`;
   }
   if (priority === "timeline_chain" || priority === "historical_anchor") {
-    return `Which period best captures the shift involving ${subject}?`.slice(0, MAX_TITLE_LENGTH);
+    return `Which period best captures the shift involving ${subject}?`;
   }
-  return `Why does ${subject} matter in this document?`.slice(0, MAX_TITLE_LENGTH);
+  return `Why did ${subject} matter?`;
 }
 
 function learnPatternFromPriority(priority: ModeStrategyPattern): LearnCardOutput["learnPattern"] {
@@ -634,7 +629,7 @@ function buildFallbackCards(
     fallbacks.push({
       type: strategy?.blockedKinds?.includes("quiz") ? "concept" : "concept",
       title,
-      content: insight.trim().slice(0, 320),
+      content: insight.trim(),
       learnPattern: learnPatternFromPriority(priority),
     });
     usedTitles.add(normalizeText(title));
@@ -649,7 +644,7 @@ function buildFallbackCards(
     for (const sentence of sentences.slice(0, 2)) {
       const entities = extractEntities(sentence);
       if (entities.length === 0) continue;
-      const title = `${entities[0]}: core idea`.slice(0, MAX_TITLE_LENGTH);
+      const title = `${entities[0]}: core idea`;
       if (usedTitles.has(normalizeText(title))) continue;
       fallbacks.push({
         type: "concept",
@@ -723,6 +718,28 @@ export function applyLearnCardQuality(
     }
 
     if (!passesTypeDiscipline(candidate)) {
+      removedGenericCount += 1;
+      continue;
+    }
+
+    const repaired = repairStudyCard(candidate.type, candidate.title, candidate.content);
+    if (!repaired) {
+      removedGenericCount += 1;
+      continue;
+    }
+    candidate.type = repaired.type as LearnCardOutput["type"];
+    candidate.title = repaired.title;
+    candidate.content = repaired.content;
+
+    if (
+      (candidate.type === "why" || candidate.type === "why_it_matters" || candidate.type === "quiz") &&
+      !isDistinctFlashcardPair(candidate.title, candidate.content)
+    ) {
+      removedGenericCount += 1;
+      continue;
+    }
+
+    if (candidate.type !== "quiz" && answerStartsAsCut(candidate.title, candidate.content)) {
       removedGenericCount += 1;
       continue;
     }

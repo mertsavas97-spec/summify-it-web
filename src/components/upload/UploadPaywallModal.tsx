@@ -39,21 +39,12 @@ export function UploadPaywallModal({
   const plans = useMemo(
     () => [
       {
-        id: "guest" as const,
-        name: "Guest",
-        badge: "Try once",
-        price: "$0",
-        period: "",
-        bullets: ["1 analysis", "8 Learn Cards", "30s audio preview"],
-        cta: { label: "Try once", kind: "close" as const },
-      },
-      {
         id: "free" as const,
         name: "Free",
         badge: "Best to start",
         price: "$0",
         period: "",
-        bullets: ["5 analyses/day", "8 Learn Cards", "4 core lenses", "Up to 10 saved"],
+        bullets: ["5 analyses/day", "12 Learn Cards", "4 core lenses", "Up to 10 saved"],
         cta: {
           label: "Create free account",
           kind: "href" as const,
@@ -203,7 +194,7 @@ export function UploadPaywallModal({
             </div>
           </div>
 
-          <div className={`grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-5 ${guestMode ? "opacity-85" : ""}`}>
+          <div className="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-4">
             {plans.map((plan) => {
               const isPro = Boolean(plan.highlighted);
 
@@ -211,17 +202,11 @@ export function UploadPaywallModal({
                 <article
                   key={plan.id}
                   className={`relative flex min-h-[250px] flex-col rounded-xl border px-4 pb-4 pt-3 ${
-                    isPro && !guestMode
+                    isPro
                       ? "border-violet-500/45 bg-gradient-to-b from-violet-950/45 via-zinc-900/85 to-zinc-950 shadow-[0_0_40px_-10px_rgba(139,92,246,0.35)] ring-1 ring-violet-500/25"
                       : "border-white/[0.08] bg-zinc-900/45"
                   }`}
                 >
-                  {isPro && !guestMode ? (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-violet-400/30 bg-violet-600 px-3 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-500/30">
-                      Recommended
-                    </div>
-                  ) : null}
-
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="flex items-center gap-2">
@@ -250,14 +235,10 @@ export function UploadPaywallModal({
                   </ul>
 
                   <div className="mt-3">
-                    {plan.cta.kind === "close" ? (
-                      <Button type="button" variant={isPro && !guestMode ? "primary" : "secondary"} className="w-full" size="md" onClick={onClose}>
-                        {plan.cta.label}
-                      </Button>
-                    ) : plan.cta.kind === "href" ? (
+                    {plan.cta.kind === "href" ? (
                       <Button
                         href={plan.cta.href}
-                        variant={isPro && !guestMode ? "primary" : "secondary"}
+                        variant={isPro ? "primary" : "secondary"}
                         className="w-full"
                         size="md"
                         onClick={() => onAuthIntent?.()}
@@ -269,7 +250,7 @@ export function UploadPaywallModal({
                         plan={plan.cta.plan}
                         interval={interval}
                         label={plan.cta.label}
-                        variant={isPro && !guestMode ? "primary" : "secondary"}
+                        variant={isPro ? "primary" : "secondary"}
                         billing={billing}
                         allowScholarCheckout={scholarCheckoutEligible}
                         autoResumeCheckout={false}

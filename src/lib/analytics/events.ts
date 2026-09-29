@@ -4,6 +4,7 @@ import { isGaEnabled } from "@/lib/analytics/ga";
 export const ANALYTICS_EVENTS = {
   upload_started: "upload_started",
   analysis_completed: "analysis_completed",
+  account_requested: "account_requested",
   signup_started: "signup_started",
   signup_completed: "signup_completed",
   share_enabled: "share_enabled",
@@ -44,6 +45,11 @@ export type AnalyticsEventParams = {
     mode?: string;
     source_kind?: string;
     saved_to_workspace?: boolean;
+  };
+  /** Guest asked to keep an analysis → routed to sign-up / sign-in. */
+  account_requested?: {
+    surface?: string;
+    return_to?: string;
   };
   signup_started?: {
     method?: "password" | "magic_link" | "google";

@@ -10,6 +10,7 @@ import type { BillingInterval, PlanId } from "@/types/plan";
 import { devLog, devWarn } from "@/server/logging";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { finishPolarWebhookDebug } from "@/server/billing/polarWebhookDebugStore";
+import { notifyNewSignup } from "@/server/internalNotifications";
 
 export type PolarUserResolutionSource =
   | "metadata"
@@ -298,6 +299,16 @@ export async function ensureProfileRow(
       `Could not create profile row for auth user ${userId}: ${error.message}`,
       "profile_create_failed",
     );
+  }
+
+  if (!error) {
+    notifyNewSignup({
+      email,
+      plan: "free",
+      provider: "email",
+      emailConfirmed: Boolean(email),
+      signedUpAt: new Date().toISOString(),
+    });
   }
 }
 

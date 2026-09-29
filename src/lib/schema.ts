@@ -1,6 +1,6 @@
 import { siteConfig } from "@/lib/site";
 import { SUMMIFY_SOCIAL_SAME_AS } from "@/lib/social-links";
-import { absoluteUrl, SEO_BRAND } from "@/lib/seo";
+import { absoluteUrl, getBlogSerpCopy, SEO_BRAND } from "@/lib/seo";
 import { compactJsonLd } from "@/lib/schema/serialize";
 import type {
   ArticleSchemaInput,
@@ -50,7 +50,7 @@ const BETA_OFFER: JsonLdObject = {
   "@type": "Offer",
   price: "0",
   priceCurrency: "USD",
-  description: "Free during public beta",
+  description: "Free plan",
   url: absoluteUrl("/upload"),
 };
 
@@ -288,7 +288,7 @@ export function articleSchema(input: ArticleSchemaInput): JsonLdObject {
 
   return withContext(
     compactJsonLd({
-      "@type": "Article",
+      "@type": input.schemaType ?? "Article",
       headline: input.headline,
       description: input.description,
       datePublished: input.datePublished,
@@ -313,16 +313,18 @@ export function articleSchema(input: ArticleSchemaInput): JsonLdObject {
 }
 
 export function blogArticleSchema(post: BlogPost): JsonLdObject {
+  const serp = getBlogSerpCopy(post);
   return articleSchema({
     path: `/blog/${post.slug}`,
-    headline: post.title,
-    description: post.description,
+    headline: serp.title,
+    description: serp.description,
     datePublished: post.date,
     dateModified: post.updatedAt,
     articleSection: post.category,
     keywords: [...post.tags, ...post.keywords],
     authorName: post.author.name,
     authorPath: post.author.href,
+    schemaType: "BlogPosting",
   });
 }
 

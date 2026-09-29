@@ -27,6 +27,13 @@ const RISK_GROUNDING_RULES = `Risk grounding for risksOrWarnings:
 - If no clear risks exist and risks are NOT suppressed by the plan, prefer [] over filler — only use "The source does not provide enough risk signals." when the plan expects a risk section and the source is silent.
 - If the profile notes thin or fragmented source quality, state that limitation first (only when relevant).`;
 
+const NEUTRAL_ANALYSIS_LENS = `Neutral summary lens — say what the source says, in plain language:
+- Faithful account of the claims, events, or argument
+- Concrete names, numbers, dates, and causes from the source
+- Do not write for a leadership reader, a study outline, or a marketing brief
+- Do not prioritize decisions, revenue, stakeholders, or next actions unless the source itself is about those
+- keyInsights must add a distinct fact or cause. Do not repeat a sentence from the summary.`;
+
 const MODE_ANALYSIS_LENSES: Record<TextAnalysisMode, string> = {
   executive: `Executive analysis lens — prioritize for leadership readers:
 - Decisions stated or implied in the document
@@ -110,7 +117,7 @@ const OUTPUT_FIELD_RULES = `Output field rules (same JSON shape for every mode):
 - All string fields must be ${DEFAULT_OUTPUT_LANGUAGE} (see output language rules).
 - title: specific to this document (names, parties, or topics); ${DEFAULT_OUTPUT_LANGUAGE} prose with preserved proper nouns
 - summary: 2–4 paragraphs for typical sources; for long or dense sources (long transcripts, multi-page docs), write 4–6 paragraphs covering primary plan sections. Document-specific; open with the document's actual subject, not "this document discusses…"
-- keyInsights: 3–6 non-empty bullets with concrete details (numbers, names, dates, section references); never omit or leave empty
+- keyInsights: follow the Key insight quota in the user message. If no quota is given, write 4–6 concrete bullets. A long source may require 8–12. Each bullet must add a distinct name, date, number, or causal claim. Never omit the list or pad it with restatements.
 - risksOrWarnings: follow risk grounding rules and adaptive plan (0–5 items; [] allowed)
 - actionItems: only when useful per adaptive plan (may be [] — no generic filler)
 - learnCards: always [] (empty array)`;
@@ -138,6 +145,7 @@ export type SystemPromptOptions = {
   isYoutubeTranscript?: boolean;
   isPresentation?: boolean;
   intelligenceModeLabel?: string;
+  intelligenceModeId?: string;
   modePromptAdjunct?: string;
   cognitionPromptBlock?: string;
 };
@@ -151,18 +159,27 @@ export function buildSystemPrompt(
       ? `\nDepth: output=${options.outputDepth ?? "standard"}, learn=${options.learnDepth ?? "standard"}.`
       : "";
 
+  const neutralOverview = options?.intelligenceModeId === "general-summary";
   const youtubeBlock = options?.isYoutubeTranscript
-    ? `\n${YOUTUBE_TRANSCRIPT_RULES}\n${YOUTUBE_MODE_LENSES[mode]}\n`
+    ? `\n${YOUTUBE_TRANSCRIPT_RULES}\n${
+        neutralOverview
+          ? "YouTube + Neutral summary: cover the argument from start to end. No leadership framing and no narrator voice."
+          : YOUTUBE_MODE_LENSES[mode]
+      }\n`
     : "";
 
   const presentationBlock = options?.isPresentation
-    ? `\n${PRESENTATION_RULES}\n${PRESENTATION_MODE_LENSES[mode]}\n`
+    ? `\n${PRESENTATION_RULES}\n${
+        neutralOverview
+          ? "Presentation + Neutral summary: describe the deck's actual sequence. Do not rewrite it as a decision memo."
+          : PRESENTATION_MODE_LENSES[mode]
+      }\n`
     : "";
 
   const modeLabel = options?.intelligenceModeLabel;
   const adjunct = options?.modePromptAdjunct?.trim();
   const intelligenceModeBlock = [
-    modeLabel ? `Intelligence mode: ${modeLabel} (backend family: ${mode}).` : "",
+    modeLabel ? `Intelligence mode: ${modeLabel} (backend family: ${neutralOverview ? "neutral" : mode}).` : "",
     adjunct ? `Mode-specific emphasis:\n${adjunct}` : "",
   ]
     .filter(Boolean)
@@ -179,8 +196,8 @@ ${ANALYSIS_OUTPUT_LANGUAGE_RULES}
 
 ${NATIVE_ENGLISH_EDITORIAL_STYLE_POLICY}
 
-Selected backend family: ${mode}
-${intelligenceModeBlock ? `${intelligenceModeBlock}\n` : ""}${cognitionBlock}${MODE_ANALYSIS_LENSES[mode]}${youtubeBlock}${presentationBlock}
+Selected backend family: ${neutralOverview ? "neutral" : mode}
+${intelligenceModeBlock ? `${intelligenceModeBlock}\n` : ""}${cognitionBlock}${neutralOverview ? NEUTRAL_ANALYSIS_LENS : MODE_ANALYSIS_LENSES[mode]}${youtubeBlock}${presentationBlock}
 
 ${LEARN_CARDS_DEFERRED}
 

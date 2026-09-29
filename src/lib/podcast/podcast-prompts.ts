@@ -12,6 +12,7 @@ import type {
 export type PodcastLengthPlan = {
   durationRange: string;
   targetWordRange: string;
+  minWords: number;
   maxWords: number;
   densityMode: PodcastDensityMode;
 };
@@ -100,7 +101,7 @@ function densityFraming(density: PodcastDensityMode): string {
     case "quick":
       return `DENSITY: Quick Discussion
 - Keep exchanges concise and focused
-- Aim for 3–6 minute total duration
+- Aim for 5–8 minute total duration
 - Prioritize the single most important insight
 - Use 6–10 dialogue turns maximum
 - Skip extended examples or tangents
@@ -109,7 +110,7 @@ function densityFraming(density: PodcastDensityMode): string {
     case "standard":
       return `DENSITY: Standard Discussion
 - Balanced pacing with room for exploration
-- Aim for 6–12 minute total duration
+- Aim for 10–15 minute total duration
 - Cover 3–5 key discussion beats
 - Use 12–20 dialogue turns
 - Include one clarifying example per major point
@@ -118,7 +119,7 @@ function densityFraming(density: PodcastDensityMode): string {
     case "deep-dive":
       return `DENSITY: Deep Dive Discussion
 - Thorough exploration with layered analysis
-- Aim for 12–20 minute total duration
+- Aim for 15–20 minute total duration
 - Cover multiple angles and implications
 - Each dialogue turn must be substantial — at least 60-80 words per turn
 - Prioritize depth and completeness over number of turns
@@ -230,8 +231,7 @@ Adapt the structure to the density mode, but generally include:
 LENGTH:
 - Aim for ${lengthPlan.targetWordRange} total dialogue words
 - Estimated duration should fit ${lengthPlan.durationRange}
-- Hard maximum is ${lengthPlan.maxWords} dialogue words
-- IMPORTANT: The word count target is a minimum, not a maximum. If the content requires more turns to reach the target, add more turns.
+- Hard maximum is ${lengthPlan.maxWords} dialogue words. Stop inside that range so the JSON finishes.
 - Keep turns spoken and substantial; vary length and speaker rhythm
 - estimatedDurationMinutes should be a realistic number based on word count (≈145 words/min)
 

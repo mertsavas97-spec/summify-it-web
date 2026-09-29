@@ -26,9 +26,20 @@ export type MindMapNodeMetadata = {
 
 export type MindMapNode = {
   id: string;
+  /** Card-length title for the canvas chip (may end in an ellipsis). */
   title: string;
+  /**
+   * Untruncated title kept for the tap-to-read panel, so a question like a
+   * study-card prompt never renders cut mid-sentence when opened.
+   */
+  fullTitle?: string;
   /** Short insight line shown on the card */
   insight?: string;
+  /**
+   * Full source text for this node. Cards preview `insight` with a clamp;
+   * tapping a card reveals `detail` in the reader panel.
+   */
+  detail?: string;
   groupId?: string;
   parentId?: string | null;
   metadata: MindMapNodeMetadata;
@@ -66,6 +77,8 @@ export type MindMapGraphProfile =
   | "educational"
   | "contract"
   | "narrative"
+  /** Decisions-first structure for the executive lens family. */
+  | "executive"
   | "general";
 
 export type MindMapGenerationInput = {
@@ -78,6 +91,8 @@ export type MindMapGenerationInput = {
   documentTypeGuess?: string | null;
   sourceKind?: string | null;
   intelligenceMode?: string | null;
+  /** Extracted source length — drives map depth (deep sources get a flow branch). */
+  sourceChars?: number | null;
 };
 
 export type MindMapGenerationResult =

@@ -105,9 +105,11 @@ describe("Study discipline packs", () => {
       keyInsightCount: 2,
     });
 
-    assert.equal(study.target, 8);
-    assert.ok(study.min >= 6);
-    assert.equal(creator.target, 7);
+    assert.equal(study.min, 8);
+    assert.equal(study.target, 10);
+    assert.equal(creator.min, 8);
+    assert.equal(creator.target, 9);
+    assert.ok(study.max > creator.max);
   });
 
   it("passes adaptive learn strategy into Phase-2 prompt", () => {

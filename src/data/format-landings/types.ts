@@ -26,6 +26,19 @@ export type FormatUseCase = {
   description: string;
 };
 
+export type FormatComparisonRow = {
+  feature: string;
+  summify: string | boolean;
+  competitor: string | boolean;
+};
+
+export type FormatComparison = {
+  title: string;
+  subtitle?: string;
+  competitorName: string;
+  rows: FormatComparisonRow[];
+};
+
 export type SeoContentBlock = {
   heading?: string;
   body: ReactNode;
@@ -58,6 +71,8 @@ export type FormatLandingConfig = {
     subtitle?: string;
     cases: FormatUseCase[];
   };
+  /** Optional side-by-side table; only use verified, defensible claims. */
+  comparison?: FormatComparison;
   faqs: FaqItem[];
   relatedLinks: RelatedLinkItem[];
   cta: {

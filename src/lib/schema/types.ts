@@ -16,6 +16,7 @@ export type ArticleSchemaInput = {
   authorName?: string;
   authorPath?: string;
   imagePath?: string;
+  schemaType?: "Article" | "BlogPosting";
 };
 
 export type SoftwareApplicationSchemaInput = {

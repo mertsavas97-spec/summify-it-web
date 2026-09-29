@@ -23,6 +23,8 @@ export function YoutubeThumbnail({ videoId, title, className = "" }: YoutubeThum
         <img
           src={src}
           alt={title ? `Thumbnail for ${title}` : "YouTube video thumbnail"}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full object-cover"
           onError={() => {
             setSrc(`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`);

@@ -54,7 +54,7 @@ export const SUMMIFY_LAUNCH_KIT: LaunchKit = {
     },
     {
       id: "beta",
-      text: "Public beta: analyze sources free, export insights, and share polished read-only views.",
+      text: "Analyze sources on the Free plan, then unlock audio lessons and every lens on Pro.",
       angle: "launch",
     },
   ],
@@ -66,12 +66,12 @@ Upload a PDF, paste a YouTube link, drop a deck, or pull in a web article. Pick 
 
 Unlike one-size-fits-all summarizers, Summify is built as a workspace: save analyses, review with spaced repetition, export to Markdown or JSON, generate mind maps from your results, and share read-only links without exposing private files.
 
-We're in public beta at summify.app — core analysis is free while we expand Pro Intelligence and billing.`,
+Summify is live at summify.app. The Free plan covers daily summaries; Pro adds audio lessons, podcasts, and every lens.`,
   makerStory: `We built Summify because most AI summarizers stop at a wall of text. Real learning and real decisions need structure: what matters, what to do next, and what to revisit later.
 
 Summify combines document intelligence modes, Learn cards, mind maps, and a lightweight memory system so your sources become something you can use — not something you read once and forget.
 
-We're shipping in public, listening closely during beta, and keeping the experience premium: no spammy growth hacks, no training on your private uploads for model improvement, and share pages that respect privacy (structured output only, never raw files).`,
+We're shipping in public and keeping the experience premium: no spammy growth hacks, no training on your private uploads for model improvement, and share pages that respect privacy (structured output only, never raw files).`,
   features: [
     "Multi-format ingestion: PDF, PPTX, YouTube, web articles, DOCX, TXT, MP3",
     "6 core intelligence lenses for executives, students, creators, contracts, and exam prep",
@@ -79,13 +79,13 @@ We're shipping in public, listening closely during beta, and keeping the experie
     "Mind maps generated from analysis — no extra AI call required",
     "Export to Markdown, TXT, JSON, and print-friendly layouts",
     "Privacy-safe public share links (structured output only)",
-    "Public beta with free core analysis",
+    "Free plan for daily summaries, Pro for the full workflow",
   ],
   faqs: [
     {
-      question: "Is Summify free during beta?",
+      question: "Is Summify free?",
       answer:
-        "Yes. Core analysis and workspace features are available during our public beta. Pro Intelligence tiers are previewed on the pricing page; billing is rolling out after provider review.",
+        "The Free plan includes 5 analyses a day, Learn cards, and quizzes. Pro adds unlimited audio lessons, podcasts, and every lens.",
     },
     {
       question: "What file types are supported?",
@@ -104,7 +104,7 @@ We're shipping in public, listening closely during beta, and keeping the experie
     },
   ],
   cta: {
-    headline: "Try Summify during public beta",
+    headline: "Try Summify",
     body: "Upload your first source in under a minute. No credit card required for core analysis.",
     primaryLabel: "Open workspace",
     primaryUrl: "https://www.summify.app/upload",

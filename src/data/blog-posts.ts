@@ -17,6 +17,8 @@ import { PdfToFlashcardsBlogBody } from "@/components/blog/posts/pdf-to-flashcar
 import { HowToSummarizePdfWithAiBody } from "@/components/blog/posts/how-to-summarize-a-pdf-with-ai";
 import { SummarizePowerpointDecksWithAiBody } from "@/components/blog/posts/summarize-powerpoint-decks-with-ai";
 import { PdfSummaryGeneratorVsManualNotesBody } from "@/components/blog/posts/pdf-summary-generator-vs-manual-notes";
+import { NotebookLmAlternativesAudioBody } from "@/components/blog/posts/notebooklm-alternatives-audio";
+import { FreePdfSummarizerLimits2026Body } from "@/components/blog/posts/free-pdf-summarizer-limits-2026";
 import { AUDIO_STUDY_BLOG_POSTS } from "@/data/audio-study-blog-registry";
 
 const DEFAULT_AUTHOR: BlogAuthorInfo = {
@@ -31,6 +33,144 @@ function postCategory(id: BlogCategoryId): string {
 }
 
 export const BLOG_POSTS: BlogPost[] = [
+  {
+    slug: "notebooklm-alternatives-audio",
+    title: "NotebookLM Alternatives for Audio Study in 2026",
+    description:
+      "NotebookLM alternatives compared on audio summaries, privacy, free limits, and source types — plus source migration and an Audio Overview alternative.",
+    date: "2026-10-13",
+    updatedAt: "2026-10-13",
+    categoryId: "comparisons",
+    category: postCategory("comparisons"),
+    tags: [
+      "NotebookLM alternatives",
+      "audio study",
+      "Audio Overview alternative",
+      "AI study tools",
+    ],
+    keywords: [
+      "notebooklm alternatives",
+      "notebooklm alternatives with audio",
+      "audio overview alternative",
+      "notebooklm privacy",
+    ],
+    clusters: ["study-workflows"],
+    readingTime: "11 min read",
+    author: DEFAULT_AUTHOR,
+    keyTakeaways: [
+      "NotebookLM is strong at chat-with-sources; study outputs depend on your prompting.",
+      "Compare alternatives on audio, privacy, free limits, and source types — not scores.",
+      "Migration is a file problem: export originals, upload, rebuild in chunks.",
+      "Read each tool's privacy policy before uploading anything sensitive.",
+    ],
+    faqs: [
+      {
+        q: "What is the best NotebookLM alternative for audio?",
+        a: "It depends on the job. NotebookLM's Audio Overview suits conversational overviews; Summify's Audio Study Mode follows a study sequence (analysis, Learn cards, quiz, then a teacher-style lesson). Test both on one file you know well.",
+      },
+      {
+        q: "Is Summify a free NotebookLM alternative?",
+        a: "Partly. The free plan includes 5 analyses per day, 12 Learn cards per run, 4 core lenses, and up to 10 saved analyses, with 20 MB uploads. Audio lessons, podcasts, mind maps, and spaced repetition are paid features.",
+      },
+      {
+        q: "Can I move my sources over from NotebookLM?",
+        a: "Yes, as files. Export your original PDFs, documents, or slides and upload them to the workspace — no notebook integration is required. Rebuild in chunks and verify one document before processing the rest.",
+      },
+      {
+        q: "Does Summify replace NotebookLM's chat?",
+        a: "No. Summify is a structured analysis workspace: pick a lens, get a labeled analysis with Learn cards, then re-run another lens for a different angle. If freeform chat is your main need, NotebookLM is the better fit.",
+      },
+    ],
+    toc: [
+      { id: "what-notebooklm-does-well", label: "What NotebookLM does well" },
+      { id: "alternatives", label: "NotebookLM alternatives compared" },
+      { id: "audio-alternative", label: "An Audio Overview alternative" },
+      { id: "migration", label: "Migration: moving your sources" },
+      { id: "privacy", label: "Privacy and data retention" },
+      { id: "how-to-choose", label: "How to choose in five minutes" },
+      { id: "faq", label: "Frequently asked questions" },
+    ],
+    workflowCluster: "study-workflows",
+    relatedLinks: [
+      {
+        href: "/audio-study",
+        label: "Audio Study Mode",
+        description: "Teacher-style audio lessons from your own analysis.",
+      },
+      {
+        href: "/compare/notebooklm",
+        label: "NotebookLM vs Summify",
+        description: "Side-by-side product comparison.",
+      },
+      { href: "/upload", label: "Open workspace", description: "Upload sources and run an analysis." },
+    ],
+    Content: NotebookLmAlternativesAudioBody,
+  },
+  {
+    slug: "free-pdf-summarizer-limits-2026",
+    title: "Free PDF Summarizer Limits in 2026: What You Get",
+    description:
+      "What a free PDF summarizer includes in 2026: daily analysis limits, file size and format caps, privacy checks, and the moment upgrading makes sense.",
+    date: "2026-10-06",
+    updatedAt: "2026-10-06",
+    categoryId: "comparisons",
+    category: postCategory("comparisons"),
+    tags: [
+      "free PDF summarizer",
+      "PDF summarizer free",
+      "free plan limits",
+      "AI PDF summarizer",
+    ],
+    keywords: [
+      "free pdf summarizer limits",
+      "pdf summarizer free",
+      "free AI PDF summarizer",
+      "free PDF summarizer 2026",
+    ],
+    clusters: ["ai-pdf-summarizer"],
+    readingTime: "10 min read",
+    author: DEFAULT_AUTHOR,
+    keyTakeaways: [
+      "Free on Summify means 5 analyses per day, 12 Learn cards per run, 4 core lenses, and 10 saved analyses.",
+      "File constraints that matter: 20 MB per file, 50 pages, 90,000 characters on Free.",
+      "Privacy is a policy question — check retention, training use, and access before uploading.",
+      "Upgrade on named friction, not on a countdown banner.",
+    ],
+    faqs: [
+      {
+        q: "Are free PDF summarizers safe to use?",
+        a: "They are safe for non-sensitive material once you have read the vendor's privacy policy and know the retention window. Skip anything under NDA or medical confidentiality, and verify important claims against the source document.",
+      },
+      {
+        q: "Why do free plans have daily limits?",
+        a: "Because analysis is compute, and a daily limit keeps free usage predictable. It also pushes the workflow that produces good results: choose the documents that matter, run them in chunks, and read what comes back.",
+      },
+      {
+        q: "What happens when I reach the free daily limit?",
+        a: "The workspace shows a daily-limit notice with a compact plan comparison, and the counter resets the next day. Saved analyses stay in place — hitting a cap pauses today's runs, it does not delete your history.",
+      },
+      {
+        q: "Can I get through a whole semester on the free plan?",
+        a: "If you work ahead, yes — five well-chosen analyses a day covers a chapter or two per session across a week. Long source documents, saved history, and audio are the three signs it is time to compare plans.",
+      },
+    ],
+    toc: [
+      { id: "free-plan", label: "What you actually get on the free plan" },
+      { id: "limits", label: "File size and format limits compared" },
+      { id: "how-it-works", label: "How a free PDF summarizer works" },
+      { id: "privacy", label: "Privacy: what free tools do with your data" },
+      { id: "method", label: "How we checked the limits in this post" },
+      { id: "when-pro", label: "When upgrading to a paid plan makes sense" },
+      { id: "faq", label: "Frequently asked questions" },
+      { id: "checklist", label: "Quick checklist before you upload" },
+    ],
+    workflowCluster: "ai-pdf-summarizer",
+    relatedLinks: [
+      { href: "/summarize-pdf", label: "AI PDF summarizer", description: "Primary workflow for this cluster." },
+      { href: "/pricing", label: "Pricing and plan limits", description: "Current plans, limits, and billing options." },
+    ],
+    Content: FreePdfSummarizerLimits2026Body,
+  },
   {
     slug: "how-to-summarize-a-pdf-with-ai",
     title: "How to Summarize a PDF with AI (Without Losing Accuracy)",
@@ -221,9 +361,9 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "best-ai-pdf-summarizers-2026",
-    title: "Best AI PDF Summarizers in 2026: What to Look For",
+    title: "Best AI PDF Summarizer Tools List 2026",
     description:
-      "How to choose an AI PDF summarizer without hype — accuracy, structure, study outputs, and when to summarize PDF online vs. skim manually.",
+      "Compare the best AI PDF summarizer tools in 2026 on accuracy, study cards, and privacy. See what to test on your files, then try Summify free.",
     date: "2026-05-10",
     updatedAt: "2026-05-18",
     categoryId: "comparisons",
@@ -256,7 +396,7 @@ export const BLOG_POSTS: BlogPost[] = [
       },
       {
         q: "Is Summify free for PDF summarization?",
-        a: "Yes during public beta. Upload PDFs in the workspace, pick a mode, and get structured analysis plus Learn cards on the free tier.",
+        a: "Yes. Upload PDFs in the workspace, pick a mode, and get structured analysis plus Learn cards on the Free plan.",
       },
     ],
     toc: [

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 import { ProductDisclaimer } from "@/components/public/ProductDisclaimer";
@@ -11,6 +11,11 @@ import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import { AnalysisToolbar } from "./AnalysisToolbar";
 import { LearnSection } from "./LearnSection";
 import { getModeResultSectionLabels } from "@/lib/mode-result-presentation";
+import { stripAnalysisTimecodes } from "@/lib/analysis/stripTimecodes";
+import {
+  highlightSummaryParagraphs,
+  splitSummaryParagraphs,
+} from "@/lib/analysis/highlightSummary";
 import { getIntelligenceModeById } from "@/config/modes";
 
 type AnalysisResultViewProps = {
@@ -29,26 +34,6 @@ type AnalysisResultViewProps = {
   /** Source character count — deep sources get a richer Summary panel. */
   extractedCharacters?: number | null;
 };
-
-function splitSummaryParagraphs(summary: string): string[] {
-  const trimmed = summary.trim();
-  if (!trimmed) return [];
-
-  const byBreak = trimmed
-    .split(/\n{2,}/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (byBreak.length > 1) return byBreak;
-
-  const sentences = trimmed.split(/(?<=[.!?])\s+/).filter(Boolean);
-  if (sentences.length <= 3) return [trimmed];
-
-  const paragraphs: string[] = [];
-  for (let i = 0; i < sentences.length; i += 3) {
-    paragraphs.push(sentences.slice(i, i + 3).join(" "));
-  }
-  return paragraphs;
-}
 
 function resolveSummaryDepth(args: {
   extractedCharacters: number | null | undefined;
@@ -90,19 +75,22 @@ export function AnalysisResultView({
       : "light";
   const enrichSummaryTab = sections === "summary" && summaryDepth === "rich";
   const showSummary = sections !== "deep" && sections !== "insights";
+  // Insights live on their own tab. Do not repeat that list inside Summary.
   const showInsights =
     sections === "all" ||
     sections === "overview" ||
     sections === "insights" ||
-    sections === "deep" ||
-    enrichSummaryTab;
+    sections === "deep";
   const showRisks =
     (sections !== "summary" || enrichSummaryTab) && result.risksOrWarnings.length > 0;
   const showActions =
     (sections !== "summary" || enrichSummaryTab) && result.actionItems.length > 0;
   const insightTracked = useRef(false);
   const mode = getIntelligenceModeById(modeId);
-  const summaryParagraphs = splitSummaryParagraphs(result.summary);
+  const highlightedParagraphs = useMemo(
+    () => highlightSummaryParagraphs(splitSummaryParagraphs(result.summary), result.keyInsights),
+    [result.keyInsights, result.summary],
+  );
 
   useEffect(() => {
     if (insightTracked.current) return;
@@ -123,7 +111,7 @@ export function AnalysisResultView({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0 max-w-prose">
               <h3 className="break-words text-base font-semibold leading-snug text-white [overflow-wrap:anywhere]">
-                {result.title}
+                {stripAnalysisTimecodes(result.title)}
               </h3>
               <p className="mt-1 text-[10px] text-zinc-600">
                 Provider:{" "}
@@ -175,12 +163,23 @@ export function AnalysisResultView({
               defaultOpen
             >
               <div className="max-w-prose space-y-3.5">
-                {summaryParagraphs.map((paragraph, index) => (
+                {highlightedParagraphs.map((parts, index) => (
                   <p
                     key={`summary-p-${index}`}
                     className="break-words text-sm leading-[1.75] text-zinc-300 [overflow-wrap:anywhere]"
                   >
-                    {paragraph}
+                    {parts.map((part, partIndex) =>
+                      part.highlight ? (
+                        <mark
+                          key={`summary-h-${index}-${partIndex}`}
+                          className="rounded-sm bg-violet-400/15 px-0.5 font-semibold text-zinc-100 [box-decoration-break:clone]"
+                        >
+                          {part.text}
+                        </mark>
+                      ) : (
+                        <span key={`summary-t-${index}-${partIndex}`}>{part.text}</span>
+                      ),
+                    )}
                   </p>
                 ))}
               </div>
@@ -194,7 +193,7 @@ export function AnalysisResultView({
             count={result.keyInsights.length}
             defaultOpen
           >
-            <InsightList items={result.keyInsights} />
+            <InsightList items={result.keyInsights.map(stripAnalysisTimecodes)} />
           </CollapsibleSection>
         ) : null}
 
@@ -204,7 +203,7 @@ export function AnalysisResultView({
             count={result.risksOrWarnings.length}
             defaultOpen={!collapseDeepSecondarySections}
           >
-            <InsightList items={result.risksOrWarnings} variant="warning" />
+            <InsightList items={result.risksOrWarnings.map(stripAnalysisTimecodes)} variant="warning" />
           </CollapsibleSection>
         ) : null}
 
@@ -214,7 +213,7 @@ export function AnalysisResultView({
             count={result.actionItems.length}
             defaultOpen={!collapseDeepSecondarySections}
           >
-            <InsightList items={result.actionItems} variant="action" />
+            <InsightList items={result.actionItems.map(stripAnalysisTimecodes)} variant="action" />
           </CollapsibleSection>
         ) : null}
 

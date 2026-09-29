@@ -91,7 +91,7 @@ describe("Study quality: grounding + quiz + mechanisms", () => {
     assert.match(kept[0]!.title, /algebra/i);
   });
 
-  it("uses real card questions as quiz stems in study mode", () => {
+  it("rewrites card questions into original stems instead of copying them", () => {
     const cards: LearnCardOutput[] = [
       {
         type: "concept",
@@ -119,7 +119,15 @@ describe("Study quality: grounding + quiz + mechanisms", () => {
       },
     ];
 
-    assert.equal(stemFromLearnCard(cards[0]!), "What is algebra?");
+    const stem = stemFromLearnCard(cards[0]!);
+    assert.ok(stem, "card yields a stem");
+    assert.notEqual(
+      stem!.trim().toLowerCase(),
+      "what is algebra?",
+      "stem must not copy the card's own question",
+    );
+    assert.match(stem!, /algebra/i, "stem keeps the card's subject");
+    assert.match(stem!, /\?$/, "stem is a full question");
 
     const quiz = generateAnalysisQuiz({
       title: "Algebra Basics",
@@ -139,8 +147,18 @@ describe("Study quality: grounding + quiz + mechanisms", () => {
 
     assert.ok(quiz.length >= 3, `expected ≥3 quiz questions, got ${quiz.length}`);
     assert.ok(
-      quiz.some((q) => /what is algebra/i.test(q.question)),
-      "should use real stem from card title",
+      quiz.some((q) => /algebra/i.test(q.question)),
+      "quiz still asks about the card's subject",
+    );
+    const cardWording = new Set(cards.map((c) => c.title.trim().toLowerCase()));
+    assert.ok(
+      quiz.every((q) => !cardWording.has(q.question.trim().toLowerCase())),
+      "no quiz question is a verbatim flashcard copy",
+    );
+    assert.equal(
+      new Set(quiz.map((q) => q.question.trim().toLowerCase())).size,
+      quiz.length,
+      "no question line repeats inside one quiz",
     );
     assert.ok(
       !quiz.some((q) => /best supported by the source regarding/i.test(q.question)),

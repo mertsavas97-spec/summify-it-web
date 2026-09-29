@@ -2,13 +2,20 @@
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Maximize2 } from "lucide-react";
 import type { MindMapNodeImportance, MindMapNodeType } from "@/types/mindmap";
 
 export type MindMapFlowNodeData = {
   title: string;
+  /** Untruncated title shown in full by the reader panel. */
+  fullTitle?: string;
   insight?: string;
+  /** Full text revealed in the reader panel when the card is tapped. */
+  detail?: string;
   nodeType: MindMapNodeType;
   importance: MindMapNodeImportance;
+  /** Lens-aware chip label supplied by the flow adapter. */
+  typeLabel?: string;
   focused?: boolean;
 };
 
@@ -35,8 +42,9 @@ const IMPORTANCE_STYLES: Record<MindMapNodeImportance, string> = {
 
 function MindMapNodeCardComponent({ data, selected }: NodeProps) {
   const d = data as MindMapFlowNodeData;
-  const typeLabel = TYPE_LABELS[d.nodeType] ?? "Node";
+  const typeLabel = d.typeLabel ?? TYPE_LABELS[d.nodeType] ?? "Node";
   const importance = d.importance ?? "secondary";
+  const expandable = Boolean(d.detail && d.detail !== d.insight);
 
   return (
     <div
@@ -47,7 +55,12 @@ function MindMapNodeCardComponent({ data, selected }: NodeProps) {
       }`}
     >
       <Handle type="target" position={Position.Top} className="!bg-violet-400/60 !w-2 !h-2 !border-0" />
-      <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-300/70">{typeLabel}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-violet-300/70">{typeLabel}</p>
+        {expandable ? (
+          <Maximize2 className="h-3 w-3 shrink-0 text-zinc-600" aria-hidden />
+        ) : null}
+      </div>
       <p
         className={`mt-1 font-semibold leading-snug text-white ${
           d.nodeType === "root" ? "text-sm" : "text-xs"

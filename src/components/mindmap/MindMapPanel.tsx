@@ -26,6 +26,8 @@ export function MindMapPanel({
   learnCards,
   documentTypeGuess,
   sourceKind,
+  intelligenceMode,
+  sourceChars,
 }: MindMapPanelProps) {
   const result = useMemo(() => {
     if (!active) return null;
@@ -39,6 +41,8 @@ export function MindMapPanel({
         learnCards,
         documentTypeGuess,
         sourceKind,
+        intelligenceMode,
+        sourceChars,
       });
     } catch {
       return { ok: false as const, reason: "Mind map generation failed" };
@@ -53,6 +57,8 @@ export function MindMapPanel({
     learnCards,
     documentTypeGuess,
     sourceKind,
+    intelligenceMode,
+    sourceChars,
   ]);
 
   if (!active) {
@@ -82,11 +88,15 @@ export function MindMapPanel({
   return (
     <div className="space-y-3" data-mindmap-panel>
       <p className="text-[11px] text-zinc-600">
-        Pan, zoom, and drag nodes. Click a node to focus. Profile:{" "}
-        <span className="text-zinc-500">{result.graph.profile}</span>
+        Drag to pan · pinch or buttons to zoom · tap a card to read the full
+        text. Lens: <span className="text-zinc-500">{result.graph.profile}</span>
       </p>
       <div className="overflow-hidden rounded-xl border border-violet-500/10 bg-[#08090d]">
-        <MindMapCanvas graph={result.graph} />
+        {/* Remount per graph so the tap-to-read panel never shows a stale card. */}
+        <MindMapCanvas
+          key={`${result.graph.generatedAt}:${result.graph.nodes.length}`}
+          graph={result.graph}
+        />
       </div>
       <p className="text-[10px] text-zinc-700">
         PNG, SVG, and PDF export — coming soon.

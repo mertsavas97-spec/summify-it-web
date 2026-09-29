@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { buildPracticeSessionCardsFromLearn } from "@/lib/learn/practiceSessionTypes";
 import { getPracticeCardAccessForPlan } from "@/lib/learn/practiceCardAccess";
+import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { learnDashboardHref, learnPracticeStartHref } from "@/lib/learn/paths";
 import type { AnalysisResult, LearnCardOutput } from "@/types/text-analysis";
 import type { PlanId } from "@/types/plan";
@@ -24,6 +25,8 @@ type PracticeAnalysisCtaProps = {
   isPaidActive?: boolean;
   intelligenceModeId?: string;
   sourceType?: string | null;
+  /** Transcript/source length — sizes the quiz on the source-length bands. */
+  sourceChars?: number | null;
   allowInternalQuiz?: boolean;
   onLearnCompleteChange?: (complete: boolean) => void;
   onStartQuizOverride?: () => void;
@@ -46,6 +49,7 @@ export function PracticeAnalysisCta({
   isPaidActive = false,
   intelligenceModeId = "general-summary",
   sourceType = null,
+  sourceChars = null,
   allowInternalQuiz = true,
   onLearnCompleteChange,
   onStartQuizOverride,
@@ -57,9 +61,11 @@ export function PracticeAnalysisCta({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  const cards = useMemo(() => uniqueLearnCards(learnCards), [learnCards]);
+
   const cardAccess = useMemo(
-    () => getPracticeCardAccessForPlan(entitlementPlanId, learnCards),
-    [entitlementPlanId, learnCards],
+    () => getPracticeCardAccessForPlan(entitlementPlanId, cards),
+    [entitlementPlanId, cards],
   );
 
   const practiceCards = useMemo(
@@ -143,11 +149,12 @@ export function PracticeAnalysisCta({
           documentTitle={documentTitle}
           modeLabel={modeLabel}
           sourceKindLabel={sourceKindLabel}
-          learnCards={learnCards}
+          learnCards={cards}
           entitlementPlanId={entitlementPlanId}
           isPaidActive={isPaidActive}
           intelligenceModeId={intelligenceModeId}
           sourceType={sourceType}
+          sourceChars={sourceChars}
           hasLearnCards
           practicePersisted={Boolean(savedAnalysisId)}
           allowInternalQuiz={allowInternalQuiz}

@@ -35,6 +35,7 @@ import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisI
 import { trackEvent } from "@/lib/analytics/events";
 import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 import { generateAnalysisQuiz } from "@/lib/learn/generateAnalysisQuiz";
+import { quizQuestionTargetForChars } from "@/server/intelligence/sourceOutputQuota";
 import { canUsePodcastDiscussionMode } from "@/lib/podcast/access";
 import {
   resolvePodcastEligibility,
@@ -445,12 +446,12 @@ export function PodcastWorkspaceCtas({
     return generateAnalysisQuiz({
       ...analysisResult,
       learnCards: analysisResult.learnCards,
-      maxQuestions: 6,
+      maxQuestions: quizQuestionTargetForChars(sourceProfile.extractedCharacterCount),
     }).map((question) => ({
       question: question.question,
       theme: question.theme,
     }));
-  }, [analysisResult]);
+  }, [analysisResult, sourceProfile.extractedCharacterCount]);
 
   async function generatePodcast(regenerate = false) {
     if (!analysisResult || loading || regenerating) return;

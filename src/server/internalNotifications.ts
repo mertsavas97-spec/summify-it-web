@@ -91,3 +91,30 @@ export function notifyInternalNonBlocking(
     }
   })();
 }
+
+/** First profile row only. Returning sign-ins do not notify. */
+export function notifyNewSignup(input: {
+  email: string | null;
+  name?: string | null;
+  provider?: string | null;
+  plan?: string | null;
+  emailConfirmed?: boolean;
+  signedUpAt?: string | null;
+}): void {
+  if (shouldSkipInternalNotificationsForEmail(input.email)) return;
+  notifyInternalNonBlocking({
+    title: "New Summify user",
+    summary: `New Summify user: ${input.email ?? "unknown"}`,
+    slackEmoji: "👤",
+    pushoverTitle: "New Summify user",
+    context: {
+      Email: input.email,
+      Name: input.name ?? null,
+      Provider: input.provider ?? "email",
+      Plan: input.plan ?? "free",
+      "Email confirmed": input.emailConfirmed ? "yes" : "no",
+      "Signed up": input.signedUpAt ?? new Date().toISOString(),
+      "Analysis yet": "no",
+    },
+  });
+}

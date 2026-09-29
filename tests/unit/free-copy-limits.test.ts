@@ -9,13 +9,13 @@ describe("P1 Free/Guest copy vs code", () => {
   it("Free plan claims match analysis/Learn limits and exclude Audio Study", () => {
     const free = getPlanDefinition("free");
     assert.equal(free.limits.analysesPerDay, 5);
-    assert.equal(free.limits.maxLearnCards, 8);
+    assert.equal(free.limits.maxLearnCards, 12);
     assert.equal(free.limits.maxSavedAnalyses, 10);
-    assert.equal(FREE_PRACTICE_ACCESSIBLE_COUNT, 8);
+    assert.equal(FREE_PRACTICE_ACCESSIBLE_COUNT, 12);
 
     const joined = free.featureBullets.join(" | ").toLowerCase();
     assert.match(joined, /5 analyses/);
-    assert.match(joined, /8 learn/);
+    assert.match(joined, /12 learn/);
     assert.doesNotMatch(joined, /audio study mode/);
     assert.doesNotMatch(joined, /2 audio/);
     assert.doesNotMatch(joined, /1 podcast/);

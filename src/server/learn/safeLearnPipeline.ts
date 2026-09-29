@@ -83,6 +83,7 @@ export function runSafeLearnBuild(
       isPresentation: fallbackInput.options.isPresentation,
       isYoutube: fallbackInput.options.isYoutubeTranscript,
       structureFamily: fallbackInput.options.personaAdaptivePlan?.structureFamily,
+      sourceChars: fallbackInput.options.extractedText?.length,
     });
 
     const learnCards = fallbackLearnCards(fallbackInput.result, range.min);

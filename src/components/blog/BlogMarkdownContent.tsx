@@ -121,6 +121,8 @@ export function BlogMarkdownContent({ markdown, className = "" }: BlogMarkdownCo
             <img
               src={src ?? ""}
               alt={alt ?? ""}
+              loading="lazy"
+              decoding="async"
               className="mt-6 w-full rounded-lg border border-white/[0.06]"
             />
           ),

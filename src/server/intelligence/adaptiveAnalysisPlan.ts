@@ -38,8 +38,10 @@ function resolvePipelineType(chars: number, profile: DocumentProfile): PipelineT
 function resolveLearnDepth(
   profile: DocumentProfile,
   pipelineType: PipelineType,
+  characterCount: number,
 ): AdaptiveAnalysisPlan["learnDepth"] {
-  if (pipelineType === "long_preview") return "quick";
+  if (characterCount >= 18_000) return "deep";
+  if (pipelineType === "long_preview") return "standard";
   if (profile.complexity === "high") return "standard";
   return profile.complexity === "low" ? "deep" : "standard";
 }
@@ -47,9 +49,11 @@ function resolveLearnDepth(
 function resolveOutputDepth(
   pipelineType: PipelineType,
   mode: TextAnalysisMode,
+  characterCount: number,
   depthHint?: OutputDepthHint,
 ): AdaptiveAnalysisPlan["outputDepth"] {
-  if (pipelineType === "long_preview") return "brief";
+  if (characterCount >= 18_000) return "detailed";
+  if (pipelineType === "long_preview") return "detailed";
   if (depthHint) return depthHint;
   if (mode === "executive") return "standard";
   if (mode === "academic" || mode === "legal") return "detailed";
@@ -84,8 +88,8 @@ export function createAdaptiveAnalysisPlan(
 
   return {
     pipelineType,
-    learnDepth: resolveLearnDepth(profile, pipelineType),
+    learnDepth: resolveLearnDepth(profile, pipelineType, characterCount),
     maxInputCharacters,
-    outputDepth: resolveOutputDepth(pipelineType, selectedMode, outputDepthHint),
+    outputDepth: resolveOutputDepth(pipelineType, selectedMode, characterCount, outputDepthHint),
   };
 }

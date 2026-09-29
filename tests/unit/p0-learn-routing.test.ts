@@ -76,10 +76,11 @@ describe("P0 educational routing", () => {
 });
 
 describe("P0 learn cross-dedupe", () => {
-  it("drops AI cards that overlap summary and insights", () => {
+  it("keeps a card that restates the summary and drops only a near copy", () => {
     const kept = dedupeAiLearnCardsAgainstAnalysis(
       [
         { type: "fact", title: "Main claim", content: "Photosynthesis converts light into chemical energy in plants." },
+        { type: "fact", title: "Same claim", content: "Photosynthesis converts light into chemical energy in plants." },
         { type: "fact", title: "Side note", content: "Chlorophyll absorbs blue and red wavelengths primarily." },
       ],
       {
@@ -87,10 +88,10 @@ describe("P0 learn cross-dedupe", () => {
         summary: "Photosynthesis converts light into chemical energy in plants.",
         keyInsights: ["Water splits during the light reactions."],
       },
-      0.5,
     );
-    assert.equal(kept.length, 1);
-    assert.equal(kept[0]?.title, "Side note");
+    assert.equal(kept.length, 2);
+    assert.equal(kept[0]?.title, "Main claim");
+    assert.equal(kept[1]?.title, "Side note");
   });
 });
 

@@ -56,6 +56,23 @@ function splitPresentationSections(text: string): KnowledgeSection[] {
   return sections;
 }
 
+function splitTranscriptWindows(text: string): KnowledgeSection[] {
+  if (text.length < 240) return splitSections(text);
+  const windows = [
+    { heading: "Opening", start: 0 },
+    { heading: "Middle", start: Math.floor(text.length * 0.42) },
+    { heading: "Ending", start: Math.max(0, text.length - 1_400) },
+  ];
+  return windows.map((window) => {
+    const excerpt = text.slice(window.start, window.start + 500).trim();
+    return {
+      heading: window.heading,
+      excerpt,
+      importance: window.heading === "Opening" ? "high" : "medium",
+    } satisfies KnowledgeSection;
+  });
+}
+
 function splitSections(text: string): KnowledgeSection[] {
   const parts = text.split(/(?=^#{1,3}\s+|^[A-Z][A-Za-z0-9\s\-–—:]{3,60}$)/m);
   const sections: KnowledgeSection[] = [];
@@ -178,6 +195,8 @@ function buildQuestions(
 
 export type BuildKnowledgeLayerOptions = {
   presentationContext?: PresentationSourceContext;
+  youtubeTitle?: string;
+  isYoutubeTranscript?: boolean;
 };
 
 /**
@@ -189,12 +208,16 @@ export function buildKnowledgeLayer(
   options?: BuildKnowledgeLayerOptions,
 ): KnowledgeLayer {
   const isPresentation = options?.presentationContext?.sourceKind === "presentation";
+  const youtubeTitle = options?.youtubeTitle?.trim();
   const titleGuess =
-    options?.presentationContext?.detectedSlideTitles[0] ??
+    youtubeTitle ||
+    options?.presentationContext?.detectedSlideTitles[0] ||
     extractTitleGuess(cleanedText);
   let keySections = isPresentation
     ? splitPresentationSections(cleanedText)
-    : splitSections(cleanedText);
+    : options?.isYoutubeTranscript
+      ? splitTranscriptWindows(cleanedText)
+      : splitSections(cleanedText);
   if (isPresentation && keySections.length === 0) {
     keySections = splitSections(cleanedText);
   }

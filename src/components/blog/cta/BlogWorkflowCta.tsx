@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { BlogContentCluster } from "@/data/blog-clusters";
 import { BLOG_CONTENT_CLUSTERS } from "@/data/blog-clusters";
+import { withCtaUtm } from "@/lib/analytics/utm";
 
 type BlogWorkflowCtaProps = {
   cluster: BlogContentCluster;
@@ -41,7 +42,7 @@ export function BlogWorkflowCta({ cluster, steps }: BlogWorkflowCtaProps) {
         ))}
       </ol>
       <Link
-        href={meta.primaryCtaHref}
+        href={withCtaUtm(meta.primaryCtaHref, "blog", "blog_workflow")}
         className="mt-4 inline-flex text-sm font-medium text-violet-300 hover:text-violet-200"
       >
         {meta.primaryCtaLabel} →
