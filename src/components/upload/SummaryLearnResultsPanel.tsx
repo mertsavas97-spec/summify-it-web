@@ -9,6 +9,7 @@ import {
   Network,
   Plus,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 import { AnalysisPracticeSession } from "@/components/learn/AnalysisPracticeSession";
 import { AnalysisQuizSession } from "@/components/learn/AnalysisQuizSession";
@@ -26,6 +27,7 @@ import type { PracticeRetentionSummary } from "@/lib/learn/retentionTypes";
 import { uniqueLearnCards } from "@/lib/learn/uniqueLearnCards";
 import { buildAudioStudyInputFromResult } from "@/lib/audio-study/buildAnalysisInput";
 import { quizQuestionTargetForChars } from "@/server/intelligence/sourceOutputQuota";
+import { planHasFeature } from "@/lib/plan-features";
 import type { PersonaUiSectionLabels } from "@/types/adaptive-analysis";
 import type { DocumentProfileMetadata } from "@/types/intelligence";
 import type { IntelligenceModeId } from "@/types/modes";
@@ -494,12 +496,15 @@ export function SummaryLearnResultsPanel({
     return tabs;
   }, [hasInsights]);
 
-  /** Mind map is independent of the flashcards tab — always available. */
+  /** Mind map is independent of the flashcards tab — always available if content exists. */
   const hasMindMap =
     result.summary.trim().length > 0 ||
     hasInsights ||
     result.actionItems.length > 0 ||
     result.risksOrWarnings.length > 0;
+
+  /** Check if user's plan includes mind map feature. */
+  const mindMapAccess = planHasFeature(entitlementPlanId, "mindMapEnabled");
 
   const mindMapInput = useMemo(
     () => ({
@@ -754,8 +759,25 @@ export function SummaryLearnResultsPanel({
                 <span className="text-[11px] text-zinc-500">
                   Built from this analysis · lens: {modeLabel}
                 </span>
+                {!mindMapAccess && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-violet-500/15 text-violet-300 px-2 py-0.5 text-[10px] font-semibold">
+                    <Lock className="h-2.5 w-2.5" aria-hidden />
+                    Pro
+                  </span>
+                )}
               </div>
-              <MindMapPanel active {...mindMapInput} />
+              <div className="relative">
+                {!mindMapAccess ? (
+                  <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-md flex items-center justify-center rounded-xl border border-white/[0.06] z-10">
+                    <div className="text-center p-6">
+                      <Lock className="mx-auto h-8 w-8 text-zinc-400" aria-hidden />
+                      <p className="mt-3 text-sm font-medium text-zinc-200">Mind map is a Pro feature</p>
+                      <p className="mt-1 text-xs text-zinc-500">Upgrade to explore interactive concept graphs</p>
+                    </div>
+                  </div>
+                ) : null}
+                <MindMapPanel active {...mindMapInput} />
+              </div>
             </div>
           ) : null}
         </div>
