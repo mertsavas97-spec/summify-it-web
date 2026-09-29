@@ -13,6 +13,10 @@ import { HomeTrustBar } from "@/components/public/HomeTrustBar";
 import { HOME_FAQS, RELATED_LINKS } from "@/data/landing-seo";
 import { HomePricingPreview } from "@/components/public/HomePricingPreview";
 import { SummarizeFormatGrid } from "@/components/public/SummarizeFormatGrid";
+import { PersonaChipsRow } from "@/components/public/PersonaChipsRow";
+import { DifferentiationStrip } from "@/components/public/DifferentiationStrip";
+import { SocialProofCarousel } from "@/components/public/SocialProofCarousel";
+import { StickyCTA } from "@/components/public/StickyCTA";
 import { HomeClosingCta } from "@/components/public/HomeClosingCta";
 
 export const metadata = pageSeo.home;
@@ -41,6 +45,8 @@ export default function HomePage() {
 
       <SummarizeFormatGrid />
 
+      <PersonaChipsRow />
+
       <HomeAfterSummarySection />
 
       <FormatWorkflow
@@ -63,7 +69,11 @@ export default function HomePage() {
         ]}
       />
 
+      <DifferentiationStrip />
+
       <HomePricingPreview />
+
+      <SocialProofCarousel />
 
       <FAQSection
         title="Common questions about Summify"
@@ -74,6 +84,7 @@ export default function HomePage() {
       <HomeClosingCta />
 
       <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
+      <StickyCTA />
     </>
   );
 }

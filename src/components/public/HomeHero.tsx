@@ -93,8 +93,8 @@ export function HomeHero() {
               .
             </h1>
             <p className="mt-3 max-w-2xl text-base leading-relaxed text-zinc-400">
-              Upload a PDF, PowerPoint, YouTube link, or article — get a structured AI summary
-              first. Then study cards, and optional audio or podcast from the same source.
+              Upload a PDF, YouTube link, or article — get a structured AI summary first.
+              Then study cards, quiz, mind map, and optional audio or podcast from the same upload.
             </p>
             {!expanded ? <HomeHeroActions /> : null}
           </div>

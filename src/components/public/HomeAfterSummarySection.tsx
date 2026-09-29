@@ -1,18 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Headphones, Layers, Network, HelpCircle } from "lucide-react";
+import { Headphones, Layers, Network, HelpCircle } from "lucide-react";
 import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 
 const NEXT_STEPS = [
-  {
-    title: "Summary",
-    body: "Structured overview and key insights first — the default path for every source.",
-    href: "/upload",
-    intent: "summary",
-    Icon: BookOpen,
-    primary: true,
-  },
   {
     title: "Study cards",
     body: "Turn insights into flashcards for active recall from the same analysis.",
@@ -67,7 +59,7 @@ export function HomeAfterSummarySection() {
             interactive mind map, then optional audio or podcast — always from the same upload.
           </p>
         </div>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {NEXT_STEPS.map((item) => {
             const Icon = item.Icon;
             return (

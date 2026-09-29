@@ -3,6 +3,18 @@ import type { RelatedLinkItem } from "@/components/public/RelatedLinksSection";
 
 export const HOME_FAQS: FaqItem[] = [
   {
+    q: "Is Summify free?",
+    a: "Free accounts get 5 analyses/day, 12 Learn cards, quizzes, and saved history. Pro unlocks audio lessons, podcasts, the mind map, and every lens.",
+  },
+  {
+    q: "How accurate is Summify? Does it hallucinate?",
+    a: "Every insight, flashcard, and quiz answer is grounded in your source document. We trace each output back to the original text and don't invent facts. You can verify any claim against the source.",
+  },
+  {
+    q: "What happens to my uploaded files? Is my data private?",
+    a: "Files are processed for extraction and analysis only. We don't train AI on your uploads, don't sell your data, and don't keep a long-term document library. See our Privacy page for details.",
+  },
+  {
     q: "What is Summify?",
     a: "Summify is an AI summarizer for PDFs, PowerPoint decks, YouTube videos, and web articles. You get a structured summary and key insights — then flashcards, quizzes, an interactive mind map, and optional audio lessons so you can actually study what you summarize.",
   },
@@ -25,10 +37,6 @@ export const HOME_FAQS: FaqItem[] = [
   {
     q: "Can I listen to my summary as audio?",
     a: "Pro plans include Audio Study Mode — teacher-style spoken lessons generated from your analysis, with natural voice audio and full playback controls.",
-  },
-  {
-    q: "Is Summify free?",
-    a: "Free accounts get 5 analyses/day, 12 Learn cards, quizzes, and saved history. Pro unlocks audio lessons, podcasts, the mind map, and every lens.",
   },
   {
     q: "Are uploaded documents stored permanently?",
