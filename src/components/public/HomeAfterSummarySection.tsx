@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Headphones, Layers, Network, HelpCircle } from "lucide-react";
+import { Headphones, Layers, Network, HelpCircle, Lock } from "lucide-react";
 import { trackProductEventV2Client } from "@/lib/analytics/trackProductEventV2Client";
 
 const NEXT_STEPS = [
@@ -12,6 +12,7 @@ const NEXT_STEPS = [
     intent: "study",
     Icon: Layers,
     primary: false,
+    proOnly: false,
   },
   {
     title: "Quiz",
@@ -20,6 +21,7 @@ const NEXT_STEPS = [
     intent: "quiz",
     Icon: HelpCircle,
     primary: false,
+    proOnly: false,
   },
   {
     title: "Mind map",
@@ -28,6 +30,7 @@ const NEXT_STEPS = [
     intent: "mindmap",
     Icon: Network,
     primary: false,
+    proOnly: true,
   },
   {
     title: "Audio & Podcast",
@@ -36,8 +39,29 @@ const NEXT_STEPS = [
     intent: "audio",
     Icon: Headphones,
     primary: false,
+    proOnly: true,
   },
 ] as const;
+
+function ProBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 text-violet-300 px-2 py-0.5 text-[10px] font-semibold">
+      <Lock className="h-2.5 w-2.5" aria-hidden />
+      Pro
+    </span>
+  );
+}
+
+function LockedOverlay() {
+  return (
+    <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm flex items-center justify-center rounded-2xl border border-white/[0.06]">
+      <div className="text-center p-4">
+        <p className="text-sm font-medium text-zinc-300">Pro feature</p>
+        <p className="mt-1 text-xs text-zinc-500">Upgrade to unlock</p>
+      </div>
+    </div>
+  );
+}
 
 /** Post-hero value props aligned with Summary → Study → Audio/Podcast. */
 export function HomeAfterSummarySection() {
@@ -75,30 +99,34 @@ export function HomeAfterSummarySection() {
                       },
                     })
                   }
-                  className={`group flex h-full min-w-0 flex-col rounded-2xl border p-5 transition-colors ${
-                    item.primary
-                      ? "border-violet-300/50 bg-violet-50/80 hover:border-violet-400/70 dark:border-violet-400/25 dark:bg-violet-950/25 dark:hover:border-violet-400/40"
+                  className={`group relative flex h-full min-w-0 flex-col rounded-2xl border p-5 transition-colors ${
+                    item.proOnly
+                      ? "border-slate-200/80 bg-white hover:border-violet-400/40 dark:border-white/[0.06] dark:bg-zinc-950/40 dark:hover:border-violet-500/25"
                       : "border-slate-200/80 bg-white hover:border-violet-400/40 dark:border-white/[0.06] dark:bg-zinc-950/40 dark:hover:border-violet-500/25"
                   }`}
                 >
-                  <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
-                      item.primary
-                        ? "border-violet-400/40 bg-violet-500/15 text-violet-700 dark:text-violet-200"
-                        : "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/[0.08] dark:bg-zinc-950/50 dark:text-zinc-400"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                  </span>
-                  <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
-                    {item.title}
-                  </p>
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
-                    {item.body}
-                  </p>
-                  <span className="mt-3 text-xs font-medium text-violet-700 group-hover:underline dark:text-violet-300">
-                    Open workspace
-                  </span>
+                  <div className="relative flex h-full min-w-0 flex-col">
+                    {item.proOnly && <LockedOverlay />}
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl border ${
+                        item.proOnly
+                          ? "border-slate-200 bg-slate-50 text-slate-400 dark:border-white/[0.08] dark:bg-zinc-950/50 dark:text-zinc-500"
+                          : "border-slate-200 bg-slate-50 text-slate-600 dark:border-white/[0.08] dark:bg-zinc-950/50 dark:text-zinc-400"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden />
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">
+                      {item.title}
+                      {item.proOnly && <ProBadge />}
+                    </p>
+                    <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600 dark:text-zinc-500">
+                      {item.body}
+                    </p>
+                    <span className="mt-3 text-xs font-medium text-violet-700 group-hover:underline dark:text-violet-300">
+                      {item.proOnly ? "Upgrade to unlock" : "Open workspace"}
+                    </span>
+                  </div>
                 </Link>
               </li>
             );

@@ -71,14 +71,14 @@ const DIFFERENTIATORS: DiffRow[] = [
 
 function CheckIcon({ met }: { met: boolean | "partial" }) {
   if (met === true) {
-    return <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" aria-hidden />;
+    return <CheckCircle className="h-5 w-5 text-emerald-400" aria-hidden />;
   }
   if (met === "partial") {
     return (
-      <MinusCircle className="h-5 w-5 text-amber-400 shrink-0" aria-hidden />
+      <MinusCircle className="h-5 w-5 text-amber-400" aria-hidden />
     );
   }
-  return <XCircle className="h-5 w-5 text-zinc-600 shrink-0" aria-hidden />;
+  return <XCircle className="h-5 w-5 text-zinc-600" aria-hidden />;
 }
 
 export function DifferentiationStrip() {
@@ -119,10 +119,10 @@ export function DifferentiationStrip() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 text-center"><CheckIcon met={row.sumiffy} /></td>
-                  <td className="py-4 text-center"><CheckIcon met={row.notebooklm} /></td>
-                  <td className="py-4 text-center"><CheckIcon met={row.chatpdf} /></td>
-                  <td className="py-4 text-center"><CheckIcon met={row.notionalai} /></td>
+                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.sumiffy} /></div></td>
+                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.notebooklm} /></div></td>
+                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.chatpdf} /></div></td>
+                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.notionalai} /></div></td>
                 </tr>
               ))}
             </tbody>
