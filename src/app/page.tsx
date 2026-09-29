@@ -47,7 +47,11 @@ export default function HomePage() {
 
       <PersonaChipsRow />
 
+      <DifferentiationStrip />
+
       <HomeAfterSummarySection />
+
+      <DifferentiationStrip />
 
       <FormatWorkflow
         id="how-it-works"
@@ -68,8 +72,6 @@ export default function HomePage() {
           },
         ]}
       />
-
-      <DifferentiationStrip />
 
       <HomePricingPreview />
 

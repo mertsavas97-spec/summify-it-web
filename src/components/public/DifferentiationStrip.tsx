@@ -1,59 +1,73 @@
 "use client";
 
-import { CheckCircle, XCircle, BookOpen, Headphones, Network, HelpCircle, Zap } from "lucide-react";
+import { CheckCircle, XCircle, BookOpen, Headphones, Network, HelpCircle, Zap, MinusCircle } from "lucide-react";
 
 type DiffRow = {
   title: string;
   description: string;
   icon: typeof Zap;
   sumiffy: true;
-  others: boolean | "partial";
+  notebooklm: boolean | "partial";
+  chatpdf: boolean | "partial";
+  notionalai: boolean | "partial";
 };
 
 const DIFFERENTIATORS: DiffRow[] = [
   {
-    title: "Study workflow, not just summaries",
-    description: "Flashcards → Quiz → Mind map → Audio → Podcast from ONE upload. Others stop at text.",
+    title: "Complete study workflow",
+    description: "Flashcards → Quiz → Mind map → Audio → Podcast from ONE upload. Others stop at text or chat.",
     icon: Zap,
     sumiffy: true,
-    others: false,
+    notebooklm: "partial",
+    chatpdf: false,
+    notionalai: false,
   },
   {
     title: "Source-grounded quiz (not templates)",
     description: "Questions generated from YOUR document with LLM. Distractors are real facts from the source — no generic 'create a blog post' options.",
     icon: HelpCircle,
     sumiffy: true,
-    others: false,
+    notebooklm: true,
+    chatpdf: false,
+    notionalai: false,
   },
   {
     title: "Interactive mind map",
     description: "Explore concepts as a navigable graph. Zoom, pan, click nodes for details. Pro only.",
     icon: Network,
     sumiffy: true,
-    others: false,
+    notebooklm: true,
+    chatpdf: false,
+    notionalai: false,
   },
   {
     title: "Audio lessons & two-host podcasts",
     description: "Teacher-style narration or conversational podcast generated from your analysis. Natural voices, playback controls.",
     icon: Headphones,
     sumiffy: true,
-    others: "partial",
+    notebooklm: true,
+    chatpdf: false,
+    notionalai: false,
   },
   {
     title: "Intelligence modes (lenses)",
     description: "6 modes: General, Student, Executive, Creator, Contract, Exam. Each tunes depth, structure & output.",
     icon: BookOpen,
     sumiffy: true,
-    others: "partial",
+    notebooklm: false,
+    chatpdf: false,
+    notionalai: "partial",
   },
   {
     title: "No hallucination guarantee on citations",
     description: "Every insight, card, and quiz answer traces to your source. We don't invent facts.",
     icon: CheckCircle,
     sumiffy: true,
-    others: false,
+    notebooklm: "partial",
+    chatpdf: false,
+    notionalai: false,
   },
-];
+] as const;
 
 function CheckIcon({ met }: { met: boolean | "partial" }) {
   if (met === true) {
@@ -61,9 +75,7 @@ function CheckIcon({ met }: { met: boolean | "partial" }) {
   }
   if (met === "partial") {
     return (
-      <svg className="h-5 w-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
+      <MinusCircle className="h-5 w-5 text-amber-400 shrink-0" aria-hidden />
     );
   }
   return <XCircle className="h-5 w-5 text-zinc-600 shrink-0" aria-hidden />;
@@ -83,45 +95,42 @@ export function DifferentiationStrip() {
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] text-left" role="table">
+          <table className="w-full min-w-[680px] text-left" role="table">
             <thead>
               <tr className="border-b border-white/[0.06]">
                 <th className="pb-3 text-sm font-medium text-zinc-400">Capability</th>
-                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">Summify</th>
+                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-24">Summify</th>
                 <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">NotebookLM</th>
-                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">ChatPDF</th>
+                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-24">ChatPDF</th>
                 <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">Notion AI</th>
               </tr>
             </thead>
             <tbody>
-              {DIFFERENTIATORS.map((row, i) => {
-                const othersMet = row.others === true ? true : row.others === "partial" ? "partial" : false;
-                return (
-                  <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
-                    <td className="py-4">
-                      <div className="flex items-start gap-3">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300" aria-hidden>
-                          <row.icon className="h-4 w-4" />
-                        </span>
-                        <div>
-                          <p className="font-medium text-zinc-100">{row.title}</p>
-                          <p className="mt-1 text-xs text-zinc-500">{row.description}</p>
-                        </div>
+              {DIFFERENTIATORS.map((row, i) => (
+                <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                  <td className="py-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300" aria-hidden>
+                        <row.icon className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <p className="font-medium text-zinc-100">{row.title}</p>
+                        <p className="mt-1 text-xs text-zinc-500">{row.description}</p>
                       </div>
-                    </td>
-                    <td className="py-4 text-center"><CheckIcon met={row.sumiffy} /></td>
-                    <td className="py-4 text-center"><CheckIcon met={othersMet} /></td>
-                    <td className="py-4 text-center"><CheckIcon met={othersMet} /></td>
-                    <td className="py-4 text-center"><CheckIcon met={othersMet} /></td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="py-4 text-center"><CheckIcon met={row.sumiffy} /></td>
+                  <td className="py-4 text-center"><CheckIcon met={row.notebooklm} /></td>
+                  <td className="py-4 text-center"><CheckIcon met={row.chatpdf} /></td>
+                  <td className="py-4 text-center"><CheckIcon met={row.notionalai} /></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
         <p className="mt-6 text-center text-xs text-zinc-500">
           <CheckCircle className="inline h-3 w-3 text-emerald-400" aria-hidden /> Full support &nbsp;
-          <svg className="inline h-3 w-3 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><line x1="5" y1="12" x2="19" y2="12" /></svg> Partial / limited &nbsp;
+          <MinusCircle className="inline h-3 w-3 text-amber-400" aria-hidden /> Partial / limited &nbsp;
           <XCircle className="inline h-3 w-3 text-zinc-600" aria-hidden /> Not available
         </p>
       </div>
