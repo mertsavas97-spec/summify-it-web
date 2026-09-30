@@ -6,6 +6,10 @@ import type { WorkspaceInputMode } from "@/types/extraction";
 export const EDUCATIONAL_SOURCE_PATTERN =
   /lecture|lesson|tutorial|course|exam|midterm|final\b|homework|assignment|textbook|study\b|class\b|seminar|workshop|syllabus|problem.?set|worked.?example|calculus|algebra|physics|chemistry|biology|anatomy|geometry|trigonometry|statistics|linear.?algebra|organic.?chem|literature|literary|poem|poetry|novel|prose|shakespeare|history|historical|civil.?war|revolution|dynasty|empire|chronology|edebiyat|tarih|ders|sınav|konu.?anlat|eğitim|math|matematik|geometri|what is algebra|basics:/i;
 
+/** Exclude entertainment/cinema/entertainment content from educational detection. */
+export const NON_EDUCATIONAL_EXCLUSION_PATTERN =
+  /cinema|movie|film|trailer|(movie|film|game|show|series|season|episode).?review|reaction|commentary|analysis.?of|breakdown|ending.?explained|recap|theory|easter.?egg|hidden.?detail|fan.?theory|marvel|dc|netflix|disney|pixar|anime|manga|gameplay|walkthrough|let.?s.?play|speedrun|tier.?list|ranking|top.?\d+|best.?movies?|worst.?movies?|coming.?soon|box.?office|rotten.?tomatoes|imdb|metacritic/i;
+
 /** STEM / math-science lecture signals (not literature/history). */
 export const STEM_DISCIPLINE_PATTERN =
   /calculus|algebra|physics|chemistry|biology|anatomy|geometry|trigonometry|statistics|linear.?algebra|organic.?chem|math|matematik|geometri|formula|equation|theorem|molecule|cell|genome|experiment|hypothesis|algorithm|proof\b|derivative|integral|vector|matrix/i;
@@ -58,12 +62,16 @@ export function looksLikeEducationalSource(input: {
   titleHint?: string | null;
   textSnippet?: string | null;
 }): boolean {
-  return EDUCATIONAL_SOURCE_PATTERN.test(educationalHaystackFromSource(input));
+  const haystack = educationalHaystackFromSource(input);
+  if (NON_EDUCATIONAL_EXCLUSION_PATTERN.test(haystack)) return false;
+  return EDUCATIONAL_SOURCE_PATTERN.test(haystack);
 }
 
 /** Title + snippet check for cognition profiling (no ExtractionMetadata required). */
 export function looksLikeEducationalText(title: string, textSnippet = ""): boolean {
-  return EDUCATIONAL_SOURCE_PATTERN.test(`${title}\n${textSnippet.slice(0, 4_000)}`);
+  const haystack = `${title}\n${textSnippet.slice(0, 4_000)}`;
+  if (NON_EDUCATIONAL_EXCLUSION_PATTERN.test(haystack)) return false;
+  return EDUCATIONAL_SOURCE_PATTERN.test(haystack);
 }
 
 /**
