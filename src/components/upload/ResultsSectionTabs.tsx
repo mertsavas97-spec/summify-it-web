@@ -93,12 +93,12 @@ export function ResultsSectionTabs({
 
   return (
     <nav
-      className="w-full border-b border-white/[0.08]"
+      className="w-full border-b border-white/[0.08] overflow-x-auto scrollbar-hide"
       aria-label={ariaLabel}
       data-results-section-tabs
       role="tablist"
     >
-      <div className="flex min-w-0">
+      <div className="flex min-w-max">
         {sections.map((id) => {
           const meta = TAB_META[id];
           const Icon = meta.Icon;
@@ -110,7 +110,7 @@ export function ResultsSectionTabs({
               role="tab"
               aria-selected={active}
               onClick={() => onNavigate(id)}
-              className={`relative inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2 py-3 text-[11px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
+              className={`relative inline-flex shrink-0 min-w-0 items-center justify-center gap-1.5 px-2 py-3 text-[11px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
                 active ? meta.activeText : "text-zinc-500 hover:text-zinc-300"
               }`}
             >

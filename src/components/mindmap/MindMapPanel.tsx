@@ -91,7 +91,7 @@ export function MindMapPanel({
         Drag to pan · pinch or buttons to zoom · tap a card to read the full
         text. Lens: <span className="text-zinc-500">{result.graph.profile}</span>
       </p>
-      <div className="overflow-hidden rounded-xl border border-violet-500/10 bg-[#08090d]">
+      <div className="overflow-hidden rounded-xl border border-violet-500/10 bg-[#08090d] h-[400px] sm:h-[500px] lg:h-[600px]">
         {/* Remount per graph so the tap-to-read panel never shows a stale card. */}
         <MindMapCanvas
           key={`${result.graph.generatedAt}:${result.graph.nodes.length}`}

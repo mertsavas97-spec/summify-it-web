@@ -1420,6 +1420,13 @@ export function UploadWorkspace({
       beginAnalysisPipeline(options?.analyzeOnly ? "retry_analyze" : "url_analyze");
       fireUploadStarted("url", extractionMeta, `url:${url}`);
 
+      // Clear previous analysis results when starting a new URL analysis
+      setInjectedAnalysis(null);
+      setLatestAnalysisResult(null);
+      setLatestSavedAnalysisId(null);
+      setAnalysisIntelligence(null);
+      setHasAnalysisResult(false);
+
       let text = rawText;
       let readyMeta: ExtractionMetadata | null =
         extractionMeta?.sourceKind === "url" ? extractionMeta : null;
@@ -1498,6 +1505,13 @@ export function UploadWorkspace({
       setYoutubeAnalysisError(null);
       beginAnalysisPipeline(options?.analyzeOnly ? "retry_analyze" : "youtube_analyze");
       fireUploadStarted("youtube", extractionMeta, `youtube:${url}`);
+
+      // Clear previous analysis results when starting a new YouTube analysis
+      setInjectedAnalysis(null);
+      setLatestAnalysisResult(null);
+      setLatestSavedAnalysisId(null);
+      setAnalysisIntelligence(null);
+      setHasAnalysisResult(false);
 
       let meta = extractionMeta?.sourceKind === "youtube" ? extractionMeta : null;
       let text = rawText;
@@ -1621,6 +1635,13 @@ export function UploadWorkspace({
       return;
     }
     fireAnalysisStarted(extractionMeta);
+
+    // Clear previous analysis results when starting a new analysis
+    setInjectedAnalysis(null);
+    setLatestAnalysisResult(null);
+    setLatestSavedAnalysisId(null);
+    setAnalysisIntelligence(null);
+    setHasAnalysisResult(false);
 
     if (inputMode === "url" && sourceUrl && extractionMeta?.sourceKind === "url") {
       void handleUrlAnalyzeArticle(sourceUrl, { analyzeOnly: true });

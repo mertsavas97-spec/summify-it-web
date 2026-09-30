@@ -365,6 +365,9 @@ body:has([data-workspace-surface="page"]) footer > div > p + * {
 .mindmap-flow {
   -webkit-user-select: none;
   user-select: none;
+  height: 100%;
+  min-height: 400px;
+  width: 100%;
 }
 
 .mindmap-flow .react-flow__pane {
@@ -498,4 +501,12 @@ body:has([data-workspace-surface="page"]) footer > div > p + * {
 
 .animate-fade-in {
   animation: fade-in 0.3s ease-out forwards;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

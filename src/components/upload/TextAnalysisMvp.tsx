@@ -836,7 +836,7 @@ export function TextAnalysisMvp({
     <section
       className={
         displayResult
-          ? "min-w-0"
+          ? "min-w-0 overflow-hidden"
           : "rounded-2xl border border-white/[0.07] bg-[#11141d]/70 p-4 shadow-sm shadow-black/20 backdrop-blur sm:p-5"
       }
       data-workspace-analysis-pane

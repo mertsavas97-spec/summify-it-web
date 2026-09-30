@@ -55,32 +55,34 @@ function ExperienceSwitcher({
 }) {
   return (
     <nav
-      className="flex w-full rounded-xl border border-white/[0.08] bg-[#0d1018]/90 p-1"
+      className="flex w-full rounded-xl border border-white/[0.08] bg-[#0d1018]/90 p-1 overflow-x-auto scrollbar-hide"
       aria-label="Experience"
       data-experience-switcher
       role="tablist"
     >
-      {EXPERIENCE_TABS.map(({ id, label, shortLabel, Icon }) => {
-        const selected = active === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            onClick={() => onChange(id)}
-            className={`relative inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-1.5 py-2.5 text-[11px] font-semibold transition-colors sm:gap-2 sm:px-2 sm:text-sm ${
-              selected
-                ? "bg-violet-500/20 text-violet-50 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.35)]"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
-            <span className="truncate sm:hidden">{shortLabel}</span>
-            <span className="hidden truncate sm:inline">{label}</span>
-          </button>
-        );
-      })}
+      <div className="flex min-w-max">
+        {EXPERIENCE_TABS.map(({ id, label, shortLabel, Icon }) => {
+          const selected = active === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => onChange(id)}
+              className={`relative inline-flex shrink-0 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1.5 py-2.5 text-[11px] font-semibold transition-colors sm:gap-2 sm:px-2 sm:text-sm ${
+                selected
+                  ? "bg-violet-500/20 text-violet-50 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.35)]"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+              <span className="min-w-0 truncate sm:hidden">{shortLabel}</span>
+              <span className="hidden min-w-0 truncate sm:inline">{label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }
