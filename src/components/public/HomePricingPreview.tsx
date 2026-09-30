@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRef, useState, useEffect } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 
 type PricingPreviewPlan = {

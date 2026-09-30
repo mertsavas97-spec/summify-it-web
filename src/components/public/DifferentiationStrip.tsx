@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import { CheckCircle, XCircle, BookOpen, Headphones, Network, HelpCircle, Zap, MinusCircle } from "lucide-react";
 
 type DiffRow = {
@@ -82,6 +83,22 @@ function CheckIcon({ met }: { met: boolean | "partial" }) {
 }
 
 export function DifferentiationStrip() {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (container.scrollLeft > 20) {
+        setShowScrollHint(false);
+      }
+    };
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <section className="border-b border-white/[0.04] px-4 py-12 sm:px-6 lg:px-8" aria-labelledby="diff-heading">
       <div className="mx-auto max-w-6xl">
@@ -94,39 +111,48 @@ export function DifferentiationStrip() {
             then active recall, then audio — all from the same upload.
           </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left" role="table">
-            <thead>
-              <tr className="border-b border-white/[0.06]">
-                <th className="pb-3 text-sm font-medium text-zinc-400">Capability</th>
-                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-24">Summify</th>
-                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">NotebookLM</th>
-                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-24">ChatPDF</th>
-                <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">Notion AI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DIFFERENTIATORS.map((row, i) => (
-                <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
-                  <td className="py-4">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300" aria-hidden>
-                        <row.icon className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <p className="font-medium text-zinc-100">{row.title}</p>
-                        <p className="mt-1 text-xs text-zinc-500">{row.description}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.sumiffy} /></div></td>
-                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.notebooklm} /></div></td>
-                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.chatpdf} /></div></td>
-                  <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.notionalai} /></div></td>
+        <div className="relative" ref={scrollContainerRef}>
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 lg:overflow-visible">
+            <table className="w-full min-w-[680px] text-left" role="table">
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="pb-3 text-sm font-medium text-zinc-400 sticky left-0 z-10 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent dark:from-zinc-950 dark:via-zinc-950/80 dark:to-transparent px-4 py-3 text-left text-sm font-medium text-zinc-400">Capability</th>
+                  <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-24">Summify</th>
+                  <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">NotebookLM</th>
+                  <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-24">ChatPDF</th>
+                  <th className="pb-3 text-sm font-medium text-zinc-400 text-center w-28">Notion AI</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {DIFFERENTIATORS.map((row, i) => (
+                  <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                    <td className="py-4 sticky left-0 z-10 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent dark:from-zinc-950 dark:via-zinc-950/80 dark:to-transparent px-4 py-4">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300" aria-hidden>
+                          <row.icon className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <p className="font-medium text-zinc-100">{row.title}</p>
+                          <p className="mt-1 text-xs text-zinc-500">{row.description}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.sumiffy} /></div></td>
+                    <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.notebooklm} /></div></td>
+                    <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.chatpdf} /></div></td>
+                    <td className="py-4"><div className="flex items-center justify-center"><CheckIcon met={row.notionalai} /></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile scroll indicator */}
+          <div className="hidden lg:hidden absolute right-0 top-0 bottom-0 w-16 pointer-events-none bg-gradient-to-l from-zinc-950 via-zinc-950/50 to-transparent" aria-hidden="true" />
+          {showScrollHint && (
+            <div className="hidden lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 animate-bounce text-xs text-zinc-500 bg-zinc-950/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/[0.08]">
+              Swipe to compare →
+            </div>
+          )}
         </div>
         <p className="mt-6 text-center text-xs text-zinc-500">
           <CheckCircle className="inline h-3 w-3 text-emerald-400" aria-hidden /> Full support &nbsp;
