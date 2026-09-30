@@ -109,6 +109,19 @@ function CardCta({ href, label, variant }: { href: string; label: string; varian
 }
 
 export function HomePricingPreview() {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollHint, setShowScrollHint] = useState(true);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => {
+      if (container.scrollLeft > 20) setShowScrollHint(false);
+    };
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <section className="border-b border-slate-200/70 px-4 py-10 sm:px-6 sm:py-12 lg:px-8 dark:border-white/[0.04]">
       <div className="mx-auto max-w-6xl">
@@ -134,8 +147,10 @@ export function HomePricingPreview() {
         </div>
 
         {/* Comparison Table */}
-        <div className="mt-10 overflow-x-auto rounded-2xl border border-slate-200/50 bg-white/50 dark:border-white/[0.06] dark:bg-zinc-950/50">
-          <table className="w-full min-w-[640px]" role="table">
+        <div className="relative" ref={scrollContainerRef}>
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 lg:overflow-visible">
+            <div className="rounded-2xl border border-slate-200/50 bg-white/50 dark:border-white/[0.06] dark:bg-zinc-950/50 overflow-x-auto">
+              <table className="w-full min-w-[640px]" role="table">
             <thead>
               <tr className="border-b border-slate-200/50 bg-slate-50/50 dark:border-white/[0.06] dark:bg-zinc-900/50">
                 <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Feature</th>
@@ -166,8 +181,17 @@ export function HomePricingPreview() {
               ))}
             </tbody>
           </table>
+          </div>
+          {/* Mobile scroll indicator - minimal */}
+          <div className="hidden lg:hidden absolute right-0 top-0 bottom-0 w-16 pointer-events-none bg-gradient-to-l from-zinc-950 via-zinc-950/30 to-transparent dark:from-zinc-950 dark:via-zinc-950/30 dark:to-transparent" aria-hidden="true" />
+          {showScrollHint && (
+            <div className="hidden lg:hidden absolute bottom-3 right-3 animate-pulse text-xs text-slate-500/60 px-2 py-1 rounded bg-slate-100/80 dark:bg-zinc-950/60 backdrop-blur-sm border border-slate-200/50 dark:border-white/[0.05] whitespace-nowrap">
+              ‹ Swipe
+            </div>
+          )}
         </div>
-        <p className="mt-3 text-center text-xs text-slate-500 dark:text-zinc-500">
+      </div>
+      <p className="mt-3 text-center text-xs text-slate-500 dark:text-zinc-500">
           * Fair use policy applies. Unlimited means no daily caps within reasonable limits.
         </p>
 

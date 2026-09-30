@@ -146,11 +146,11 @@ export function DifferentiationStrip() {
               </tbody>
             </table>
           </div>
-          {/* Mobile scroll indicator */}
-          <div className="hidden lg:hidden absolute right-0 top-0 bottom-0 w-16 pointer-events-none bg-gradient-to-l from-zinc-950 via-zinc-950/50 to-transparent" aria-hidden="true" />
+          {/* Mobile scroll indicator - minimal */}
+          <div className="hidden lg:hidden absolute right-0 top-0 bottom-0 w-16 pointer-events-none bg-gradient-to-l from-zinc-950 via-zinc-950/30 to-transparent" aria-hidden="true" />
           {showScrollHint && (
-            <div className="hidden lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 animate-bounce text-xs text-zinc-500 bg-zinc-950/80 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/[0.08]">
-              Swipe to compare →
+            <div className="hidden lg:hidden absolute bottom-3 right-3 animate-pulse text-xs text-zinc-500/60 px-2 py-1 rounded bg-zinc-950/60 backdrop-blur-sm border border-white/[0.05] whitespace-nowrap">
+              ‹ Swipe
             </div>
           )}
         </div>
