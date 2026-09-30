@@ -64,7 +64,7 @@ const TAB_META: Record<ResultsSectionId, TabMeta> = {
   },
   mindmap: {
     label: "Mind map",
-    shortLabel: "Map",
+    shortLabel: "MindMap",
     Icon: Network,
     activeText: "text-cyan-100",
     activeBar: "bg-cyan-400",

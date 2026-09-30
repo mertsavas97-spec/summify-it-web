@@ -42,8 +42,8 @@ const EXPERIENCE_TABS: {
   Icon: typeof BookOpen;
 }[] = [
   { id: "summary-learn", label: "Summary", shortLabel: "Summary", Icon: BookOpen },
-  { id: "audio", label: "Audio lesson", shortLabel: "Audio", Icon: Headphones },
-  { id: "podcast", label: "Podcast", shortLabel: "Podcast", Icon: Mic },
+  { id: "audio", label: "Audio lesson", shortLabel: "Aud", Icon: Headphones },
+  { id: "podcast", label: "Podcast", shortLabel: "Pod", Icon: Mic },
 ];
 
 function ExperienceSwitcher({
