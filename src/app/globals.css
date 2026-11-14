@@ -2,7 +2,13 @@
 @source not "../../.agents";
 @source not "../../.codex";
 
+/* The site is designed dark-only (body background is always dark). Make every
+   `dark:` utility apply based on the .dark class on <html> instead of the OS
+   color scheme, so visitors in light mode don't get dark-on-dark text. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: dark;
   --background: #0e1016;
   --foreground: #e4e4e7;
   --surface: #161922;

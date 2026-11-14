@@ -65,21 +65,11 @@ function getHighlightedFeatureParts(feature: string) {
 }
 
 function renderFeatureWithHighlight(feature: string) {
-  const normalized = feature.toLowerCase();
   const { highlighted, trailing } = getHighlightedFeatureParts(feature);
-  const isUnlimited = normalized.includes("unlimited");
 
   return (
     <>
-      <span
-        className={`inline-flex max-w-full items-center rounded-md border px-2 py-0.5 text-sm leading-tight shadow-sm whitespace-normal break-words ${
-          isUnlimited
-            ? "border-violet-300/30 bg-violet-500/15 text-violet-100"
-            : "border-violet-400/25 bg-violet-500/10 text-violet-100"
-        } font-semibold`}
-      >
-        {highlighted}
-      </span>
+      <span className="font-semibold text-white">{highlighted}</span>
       {trailing ? <span className="text-zinc-300">{trailing}</span> : null}
     </>
   );
@@ -128,7 +118,8 @@ export function PricingCards({
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              {plan.badge && (
+              {/* Pro already has "Most popular"; Team's badge just repeats its name. */}
+              {plan.badge && !isPro && plan.id !== "team" && (
                 <Badge variant={plan.comingSoon ? "muted" : "accent"}>
                   {plan.badge}
                 </Badge>

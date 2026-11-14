@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useEffect } from "react";
-import { CheckCircle, XCircle } from "lucide-react";
 
 type PricingPreviewPlan = {
   id: "free" | "pro" | "team";
@@ -61,28 +59,6 @@ const TEAM_PLAN: PricingPreviewPlan = {
   cta: { label: "Start Team", href: "/pricing?plan=team", variant: "secondary" },
 };
 
-const COMPARISON_ROWS = [
-  { feature: "Analyses per day", free: "5", pro: "Unlimited*", team: "Unlimited*" },
-  { feature: "Learn cards per analysis", free: "12", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Quiz questions", free: "✓", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Intelligence modes", free: "4 (incl. Study)", pro: "All 6", team: "All 6" },
-  { feature: "Mind maps", free: "✗", pro: "✓", team: "✓" },
-  { feature: "Audio lessons", free: "✗", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Podcasts", free: "✗", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Spaced repetition", free: "✗", pro: "✓", team: "✓" },
-  { feature: "Saved analyses", free: "Up to 10", pro: "Unlimited", team: "Unlimited" },
-  { feature: "Team seats", free: "1", pro: "1", team: "Up to 5" },
-  { feature: "Shared library", free: "✗", pro: "✗", team: "✓" },
-  { feature: "Invoicing", free: "✗", pro: "✗", team: "✓" },
-] as const;
-
-function FeatureCell({ value }: { value: string }) {
-  if (value === "✓") return <CheckCircle className="h-5 w-5 text-emerald-400 mx-auto" aria-label="Included" />;
-  if (value === "✗") return <XCircle className="h-5 w-5 text-zinc-500 mx-auto" aria-label="Not included" />;
-  if (value.startsWith("Unlimited")) return <span className="text-emerald-600 dark:text-emerald-400 font-medium">{value}</span>;
-  return <span className="text-slate-700 dark:text-zinc-300">{value}</span>;
-}
-
 function CardCta({ href, label, variant }: { href: string; label: string; variant?: "primary" | "secondary" }) {
   const base =
     "inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors";
@@ -109,19 +85,6 @@ function CardCta({ href, label, variant }: { href: string; label: string; varian
 }
 
 export function HomePricingPreview() {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [showScrollHint, setShowScrollHint] = useState(true);
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    const handleScroll = () => {
-      if (container.scrollLeft > 20) setShowScrollHint(false);
-    };
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
-  }, []);
-
   return (
     <section className="border-b border-slate-200/70 px-4 py-10 sm:px-6 sm:py-12 lg:px-8 dark:border-white/[0.04]">
       <div className="mx-auto max-w-6xl">
@@ -146,56 +109,7 @@ export function HomePricingPreview() {
           </Link>
         </div>
 
-        {/* Comparison Table */}
-        <div className="relative" ref={scrollContainerRef}>
-          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 lg:overflow-visible">
-            <div className="rounded-2xl border border-slate-200/50 bg-white/50 dark:border-white/[0.06] dark:bg-zinc-950/50 overflow-x-auto">
-              <table className="w-full min-w-[640px]" role="table">
-            <thead>
-              <tr className="border-b border-slate-200/50 bg-slate-50/50 dark:border-white/[0.06] dark:bg-zinc-900/50">
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-900 dark:text-white">Feature</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-slate-900 dark:text-white">
-                  Free
-                  <span className="ml-1 text-xs font-normal text-slate-500">$0/mo</span>
-                </th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-white">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 px-2 py-0.5 text-[10px] font-semibold">
-                    Pro
-                  </span>
-                  <span className="ml-1 text-xs font-normal text-violet-300">$7.99/mo</span>
-                </th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-slate-900 dark:text-white">
-                  Team
-                  <span className="ml-1 text-xs font-normal text-slate-500">$24.99/mo</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARISON_ROWS.map((row, i) => (
-                <tr key={i} className="border-b border-slate-200/30 dark:border-white/[0.04] hover:bg-slate-50/30 dark:hover:bg-zinc-900/30">
-                  <td className="px-4 py-3 text-sm text-slate-700 dark:text-zinc-300">{row.feature}</td>
-                  <td className="px-4 py-3 text-center"><FeatureCell value={row.free} /></td>
-                  <td className="px-4 py-3 text-center"><FeatureCell value={row.pro} /></td>
-                  <td className="px-4 py-3 text-center"><FeatureCell value={row.team} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-          {/* Mobile scroll indicator - minimal */}
-          <div className="hidden lg:hidden absolute right-0 top-0 bottom-0 w-16 pointer-events-none bg-gradient-to-l from-zinc-950 via-zinc-950/30 to-transparent dark:from-zinc-950 dark:via-zinc-950/30 dark:to-transparent" aria-hidden="true" />
-          {showScrollHint && (
-            <div className="hidden lg:hidden absolute bottom-3 right-3 animate-pulse text-xs text-slate-500/60 px-2 py-1 rounded bg-slate-100/80 dark:bg-zinc-950/60 backdrop-blur-sm border border-slate-200/50 dark:border-white/[0.05] whitespace-nowrap">
-              ‹ Swipe
-            </div>
-          )}
-        </div>
-      </div>
-      <p className="mt-3 text-center text-xs text-slate-500 dark:text-zinc-500">
-          * Fair use policy applies. Unlimited means no daily caps within reasonable limits.
-        </p>
-
-        <div className="mt-10 grid gap-4 lg:grid-cols-3">
+        <div className="mt-8 grid gap-4 lg:grid-cols-3">
           {[...PLANS, TEAM_PLAN].map((plan) => (
             <article
               key={plan.id}

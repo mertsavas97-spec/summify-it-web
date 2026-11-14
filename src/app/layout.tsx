@@ -132,7 +132,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
         {/* Set user context for client-side analytics filtering */}
         {userEmail && <meta name="summify-user-email" content={userEmail} />}

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { Sparkles, Lock, FileText, Shield, CheckCircle, Globe, Zap } from "lucide-react";
+import { Sparkles, Lock, FileText, ShieldCheck } from "lucide-react";
 
 type TrustItem = {
   label: string;
@@ -13,11 +13,7 @@ const ITEMS: TrustItem[] = [
   { icon: Sparkles, value: "Free to start", label: "No account required to try" },
   { icon: Lock, value: "Private by design", label: "No AI training on your uploads" },
   { icon: FileText, value: "PDF · PPTX · YouTube · Web", label: "One workspace for every source" },
-  { icon: Globe, value: "100+ languages", label: "Multilingual sources & output" },
-  { icon: Zap, value: "Sub-minute results", label: "Structured summary in seconds" },
-  { icon: Shield, value: "Encrypted transit", label: "TLS 1.3 for all uploads" },
-  { icon: Zap, value: "No server retention", label: "Files processed in memory only" },
-  { icon: Zap, value: "Source-grounded AI", label: "Every answer traces to your doc" },
+  { icon: ShieldCheck, value: "Source-grounded AI", label: "Every answer traces to your doc" },
 ] as const;
 
 export function HomeTrustBar() {

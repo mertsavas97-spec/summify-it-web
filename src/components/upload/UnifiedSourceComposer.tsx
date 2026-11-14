@@ -118,9 +118,9 @@ export function UnifiedSourceComposer({
   if (!choice) {
     return (
       <div className="space-y-3" data-unified-source-composer data-source-choice-grid>
-        <p className={emphasizeChoices ? "text-xs font-medium text-violet-100/90" : "text-xs text-zinc-500"}>
-          {emphasizeChoices ? "Click a source to start analyzing" : "File, link, or text — pick one."}
-        </p>
+        {emphasizeChoices ? (
+          <p className="text-xs font-medium text-violet-100/90">Click a source to start analyzing</p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Source type">
           {CHOICE_CARDS.map(({ id, title, blurb, Icon }) => (
             <button

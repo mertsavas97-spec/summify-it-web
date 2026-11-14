@@ -94,9 +94,16 @@ export function HomeHero() {
             </h1>
             <p className="mt-3 max-w-2xl text-base leading-relaxed text-zinc-400">
               Upload a PDF, YouTube link, or article — get a structured AI summary first.
-              Then study cards, quiz, mind map, and optional audio or podcast from the same upload.
+              <span className="hidden sm:inline">
+                {" "}Then study cards, quiz, mind map, and optional audio or podcast from the same upload.
+              </span>
             </p>
-            {!expanded ? <HomeHeroActions /> : null}
+            {/* On mobile the workspace below is the primary action — skip the extra CTA step. */}
+            {!expanded ? (
+              <div className="hidden sm:block">
+                <HomeHeroActions />
+              </div>
+            ) : null}
           </div>
           <div className="relative min-w-0 touch-manipulation">
             {!expanded ? <LiveWorkspaceGlow /> : null}

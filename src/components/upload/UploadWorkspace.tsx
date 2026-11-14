@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { uploadPresigned } from "@vercel/blob/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,7 +14,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { UnifiedSourceComposer, detectLinkKind } from "./UnifiedSourceComposer";
-import { WorkspaceEntitlementBanner } from "./WorkspaceEntitlementBanner";
 import { TextAnalysisMvp } from "./TextAnalysisMvp";
 import { getPlanLimits } from "@/lib/plans/planLimits";
 import {
@@ -1882,21 +1880,11 @@ export function UploadWorkspace({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              Add a source
+              What do you want to summarize?
             </h1>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-zinc-400 sm:text-sm">
-              File, link, or text — pick one. We’ll build your AI summary next.
+              Upload a file, paste a link, or paste text — your AI summary is one click away.
             </p>
-          </div>
-          <div className="lg:text-right">
-            {workspaceEntitlement.ready && !workspaceEntitlement.isAuthenticated ? (
-              <Link
-                href={`/login?returnTo=${encodeURIComponent(authReturnTo)}`}
-                className="text-xs font-medium text-violet-300/80 transition-colors hover:text-violet-200"
-              >
-                Sign in to save analyses
-              </Link>
-            ) : null}
           </div>
         </div>
       </header>
@@ -2218,10 +2206,6 @@ export function UploadWorkspace({
             />
           )}
 
-
-          {workspacePhase === "empty" ? (
-            <WorkspaceEntitlementBanner entitlement={workspaceEntitlement} />
-          ) : null}
 
           {workspacePhase === "results" && completedAnalysisResult && rawText.trim() ? (
             <div className="min-w-0 lg:hidden" data-workspace-document-iq-mobile>

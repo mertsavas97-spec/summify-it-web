@@ -8,13 +8,11 @@ import { HomeHero } from "@/components/public/HomeHero";
 import { HomeAfterSummarySection } from "@/components/public/HomeAfterSummarySection";
 import { FormatWorkflow } from "@/components/public/FormatWorkflow";
 import { FAQSection } from "@/components/public/FAQSection";
-import { RelatedLinksSection } from "@/components/public/RelatedLinksSection";
 import { HomeTrustBar } from "@/components/public/HomeTrustBar";
-import { HOME_FAQS, RELATED_LINKS } from "@/data/landing-seo";
+import { HOME_FAQS } from "@/data/landing-seo";
 import { HomePricingPreview } from "@/components/public/HomePricingPreview";
 import { SummarizeFormatGrid } from "@/components/public/SummarizeFormatGrid";
 import { PersonaChipsRow } from "@/components/public/PersonaChipsRow";
-import { DifferentiationStrip } from "@/components/public/DifferentiationStrip";
 import { SocialProofCarousel } from "@/components/public/SocialProofCarousel";
 import { StickyCTA } from "@/components/public/StickyCTA";
 import { HomeClosingCta } from "@/components/public/HomeClosingCta";
@@ -47,8 +45,6 @@ export default function HomePage() {
 
       <PersonaChipsRow />
 
-      <DifferentiationStrip />
-
       <HomeAfterSummarySection />
 
       <FormatWorkflow
@@ -78,12 +74,11 @@ export default function HomePage() {
       <FAQSection
         title="Common questions about Summify"
         subtitle="Quick answers before your first AI summary."
-        items={HOME_FAQS}
+        items={HOME_FAQS.slice(0, 5)}
       />
 
       <HomeClosingCta />
 
-      <RelatedLinksSection title="Explore by format and workflow" links={RELATED_LINKS.home} />
       <StickyCTA />
     </>
   );

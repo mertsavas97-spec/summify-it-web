@@ -74,7 +74,7 @@ export function SocialProofCarousel() {
 
         {/* Static Grid of Testimonials */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TESTIMONIALS.map((t) => (
+          {TESTIMONIALS.slice(0, 3).map((t) => (
             <article
               key={t.author}
               className="rounded-2xl border border-white/[0.06] bg-zinc-950/45 p-6 shadow-[0_18px_60px_-44px_rgba(124,58,237,0.30)] h-full hover:border-violet-500/20 transition-colors"
