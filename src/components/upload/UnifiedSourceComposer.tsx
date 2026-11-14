@@ -235,9 +235,19 @@ export function UnifiedSourceComposer({
                   ? "Add article"
                   : "Add link"}
           </Button>
-          {linkError ? (
-            <p className="rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-1.5 text-xs text-red-300">
-              {linkError}
+          {pipelineBusy && !linkError ? (
+            <p className="text-xs text-zinc-400" role="status" aria-live="polite">
+              {detectedKind === "youtube"
+                ? "Fetching the transcript — long videos can take up to a minute."
+                : "Fetching the article…"}
+            </p>
+          ) : null}
+          {linkError || (!pipelineBusy && extractError) ? (
+            <p
+              className="rounded-lg border border-red-500/20 bg-red-950/30 px-3 py-1.5 text-xs text-red-300"
+              role="alert"
+            >
+              {linkError ?? extractError}
             </p>
           ) : null}
         </form>

@@ -22,8 +22,12 @@ export const EXTRACTION_CONFIG = {
   urlMaxHtmlBytes: 2 * 1024 * 1024,
   /** Max redirects when fetching a URL */
   urlMaxRedirects: 5,
-  /** YouTube transcript API timeout */
-  youtubeTimeoutMs: 25_000,
+  /** YouTube transcript API timeout (per request) */
+  youtubeTimeoutMs: 30_000,
+  /** Total time budget for all transcript requests (route maxDuration is 60s) */
+  youtubeTotalBudgetMs: 52_000,
+  /** Don't start a retry with less than this much budget left */
+  youtubeMinRetryMs: 8_000,
   /** Max transcript characters (same cap as analysis input) */
   youtubeMaxTranscriptChars: PLAN_LIMITS.pro.maxCharacters,
 } as const;

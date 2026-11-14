@@ -558,20 +558,24 @@ function logYoutubeExtractionDev(
   console.info("[summify.youtube-extract]", event, details);
 }
 
+const TIMEOUT_MESSAGE = "Transcript extraction timed out. Try again or use a shorter video.";
+
+function isTimeoutError(error: unknown): boolean {
+  return error instanceof ExtractionError && error.statusCode === 408;
+}
+
 async function fetchWithTimeout(
   url: string,
   init: RequestInit,
+  timeoutMs: number = EXTRACTION_CONFIG.youtubeTimeoutMs,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), EXTRACTION_CONFIG.youtubeTimeoutMs);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new ExtractionError(
-        "Transcript extraction timed out. Try again or use a shorter video.",
-        408,
-      );
+      throw new ExtractionError(TIMEOUT_MESSAGE, 408);
     }
     throw new ExtractionError("Could not reach the transcript service.", 502);
   } finally {
@@ -582,6 +586,7 @@ async function fetchWithTimeout(
 async function executeRapidApiAttempt(
   config: RapidApiConfig,
   attempt: RapidApiAttempt,
+  timeoutMs: number = EXTRACTION_CONFIG.youtubeTimeoutMs,
 ): Promise<RapidApiAttemptResult> {
   const headers = {
     "x-rapidapi-key": config.apiKey,
@@ -596,7 +601,7 @@ async function executeRapidApiAttempt(
       url.searchParams.set(key, value);
     }
     requestUrl = url.toString();
-    const response = await fetchWithTimeout(requestUrl, { method: "GET", headers });
+    const response = await fetchWithTimeout(requestUrl, { method: "GET", headers }, timeoutMs);
     const bodyText = await response.text();
     const contentType = response.headers.get("content-type") ?? "unknown";
     let payload: unknown = null;
@@ -628,7 +633,7 @@ async function executeRapidApiAttempt(
     method: "POST",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify(attempt.body ?? attempt.queryParams),
-  });
+  }, timeoutMs);
   const bodyText = await response.text();
   const contentType = response.headers.get("content-type") ?? "unknown";
   let payload: unknown = null;
@@ -720,8 +725,33 @@ async function callRapidApiTranscript(
   let lastResult: RapidApiAttemptResult | null = null;
   let lastApiError: string | undefined;
 
+  // RapidAPI is sometimes slow (>25s) for long videos. Instead of failing on the
+  // first slow response, retry within the route's time budget.
+  const deadline = Date.now() + EXTRACTION_CONFIG.youtubeTotalBudgetMs;
+  let timedOut = false;
+
   for (const attempt of attempts) {
-    const result = await executeRapidApiAttempt(config, attempt);
+    let result: RapidApiAttemptResult | null = null;
+    // Each attempt may be retried once if it times out and budget remains.
+    for (let retry = 0; retry < 2 && !result; retry += 1) {
+      const remaining = deadline - Date.now();
+      if (remaining < EXTRACTION_CONFIG.youtubeMinRetryMs) break;
+      try {
+        result = await executeRapidApiAttempt(
+          config,
+          attempt,
+          Math.min(EXTRACTION_CONFIG.youtubeTimeoutMs, remaining),
+        );
+      } catch (error) {
+        if (!isTimeoutError(error)) throw error;
+        timedOut = true;
+        logYoutubeExtractionDev("timeout", { videoId, requestPath: attempt.path, retry });
+      }
+    }
+    if (!result) {
+      if (deadline - Date.now() < EXTRACTION_CONFIG.youtubeMinRetryMs) break;
+      continue;
+    }
     lastResult = result;
 
     logYoutubeExtractionDev("attempt", {
@@ -757,6 +787,13 @@ async function callRapidApiTranscript(
     if (result.status >= 400 && result.status !== 200) {
       continue;
     }
+  }
+
+  if (!lastResult && timedOut) {
+    throw new ExtractionError(TIMEOUT_MESSAGE, 408, {
+      ...debugBase,
+      failureReason: "timeout",
+    });
   }
 
   const failureDebug: YoutubeExtractionDebug = {
