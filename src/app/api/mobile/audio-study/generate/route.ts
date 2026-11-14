@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "crypto";
+import { applyComplimentaryGrant } from "@/lib/billing/complimentaryGrants";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -299,7 +300,7 @@ async function getProfileByUserId(admin: SupabaseClient, userId: string): Promis
     devWarn("[mobile-audio-study] profile_read_failed", { userId, message: error?.message ?? "not_found" });
     return null;
   }
-  return data as Profile;
+  return applyComplimentaryGrant(data as Profile);
 }
 
 async function getGuestAudioStudyUsage(admin: SupabaseClient, guestUserId: string): Promise<GuestQuotaState> {

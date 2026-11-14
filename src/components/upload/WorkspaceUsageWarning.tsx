@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { applyComplimentaryGrant } from "@/lib/billing/complimentaryGrants";
 import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -62,7 +63,7 @@ export function WorkspaceUsageWarning({
         .maybeSingle();
 
       const quota = canRunAnalysis({
-        storedPlan: profile?.plan,
+        storedPlan: applyComplimentaryGrant(profile, user.email)?.plan,
         usage: limits,
         isAuthenticated: true,
       });

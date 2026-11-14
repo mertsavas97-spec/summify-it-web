@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { applyComplimentaryGrant } from "@/lib/billing/complimentaryGrants";
 import { createClient } from "@/lib/supabase/client";
 import { hasActivePaidEntitlement } from "@/lib/billing/entitlements";
 import { resolveModeEntitlementPlanId } from "@/lib/mode-access";
@@ -71,7 +72,7 @@ export function useWorkspaceEntitlement(): WorkspaceEntitlement {
         .maybeSingle();
 
       const row = profile as ProfileEntitlementRow | null;
-      const profileForEntitlement = row as Profile | null;
+      const profileForEntitlement = applyComplimentaryGrant(row as Profile | null, user.email);
       setEntitlement({
         entitlementPlanId: resolveModeEntitlementPlanId(profileForEntitlement, true),
         isAuthenticated: true,

@@ -7,6 +7,7 @@ import type { Profile, UserLimits } from "@/types/database";
 import { devLog, devWarn } from "@/server/logging";
 import { createClientIfConfigured } from "@/lib/supabase/server";
 import { notifyNewSignup } from "@/server/internalNotifications";
+import { applyComplimentaryGrant } from "@/lib/billing/complimentaryGrants";
 
 function utcToday(): string {
   return new Date().toISOString().slice(0, 10);
@@ -193,7 +194,7 @@ export async function ensureProfileForUser(passedUser?: User): Promise<Profile |
 
   await ensureUserLimitsRow(supabase, user.id);
 
-  return profile;
+  return applyComplimentaryGrant(profile, user.email ?? profile?.email);
 }
 
 export async function getProfile(userId: string): Promise<Profile | null> {
@@ -207,7 +208,15 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .maybeSingle();
 
   if (error || !data) return null;
-  return data as Profile;
+  const profile = data as Profile;
+
+  let email = profile.email;
+  if (!email) {
+    // Older rows may lack email — fall back to the signed-in user when it matches.
+    const { data: auth } = await supabase.auth.getUser();
+    if (auth.user?.id === userId) email = auth.user.email ?? null;
+  }
+  return applyComplimentaryGrant(profile, email);
 }
 
 export async function getUserLimits(userId: string): Promise<UserLimits | null> {
